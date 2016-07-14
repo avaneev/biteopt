@@ -1,12 +1,13 @@
-# biteopt - Bitmask Evolution Optimizer #
+# biteopt - "Bitmask Evolution" Optimizer #
 ## Introduction ##
 
-Bitmask evolution optimization class. Implements a very simple evolution
-method (strategy) which involves inversion of a random segment of parameter
-value's lowest bits at each step. Additionally includes crossing over
-operation which in some cases improves convergence considerably. In some cases
-crossing over reduces convergence, but only slightly. For more robustness it
-is possible to assign several internal values to each optimization parameter.
+"Bitmask evolution" optimization class. Implements a very simple
+evolutionary optimization method (strategy) which involves inversion of a
+random segment of parameter value's lowest bits at each step. Additionally
+includes a crossing-over operation which in some cases improves convergence
+considerably. In some cases crossing-over reduces convergence, but only
+slightly. For more robustness it is possible to assign several internal
+values to each optimization parameter.
 
 This strategy was tested on several classic 2-parameter optimization
 problems and it performed fairly well. Global problems (with multiple local
