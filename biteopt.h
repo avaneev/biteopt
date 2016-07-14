@@ -98,7 +98,7 @@ private:
  * optimization robustness, but may considerably increase the time of
  * convergence.
  * @tparam HistSize Best parameter values history size. Affects convergence
- * time setting to too low or too high values increases convergence time.
+ * time. Setting too low or too high values increases convergence time.
  */
 
 template< int ParamCount0, int ValuesPerParam = 1, int HistSize = 32 >
@@ -115,7 +115,6 @@ public:
 	CBEOOptimizer( const double aCrossProb = 0.1 )
 		: CrossProb( aCrossProb )
 		, MantMult( 1 << MantSize )
-		, BestCost( 1e10 )
 	{
 	}
 
@@ -140,7 +139,7 @@ public:
 
 			for( j = 0; j < HistSize; j++ )
 			{
-				PrevBestParams[ j ][ i ] = Params[ i ];
+				HistParams[ j ][ i ] = Params[ i ];
 			}
 		}
 
@@ -173,7 +172,7 @@ public:
 		if( DoCrossover )
 		{
 			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
-			const int* UseParams = PrevBestParams[ CrossHistPos ];
+			const int* UseParams = HistParams[ CrossHistPos ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -228,7 +227,7 @@ public:
 				BestParams[ i ] = NewParams[ i ];
 			}
 
-			int* const hp = PrevBestParams[ HistPos ];
+			int* const hp = HistParams[ HistPos ];
 			HistPos = ( HistPos + 1 ) % HistSize;
 
 			for( i = 0; i < ParamCount; i++ )
@@ -242,9 +241,7 @@ public:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					const int t = Params[ i ];
 					Params[ i ] = SaveParams[ i ];
-					SaveParams[ i ] = t;
 				}
 			}
 			else
@@ -313,7 +310,7 @@ protected:
 		///<
 	int Params[ ParamCount ]; ///< Current working parameter states.
 		///<
-	int PrevBestParams[ HistSize ][ ParamCount ]; ///< Best previous parameter
+	int HistParams[ HistSize ][ ParamCount ]; ///< Best historic parameter
 		///< states.
 		///<
 	int HistPos; ///< Best parameter value history position.
