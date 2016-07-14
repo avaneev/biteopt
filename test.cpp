@@ -9,19 +9,9 @@
  * Optimization test class.
  */
 
-class CTestOpt : public CBEOOptimizer< 2, 4 >, public CBEORnd
+class CTestOpt : public CBEOOptimizer< 2, 4 >
 {
 public:
-	CTestOpt()
-	{
-		CBEORnd :: init( 0 );
-	}
-
-	void init()
-	{
-		CBEOOptimizer :: init( *this );
-	}
-
 	virtual void getMinValues( double* const p ) const
 	{
 		p[ 0 ] = -10;
@@ -48,14 +38,17 @@ public:
 
 int main()
 {
+	CBEORnd rnd;
+	rnd.init( 0 ); // Needs to be seeded with different values on each run.
+
 	CTestOpt opt;
-	opt.init();
+	opt.init( rnd );
 
 	int i;
 
 	for( i = 0; i < 10000; i++ )
 	{
-		opt.optimize( opt );
+		opt.optimize( rnd );
 
 		if( opt.getBestCost() < 0.000001 )
 		{
