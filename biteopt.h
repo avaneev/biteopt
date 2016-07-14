@@ -174,11 +174,24 @@ public:
 			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
 			const int* UseParams = HistParams[ CrossHistPos ];
 
-			for( i = 0; i < ParamCount; i++ )
+			if( ValuesPerParam < 3 )
 			{
-				SaveParams[ i ] = Params[ i ];
-				const int cmask = (int) ( rnd.getRndValue() * MantMult );
-				Params[ i ] &= ( UseParams[ i ] | cmask );
+				for( i = 0; i < ParamCount; i++ )
+				{
+					SaveParams[ i ] = Params[ i ];
+					const int cmask = (int) ( rnd.getRndValue() * MantMult );
+					Params[ i ] &= ( UseParams[ i ] | cmask );
+				}
+			}
+			else
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					SaveParams[ i ] = Params[ i ];
+				}
+
+				const int pp = (int) ( rnd.getRndValue() * ParamCount );
+				Params[ pp ] = UseParams[ pp ];
 			}
 		}
 		else
