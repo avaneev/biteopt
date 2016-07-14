@@ -166,7 +166,6 @@ public:
 		double NewParams[ ParamCount0 ];
 		double NewCost;
 		const bool DoCrossover = ( rnd.getRndValue() < CrossProb );
-		int ipm[ ParamCount ]; // Inversion bitmasks.
 		int SaveParams[ ParamCount ];
 		int i;
 
@@ -178,48 +177,37 @@ public:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				SaveParams[ i ] = Params[ i ];
-				const int rmask = (int) ( rnd.getRndValue() * MantMult );
-				Params[ i ] &= ( UseParams[ i ] | rmask );
-			}
-
-			for( i = 0; i < ParamCount0; i++ )
-			{
-				NewParams[ i ] = getParamValue( i );
-			}
-
-			NewCost = optcost( NewParams );
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				const int t = Params[ i ];
-				Params[ i ] = SaveParams[ i ];
-				SaveParams[ i ] = t;
+				const int cmask = (int) ( rnd.getRndValue() * MantMult );
+				Params[ i ] &= ( UseParams[ i ] | cmask );
 			}
 		}
 		else
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				ipm[ i ] = ( 1 << ( MantSize -
+				SaveParams[ i ] = Params[ i ];
+				const int imask = ( 1 << ( MantSize -
 					(int) ( rnd.getRndValue() * MantSize ))) - 1;
 
-				Params[ i ] ^= ipm[ i ];
-			}
-
-			for( i = 0; i < ParamCount0; i++ )
-			{
-				NewParams[ i ] = getParamValue( i );
-			}
-
-			NewCost = optcost( NewParams );
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				Params[ i ] ^= ipm[ i ];
+				Params[ i ] ^= imask;
 			}
 		}
 
-		if( NewCost < BestCost )
+		for( i = 0; i < ParamCount0; i++ )
+		{
+			NewParams[ i ] = getParamValue( i );
+		}
+
+		NewCost = optcost( NewParams );
+
+		if( NewCost >= BestCost )
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = SaveParams[ i ];
+			}
+		}
+		else
 		{
 			BestCost = NewCost;
 
@@ -233,24 +221,7 @@ public:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				hp[ i ] = Params[ i ];
-			}
-
-			// Revert to the best parameter state.
-
-			if( DoCrossover )
-			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] = SaveParams[ i ];
-				}
-			}
-			else
-			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] ^= ipm[ i ];
-				}
+				hp[ i ] = SaveParams[ i ];
 			}
 		}
 	}
