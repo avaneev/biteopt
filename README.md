@@ -14,7 +14,18 @@ problems and it performed fairly well. Global problems (with multiple local
 minima) may not be handled well by this strategy, but in practice this
 strategy strives to provide "minimum among minima" nevertheless.
 
-Use the test.cpp program to see the usage example.
+The CBEOHive class implements "hive" optimization strategy which utilizes
+several CBEOOptimizer objects in parallel exchanging solutions between
+them. This can offer a benefit for some "hard" functions by reducing the
+number of required function evaluations by a factor of 2. For other
+functions there may be a negative benefit. CBEOHive is best used with
+low (0.1-0.2) crossing-over probabilities and ValuesPerParam=3 or 4.
+
+Use the test.cpp program to see the basic usage example.
+
+test2.cpp is a more complex test which performs optimization of several
+functions and calculates the average convergence time. Can be used with both
+CBEOOptimizer and CBEOHive classes.
 
 ## Users ##
 This library is used by:

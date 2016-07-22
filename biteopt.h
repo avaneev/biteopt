@@ -96,8 +96,7 @@ private:
  * @tparam ParamCount0 The number of parameters being optimized.
  * @tparam ValuesPerParam The number of internal optimization values to use
  * for each parameter (1 or more). Increasing this value increases
- * optimization robustness, but may considerably increase the time of
- * convergence.
+ * optimization robustness, but may increase the time of convergence.
  * @tparam HistSize Best parameter values history size. Affects convergence
  * time. Setting too low or too high values increases convergence time.
  */
@@ -106,11 +105,14 @@ template< int ParamCount0, int ValuesPerParam = 1, int HistSize = 64 >
 class CBEOOptimizer
 {
 public:
+	bool WasBestCost; ///< "True" if the best cost was found on the last
+		///< optimize() function call.
+		///<
+
 	/**
 	 * Constructor.
 	 *
-	 * @param aCrossProb Crossing-over probability [0; 1]. Should be usually
-	 * set to a low value like 0.05 or 0.1.
+	 * @param aCrossProb Crossing-over probability [0; 1].
 	 */
 
 	CBEOOptimizer( const double aCrossProb = 0.4 )
@@ -153,6 +155,7 @@ public:
 		}
 
 		BestCost = optcost( BestParams );
+		WasBestCost = true;
 	}
 
 	/**
@@ -211,6 +214,8 @@ public:
 
 		if( NewCost >= BestCost )
 		{
+			WasBestCost = false;
+
 			for( i = 0; i < ParamCount; i++ )
 			{
 				Params[ i ] = SaveParams[ i ];
@@ -218,6 +223,7 @@ public:
 		}
 		else
 		{
+			WasBestCost = true;
 			BestCost = NewCost;
 
 			for( i = 0; i < ParamCount0; i++ )
@@ -225,12 +231,53 @@ public:
 				BestParams[ i ] = NewParams[ i ];
 			}
 
-			int* const hp = HistParams[ HistPos ];
 			HistPos = ( HistPos == 0 ? HistSize : HistPos ) - 1;
+			int* const hp = HistParams[ HistPos ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
 				hp[ i ] = SaveParams[ i ];
+			}
+		}
+	}
+
+	/**
+	 * Function adds history parameters derived from another optimizer.
+	 *
+	 * @param s Source optimizer.
+	 * @param SetCurrent "True" if current parameters should be replaced
+	 * instead of adding them into history.
+	 */
+
+	void addHistParams( const CBEOOptimizer& s, const bool SetCurrent )
+	{
+		int i;
+
+		if( SetCurrent )
+		{
+			if( s.getBestCost() < BestCost )
+			{
+				BestCost = s.getBestCost();
+
+				for( i = 0; i < ParamCount0; i++ )
+				{
+					BestParams[ i ] = s.BestParams[ i ];
+				}
+			}
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = s.Params[ i ];
+			}
+		}
+		else
+		{
+			HistPos = ( HistPos == 0 ? HistSize : HistPos ) - 1;
+			int* const hp = HistParams[ HistPos ];
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				hp[ i ] = s.Params[ i ];
 			}
 		}
 	}
