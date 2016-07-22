@@ -102,7 +102,7 @@ private:
  * time. Setting too low or too high values increases convergence time.
  */
 
-template< int ParamCount0, int ValuesPerParam = 1, int HistSize = 32 >
+template< int ParamCount0, int ValuesPerParam = 1, int HistSize = 64 >
 class CBEOOptimizer
 {
 public:
@@ -113,7 +113,7 @@ public:
 	 * set to a low value like 0.05 or 0.1.
 	 */
 
-	CBEOOptimizer( const double aCrossProb = 0.1 )
+	CBEOOptimizer( const double aCrossProb = 0.4 )
 		: CrossProb( aCrossProb )
 		, MantMult( 1 << MantSize )
 	{
@@ -172,26 +172,22 @@ public:
 		if( DoCrossover )
 		{
 			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
-			const int* UseParams = HistParams[ CrossHistPos ];
+			const int* UseParams =
+				HistParams[( HistPos + CrossHistPos ) % HistSize ];
 
-			if( ValuesPerParam < 3 )
+			for( i = 0; i < ParamCount; i++ )
 			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					SaveParams[ i ] = Params[ i ];
-					const int cmask = (int) ( rnd.getRndValue() * MantMult );
-					Params[ i ] &= ( UseParams[ i ] | cmask );
-				}
-			}
-			else
-			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					SaveParams[ i ] = Params[ i ];
-				}
+				SaveParams[ i ] = Params[ i ];
+				int icmask = ( 1 << ( MantSize -
+					(int) ( rnd.getRndValue() * MantSize ))) - 1;
 
-				const int pp = (int) ( rnd.getRndValue() * ParamCount );
-				Params[ pp ] = UseParams[ pp ];
+				Params[ i ] &= ~icmask;
+				Params[ i ] |= UseParams[ i ] & icmask;
+
+				const int imask = ( 1 << ( MantSize -
+					(int) ( rnd.getRndValue() * MantSize ))) - 1;
+
+				Params[ i ] ^= imask;
 			}
 		}
 		else
@@ -230,7 +226,7 @@ public:
 			}
 
 			int* const hp = HistParams[ HistPos ];
-			HistPos = ( HistPos + 1 ) % HistSize;
+			HistPos = ( HistPos == 0 ? HistSize : HistPos ) - 1;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
