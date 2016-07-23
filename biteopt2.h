@@ -133,6 +133,10 @@ public:
 			{
 				Params[ i ] ^= imask;
 			}
+
+			// Reduce swing of randomization by 20%.
+
+			Params[ i ] = (int) ( SaveParams[ i ] * 0.2 + Params[ i ] * 0.8 );
 		}
 
 		double NewParams[ ParamCount ];
@@ -228,7 +232,7 @@ protected:
 	double MaxValues[ ParamCount ]; ///< Maximal parameter values.
 		///<
 	double DiffValues[ ParamCount ]; ///< Difference between maximal and
-		///< minimal parameter values, multiplied by value's scaling factor.
+		///< minimal parameter values.
 		///<
 
 	/**
