@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <math.h>
 #include "biteopt.h"
+#include "biteopt2.h"
 #include "bitehive.h"
 
 #if !defined( sqr )
@@ -17,7 +17,7 @@ const int FnCount = 6;
  * Optimization test class.
  */
 
-class CTestOpt : public CBEOHive< 2, 4 > /* CBEOOptimizer< 2, 4 >*/
+class CTestOpt : public /*CBEOHive< 2, 1 >*/ CBEOOptimizer2< 2 >
 {
 public:
 	int fn;

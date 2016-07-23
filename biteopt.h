@@ -31,53 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#include <stdint.h>
-
-/**
- * Class that implements random number generation. The default implementation
- * includes a relatively fast pseudo-random number generator (PRNG) using a
- * classic formula "seed = ( a * seed + c ) % m" (LCG). This implementation
- * uses bits 32-62 (30 bits) of the state variable which ensures at least 2^32
- * period in the lowest significant bit of the resulting pseudo-random
- * sequence. See https://en.wikipedia.org/wiki/Linear_congruential_generator
- * for more details.
- */
-
-class CBEORnd
-{
-public:
-	/**
-	 * Function initializes *this PRNG object.
-	 *
-	 * @param NewSeed New random seed value. Lower 10 bits are used to select
-	 * pseudo-random sequence.
-	 */
-
-	void init( const int NewSeed )
-	{
-		seed = NewSeed;
-
-		// Skip first values to make PRNG "settle down".
-
-		seed = 500009 * seed + 300119;
-		seed = 500009 * seed + 300119;
-	}
-
-	/**
-	 * @return Random number in the range [0; 1).
-	 */
-
-	virtual double getRndValue()
-	{
-		seed = 500009 * seed + 300119;
-
-		return( (double) (int) (( seed >> 32 ) & 0x3FFFFFFF ) / 0x40000000 );
-	}
-
-private:
-	uint64_t seed; ///< The current random seed value.
-		///<
-};
+#include "biternd.h"
 
 /**
  * "Bitmask evolution" optimization class. Implements a very simple

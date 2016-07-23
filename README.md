@@ -14,6 +14,13 @@ problems and it performed fairly well. Global problems (with multiple local
 minima) may not be handled well by this strategy, but in practice this
 strategy strives to provide "minimum among minima" nevertheless.
 
+The CBEOOptimizer2 class is a further evolution of this strategy. Involves
+an accidentally discovered mysterious "previous attempt intermix" operation.
+This version provides a quite fast convergence time, a very small code
+size and minimal memory requirement (no ancestors nor history is used by
+this strategy). The only drawback is that this strategy requires 2 instead
+of 1 random number generator calls per parameter on each step.
+
 The CBEOHive class implements "hive" optimization strategy which utilizes
 several CBEOOptimizer objects in parallel exchanging solutions between
 them. This can offer a benefit for some "hard" functions by reducing the
