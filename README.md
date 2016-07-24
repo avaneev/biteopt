@@ -17,9 +17,9 @@ strategy strives to provide "minimum among minima" nevertheless.
 The CBEOOptimizer2 class is a further evolution of this strategy. Involves
 an accidentally discovered mysterious "previous attempt intermix" operation.
 This version provides a quite fast convergence time, a very small code
-size and minimal memory requirement (no ancestors nor history is used by
-this strategy). The only drawback is that this strategy requires 2 instead
-of 1 random number generator calls per parameter on each step.
+size and minimal memory requirement. The only drawback is that this
+strategy requires 3 instead of 2 random number generator calls per
+parameter on each step.
 
 The CBEOHive class implements "hive" optimization strategy which utilizes
 several CBEOOptimizer objects in parallel exchanging solutions between
@@ -31,8 +31,8 @@ low (0.1-0.2) crossing-over probabilities and ValuesPerParam=3 or 4.
 Use the test.cpp program to see the basic usage example.
 
 test2.cpp is a more complex test which performs optimization of several
-functions and calculates the average convergence time. Can be used with both
-CBEOOptimizer and CBEOHive classes.
+functions and calculates the average convergence time. Can be used with
+CBEOOptimizer, CBEOOptimizer2 and CBEOHive classes.
 
 ## Users ##
 This library is used by:

@@ -42,9 +42,9 @@
  * require ancestors nor history of previous best solutions.
  *
  * This version provides a quite fast convergence time, a very small code
- * size and minimal memory requirement (no ancestors nor history is used by
- * this strategy). The only drawback is that this strategy requires 2 instead
- * of 1 random number generator calls per parameter on each step.
+ * size and minimal memory requirement. The only drawback is that this
+ * strategy requires 3 instead of 2 random number generator calls per
+ * parameter on each step.
  *
  * This strategy was tested on several classic 2-parameter optimization
  * problems and it performed fairly well. Global problems (with multiple local
@@ -53,7 +53,7 @@
  * @tparam ParamCount The number of parameters being optimized.
  */
 
-template< int ParamCount >
+template< int ParamCount, int HistSize = 64 >
 class CBEOOptimizer2
 {
 public:
@@ -77,12 +77,20 @@ public:
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
 
+		HistPos = 0;
+		HistCount = 0;
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			Params[ i ] = (int) ( rnd.getRndValue() * MantMult );
 			PrevParams[ i ] = Params[ i ];
+			int j;
+
+			for( j = 0; j < HistSize; j++ )
+			{
+				HistParams[ j ][ i ] = Params[ i ];
+			}
 		}
 
 		for( i = 0; i < ParamCount; i++ )
@@ -105,38 +113,60 @@ public:
 		int SaveParams[ ParamCount ];
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		if( rnd.getRndValue() < 0.1 )
 		{
-			SaveParams[ i ] = Params[ i ];
+			// Crossing-over with the historic best solutions.
 
-			// Mysterious "previous attempt intermix" operation.
+			const int CrossHistPos = (int) ( rnd.getRndValue() * HistCount );
+			const int* UseParams =
+				HistParams[( HistPos + CrossHistPos ) % HistSize ];
 
-			const double r = rnd.getRndValue();
-			Params[ i ] = (int) ( Params[ i ] * r +
-				( Params[ i ] * 2.0 - PrevParams[ i ]) * ( 1.0 - r ));
-
-			// Bitmask inversion operation with value clamping.
-
-			const int imask = ( 1 << ( MantSize -
-				(int) ( rnd.getRndValue() * MantSize ))) - 1;
-
-			if( Params[ i ] < 0 )
+			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = 0 ^ imask;
-			}
-			else
-			if( Params[ i ] > MantSize1 )
-			{
-				Params[ i ] = MantSize1 ^ imask;
-			}
-			else
-			{
-				Params[ i ] ^= imask;
-			}
+				SaveParams[ i ] = Params[ i ];
+				const int icmask = ( 2 <<
+					(int) ( rnd.getRndValue() * MantSize )) - 1;
 
-			// Reduce swing of randomization by 20%.
+				Params[ i ] &= ~icmask;
+				Params[ i ] |= UseParams[ i ] & icmask;
+			}
+		}
+		else
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				SaveParams[ i ] = Params[ i ];
 
-			Params[ i ] = (int) ( SaveParams[ i ] * 0.2 + Params[ i ] * 0.8 );
+				// The mysterious "previous attempt intermix" operation.
+
+				const double r = rnd.getRndValue();
+				Params[ i ] = (int) ( Params[ i ] * r +
+					( Params[ i ] * 2.0 - PrevParams[ i ]) * ( 1.0 - r ));
+
+				// Bitmask inversion operation with value clamping.
+
+				const int imask = ( 2 <<
+					(int) ( rnd.getRndValue() * MantSize )) - 1;
+
+				if( Params[ i ] < 0 )
+				{
+					Params[ i ] = 0 ^ imask;
+				}
+				else
+				if( Params[ i ] > MantSize1 )
+				{
+					Params[ i ] = MantSize1 ^ imask;
+				}
+				else
+				{
+					Params[ i ] ^= imask;
+				}
+
+				// Reduce swing of randomization by 20%.
+
+				Params[ i ] = (int) ( SaveParams[ i ] * 0.2 +
+					Params[ i ] * 0.8 );
+			}
 		}
 
 		double NewParams[ ParamCount ];
@@ -164,6 +194,19 @@ public:
 			}
 
 			BestCost = NewCost;
+
+			HistPos = ( HistPos == 0 ? HistSize : HistPos ) - 1;
+			int* const hp = HistParams[ HistPos ];
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				hp[ i ] = SaveParams[ i ];
+			}
+
+			if( HistCount < HistSize )
+			{
+				HistCount++;
+			}
 		}
 	}
 
@@ -222,6 +265,14 @@ protected:
 	int Params[ ParamCount ]; ///< Current working parameter states.
 		///<
 	int PrevParams[ ParamCount ]; ///< Previously evaluated parameters.
+		///<
+	int HistParams[ HistSize ][ ParamCount ]; ///< Best historic parameter
+		///< values.
+		///<
+	int HistPos; ///< Best parameter value history position.
+		///<
+	int HistCount; ///< The total number of history additions performed.
+		///< Always <= HistSize.
 		///<
 	double BestParams[ ParamCount ]; ///< Best parameter vector.
 		///<
