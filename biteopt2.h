@@ -53,7 +53,7 @@
  * @tparam ParamCount The number of parameters being optimized.
  */
 
-template< int ParamCount, int HistSize = 64 >
+template< int ParamCount, int HistSize = 16 >
 class CBEOOptimizer2
 {
 public:
