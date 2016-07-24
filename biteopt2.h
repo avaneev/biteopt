@@ -70,32 +70,47 @@ public:
 	 * Function initializes *this optimizer.
 	 *
 	 * @param rnd Random number generator.
+	 * @param InitParams Initial parameter values.
 	 */
 
-	void init( CBEORnd& rnd )
+	void init( CBEORnd& rnd, const double* const InitParams = NULL )
 	{
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
-
-		HistPos = 0;
-		HistCount = 0;
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			Params[ i ] = (int) ( rnd.getRndValue() * MantMult );
-			PrevParams[ i ] = Params[ i ];
-			int j;
+			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
+		}
 
-			for( j = 0; j < HistSize; j++ )
+		HistPos = 0;
+		HistCount = 0;
+
+		if( InitParams != NULL )
+		{
+			for( i = 0; i < ParamCount; i++ )
 			{
-				HistParams[ j ][ i ] = Params[ i ];
+				const double v = ( InitParams[ i ] - MinValues[ i ]) /
+					DiffValues[ i ];
+
+				Params[ i ] = (int) ( v * v * MantMult );
+				PrevParams[ i ] = Params[ i ];
+				HistParams[ 0 ][ i ] = Params[ i ];
+			}
+		}
+		else
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = (int) ( rnd.getRndValue() * MantMult );
+				PrevParams[ i ] = Params[ i ];
+				HistParams[ 0 ][ i ] = Params[ i ];
 			}
 		}
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
 			BestParams[ i ] = getParamValue( i );
 		}
 
@@ -124,6 +139,9 @@ public:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				SaveParams[ i ] = Params[ i ];
+
+				// Replace lower bits with the historic best solution's ones.
+
 				const int icmask = ( 2 <<
 					(int) ( rnd.getRndValue() * MantSize )) - 1;
 
