@@ -14,10 +14,10 @@ problems and it performed fairly well. Global problems (with multiple local
 minima) may not be handled well by this strategy, but in practice this
 strategy strives to provide "minimum among minima" nevertheless.
 
-The CBEOOptimizer2 class is a further evolution of this strategy. Involves
-an accidentally discovered mysterious "previous attempt intermix" operation.
-This version provides a quite fast convergence time, a very small code
-size and minimal memory requirement. The only drawback is that this
+The CBEOOptimizer2 class is a further evolution of this strategy. Additionally
+includes the "step in the right direction" operation and a history of best
+solutions. This version provides a quite fast convergence time, a very small
+code size and minimal memory requirement. The only drawback is that this
 strategy requires 3 instead of 2 random number generator calls per
 parameter on each step.
 

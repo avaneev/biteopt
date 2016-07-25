@@ -38,8 +38,8 @@
  * "Bitmask evolution" version 2 optimization class. Implements a very simple
  * evolutionary optimization method (strategy) which involves inversion of a
  * random segment of parameter value's lowest bits at each step. Additionally
- * includes a mysterious "previous attempt intermix" operation. Does not
- * require ancestors nor history of previous best solutions.
+ * includes the "step in the right direction" operation and a history of best
+ * solutions.
  *
  * This version provides a quite fast convergence time, a very small code
  * size and minimal memory requirement. The only drawback is that this
@@ -53,7 +53,7 @@
  * @tparam ParamCount The number of parameters being optimized.
  */
 
-template< int ParamCount, int HistSize = 16 >
+template< int ParamCount, int HistSize = 13 >
 class CBEOOptimizer2
 {
 public:
@@ -103,7 +103,8 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = (int) ( rnd.getRndValue() * MantMult );
+				const double v = rnd.getRndValue();
+				Params[ i ] = (int) ( v * v * MantMult );
 				PrevParams[ i ] = Params[ i ];
 				HistParams[ 0 ][ i ] = Params[ i ];
 			}
@@ -128,7 +129,7 @@ public:
 		int SaveParams[ ParamCount ];
 		int i;
 
-		if( rnd.getRndValue() < 0.1 )
+		if( rnd.getRndValue() < 0.20 )
 		{
 			// Crossing-over with the historic best solutions.
 
@@ -140,13 +141,21 @@ public:
 			{
 				SaveParams[ i ] = Params[ i ];
 
-				// Replace lower bits with the historic best solution's ones.
+				// The "step in the right direction" operation, with reduction
+				// of swing by 50%, and with value clamping.
 
-				const int icmask = ( 2 <<
-					(int) ( rnd.getRndValue() * MantSize )) - 1;
+				Params[ i ] -= (int) (( UseParams[ i ] - Params[ i ]) *
+					rnd.getRndValue() * 0.5 );
 
-				Params[ i ] &= ~icmask;
-				Params[ i ] |= UseParams[ i ] & icmask;
+				if( Params[ i ] < 0 )
+				{
+					Params[ i ] = 0;
+				}
+				else
+				if( Params[ i ] > MantSize1 )
+				{
+					Params[ i ] = MantSize1;
+				}
 			}
 		}
 		else
@@ -155,13 +164,13 @@ public:
 			{
 				SaveParams[ i ] = Params[ i ];
 
-				// The mysterious "previous attempt intermix" operation.
+				// The "step in the right direction" operation.
 
-				const double r = rnd.getRndValue();
-				Params[ i ] = (int) ( Params[ i ] * r +
-					( Params[ i ] * 2.0 - PrevParams[ i ]) * ( 1.0 - r ));
+				Params[ i ] -= (int) (( PrevParams[ i ] - Params[ i ]) *
+					rnd.getRndValue() );
 
-				// Bitmask inversion operation with value clamping.
+				// Bitmask inversion operation with value clamping, works as
+				// a "driver" of optimization process.
 
 				const int imask = ( 2 <<
 					(int) ( rnd.getRndValue() * MantSize )) - 1;
