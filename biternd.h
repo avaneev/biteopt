@@ -71,7 +71,8 @@ public:
 	{
 		seed = 500009 * seed + 300119;
 
-		return( (double) (int) (( seed >> 32 ) & 0x3FFFFFFF ) / 0x40000000 );
+//		return( (double) (int) (( seed >> 32 ) & 0x3FFFFFFF ) / 0x40000000 );
+		return((( seed >> 32 ) & 0x3FFFFFFF ) * 9.31322574615478516e-10 );
 	}
 
 private:

@@ -1,6 +1,8 @@
 # biteopt - "Bitmask Evolution" Optimizer #
 ## Introduction ##
 
+### CBEOOptimizer ###
+
 "Bitmask evolution" optimization class. Implements a very simple
 evolutionary optimization method (strategy) which involves inversion of a
 random segment of parameter value's lowest bits at each step. Additionally
@@ -9,10 +11,7 @@ considerably. In some cases crossing-over reduces convergence, but only
 slightly. For more robustness it is possible to assign several internal
 values to each optimization parameter.
 
-This strategy was tested on several classic 2-parameter optimization
-problems and it performed fairly well. Global problems (with multiple local
-minima) may not be handled well by this strategy, but in practice this
-strategy strives to provide "minimum among minima" nevertheless.
+### CBEOOptimizer2 ###
 
 The CBEOOptimizer2 class is a further evolution of this strategy. Additionally
 includes the "step in the right direction" operation and a history of best
@@ -21,18 +20,37 @@ code size and minimal memory requirement. The only drawback is that this
 strategy requires 3 instead of 2 random number generator calls per
 parameter on each step.
 
-The CBEOHive class implements "hive" optimization strategy which utilizes
-several CBEOOptimizer objects in parallel exchanging solutions between
-them. This can offer a benefit for some "hard" functions by reducing the
-number of required function evaluations by a factor of 2. For other
-functions there may be a negative benefit. CBEOHive is best used with
-low (0.1-0.2) crossing-over probabilities and ValuesPerParam=3 or 4.
+### CBEOOptimizerFan ###
+
+This strategy is based on the CBEOOptimizer2 strategy, but uses several
+current parameter vectors ("fan elements"). Any parameter vector can be
+replaced with a new solution if parameter vector's cost is higher than that
+of the new solution's and the "distance" of the new solution is not
+considerably low. The "distance" constraint allows parameter vectors to be
+spaced apart from each other thus making them cover a larger parameter search
+space collectively. The "fan elements" are used unevenly: some are used more
+frequently than the others.
+
+The benefit of this strategy is increased robustness: it can optimize
+successfully a wider range of functions. Another benefit is a considerably
+decreased convergence time in deeper optimizations.
+
+This strategy is associated with a high overhead per function evaluation.
+In comparison to the CBEOOptimizer2 class this class uses double parameter
+values in the range 0 to 1 in order to lower the overall overhead.
+
+### * * * ###
+
+All these strategies were tested on several classic 2-parameter optimization
+problems and performed fairly well. Global problems (with multiple local
+minima) may not be handled well by these strategies, but in practice these
+strategies strive to provide the "minimum among minima" nevertheless.
 
 Use the test.cpp program to see the basic usage example.
 
 test2.cpp is a more complex test which performs optimization of several
 functions and calculates the average convergence time. Can be used with
-CBEOOptimizer, CBEOOptimizer2 and CBEOHive classes.
+CBEOOptimizer, CBEOOptimizer2 and CBEOOptimizerFan classes.
 
 ## Users ##
 This library is used by:
