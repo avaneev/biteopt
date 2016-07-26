@@ -128,8 +128,6 @@ public:
 			}
 		}
 
-		updateDistances();
-
 		double Params[ ParamCount ];
 
 		for( j = 0; j < FanSize; j++ )
@@ -151,6 +149,8 @@ public:
 				}
 			}
 		}
+
+		updateDistances();
 	}
 
 	/**
@@ -175,9 +175,9 @@ public:
 			{
 				SaveParams[ i ] = Params[ i ];
 
-				double v = AvgParams[ s ][ i ] +
-					( rnd.getRndValue() - 0.5 ) * 2.0 *
-					sqrt( RMSParams[ s ][ i ]);
+				const double v = AvgParams[ s ][ i ] +
+					sqrt( RMSParams[ s ][ i ]) *
+					( rnd.getRndValue() - 0.5 ) * 2.0;
 
 				if( v < 0.0 )
 				{
@@ -200,7 +200,7 @@ public:
 			// Crossing-over with the historic best solutions.
 
 			const int CrossHistPos = (int) ( rnd.getRndValue() * HistCount );
-			const double* UseParams =
+			const double* const UseParams =
 				HistParams[( HistPos + CrossHistPos ) % HistSize ];
 
 			for( i = 0; i < ParamCount; i++ )
@@ -208,10 +208,10 @@ public:
 				SaveParams[ i ] = Params[ i ];
 
 				// The "step in the right direction" operation, with reduction
-				// of swing by 35%, and with value clamping.
+				// of swing by 45%, and with value clamping.
 
 				Params[ i ] -= ( UseParams[ i ] - Params[ i ]) *
-					rnd.getRndValue() * 0.65;
+					sqrt( rnd.getRndValue() ) * 0.55;
 
 				if( Params[ i ] < 0.0 )
 				{
@@ -233,7 +233,7 @@ public:
 				// The "step in the right direction" operation.
 
 				Params[ i ] -= ( PrevParams[ s ][ i ] - Params[ i ]) *
-					rnd.getRndValue();
+					sqrt( rnd.getRndValue() );
 
 				// Bitmask inversion operation with value clamping, works as
 				// a "driver" of optimization process.
@@ -559,7 +559,6 @@ protected:
 			}
 		}
 
-		AvgCost += MinCost * 0.5;
 		AvgCost /= FanSize;
 	}
 };
