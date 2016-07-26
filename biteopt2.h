@@ -127,9 +127,23 @@ public:
 	void optimize( CBEORnd& rnd )
 	{
 		int SaveParams[ ParamCount ];
+		const double rp = rnd.getRndValue();
 		int i;
 
-		if( rnd.getRndValue() < 0.20 )
+		if( rp < 0.05 )
+		{
+			// Complete randomization.
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				SaveParams[ i ] = Params[ i ];
+
+				const double v = rnd.getRndValue();
+				Params[ i ] = (int) ( v * v * MantMult );
+			}
+		}
+		else
+		if( rp < 0.30 )
 		{
 			// Crossing-over with the historic best solutions.
 
@@ -142,10 +156,10 @@ public:
 				SaveParams[ i ] = Params[ i ];
 
 				// The "step in the right direction" operation, with reduction
-				// of swing by 50%, and with value clamping.
+				// of swing by 30%, and with value clamping.
 
 				Params[ i ] -= (int) (( UseParams[ i ] - Params[ i ]) *
-					rnd.getRndValue() * 0.5 );
+					rnd.getRndValue() * 0.70 );
 
 				if( Params[ i ] < 0 )
 				{
