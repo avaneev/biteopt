@@ -618,7 +618,7 @@ protected:
 			}
 		}
 
-		return( sqrt( Dist ));
+		return( sqrt( Dist / ( ParamCount * ( FanSize - 1 ))));
 	}
 
 	/**
