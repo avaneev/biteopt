@@ -301,7 +301,14 @@ public:
 
 			for( i = 0; i < FanSize; i++ )
 			{
-				if( NewCost < CurCosts[ i ] * 3.0 - AvgCost * 2.0 )
+				double d = ( CurCosts[ i ] - AvgCost ) * 2.25;
+
+				if( d < 0.0 )
+				{
+					d = 0.0;
+				}
+
+				if( NewCost < CurCosts[ i ] + d )
 				{
 					const double NewDist = calcDistance( CopyParams, i );
 
