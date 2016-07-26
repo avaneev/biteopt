@@ -32,6 +32,8 @@
 #define BITEFAN_INCLUDED
 
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "biternd.h"
 
 /**
@@ -208,10 +210,10 @@ public:
 				SaveParams[ i ] = Params[ i ];
 
 				// The "step in the right direction" operation, with reduction
-				// of swing by 45%, and with value clamping.
+				// of swing by 50%, and with value clamping.
 
 				Params[ i ] -= ( UseParams[ i ] - Params[ i ]) *
-					sqrt( rnd.getRndValue() ) * 0.55;
+					sqrt( rnd.getRndValue() ) * 0.50;
 
 				if( Params[ i ] < 0.0 )
 				{
@@ -303,7 +305,7 @@ public:
 				{
 					const double NewDist = calcDistance( CopyParams, i );
 
-					if( NewDist > MaxDist && NewDist > AvgDist * 0.35 )
+					if( NewDist > MaxDist && NewDist > AvgDist * 0.45 )
 					{
 						MaxDist = NewDist;
 						f = i;
@@ -453,6 +455,18 @@ protected:
 		///<
 
 	/**
+	 * Structure used for "fan element" sorting.
+	 */
+
+	struct CFanSortStruct
+	{
+		int i; ///< The index of the element.
+			///<
+		double Cost; ///< The cost of the element.
+			///<
+	};
+
+	/**
 	 * Function calculates the averaging coefficient for 1st order low-pass
 	 * filtering.
 	 *
@@ -494,6 +508,76 @@ protected:
 		}
 
 		return( HistParams[ HistPos ]);
+	}
+
+	/**
+	 * "Fan element" sorting function, used in the qsort() function call.
+	 *
+	 * @param p1 Element 1.
+	 * @param p2 Element 2.
+	 */
+
+	static int FanElementSortFn( const void* p1, const void* p2 )
+	{
+		const double c1 = ( (CFanSortStruct*) p1 ) -> Cost;
+		const double c2 = ( (CFanSortStruct*) p2 ) -> Cost;
+
+		if( c1 < c2 )
+		{
+			return( 1 );
+		}
+
+		if( c1 > c2 )
+		{
+			return( -1 );
+		}
+
+		return( 0 );
+	}
+
+	/**
+	 * Function sorts "fan elements" by cost.
+	 */
+
+	void sortFanElements()
+	{
+		CFanSortStruct fe[ FanSize ];
+		int i;
+
+		for( i = 0; i < FanSize; i++ )
+		{
+			fe[ i ].i = i;
+			fe[ i ].Cost = CurCosts[ i ];
+		}
+
+		qsort( fe, FanSize, sizeof( fe[ 0 ]), FanElementSortFn );
+
+		double CurParamsS[ FanSize ][ ParamCount ];
+		double CurCostsS[ FanSize ];
+		double CurDistsS[ FanSize ];
+		double AvgParamsS[ FanSize ][ ParamCount ];
+		double RMSParamsS[ FanSize ][ ParamCount ];
+		double PrevParamsS[ FanSize ][ ParamCount ];
+
+		memcpy( CurParamsS, CurParams, sizeof( CurParamsS ));
+		memcpy( CurCostsS, CurCosts, sizeof( CurCostsS ));
+		memcpy( CurDistsS, CurDists, sizeof( CurDistsS ));
+		memcpy( AvgParamsS, AvgParams, sizeof( AvgParamsS ));
+		memcpy( RMSParamsS, RMSParams, sizeof( RMSParamsS ));
+		memcpy( PrevParamsS, PrevParams, sizeof( PrevParamsS ));
+
+		for( i = 0; i < FanSize; i++ )
+		{
+			const int s = fe[ i ].i;
+
+			memcpy( CurParams[ i ], CurParamsS[ s ], sizeof( CurParams[ i ]));
+			CurCosts[ i ] = CurCostsS[ s ];
+			CurDists[ i ] = CurDistsS[ s ];
+			memcpy( AvgParams[ i ], AvgParamsS[ s ], sizeof( AvgParams[ i ]));
+			memcpy( RMSParams[ i ], RMSParamsS[ s ], sizeof( RMSParams[ i ]));
+			memcpy( PrevParams[ i ], PrevParamsS[ s ],
+				sizeof( PrevParams[ i ]));
+		}
 	}
 
 	/**
@@ -560,6 +644,8 @@ protected:
 		}
 
 		AvgCost /= FanSize;
+
+		sortFanElements();
 	}
 };
 
