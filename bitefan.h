@@ -236,7 +236,7 @@ public:
 
 	void optimize( CBEORnd& rnd )
 	{
-		const int s = (int) ( sqrt( rnd.getRndValue() ) * FanSize );
+		const int s = (int) ( isqr( rnd.getRndValue() ) * FanSize );
 		double* const Params = CurParams[ s ];
 		double SaveParams[ ParamCount ];
 		const double rp = rnd.getRndValue();
@@ -315,19 +315,16 @@ public:
 
 				// The "step in the right direction" operation.
 
+				const double r = sqrt( rnd.getRndValue() );
+
 				if( CurCosts[ s ] < PrevCosts[ s ])
 				{
-					Params[ i ] -= ( PrevParams[ s ][ i ] - Params[ i ]) *
-						sqrt( rnd.getRndValue() );
+					Params[ i ] -= ( PrevParams[ s ][ i ] - Params[ i ]) * r;
 				}
 				else
 				{
-					Params[ i ] -= ( Params[ i ] - PrevParams[ s ][ i ]) *
-						sqrt( rnd.getRndValue() );
+					Params[ i ] -= ( Params[ i ] - PrevParams[ s ][ i ]) * r;
 				}
-
-				// Bitmask inversion operation with value clamping, works as
-				// a "driver" of optimization process.
 
 				if( Params[ i ] < 0.0 )
 				{
@@ -339,15 +336,16 @@ public:
 					Params[ i ] = 1.0;
 				}
 
-				const int imask = ( 2 <<
-					(int) ( sqrt( rnd.getRndValue() ) * MantSize )) - 1;
+				// Bitmask inversion operation with value clamping, works as
+				// a "driver" of optimization process.
 
+				const int imask = ( 2 << (int) ( r * MantSize )) - 1;
 				Params[ i ] = ( (int) ( Params[ i ] * MantMult ) ^ imask ) *
 					MantDiv;
 
 				// Reduce swing of randomization by 20%.
 
-				Params[ i ] = SaveParams[ i ] * 0.2 + Params[ i ] * 0.8;
+				Params[ i ] = SaveParams[ i ] * 0.20 + Params[ i ] * 0.80;
 			}
 		}
 
@@ -410,7 +408,7 @@ public:
 				{
 					const double NewDist = calcDistance( CopyParams, i );
 
-					if( NewDist > MaxDist && NewDist > AvgDist * 0.45 )
+					if( NewDist > MaxDist && NewDist > AvgDist * 0.21 )
 					{
 						MaxDist = NewDist;
 						f = i;
@@ -425,10 +423,6 @@ public:
 				for( i = 0; i < ParamCount; i++ )
 				{
 					hp[ i ] = CurParams[ f ][ i ];
-				}
-
-				for( i = 0; i < ParamCount; i++ )
-				{
 					CurParams[ f ][ i ] = CopyParams[ i ];
 				}
 
@@ -594,6 +588,17 @@ protected:
 	}
 
 	/**
+	 * @param x Value to invert square, in the range 0 to 1.
+	 * @return Inverted square of the argument.
+	 */
+
+	static double isqr( const double x )
+	{
+		const double x1 = 1.0 - x;
+		return( 1.0 - x1 * x1 );
+	}
+
+	/**
 	 * Function returns specified parameter's value taking into account
 	 * minimal and maximal value range.
 	 *
@@ -728,7 +733,7 @@ protected:
 			}
 		}
 
-		return( sqrt( Dist / ( ParamCount * ( FanSize - 1 ))));
+		return( Dist / ( ParamCount * ( FanSize - 1 )));
 	}
 
 	/**
