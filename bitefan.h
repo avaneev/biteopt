@@ -201,7 +201,7 @@ public:
 			}
 		}
 
-		// Calculate initial average distance.
+		// Calculate initial average centroid distance.
 
 		double Dist = 0.0;
 
@@ -246,27 +246,13 @@ public:
 		{
 			// Complete randomization within the average used parameter range.
 
+			const double AvgCentrDist = sqrt( AvgCentrDists[ s ]);
+
 			for( i = 0; i < ParamCount; i++ )
 			{
 				SaveParams[ i ] = Params[ i ];
-
-				const double v = AvgParams[ s ][ i ] +
-					sqrt( AvgCentrDists[ s ]) *
-					( rnd.getRndValue() - 0.5 ) * 2.25;
-
-				if( v < 0.0 )
-				{
-					Params[ i ] = 0.0;
-				}
-				else
-				if( v > 1.0 )
-				{
-					Params[ i ] = 1.0;
-				}
-				else
-				{
-					Params[ i ] = v;
-				}
+				Params[ i ] = clampParam( AvgParams[ s ][ i ] +
+					AvgCentrDist * ( rnd.getRndValue() - 0.5 ) * 2.25 );
 			}
 		}
 		else
@@ -285,26 +271,19 @@ public:
 				// The "step in the right direction" operation, with reduction
 				// of swing by 42%, and with value clamping.
 
+				double d;
+
 				if( CurCosts[ s ] < HistCosts[ CrossHistPos ])
 				{
-					Params[ i ] -= ( UseParams[ i ] - Params[ i ]) *
-						sqrt( rnd.getRndValue() ) * 0.58;
+					d = UseParams[ i ] - Params[ i ];
 				}
 				else
 				{
-					Params[ i ] -= ( Params[ i ] - UseParams[ i ]) *
-						sqrt( rnd.getRndValue() ) * 0.58;
+					d = Params[ i ] - UseParams[ i ];
 				}
 
-				if( Params[ i ] < 0.0 )
-				{
-					Params[ i ] = 0.0;
-				}
-				else
-				if( Params[ i ] > 1.0 )
-				{
-					Params[ i ] = 1.0;
-				}
+				Params[ i ] = clampParam( Params[ i ] - d *
+					sqrt( rnd.getRndValue() ) * 0.58 );
 			}
 		}
 		else
@@ -316,36 +295,28 @@ public:
 				// The "step in the right direction" operation.
 
 				const double r = sqrt( rnd.getRndValue() );
+				double d;
 
 				if( CurCosts[ s ] < PrevCosts[ s ])
 				{
-					Params[ i ] -= ( PrevParams[ s ][ i ] - Params[ i ]) * r;
+					d = PrevParams[ s ][ i ] - Params[ i ];
 				}
 				else
 				{
-					Params[ i ] -= ( Params[ i ] - PrevParams[ s ][ i ]) * r;
+					d = Params[ i ] - PrevParams[ s ][ i ];
 				}
 
-				if( Params[ i ] < 0.0 )
-				{
-					Params[ i ] = 0;
-				}
-				else
-				if( Params[ i ] > 1.0 )
-				{
-					Params[ i ] = 1.0;
-				}
+				double np = clampParam( Params[ i ] - d * r );
 
 				// Bitmask inversion operation with value clamping, works as
 				// a "driver" of optimization process.
 
 				const int imask = ( 2 << (int) ( r * MantSize )) - 1;
-				Params[ i ] = ( (int) ( Params[ i ] * MantMult ) ^ imask ) *
-					MantDiv;
+				np = ( (int) ( np * MantMult ) ^ imask ) * MantDiv;
 
 				// Reduce swing of randomization by 20%.
 
-				Params[ i ] = SaveParams[ i ] * 0.20 + Params[ i ] * 0.80;
+				Params[ i ] = SaveParams[ i ] * 0.2 + np * 0.8;
 			}
 		}
 
@@ -596,6 +567,29 @@ protected:
 	{
 		const double x1 = 1.0 - x;
 		return( 1.0 - x1 * x1 );
+	}
+
+	/**
+	 * Function clamps the specified parameter value so that it stays in the
+	 * 0.0 to 1.0 range, inclusive.
+	 *
+	 * @param v Parameter value to clamp.
+	 * @return Clamped parameter value.
+	 */
+
+	static double clampParam( const double v )
+	{
+		if( v < 0.0 )
+		{
+			return( 0.0 );
+		}
+
+		if( v > 1.0 )
+		{
+			return( 1.0 );
+		}
+
+		return( v );
 	}
 
 	/**
