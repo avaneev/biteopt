@@ -57,6 +57,40 @@
  * In comparison to the CBEOOptimizer2 class this class uses double parameter
  * values in the range 0 to 1 in order to lower the overall overhead.
  *
+ * The strategy consists of the following elements. Most operations utilize a
+ * square root distributed random number values. The parameter space is itself
+ * square rooted on each function evaluation.
+ *
+ * 1. A set of "fan elements" is maintained. A "fan element" is an independent
+ * parameter vector which is randomly evolved towards a better solution. The
+ * "fan element" with the highest cost is evolved more frequently than
+ * "fan elements" with a fewer cost.
+ *
+ * 2. A set of 16 best historic solutions is maintained. The history is shared
+ * among all "fan elements".
+ *
+ * 3. The previous attempted solution parameter vector for each "fan element"
+ * is maintained.
+ *
+ * 4. A running average and deviation of all attempted solutions for each
+ * "fan element" is maintained. These values are required to generate a random
+ * solution in the region of the best solution.
+ *
+ * 5. With 6% probability a random solution is generated using the running
+ * average and deviation.
+ *
+ * 6. With ~60% probability a crossing-over operation is performed. This
+ * operation consists of the "step in the right direction" operation.
+ *
+ * 7. With the remaining probability the "step in the right direction"
+ * operation is performed using the previous solution, followed by the
+ * "bitmask evolution" operation which is the main driver of the evolutionary
+ * process.
+ *
+ * 8. If a better solution was not found on the current step, an attempt to
+ * replace one of the "fan elements" is performed using cost and parameter
+ * distance constraints.
+ *
  * @tparam ParamCount The number of parameters being optimized.
  */
 
@@ -103,14 +137,14 @@ public:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					const double v = ( InitParams[ i ] - MinValues[ i ]) /
-						DiffValues[ i ];
+					const double v = ( j == 0 ?
+						( InitParams[ i ] - MinValues[ i ]) /
+						DiffValues[ i ] : rnd.getRndValue() );
 
 					CurParams[ j ][ i ] = v * v;
 					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
-					HistParams[ 0 ][ i ] = CurParams[ j ][ i ];
 					AvgParams[ j ][ i ] = CurParams[ j ][ i ];
-					RMSParams[ j ][ i ] = 0.0;
+					RMSParams[ j ][ i ] = 0.25;
 				}
 			}
 		}
@@ -123,9 +157,8 @@ public:
 					const double v = rnd.getRndValue();
 					CurParams[ j ][ i ] = v * v;
 					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
-					HistParams[ 0 ][ i ] = CurParams[ j ][ i ];
 					AvgParams[ j ][ i ] = CurParams[ j ][ i ];
-					RMSParams[ j ][ i ] = 0.0;
+					RMSParams[ j ][ i ] = 0.25;
 				}
 			}
 		}
@@ -140,14 +173,17 @@ public:
 			}
 
 			CurCosts[ j ] = optcost( Params );
+			PrevCosts[ j ] = CurCosts[ j ];
 
 			if( j == 0 || CurCosts[ j ] < BestCost )
 			{
 				BestCost = CurCosts[ j ];
+				HistCosts[ 0 ] = CurCosts[ j ];
 
 				for( i = 0; i < ParamCount; i++ )
 				{
 					BestParams[ i ] = Params[ i ];
+					HistParams[ 0 ][ i ] = Params[ i ];
 				}
 			}
 		}
@@ -210,10 +246,18 @@ public:
 				SaveParams[ i ] = Params[ i ];
 
 				// The "step in the right direction" operation, with reduction
-				// of swing by 50%, and with value clamping.
+				// of swing by 42%, and with value clamping.
 
-				Params[ i ] -= ( UseParams[ i ] - Params[ i ]) *
-					sqrt( rnd.getRndValue() ) * 0.50;
+				if( CurCosts[ s ] < HistCosts[ CrossHistPos ])
+				{
+					Params[ i ] -= ( UseParams[ i ] - Params[ i ]) *
+						sqrt( rnd.getRndValue() ) * 0.58;
+				}
+				else
+				{
+					Params[ i ] -= ( Params[ i ] - UseParams[ i ]) *
+						sqrt( rnd.getRndValue() ) * 0.58;
+				}
 
 				if( Params[ i ] < 0.0 )
 				{
@@ -234,8 +278,16 @@ public:
 
 				// The "step in the right direction" operation.
 
-				Params[ i ] -= ( PrevParams[ s ][ i ] - Params[ i ]) *
-					sqrt( rnd.getRndValue() );
+				if( CurCosts[ s ] < PrevCosts[ s ])
+				{
+					Params[ i ] -= ( PrevParams[ s ][ i ] - Params[ i ]) *
+						sqrt( rnd.getRndValue() );
+				}
+				else
+				{
+					Params[ i ] -= ( Params[ i ] - PrevParams[ s ][ i ]) *
+						sqrt( rnd.getRndValue() );
+				}
 
 				// Bitmask inversion operation with value clamping, works as
 				// a "driver" of optimization process.
@@ -294,6 +346,8 @@ public:
 				Params[ i ] = SaveParams[ i ];
 			}
 
+			PrevCosts[ s ] = NewCost;
+
 			// Possibly replace another least-performing "fan element".
 
 			int f = -1;
@@ -334,6 +388,7 @@ public:
 					CurParams[ f ][ i ] = CopyParams[ i ];
 				}
 
+				HistCosts[ HistPos ] = CurCosts[ f ];
 				CurCosts[ f ] = NewCost;
 				updateDistances();
 			}
@@ -357,6 +412,7 @@ public:
 				hp[ i ] = SaveParams[ i ];
 			}
 
+			HistCosts[ HistPos ] = CurCosts[ s ];
 			CurCosts[ s ] = NewCost;
 			updateDistances();
 		}
@@ -441,8 +497,14 @@ protected:
 	double PrevParams[ FanSize ][ ParamCount ]; ///< Previously evaluated
 		///< parameters.
 		///<
+	double PrevCosts[ FanSize ]; ///< Costs of previously evaluated
+		///< parameters.
+		///<
 	double HistParams[ HistSize ][ ParamCount ]; ///< Best historic parameter
 		///< values.
+		///<
+	double HistCosts[ HistSize ]; ///< The costs of the best historic
+		///< parameter values.
 		///<
 	int HistPos; ///< Best parameter value history position.
 		///<
@@ -565,6 +627,7 @@ protected:
 		double AvgParamsS[ FanSize ][ ParamCount ];
 		double RMSParamsS[ FanSize ][ ParamCount ];
 		double PrevParamsS[ FanSize ][ ParamCount ];
+		double PrevCostsS[ FanSize ];
 
 		memcpy( CurParamsS, CurParams, sizeof( CurParamsS ));
 		memcpy( CurCostsS, CurCosts, sizeof( CurCostsS ));
@@ -572,6 +635,7 @@ protected:
 		memcpy( AvgParamsS, AvgParams, sizeof( AvgParamsS ));
 		memcpy( RMSParamsS, RMSParams, sizeof( RMSParamsS ));
 		memcpy( PrevParamsS, PrevParams, sizeof( PrevParamsS ));
+		memcpy( PrevCostsS, PrevCosts, sizeof( PrevCostsS ));
 
 		for( i = 0; i < FanSize; i++ )
 		{
@@ -584,6 +648,8 @@ protected:
 			memcpy( RMSParams[ i ], RMSParamsS[ s ], sizeof( RMSParams[ i ]));
 			memcpy( PrevParams[ i ], PrevParamsS[ s ],
 				sizeof( PrevParams[ i ]));
+
+			PrevCosts[ i ] = PrevCostsS[ s ];
 		}
 	}
 

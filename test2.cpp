@@ -77,6 +77,7 @@ int main()
 	rnd.init( 0 );
 
 	double FnAvg = 0.0;
+	double RjAvg = 0.0;
 	int k;
 
 	for( k = 0; k < FnCount; k++ )
@@ -84,10 +85,13 @@ int main()
 		opt.fn = k;
 		const int IterCount = 10000;
 		int Iters[ IterCount ];
+		int Rejects[ IterCount ];
 		int AvgIter = 0;
+		int AvgRej = 0;
 		double AvgCost = 0.0;
 		double AvgP1 = 0.0;
 		double AvgP2 = 0.0;
+		int Rej = 0;
 		int j;
 
 		for( j = 0; j < IterCount; j++ )
@@ -112,16 +116,35 @@ int main()
 			AvgP1 += Params[ 0 ];
 			AvgP2 += Params[ 1 ];
 */
-			opt.init( rnd );
+			opt.init( rnd, Params );
+			opt.optimize( rnd );
+			double PrevBestCost = opt.getBestCost();
+			int PrevBestCostCount = 0;
 
 			for( i = 0; i < 10000; i++ )
 			{
-				opt.optimize( rnd );
-
 				if( opt.getBestCost() < 0.001 )
 				{
 					break;
 				}
+
+				if( PrevBestCost > opt.getBestCost() )
+				{
+					PrevBestCost = opt.getBestCost();
+					PrevBestCostCount = 0;
+				}
+				else
+				{
+					PrevBestCostCount++;
+
+					if( PrevBestCostCount == 10000 )
+					{
+						Rej++;
+						break;
+					}
+				}
+
+				opt.optimize( rnd );
 			}
 
 			AvgCost += opt.getBestCost();
@@ -130,6 +153,8 @@ int main()
 
 			Iters[ j ] = i;
 			AvgIter += i;
+			Rejects[ j ] = Rej;
+			AvgRej += Rej;
 		}
 
 		AvgCost /= IterCount;
@@ -138,23 +163,32 @@ int main()
 
 		double Avg = (double) AvgIter / IterCount;
 		double RMS = 0.0;
+		double Avg2 = (double) AvgRej / IterCount;
+		double RMS2 = 0.0;
 
 		for( j = 0; j < IterCount; j++ )
 		{
 			double v = Iters[ j ] - Avg;
 			RMS += v * v;
+			v = Rejects[ j ] - Avg2;
+			RMS2 += v * v;
 		}
 
 		RMS = sqrt( RMS / IterCount );
+		RMS2 = sqrt( RMS2 / IterCount );
 
-		printf( "AvgIter:%6.1f RMSIter:%6.1f AvgCost:%11.8f %6.3f %6.3f\n", Avg,
-			RMS, AvgCost, AvgP1, AvgP2 );
+		printf( "AvgIt:%6.1f RMSIt:%6.1f AvgRj:%5.1f "
+			"RMSRj:%5.1f Cost:%10.8f%6.3f%6.3f\n", Avg,
+			RMS, Avg2, RMS2, AvgCost, AvgP1, AvgP2 );
 
 		FnAvg += Avg;
+		RjAvg += Avg2;
 	}
 
 	FnAvg /= FnCount;
+	RjAvg /= FnCount;
 	printf( "FnAvg: %.1f\n", FnAvg );
+	printf( "RjAvg: %.1f\n", RjAvg );
 
 	return( 0 );
 }
