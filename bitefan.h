@@ -66,18 +66,18 @@
  * "fan element" with the highest cost is evolved more frequently than
  * "fan elements" with a fewer cost.
  *
- * 2. A set of 16 best historic solutions is maintained. The history is shared
+ * 2. A set of 14 best historic solutions is maintained. The history is shared
  * among all "fan elements".
  *
  * 3. The previous attempted solution parameter vector for each "fan element"
  * is maintained.
  *
- * 4. A running average and deviation of all attempted solutions for each
- * "fan element" is maintained. These values are required to generate a random
- * solution in the region of the best solution.
+ * 4. A running average (centroid) and average centroid distance of all
+ * attempted solutions for each "fan element" is maintained. These values are
+ * required to generate a random solution in the region of the best solution.
  *
  * 5. With 6% probability a random solution is generated using the running
- * average and deviation.
+ * average and centroid distance.
  *
  * 6. With ~60% probability a crossing-over operation is performed. This
  * operation consists of the "step in the right direction" operation.
@@ -94,7 +94,7 @@
  * @tparam ParamCount The number of parameters being optimized.
  */
 
-template< int ParamCount, int HistSize = 16 >
+template< int ParamCount, int HistSize = 14 >
 class CBEOOptimizerFan
 {
 public:
@@ -120,10 +120,13 @@ public:
 	{
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
+
+		double Centr[ ParamCount ];
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
+			Centr[ i ] = 0.0;
 			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
 		}
 
@@ -143,8 +146,7 @@ public:
 
 					CurParams[ j ][ i ] = v * v;
 					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
-					AvgParams[ j ][ i ] = CurParams[ j ][ i ];
-					RMSParams[ j ][ i ] = 0.25;
+					Centr[ i ] += CurParams[ j ][ i ];
 				}
 			}
 		}
@@ -157,16 +159,15 @@ public:
 					const double v = rnd.getRndValue();
 					CurParams[ j ][ i ] = v * v;
 					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
-					AvgParams[ j ][ i ] = CurParams[ j ][ i ];
-					RMSParams[ j ][ i ] = 0.25;
+					Centr[ i ] += CurParams[ j ][ i ];
 				}
 			}
 		}
 
-		double Params[ ParamCount ];
-
 		for( j = 0; j < FanSize; j++ )
 		{
+			double Params[ ParamCount ];
+
 			for( i = 0; i < ParamCount; i++ )
 			{
 				Params[ i ] = getParamValue( CurParams[ j ], i );
@@ -186,6 +187,42 @@ public:
 					HistParams[ 0 ][ i ] = Params[ i ];
 				}
 			}
+		}
+
+		// Set the same centroid in all "fan elements".
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			Centr[ i ] /= FanSize;
+
+			for( j = 0; j < FanSize; j++ )
+			{
+				AvgParams[ j ][ i ] = Centr[ i ];
+			}
+		}
+
+		// Calculate initial average distance.
+
+		double Dist = 0.0;
+
+		for( j = 0; j < FanSize; j++ )
+		{
+			double s = 0.0;
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				const double d = Centr[ i ] - CurParams[ j ][ i ];
+				s += d * d;
+			}
+
+			Dist += s;
+		}
+
+		Dist /= FanSize;
+
+		for( j = 0; j < FanSize; j++ )
+		{
+			AvgCentrDists[ j ] = Dist;
 		}
 
 		updateDistances();
@@ -214,8 +251,8 @@ public:
 				SaveParams[ i ] = Params[ i ];
 
 				const double v = AvgParams[ s ][ i ] +
-					sqrt( RMSParams[ s ][ i ]) *
-					( rnd.getRndValue() - 0.5 ) * 2.0;
+					sqrt( AvgCentrDists[ s ]) *
+					( rnd.getRndValue() - 0.5 ) * 2.25;
 
 				if( v < 0.0 )
 				{
@@ -314,16 +351,23 @@ public:
 			}
 		}
 
+		// Keep average evaluated parameter values (centroid) with average
+		// centroid distance.
+
+		double CentrDist = 0.0;
+
 		for( i = 0; i < ParamCount; i++ )
 		{
-			// Keep average evaluated parameter values and standard deviation.
-
 			AvgParams[ s ][ i ] +=
 				( Params[ i ] - AvgParams[ s ][ i ]) * AvgCoeff;
 
-			const double d = Params[ i ] - AvgParams[ s ][ i ];
-			RMSParams[ s ][ i ] += ( d * d - RMSParams[ s ][ i ]) * AvgCoeff;
+			const double d = AvgParams[ s ][ i ] - Params[ i ];
+			CentrDist += d * d;
 		}
+
+		AvgCentrDists[ s ] += ( CentrDist - AvgCentrDists[ s ]) * AvgCoeff;
+
+		// Evaluate function with new parameters.
 
 		double NewParams[ ParamCount ];
 
@@ -481,14 +525,14 @@ protected:
 	double CurDists[ FanSize ]; ///< Average distances to other working
 		///< parameters vectors.
 		///<
-	double AvgParams[ FanSize ][ ParamCount ]; ///< Average parameter values
-		///< used.
+	double AvgParams[ FanSize ][ ParamCount ]; ///< Averaged parameter vectors
+		///< used. Resembles a centroid.
 		///<
-	double RMSParams[ FanSize ][ ParamCount ]; ///< Standard deviation from
-		///< the average parameter values used.
+	double AvgCentrDists[ FanSize ]; ///< Average distances of parameter
+		///< vectors to centroid, squared.
 		///<
 	double AvgCoeff; ///< Averaging coefficient for update of AvgParams and
-		///< RMSParams values.
+		///< AvgCentrDists values.
 		///<
 	double AvgDist; ///< Average distance of all working parameter vectors.
 		///<
@@ -625,7 +669,7 @@ protected:
 		double CurCostsS[ FanSize ];
 		double CurDistsS[ FanSize ];
 		double AvgParamsS[ FanSize ][ ParamCount ];
-		double RMSParamsS[ FanSize ][ ParamCount ];
+		double AvgCentrDistsS[ FanSize ];
 		double PrevParamsS[ FanSize ][ ParamCount ];
 		double PrevCostsS[ FanSize ];
 
@@ -633,7 +677,7 @@ protected:
 		memcpy( CurCostsS, CurCosts, sizeof( CurCostsS ));
 		memcpy( CurDistsS, CurDists, sizeof( CurDistsS ));
 		memcpy( AvgParamsS, AvgParams, sizeof( AvgParamsS ));
-		memcpy( RMSParamsS, RMSParams, sizeof( RMSParamsS ));
+		memcpy( AvgCentrDistsS, AvgCentrDists, sizeof( AvgCentrDistsS ));
 		memcpy( PrevParamsS, PrevParams, sizeof( PrevParamsS ));
 		memcpy( PrevCostsS, PrevCosts, sizeof( PrevCostsS ));
 
@@ -645,7 +689,7 @@ protected:
 			CurCosts[ i ] = CurCostsS[ s ];
 			CurDists[ i ] = CurDistsS[ s ];
 			memcpy( AvgParams[ i ], AvgParamsS[ s ], sizeof( AvgParams[ i ]));
-			memcpy( RMSParams[ i ], RMSParamsS[ s ], sizeof( RMSParams[ i ]));
+			AvgCentrDists[ i ] = AvgCentrDistsS[ s ];
 			memcpy( PrevParams[ i ], PrevParamsS[ s ],
 				sizeof( PrevParams[ i ]));
 
