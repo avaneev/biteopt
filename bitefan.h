@@ -47,15 +47,15 @@
  * collectively. The "fan elements" are used unevenly: some are used more
  * frequently than the others.
  *
- * The benefit of this strategy is increased robustness: it can optimize
- * successfully a wider range of functions. Another benefit is a considerably
+ * The benefit of this strategy is increased robustness: it can successfully
+ * optimize a wider range of functions. Another benefit is a considerably
  * decreased convergence time in deeper optimizations. This strategy does not
  * solve all global optimization problems successfully, but strives to provide
  * the "minimum among minima" solution.
  *
  * This strategy is associated with a high overhead per function evaluation.
  * In comparison to the CBEOOptimizer2 class this class uses double parameter
- * values in the range 0 to 1 in order to lower the overall overhead.
+ * values in the range 0 to 1 in order to lower the overhead.
  *
  * The strategy consists of the following elements. Most operations utilize a
  * square root distributed random number values. The parameter space is itself
@@ -67,7 +67,9 @@
  * "fan elements" with a fewer cost.
  *
  * 2. A set of 14 best historic solutions is maintained. The history is shared
- * among all "fan elements".
+ * among all "fan elements". History is at first initialized with random
+ * values that work as an additional source of randomization on initial
+ * optimization steps.
  *
  * 3. The previous attempted solution parameter vector for each "fan element"
  * is maintained.
@@ -94,7 +96,7 @@
  * @tparam ParamCount The number of parameters being optimized.
  */
 
-template< int ParamCount, int HistSize = 14 >
+template< int ParamCount >
 class CBEOOptimizerFan
 {
 public:
@@ -164,6 +166,8 @@ public:
 			}
 		}
 
+		// Calculate costs of "fan elements" and find the best cost.
+
 		for( j = 0; j < FanSize; j++ )
 		{
 			double Params[ ParamCount ];
@@ -179,14 +183,26 @@ public:
 			if( j == 0 || CurCosts[ j ] < BestCost )
 			{
 				BestCost = CurCosts[ j ];
-				HistCosts[ 0 ] = CurCosts[ j ];
 
 				for( i = 0; i < ParamCount; i++ )
 				{
 					BestParams[ i ] = Params[ i ];
-					HistParams[ 0 ][ i ] = Params[ i ];
 				}
 			}
+		}
+
+		// Initialize history with random values. This works as an additional
+		// source of initial randomization.
+
+		for( j = 0; j < HistSize; j++ )
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				const double v = rnd.getRndValue();
+				HistParams[ j ][ i ] = v * v;
+			}
+
+			HistCosts[ j ] = BestCost; // Not entirely correct, but works.
 		}
 
 		// Set the same centroid in all "fan elements".
@@ -258,11 +274,10 @@ public:
 		else
 		if( rp < 0.60 )
 		{
-			// Crossing-over with the historic best solutions.
+			// Crossing-over with one of the historic best solutions.
 
-			const int CrossHistPos = (int) ( rnd.getRndValue() * HistCount );
-			const double* const UseParams =
-				HistParams[( HistPos + CrossHistPos ) % HistSize ];
+			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
+			const double* const UseParams = HistParams[ CrossHistPos ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -320,8 +335,8 @@ public:
 			}
 		}
 
-		// Keep average evaluated parameter values (centroid) with average
-		// centroid distance.
+		// Keep average evaluated parameter values (centroid), and average
+		// centroid distance (squared).
 
 		double CentrDist = 0.0;
 
@@ -473,6 +488,8 @@ public:
 
 protected:
 	static const int FanSize = 3; ///< The number of "fan elements" to use.
+		///<
+	static const int HistSize = 14; ///< The size of the history.
 		///<
 	static const int MantSize = 30; ///< Mantissa size of values. Must be
 		///< synchronized with the random number generator's precision.
