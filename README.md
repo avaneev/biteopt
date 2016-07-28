@@ -11,6 +11,9 @@ considerably. For more robustness it is possible to assign several internal
 values to each optimization parameter. This strategy is associated with
 a very small code size and minimal memory requirement.
 
+Currently, this version should be considered as a "proof of concept" version.
+As a rule, the CBEOOptimizerFan strategy should be used.
+
 ### CBEOOptimizer2 ###
 
 The CBEOOptimizer2 class is a further evolution of this strategy. Additionally

@@ -75,22 +75,18 @@
  * is maintained.
  *
  * 4. A running average (centroid) and average centroid distance of all
- * attempted solutions for each "fan element" is maintained. These values are
- * required to generate a random solution in the region of the best solution.
+ * attempted solutions for each "fan element" is maintained.
  *
- * 5. With 6% probability a random solution is generated using the running
- * average (centroid) and centroid distance.
- *
- * 6. With ~60% probability a crossing-over operation is performed which
+ * 5. With 57% probability a crossing-over operation is performed which
  * involves a random historic best solution. This operation consists of the
  * "step in the right direction" operation.
  *
- * 7. With the remaining probability the "step in the right direction"
+ * 6. With the remaining probability the "step in the right direction"
  * operation is performed using the previous solution, followed by the
  * "bitmask evolution" operation which is the main driver of the evolutionary
  * process.
  *
- * 8. If a better solution was not found on the current step, an attempt to
+ * 7. If a better solution was not found on the current step, an attempt to
  * replace one of the "fan elements" is performed using cost and parameter
  * distance constraints.
  *
@@ -108,7 +104,7 @@ public:
 	CBEOOptimizerFan()
 		: MantMult( 1 << MantSize )
 		, MantDiv08( 0.8 / ( 1 << MantSize ))
-		, AvgCoeff( calcAvgCoeff( 30 ))
+		, AvgCoeff( calcAvgCoeff( 28 ))
 	{
 	}
 
@@ -258,21 +254,7 @@ public:
 		const double rp = rnd.getRndValue();
 		int i;
 
-		if( rp < 0.06 )
-		{
-			// Complete randomization within the average used parameter range.
-
-			const double AvgCentrDist = sqrt( AvgCentrDists[ s ]);
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				SaveParams[ i ] = Params[ i ];
-				Params[ i ] = clampParam( AvgParams[ s ][ i ] +
-					AvgCentrDist * ( rnd.getRndValue() - 0.5 ) * 2.25 );
-			}
-		}
-		else
-		if( rp < 0.60 )
+		if( rp < 0.57 )
 		{
 			// Crossing-over with one of the historic best solutions.
 
@@ -350,6 +332,21 @@ public:
 		}
 
 		AvgCentrDists[ s ] += ( CentrDist - AvgCentrDists[ s ]) * AvgCoeff;
+
+		if( CentrDist > AvgCentrDists[ s ])
+		{
+			// If new parameter values are located far from the centroid,
+			// bring them closer to the centroid.
+
+			const double m =
+				sqrt( sqrt( AvgCentrDists[ s ] / CentrDist )) * 0.73;
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = AvgParams[ s ][ i ] +
+					( Params[ i ] - AvgParams[ s ][ i ]) * m;
+			}
+		}
 
 		// Evaluate function with new parameters.
 
