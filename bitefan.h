@@ -134,7 +134,6 @@ public:
 		}
 
 		HistPos = 0;
-		HistCount = 0;
 		int j;
 
 		if( InitParams != NULL )
@@ -535,9 +534,6 @@ protected:
 		///<
 	int HistPos; ///< Best parameter value history position.
 		///<
-	int HistCount; ///< The total number of history additions performed.
-		///< Always <= HistSize.
-		///<
 	double BestParams[ ParamCount ]; ///< Best parameter vector.
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
@@ -630,13 +626,7 @@ protected:
 
 	double* advanceHist()
 	{
-		HistPos = ( HistPos == 0 ? HistSize : HistPos ) - 1;
-
-		if( HistCount < HistSize )
-		{
-			HistCount++;
-		}
-
+		HistPos = ( HistPos + 1 ) % HistSize;
 		return( HistParams[ HistPos ]);
 	}
 
