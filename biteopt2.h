@@ -53,7 +53,7 @@
  * @tparam ParamCount The number of parameters being optimized.
  */
 
-template< int ParamCount, int HistSize = 13 >
+template< int ParamCount >
 class CBEOOptimizer2
 {
 public:
@@ -63,6 +63,7 @@ public:
 
 	CBEOOptimizer2()
 		: MantMult( 1 << MantSize )
+		, MantDiv08( 0.8 / ( 1 << MantSize ))
 	{
 	}
 
@@ -85,7 +86,6 @@ public:
 		}
 
 		HistPos = 0;
-		HistCount = 0;
 
 		if( InitParams != NULL )
 		{
@@ -94,9 +94,8 @@ public:
 				const double v = ( InitParams[ i ] - MinValues[ i ]) /
 					DiffValues[ i ];
 
-				Params[ i ] = (int) ( v * v * MantMult );
+				Params[ i ] = v * v;
 				PrevParams[ i ] = Params[ i ];
-				HistParams[ 0 ][ i ] = Params[ i ];
 			}
 		}
 		else
@@ -104,9 +103,19 @@ public:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				const double v = rnd.getRndValue();
-				Params[ i ] = (int) ( v * v * MantMult );
+				Params[ i ] = v * v;
 				PrevParams[ i ] = Params[ i ];
-				HistParams[ 0 ][ i ] = Params[ i ];
+			}
+		}
+
+		int j;
+
+		for( j = 0; j < HistSize; j++ )
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				const double v = rnd.getRndValue();
+				HistParams[ j ][ i ] = v * v;
 			}
 		}
 
@@ -126,7 +135,7 @@ public:
 
 	void optimize( CBEORnd& rnd )
 	{
-		int SaveParams[ ParamCount ];
+		double SaveParams[ ParamCount ];
 		const double rp = rnd.getRndValue();
 		int i;
 
@@ -139,7 +148,7 @@ public:
 				SaveParams[ i ] = Params[ i ];
 
 				const double v = rnd.getRndValue();
-				Params[ i ] = (int) ( v * v * MantMult );
+				Params[ i ] = v * v;
 			}
 		}
 		else
@@ -147,9 +156,8 @@ public:
 		{
 			// Crossing-over with the historic best solutions.
 
-			const int CrossHistPos = (int) ( rnd.getRndValue() * HistCount );
-			const int* UseParams =
-				HistParams[( HistPos + CrossHistPos ) % HistSize ];
+			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
+			const double* UseParams = HistParams[ CrossHistPos ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -158,18 +166,9 @@ public:
 				// The "step in the right direction" operation, with reduction
 				// of swing by 30%, and with value clamping.
 
-				Params[ i ] -= (int) (( UseParams[ i ] - Params[ i ]) *
-					rnd.getRndValue() * 0.70 );
-
-				if( Params[ i ] < 0 )
-				{
-					Params[ i ] = 0;
-				}
-				else
-				if( Params[ i ] > MantSize1 )
-				{
-					Params[ i ] = MantSize1;
-				}
+				const double d = UseParams[ i ] - Params[ i ];
+				Params[ i ] = clampParam( Params[ i ] -
+					d * rnd.getRndValue() * 0.70 );
 			}
 		}
 		else
@@ -180,8 +179,8 @@ public:
 
 				// The "step in the right direction" operation.
 
-				Params[ i ] -= (int) (( PrevParams[ i ] - Params[ i ]) *
-					rnd.getRndValue() );
+				const double d = PrevParams[ i ] - Params[ i ];
+				double np = clampParam( Params[ i ] - d * rnd.getRndValue() );
 
 				// Bitmask inversion operation with value clamping, works as
 				// a "driver" of optimization process.
@@ -189,24 +188,11 @@ public:
 				const int imask = ( 2 <<
 					(int) ( rnd.getRndValue() * MantSize )) - 1;
 
-				if( Params[ i ] < 0 )
-				{
-					Params[ i ] = 0 ^ imask;
-				}
-				else
-				if( Params[ i ] > MantSize1 )
-				{
-					Params[ i ] = MantSize1 ^ imask;
-				}
-				else
-				{
-					Params[ i ] ^= imask;
-				}
+				np = (int) ( np * MantMult ) ^ imask;
 
 				// Reduce swing of randomization by 20%.
 
-				Params[ i ] = (int) ( SaveParams[ i ] * 0.2 +
-					Params[ i ] * 0.8 );
+				Params[ i ] = SaveParams[ i ] * 0.2 + np * MantDiv08;
 			}
 		}
 
@@ -236,17 +222,12 @@ public:
 
 			BestCost = NewCost;
 
-			HistPos = ( HistPos == 0 ? HistSize : HistPos ) - 1;
-			int* const hp = HistParams[ HistPos ];
+			HistPos = ( HistPos + 1 ) % HistSize;
+			double* const hp = HistParams[ HistPos ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
 				hp[ i ] = SaveParams[ i ];
-			}
-
-			if( HistCount < HistSize )
-			{
-				HistCount++;
 			}
 		}
 	}
@@ -296,18 +277,19 @@ public:
 	virtual double optcost( const double* const p ) const = 0;
 
 protected:
-	static const int MantSize = 30; ///< Mantissa size of values.
+	static const int HistSize = 13; ///< The size of the history.
 		///<
-	static const int MantSize1 = ( 1 << MantSize ) - 1; ///<
-		///< Equals to ( 1 << MantSize ) - 1.
+	static const int MantSize = 30; ///< Mantissa size of values.
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
 		///<
-	int Params[ ParamCount ]; ///< Current working parameter states.
+	double MantDiv08; ///< Mantissa divisor (0.8 / MantMult).
 		///<
-	int PrevParams[ ParamCount ]; ///< Previously evaluated parameters.
+	double Params[ ParamCount ]; ///< Current working parameter states.
 		///<
-	int HistParams[ HistSize ][ ParamCount ]; ///< Best historic parameter
+	double PrevParams[ ParamCount ]; ///< Previously evaluated parameters.
+		///<
+	double HistParams[ HistSize ][ ParamCount ]; ///< Best historic parameter
 		///< values.
 		///<
 	int HistPos; ///< Best parameter value history position.
@@ -328,6 +310,29 @@ protected:
 		///<
 
 	/**
+	 * Function clamps the specified parameter value so that it stays in the
+	 * 0 to 1 range, inclusive.
+	 *
+	 * @param v Parameter value to clamp.
+	 * @return Clamped parameter value.
+	 */
+
+	static double clampParam( const double v )
+	{
+		if( v < 0.0 )
+		{
+			return( 0.0 );
+		}
+
+		if( v > 1.0 )
+		{
+			return( 1.0 );
+		}
+
+		return( v );
+	}
+
+	/**
 	 * Function returns specified parameter's value taking into account
 	 * minimal and maximal value range.
 	 *
@@ -336,8 +341,7 @@ protected:
 
 	double getParamValue( const int i ) const
 	{
-		return( MinValues[ i ] + DiffValues[ i ] *
-			sqrt( Params[ i ] / MantMult ));
+		return( MinValues[ i ] + DiffValues[ i ] * sqrt( Params[ i ]));
 	}
 };
 
