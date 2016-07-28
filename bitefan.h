@@ -78,7 +78,7 @@
  * attempted solutions for each "fan element" is maintained.
  *
  * 5. With 57% probability a crossing-over operation is performed which
- * involves a random historic best solution. This operation consists of the
+ * involves a random historic solution. This operation consists of the
  * "step in the right direction" operation.
  *
  * 6. With the remaining probability the "step in the right direction"
@@ -86,14 +86,25 @@
  * "bitmask evolution" operation which is the main driver of the evolutionary
  * process.
  *
- * 7. If a better solution was not found on the current step, an attempt to
+ * 7. If the new parameter vector (solution) lies considerably far away from
+ * the centroid, it is reduced (with the square root law), to be closer to the
+ * centroid.
+ *
+ * 8. If a better solution was not found on the current step, an attempt to
  * replace one of the "fan elements" is performed using cost and parameter
  * distance constraints.
  *
- * @tparam ParamCount The number of parameters being optimized.
+ * 9. History is updated with a previous solution whenever a better solution
+ * is found or when a "fan element" is replaced.
+ *
+ * @tparam ParamCount0 The number of parameters being optimized.
+ * @tparam ValuesPerParam The number of internal parameter values assigned to
+ * each optimization parameter. Set to 2 or 3 to better solve more complex
+ * functions. Not all functions will benefit from an increased value. Note
+ * that the overhead is increased proportionally to this value.
  */
 
-template< int ParamCount >
+template< int ParamCount0, int ValuesPerParam = 1 >
 class CBEOOptimizerFan
 {
 public:
@@ -126,11 +137,17 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			Centr[ i ] = 0.0;
+		}
+
+		for( i = 0; i < ParamCount0; i++ )
+		{
 			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
 		}
 
 		HistPos = 0;
 		int j;
+
+		// Initialize "fan element" parameter vectors.
 
 		if( InitParams != NULL )
 		{
@@ -138,9 +155,10 @@ public:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
+					const int k = i / ValuesPerParam;
 					const double v = ( j == 0 ?
-						( InitParams[ i ] - MinValues[ i ]) /
-						DiffValues[ i ] : rnd.getRndValue() );
+						( InitParams[ k ] - MinValues[ k ]) /
+						DiffValues[ k ] : rnd.getRndValue() );
 
 					CurParams[ j ][ i ] = v * v;
 					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
@@ -166,9 +184,9 @@ public:
 
 		for( j = 0; j < FanSize; j++ )
 		{
-			double Params[ ParamCount ];
+			double Params[ ParamCount0 ];
 
-			for( i = 0; i < ParamCount; i++ )
+			for( i = 0; i < ParamCount0; i++ )
 			{
 				Params[ i ] = getParamValue( CurParams[ j ], i );
 			}
@@ -180,7 +198,7 @@ public:
 			{
 				BestCost = CurCosts[ j ];
 
-				for( i = 0; i < ParamCount; i++ )
+				for( i = 0; i < ParamCount0; i++ )
 				{
 					BestParams[ i ] = Params[ i ];
 				}
@@ -213,7 +231,8 @@ public:
 			}
 		}
 
-		// Calculate initial average centroid distance.
+		// Calculate initial average centroid distance, which is initially
+		// narrowed via fourth power.
 
 		double Dist = 0.0;
 
@@ -227,7 +246,7 @@ public:
 				s += d * d;
 			}
 
-			Dist += s;
+			Dist += s * s; // sqrt( s ) for Euclidean distance.
 		}
 
 		Dist /= FanSize;
@@ -251,12 +270,11 @@ public:
 		const int s = (int) ( isqr( rnd.getRndValue() ) * FanSize );
 		double* const Params = CurParams[ s ];
 		double SaveParams[ ParamCount ];
-		const double rp = rnd.getRndValue();
 		int i;
 
-		if( rp < 0.57 )
+		if( rnd.getRndValue() < 0.57 )
 		{
-			// Crossing-over with one of the historic best solutions.
+			// Crossing-over with one of the historic solutions.
 
 			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
 			const double* const UseParams = HistParams[ CrossHistPos ];
@@ -331,15 +349,15 @@ public:
 			CentrDist += d * d;
 		}
 
+		CentrDist = sqrt( CentrDist );
 		AvgCentrDists[ s ] += ( CentrDist - AvgCentrDists[ s ]) * AvgCoeff;
 
-		if( CentrDist > AvgCentrDists[ s ])
+		if( CentrDist > AvgCentrDists[ s ] * 0.77 )
 		{
 			// If new parameter values are located far from the centroid,
 			// bring them closer to the centroid.
 
-			const double m =
-				sqrt( sqrt( AvgCentrDists[ s ] / CentrDist )) * 0.73;
+			const double m = sqrt( AvgCentrDists[ s ] / CentrDist ) * 1.09;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -350,9 +368,9 @@ public:
 
 		// Evaluate function with new parameters.
 
-		double NewParams[ ParamCount ];
+		double NewParams[ ParamCount0 ];
 
-		for( i = 0; i < ParamCount; i++ )
+		for( i = 0; i < ParamCount0; i++ )
 		{
 			NewParams[ i ] = getParamValue( Params, i );
 		}
@@ -391,7 +409,7 @@ public:
 				{
 					const double NewDist = calcDistance( CopyParams, i );
 
-					if( NewDist > MaxDist && NewDist > AvgDist * 0.21 )
+					if( NewDist > MaxDist && NewDist > AvgDist * 0.26 )
 					{
 						MaxDist = NewDist;
 						f = i;
@@ -418,7 +436,7 @@ public:
 		{
 			if( NewCost < BestCost )
 			{
-				for( i = 0; i < ParamCount; i++ )
+				for( i = 0; i < ParamCount0; i++ )
 				{
 					BestParams[ i ] = NewParams[ i ];
 				}
@@ -484,6 +502,9 @@ public:
 	virtual double optcost( const double* const p ) const = 0;
 
 protected:
+	static const int ParamCount = ParamCount0 * ValuesPerParam; ///< The total
+		///< number of internal parameter values in use.
+		///<
 	static const int FanSize = 3; ///< The number of "fan elements" to use.
 		///<
 	static const int HistSize = 14; ///< The size of the history.
@@ -508,7 +529,7 @@ protected:
 		///< used. Resembles a centroid.
 		///<
 	double AvgCentrDists[ FanSize ]; ///< Average distances of parameter
-		///< vectors to centroid, squared.
+		///< vectors to centroid.
 		///<
 	double AvgCoeff; ///< Averaging coefficient for update of AvgParams and
 		///< AvgCentrDists values.
@@ -531,15 +552,15 @@ protected:
 		///<
 	int HistPos; ///< Best parameter value history position.
 		///<
-	double BestParams[ ParamCount ]; ///< Best parameter vector.
+	double BestParams[ ParamCount0 ]; ///< Best parameter vector.
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
 		///<
-	double MinValues[ ParamCount ]; ///< Minimal parameter values.
+	double MinValues[ ParamCount0 ]; ///< Minimal parameter values.
 		///<
-	double MaxValues[ ParamCount ]; ///< Maximal parameter values.
+	double MaxValues[ ParamCount0 ]; ///< Maximal parameter values.
 		///<
-	double DiffValues[ ParamCount ]; ///< Difference between maximal and
+	double DiffValues[ ParamCount0 ]; ///< Difference between maximal and
 		///< minimal parameter values.
 		///<
 
@@ -570,7 +591,7 @@ protected:
 	}
 
 	/**
-	 * @param x Value to invert square, in the range 0 to 1.
+	 * @param x Value to invert-square, in the range 0 to 1.
 	 * @return Inverted square of the argument.
 	 */
 
@@ -613,7 +634,17 @@ protected:
 
 	double getParamValue( const double* const Params, const int i ) const
 	{
-		return( MinValues[ i ] + DiffValues[ i ] * sqrt( Params[ i ]));
+		const double* const p = Params + i * ValuesPerParam;
+		double v = p[ 0 ];
+		int k;
+
+		for( k = 1; k < ValuesPerParam; k++ )
+		{
+			v += p[ k ];
+		}
+
+		return( MinValues[ i ] +
+			DiffValues[ i ] * sqrt( v / ValuesPerParam ));
 	}
 
 	/**

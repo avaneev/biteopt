@@ -46,6 +46,10 @@ problems and performed fairly well. Global problems (with multiple local
 minima) may not be handled well by these strategies, but in practice these
 strategies strive to provide the "minimum among minima" nevertheless.
 
+Optimization of more complex functions may benefit from increasing
+ValuesPerParam template parameter value to 2 or 3, but this obviously
+increases the overhead.
+
 Use the test.cpp program to see the basic usage example.
 
 test2.cpp is a more complex test which performs optimization of several
