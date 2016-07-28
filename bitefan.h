@@ -54,8 +54,8 @@
  * the "minimum among minima" solution.
  *
  * This strategy is associated with a high overhead per function evaluation.
- * In comparison to the CBEOOptimizer2 class this class uses double parameter
- * values in the range 0 to 1 in order to lower the overhead.
+ * Due to this fact, for simple functions and not deep optimization it may be
+ * more beneficial to use the CBEOOptimizer2 class.
  *
  * The strategy consists of the following elements. Most operations utilize a
  * square root distributed random number values. The parameter space is itself
@@ -63,8 +63,8 @@
  *
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
  * parameter vector which is randomly evolved towards a better solution. The
- * "fan element" with the highest cost is evolved more frequently than
- * "fan elements" with a fewer cost.
+ * "fan element" with the highest cost is evolved more frequently than the
+ * "fan elements" with lower costs.
  *
  * 2. A set of 14 best historic solutions is maintained. The history is shared
  * among all "fan elements". History is at first initialized with random
@@ -79,10 +79,11 @@
  * required to generate a random solution in the region of the best solution.
  *
  * 5. With 6% probability a random solution is generated using the running
- * average and centroid distance.
+ * average (centroid) and centroid distance.
  *
- * 6. With ~60% probability a crossing-over operation is performed. This
- * operation consists of the "step in the right direction" operation.
+ * 6. With ~60% probability a crossing-over operation is performed which
+ * involves a random historic best solution. This operation consists of the
+ * "step in the right direction" operation.
  *
  * 7. With the remaining probability the "step in the right direction"
  * operation is performed using the previous solution, followed by the
@@ -106,7 +107,7 @@ public:
 
 	CBEOOptimizerFan()
 		: MantMult( 1 << MantSize )
-		, MantDiv( 1.0 / MantMult )
+		, MantDiv08( 0.8 / ( 1 << MantSize ))
 		, AvgCoeff( calcAvgCoeff( 30 ))
 	{
 	}
@@ -327,11 +328,11 @@ public:
 				// a "driver" of optimization process.
 
 				const int imask = ( 2 << (int) ( r * MantSize )) - 1;
-				np = ( (int) ( np * MantMult ) ^ imask ) * MantDiv;
+				np = (int) ( np * MantMult ) ^ imask;
 
 				// Reduce swing of randomization by 20%.
 
-				Params[ i ] = SaveParams[ i ] * 0.2 + np * 0.8;
+				Params[ i ] = SaveParams[ i ] * 0.2 + np * MantDiv08;
 			}
 		}
 
@@ -496,7 +497,7 @@ protected:
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
 		///<
-	double MantDiv; ///< Mantissa divisor (1 / MantMult).
+	double MantDiv08; ///< Mantissa divisor (0.8 / MantMult).
 		///<
 	double CurParams[ FanSize ][ ParamCount ]; ///< Current working parameter
 		///< vectors.

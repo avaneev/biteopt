@@ -14,11 +14,9 @@ values to each optimization parameter.
 ### CBEOOptimizer2 ###
 
 The CBEOOptimizer2 class is a further evolution of this strategy. Additionally
-includes the "step in the right direction" operation and a history of best
-solutions. This version provides a quite fast convergence time, a very small
-code size and minimal memory requirement. The only drawback is that this
-strategy requires 3 instead of 2 random number generator calls per
-parameter on each step.
+includes the "step in the right direction" operation. This version provides a
+quite fast convergence time, a very small code size and minimal memory
+requirement.
 
 ### CBEOOptimizerFan ###
 
@@ -36,8 +34,8 @@ successfully a wider range of functions. Another benefit is a considerably
 decreased convergence time in deeper optimizations.
 
 This strategy is associated with a high overhead per function evaluation.
-In comparison to the CBEOOptimizer2 class this class uses double parameter
-values in the range 0 to 1 in order to lower the overall overhead.
+Due to this fact, for simple functions and not deep optimization it may be
+more beneficial to use the CBEOOptimizer2 class.
 
 ### * * * ###
 

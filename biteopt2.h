@@ -38,13 +38,10 @@
  * "Bitmask evolution" version 2 optimization class. Implements a very simple
  * evolutionary optimization method (strategy) which involves inversion of a
  * random segment of parameter value's lowest bits at each step. Additionally
- * includes the "step in the right direction" operation and a history of best
- * solutions.
+ * includes the "step in the right direction" operation.
  *
  * This version provides a quite fast convergence time, a very small code
- * size and minimal memory requirement. The only drawback is that this
- * strategy requires 3 instead of 2 random number generator calls per
- * parameter on each step.
+ * size and minimal memory requirement.
  *
  * This strategy was tested on several classic 2-parameter optimization
  * problems and it performed fairly well. Global problems (with multiple local
