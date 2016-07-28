@@ -7,16 +7,15 @@
 evolutionary optimization method (strategy) which involves inversion of a
 random segment of parameter value's lowest bits at each step. Additionally
 includes a crossing-over operation which in some cases improves convergence
-considerably. In some cases crossing-over reduces convergence, but only
-slightly. For more robustness it is possible to assign several internal
-values to each optimization parameter.
+considerably. For more robustness it is possible to assign several internal
+values to each optimization parameter. This strategy is associated with
+a very small code size and minimal memory requirement.
 
 ### CBEOOptimizer2 ###
 
 The CBEOOptimizer2 class is a further evolution of this strategy. Additionally
 includes the "step in the right direction" operation. This version provides a
-quite fast convergence time, a very small code size and minimal memory
-requirement.
+faster convergence time.
 
 ### CBEOOptimizerFan ###
 

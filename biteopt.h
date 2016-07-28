@@ -38,8 +38,7 @@
  * evolutionary optimization method (strategy) which involves inversion of a
  * random segment of parameter value's lowest bits at each step. Additionally
  * includes a crossing-over operation which in some cases improves convergence
- * considerably. In some cases crossing-over reduces convergence, but only
- * slightly. For more robustness it is possible to assign several internal
+ * considerably. For more robustness it is possible to assign several internal
  * values to each optimization parameter.
  *
  * This strategy was tested on several classic 2-parameter optimization
@@ -59,10 +58,6 @@ template< int ParamCount0, int ValuesPerParam = 1, int HistSize = 64 >
 class CBEOOptimizer
 {
 public:
-	bool WasBestCost; ///< "True" if the best cost was found on the last
-		///< optimize() function call.
-		///<
-
 	/**
 	 * Constructor.
 	 *
@@ -79,9 +74,10 @@ public:
 	 * Function initializes *this optimizer.
 	 *
 	 * @param rnd Random number generator.
+	 * @param InitParams Initial parameter values.
 	 */
 
-	void init( CBEORnd& rnd )
+	void init( CBEORnd& rnd, const double* const InitParams = NULL )
 	{
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
@@ -89,14 +85,32 @@ public:
 		HistPos = 0;
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		if( InitParams != NULL )
 		{
-			Params[ i ] = (int) ( rnd.getRndValue() * MantMult );
-			int j;
-
-			for( j = 0; j < HistSize; j++ )
+			for( i = 0; i < ParamCount; i++ )
 			{
-				HistParams[ j ][ i ] = Params[ i ];
+				const int k = i / ValuesPerParam;
+				const double v = ( InitParams[ k ] - MinValues[ k ]) /
+					( MaxValues[ k ] - MinValues[ k ]) / ValuesPerParam;
+
+				Params[ i ] = (int) ( v * MantMult );
+			}
+		}
+		else
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = (int) ( rnd.getRndValue() * MantMult );
+			}
+		}
+
+		int j;
+
+		for( j = 0; j < HistSize; j++ )
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				HistParams[ j ][ i ] = (int) ( rnd.getRndValue() * MantMult );
 			}
 		}
 
@@ -109,7 +123,6 @@ public:
 		}
 
 		BestCost = optcost( BestParams );
-		WasBestCost = true;
 	}
 
 	/**
@@ -120,29 +133,25 @@ public:
 
 	void optimize( CBEORnd& rnd )
 	{
-		double NewParams[ ParamCount0 ];
-		double NewCost;
-		const bool DoCrossover = ( rnd.getRndValue() < CrossProb );
 		int SaveParams[ ParamCount ];
 		int i;
 
-		if( DoCrossover )
+		if( rnd.getRndValue() < CrossProb )
 		{
 			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
-			const int* UseParams =
-				HistParams[( HistPos + CrossHistPos ) % HistSize ];
+			const int* UseParams = HistParams[ CrossHistPos ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
 				SaveParams[ i ] = Params[ i ];
-				int icmask = ( 1 << ( MantSize -
-					(int) ( rnd.getRndValue() * MantSize ))) - 1;
+				const int icmask =
+					( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
 
 				Params[ i ] &= ~icmask;
 				Params[ i ] |= UseParams[ i ] & icmask;
 
-				const int imask = ( 1 << ( MantSize -
-					(int) ( rnd.getRndValue() * MantSize ))) - 1;
+				const int imask =
+					( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
 
 				Params[ i ] ^= imask;
 			}
@@ -152,24 +161,24 @@ public:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				SaveParams[ i ] = Params[ i ];
-				const int imask = ( 1 << ( MantSize -
-					(int) ( rnd.getRndValue() * MantSize ))) - 1;
+				const int imask =
+					( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
 
 				Params[ i ] ^= imask;
 			}
 		}
+
+		double NewParams[ ParamCount0 ];
 
 		for( i = 0; i < ParamCount0; i++ )
 		{
 			NewParams[ i ] = getParamValue( i );
 		}
 
-		NewCost = optcost( NewParams );
+		const double NewCost = optcost( NewParams );
 
 		if( NewCost >= BestCost )
 		{
-			WasBestCost = false;
-
 			for( i = 0; i < ParamCount; i++ )
 			{
 				Params[ i ] = SaveParams[ i ];
@@ -177,7 +186,6 @@ public:
 		}
 		else
 		{
-			WasBestCost = true;
 			BestCost = NewCost;
 
 			for( i = 0; i < ParamCount0; i++ )
@@ -191,47 +199,6 @@ public:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				hp[ i ] = SaveParams[ i ];
-			}
-		}
-	}
-
-	/**
-	 * Function adds history parameters derived from another optimizer.
-	 *
-	 * @param s Source optimizer.
-	 * @param SetCurrent "True" if current parameters should be replaced
-	 * instead of adding them into history.
-	 */
-
-	void addHistParams( const CBEOOptimizer& s, const bool SetCurrent )
-	{
-		int i;
-
-		if( SetCurrent )
-		{
-			if( s.getBestCost() < BestCost )
-			{
-				BestCost = s.getBestCost();
-
-				for( i = 0; i < ParamCount0; i++ )
-				{
-					BestParams[ i ] = s.BestParams[ i ];
-				}
-			}
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				Params[ i ] = s.Params[ i ];
-			}
-		}
-		else
-		{
-			HistPos = ( HistPos == 0 ? HistSize : HistPos ) - 1;
-			int* const hp = HistParams[ HistPos ];
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				hp[ i ] = s.Params[ i ];
 			}
 		}
 	}

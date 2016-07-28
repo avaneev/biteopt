@@ -40,8 +40,7 @@
  * random segment of parameter value's lowest bits at each step. Additionally
  * includes the "step in the right direction" operation.
  *
- * This version provides a quite fast convergence time, a very small code
- * size and minimal memory requirement.
+ * This version provides a faster convergence time.
  *
  * This strategy was tested on several classic 2-parameter optimization
  * problems and it performed fairly well. Global problems (with multiple local
