@@ -1,4 +1,4 @@
-# biteopt - "Bitmask Evolution" Optimizer #
+# biteopt - "Bitmask Evolution" Function Optimizer #
 ## Introduction ##
 
 ### CBEOOptimizer ###
@@ -12,7 +12,7 @@ values to each optimization parameter. This strategy is associated with
 a very small code size and minimal memory requirement.
 
 Currently, this version should be considered as a "proof of concept" version.
-As a rule, the CBEOOptimizerFan strategy should be used.
+As a rule, the CBEOOptimizerFan class should be used.
 
 ### CBEOOptimizer2 ###
 
@@ -28,8 +28,8 @@ replaced with a new solution if parameter vector's cost is higher than that
 of the new solution's and the "distance" of the new solution is not
 considerably low. The "distance" constraint allows parameter vectors to be
 spaced apart from each other thus making them cover a larger parameter search
-space collectively. The "fan elements" are used unevenly: some are used more
-frequently than the others.
+space collectively. The "fan elements" are used unevenly: some are evolved
+more frequently than the others.
 
 The benefit of this strategy is increased robustness: it can optimize
 successfully a wider range of functions. Another benefit is a considerably
@@ -49,6 +49,12 @@ strategies strive to provide the "minimum among minima" nevertheless.
 Optimization of more complex functions may benefit from increasing
 ValuesPerParam template parameter value to 2 or 3, but this obviously
 increases the overhead.
+
+The minimal and maximal allowed parameter values should be specified in a way
+to cover a wider value range in order to reduce boundary effects that may
+greatly reduce convergence. If the target local or global minimum stands
+very close to the parameter value boundaries these strategies may fail to
+converge.
 
 Use the test.cpp program to see the basic usage example.
 

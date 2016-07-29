@@ -44,7 +44,7 @@
  * solution's and the "distance" of the new solution is not considerably low.
  * The "distance" constraint allows parameter vectors to be spaced apart from
  * each other thus making them cover a larger parameter search space
- * collectively. The "fan elements" are used unevenly: some are used more
+ * collectively. The "fan elements" are used unevenly: some are evolved more
  * frequently than the others.
  *
  * The benefit of this strategy is increased robustness: it can successfully
@@ -75,22 +75,22 @@
  * is maintained.
  *
  * 4. A running average (centroid) and average centroid distance of all
- * attempted solutions for each "fan element" is maintained.
+ * newly generated solutions for each "fan element" is maintained.
  *
- * 5. With 57% probability a crossing-over operation is performed which
+ * 5. With 63% probability a crossing-over operation is performed which
  * involves a random historic solution. This operation consists of the
  * "step in the right direction" operation.
  *
  * 6. With the remaining probability the "step in the right direction"
  * operation is performed using the previous solution, followed by the
- * "bitmask evolution" operation which is the main driver of the evolutionary
- * process.
+ * "bitmask evolution" (inversion of a random range of the lowest bits)
+ * operation which is the main driver of the evolutionary process.
  *
  * 7. If the new parameter vector (solution) lies considerably far away from
- * the centroid, it is reduced (with the square root law), to be closer to the
- * centroid.
+ * the centroid, it is reduced (with the inverse square root law), to become
+ * closer to the centroid.
  *
- * 8. If a better solution was not found on the current step, an attempt to
+ * 8. If a better solution was not found at the current step, an attempt to
  * replace one of the "fan elements" is performed using cost and parameter
  * distance constraints.
  *
@@ -157,8 +157,8 @@ public:
 				{
 					const int k = i / ValuesPerParam;
 					const double v = ( j == 0 ?
-						( InitParams[ k ] - MinValues[ k ]) /
-						DiffValues[ k ] : rnd.getRndValue() );
+						wrapParam(( InitParams[ k ] - MinValues[ k ]) /
+						DiffValues[ k ]) : rnd.getRndValue() );
 
 					CurParams[ j ][ i ] = v * v;
 					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
@@ -192,7 +192,6 @@ public:
 			}
 
 			CurCosts[ j ] = optcost( Params );
-			PrevCosts[ j ] = CurCosts[ j ];
 
 			if( j == 0 || CurCosts[ j ] < BestCost )
 			{
@@ -272,7 +271,7 @@ public:
 		double SaveParams[ ParamCount ];
 		int i;
 
-		if( rnd.getRndValue() < 0.57 )
+		if( rnd.getRndValue() < 0.63 )
 		{
 			// Crossing-over with one of the historic solutions.
 
@@ -284,21 +283,21 @@ public:
 				SaveParams[ i ] = Params[ i ];
 
 				// The "step in the right direction" operation, with reduction
-				// of swing by 42%, and with value clamping.
+				// of swing by 42%/24%, and with value clamping.
 
 				double d;
 
 				if( CurCosts[ s ] < HistCosts[ CrossHistPos ])
 				{
-					d = UseParams[ i ] - Params[ i ];
+					d = ( UseParams[ i ] - Params[ i ]) * 0.58;
 				}
 				else
 				{
-					d = Params[ i ] - UseParams[ i ];
+					d = ( Params[ i ] - UseParams[ i ]) * 0.76;
 				}
 
-				Params[ i ] = clampParam( Params[ i ] - d *
-					sqrt( rnd.getRndValue() ) * 0.58 );
+				Params[ i ] = wrapParam( Params[ i ] -
+					d * sqrt( rnd.getRndValue() ));
 			}
 		}
 		else
@@ -310,18 +309,8 @@ public:
 				// The "step in the right direction" operation.
 
 				const double r = sqrt( rnd.getRndValue() );
-				double d;
-
-				if( CurCosts[ s ] < PrevCosts[ s ])
-				{
-					d = PrevParams[ s ][ i ] - Params[ i ];
-				}
-				else
-				{
-					d = Params[ i ] - PrevParams[ s ][ i ];
-				}
-
-				double np = clampParam( Params[ i ] - d * r );
+				double np = Params[ i ] -
+					( PrevParams[ s ][ i ] - Params[ i ]) * r;
 
 				// Bitmask inversion operation with value clamping, works as
 				// a "driver" of optimization process.
@@ -331,7 +320,7 @@ public:
 
 				// Reduce swing of randomization by 20%.
 
-				Params[ i ] = SaveParams[ i ] * 0.2 + np * MantDiv08;
+				Params[ i ] = wrapParam( Params[ i ] * 0.2 + np * MantDiv08 );
 			}
 		}
 
@@ -352,7 +341,7 @@ public:
 		CentrDist = sqrt( CentrDist );
 		AvgCentrDists[ s ] += ( CentrDist - AvgCentrDists[ s ]) * AvgCoeff;
 
-		if( CentrDist > AvgCentrDists[ s ] * 0.77 )
+		if( CentrDist > AvgCentrDists[ s ] * 0.76 )
 		{
 			// If new parameter values are located far from the centroid,
 			// bring them closer to the centroid.
@@ -361,8 +350,8 @@ public:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = AvgParams[ s ][ i ] +
-					( Params[ i ] - AvgParams[ s ][ i ]) * m;
+				Params[ i ] = wrapParam( AvgParams[ s ][ i ] +
+					( Params[ i ] - AvgParams[ s ][ i ]) * m );
 			}
 		}
 
@@ -389,8 +378,6 @@ public:
 				Params[ i ] = SaveParams[ i ];
 			}
 
-			PrevCosts[ s ] = NewCost;
-
 			// Possibly replace another least-performing "fan element".
 
 			int f = -1;
@@ -398,7 +385,7 @@ public:
 
 			for( i = 0; i < FanSize; i++ )
 			{
-				double d = ( CurCosts[ i ] - AvgCost ) * 2.25;
+				double d = ( CurCosts[ i ] - AvgCost ) * 2.85;
 
 				if( d < 0.0 )
 				{
@@ -509,8 +496,9 @@ protected:
 		///<
 	static const int HistSize = 14; ///< The size of the history.
 		///<
-	static const int MantSize = 30; ///< Mantissa size of values. Must be
-		///< synchronized with the random number generator's precision.
+	static const int MantSize = 24; ///< Mantissa size of bitmask inversion
+		///< operation. Must be lower than the random number generator's
+		///< precision.
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
 		///<
@@ -539,9 +527,6 @@ protected:
 	double AvgCost; ///< Average cost of all working parameter vectors.
 		///<
 	double PrevParams[ FanSize ][ ParamCount ]; ///< Previously evaluated
-		///< parameters.
-		///<
-	double PrevCosts[ FanSize ]; ///< Costs of previously evaluated
 		///< parameters.
 		///<
 	double HistParams[ HistSize ][ ParamCount ]; ///< Best historic parameter
@@ -602,26 +587,31 @@ protected:
 	}
 
 	/**
-	 * Function clamps the specified parameter value so that it stays in the
-	 * 0.0 to 1.0 range, inclusive.
+	 * Function wraps the specified parameter value so that it stays in the
+	 * [0.0; 1.0) range, by wrapping it over the boundaries. This operation
+	 * increases convergence in comparison to clamping.
 	 *
-	 * @param v Parameter value to clamp.
-	 * @return Clamped parameter value.
+	 * @param v Parameter value to wrap.
+	 * @return Wrapped parameter value.
 	 */
 
-	static double clampParam( const double v )
+	static double wrapParam( double v )
 	{
-		if( v < 0.0 )
+		while( true )
 		{
-			return( 0.0 );
-		}
+			if( v < 0.0 )
+			{
+				v = -v;
+			}
 
-		if( v > 1.0 )
-		{
-			return( 1.0 );
-		}
+			if( v > 0.9999999999 )
+			{
+				v = 0.9999999999 - v;
+				continue;
+			}
 
-		return( v );
+			return( v );
+		}
 	}
 
 	/**
@@ -706,7 +696,6 @@ protected:
 		double AvgParamsS[ FanSize ][ ParamCount ];
 		double AvgCentrDistsS[ FanSize ];
 		double PrevParamsS[ FanSize ][ ParamCount ];
-		double PrevCostsS[ FanSize ];
 
 		memcpy( CurParamsS, CurParams, sizeof( CurParamsS ));
 		memcpy( CurCostsS, CurCosts, sizeof( CurCostsS ));
@@ -714,7 +703,6 @@ protected:
 		memcpy( AvgParamsS, AvgParams, sizeof( AvgParamsS ));
 		memcpy( AvgCentrDistsS, AvgCentrDists, sizeof( AvgCentrDistsS ));
 		memcpy( PrevParamsS, PrevParams, sizeof( PrevParamsS ));
-		memcpy( PrevCostsS, PrevCosts, sizeof( PrevCostsS ));
 
 		for( i = 0; i < FanSize; i++ )
 		{
@@ -727,8 +715,6 @@ protected:
 			AvgCentrDists[ i ] = AvgCentrDistsS[ s ];
 			memcpy( PrevParams[ i ], PrevParamsS[ s ],
 				sizeof( PrevParams[ i ]));
-
-			PrevCosts[ i ] = PrevCostsS[ s ];
 		}
 	}
 

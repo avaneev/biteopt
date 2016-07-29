@@ -46,10 +46,14 @@
  * problems and it performed fairly well. Global problems (with multiple local
  * minima) may not be handled well by this strategy.
  *
- * @tparam ParamCount The number of parameters being optimized.
+ * @tparam ParamCount0 The number of parameters being optimized.
+ * @tparam ValuesPerParam The number of internal parameter values assigned to
+ * each optimization parameter. Set to 2 or 3 to better solve more complex
+ * functions. Not all functions will benefit from an increased value. Note
+ * that the overhead is increased proportionally to this value.
  */
 
-template< int ParamCount >
+template< int ParamCount0, int ValuesPerParam = 1 >
 class CBEOOptimizer2
 {
 public:
@@ -76,7 +80,7 @@ public:
 		getMaxValues( MaxValues );
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		for( i = 0; i < ParamCount0; i++ )
 		{
 			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
 		}
@@ -87,8 +91,9 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const double v = ( InitParams[ i ] - MinValues[ i ]) /
-					DiffValues[ i ];
+				const int k = i / ValuesPerParam;
+				const double v = wrapParam(
+					( InitParams[ k ] - MinValues[ k ]) / DiffValues[ k ]);
 
 				Params[ i ] = v * v;
 				PrevParams[ i ] = Params[ i ];
@@ -115,7 +120,7 @@ public:
 			}
 		}
 
-		for( i = 0; i < ParamCount; i++ )
+		for( i = 0; i < ParamCount0; i++ )
 		{
 			BestParams[ i ] = getParamValue( i );
 		}
@@ -132,23 +137,9 @@ public:
 	void optimize( CBEORnd& rnd )
 	{
 		double SaveParams[ ParamCount ];
-		const double rp = rnd.getRndValue();
 		int i;
 
-		if( rp < 0.05 )
-		{
-			// Complete randomization.
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				SaveParams[ i ] = Params[ i ];
-
-				const double v = rnd.getRndValue();
-				Params[ i ] = v * v;
-			}
-		}
-		else
-		if( rp < 0.30 )
+		if( rnd.getRndValue() < 0.37 )
 		{
 			// Crossing-over with the historic best solutions.
 
@@ -163,8 +154,8 @@ public:
 				// of swing by 30%, and with value clamping.
 
 				const double d = UseParams[ i ] - Params[ i ];
-				Params[ i ] = clampParam( Params[ i ] -
-					d * rnd.getRndValue() * 0.70 );
+				Params[ i ] = wrapParam( Params[ i ] -
+					d * rnd.getRndValue() * 1.06 );
 			}
 		}
 		else
@@ -176,7 +167,7 @@ public:
 				// The "step in the right direction" operation.
 
 				const double d = PrevParams[ i ] - Params[ i ];
-				double np = clampParam( Params[ i ] - d * rnd.getRndValue() );
+				double np = Params[ i ] - d * rnd.getRndValue();
 
 				// Bitmask inversion operation with value clamping, works as
 				// a "driver" of optimization process.
@@ -188,13 +179,13 @@ public:
 
 				// Reduce swing of randomization by 20%.
 
-				Params[ i ] = SaveParams[ i ] * 0.2 + np * MantDiv08;
+				Params[ i ] = wrapParam( Params[ i ] * 0.2 + np * MantDiv08 );
 			}
 		}
 
-		double NewParams[ ParamCount ];
+		double NewParams[ ParamCount0 ];
 
-		for( i = 0; i < ParamCount; i++ )
+		for( i = 0; i < ParamCount0; i++ )
 		{
 			NewParams[ i ] = getParamValue( i );
 		}
@@ -211,7 +202,7 @@ public:
 		}
 		else
 		{
-			for( i = 0; i < ParamCount; i++ )
+			for( i = 0; i < ParamCount0; i++ )
 			{
 				BestParams[ i ] = NewParams[ i ];
 			}
@@ -273,9 +264,14 @@ public:
 	virtual double optcost( const double* const p ) const = 0;
 
 protected:
+	static const int ParamCount = ParamCount0 * ValuesPerParam; ///< The total
+		///< number of internal parameter values in use.
+		///<
 	static const int HistSize = 13; ///< The size of the history.
 		///<
-	static const int MantSize = 30; ///< Mantissa size of values.
+	static const int MantSize = 28; ///< Mantissa size of bitmask inversion
+		///< operation. Must be lower than the random number generator's
+		///< precision.
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
 		///<
@@ -293,39 +289,44 @@ protected:
 	int HistCount; ///< The total number of history additions performed.
 		///< Always <= HistSize.
 		///<
-	double BestParams[ ParamCount ]; ///< Best parameter vector.
+	double BestParams[ ParamCount0 ]; ///< Best parameter vector.
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
 		///<
-	double MinValues[ ParamCount ]; ///< Minimal parameter values.
+	double MinValues[ ParamCount0 ]; ///< Minimal parameter values.
 		///<
-	double MaxValues[ ParamCount ]; ///< Maximal parameter values.
+	double MaxValues[ ParamCount0 ]; ///< Maximal parameter values.
 		///<
-	double DiffValues[ ParamCount ]; ///< Difference between maximal and
+	double DiffValues[ ParamCount0 ]; ///< Difference between maximal and
 		///< minimal parameter values.
 		///<
 
 	/**
-	 * Function clamps the specified parameter value so that it stays in the
-	 * 0 to 1 range, inclusive.
+	 * Function wraps the specified parameter value so that it stays in the
+	 * [0.0; 1.0) range, by wrapping it over the boundaries. This operation
+	 * increases convergence in comparison to clamping.
 	 *
-	 * @param v Parameter value to clamp.
-	 * @return Clamped parameter value.
+	 * @param v Parameter value to wrap.
+	 * @return Wrapped parameter value.
 	 */
 
-	static double clampParam( const double v )
+	static double wrapParam( double v )
 	{
-		if( v < 0.0 )
+		while( true )
 		{
-			return( 0.0 );
-		}
+			if( v < 0.0 )
+			{
+				v = -v;
+			}
 
-		if( v > 1.0 )
-		{
-			return( 1.0 );
-		}
+			if( v > 0.9999999999 )
+			{
+				v = 0.9999999999 - v;
+				continue;
+			}
 
-		return( v );
+			return( v );
+		}
 	}
 
 	/**
@@ -337,7 +338,17 @@ protected:
 
 	double getParamValue( const int i ) const
 	{
-		return( MinValues[ i ] + DiffValues[ i ] * sqrt( Params[ i ]));
+		const double* const p = Params + i * ValuesPerParam;
+		double v = p[ 0 ];
+		int k;
+
+		for( k = 1; k < ValuesPerParam; k++ )
+		{
+			v += p[ k ];
+		}
+
+		return( MinValues[ i ] +
+			DiffValues[ i ] * sqrt( v / ValuesPerParam ));
 	}
 };
 

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "biteopt.h"
+#include "bitefan.h"
 
 #if !defined( sqr )
 	#define sqr( x ) (( x ) * ( x ))
@@ -9,7 +9,7 @@
  * Optimization test class.
  */
 
-class CTestOpt : public CBEOOptimizer< 2, 4 >
+class CTestOpt : public CBEOOptimizerFan< 2 >
 {
 public:
 	virtual void getMinValues( double* const p ) const
