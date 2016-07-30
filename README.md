@@ -3,16 +3,16 @@
 
 ### CBEOOptimizer ###
 
-"Bitmask evolution" optimization class. Implements a very simple
+"Bitmask evolution" optimization class. Implements a very simple stochastic
 evolutionary optimization method (strategy) which involves inversion of a
 random segment of parameter value's lowest bits at each step. Additionally
 includes a crossing-over operation which in some cases improves convergence
 considerably. For more robustness it is possible to assign several internal
 values to each optimization parameter. This strategy is associated with
-a very small code size and minimal memory requirement.
+a very small code size and a minimal memory requirement.
 
 Currently, this version should be considered as a "proof of concept" version.
-As a rule, the CBEOOptimizerFan class should be used.
+As a rule, the CBEOOptimizerFan or CBEOOptimizer2 class should be used.
 
 ### CBEOOptimizer2 ###
 
@@ -39,14 +39,14 @@ This strategy is associated with a high overhead per function evaluation.
 Due to this fact, for simple functions and not deep optimization it may be
 more beneficial to use the CBEOOptimizer2 class.
 
-### * * * ###
+### Notes ###
 
 All these strategies were tested on several classic 2-parameter optimization
 problems and performed fairly well. Global problems (with multiple local
 minima) may not be handled well by these strategies, but in practice these
 strategies strive to provide the "minimum among minima" nevertheless.
 
-Optimization of more complex functions may benefit from increasing
+Optimization of more complex functions may benefit from increasing of the
 ValuesPerParam template parameter value to 2 or 3, but this obviously
 increases the overhead.
 
@@ -56,10 +56,16 @@ greatly reduce convergence. If the target local or global minimum stands
 very close to the parameter value boundaries these strategies may fail to
 converge.
 
+Strategy's "robustness" is a multi-factor non-formal estimation which includes
+average convergence time, standard deviation of convergence time, the set of
+functions the method can solve successfully given randomized initial
+conditions and minimal-maximal value constraints. For global optimization
+robustness also includes the lowest achieved cost in average.
+
 Use the test.cpp program to see the basic usage example.
 
 test2.cpp is a more complex test which performs optimization of several
-functions and calculates the average convergence time. Can be used with
+functions and calculates the average convergence time. Can be used with the
 CBEOOptimizer, CBEOOptimizer2 and CBEOOptimizerFan classes.
 
 ## Users ##

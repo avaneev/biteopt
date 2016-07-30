@@ -13,7 +13,8 @@
 #endif // !defined( M_PI )
 
 const int ParamCount = 2;
-const int FnCount = 9;
+const int FnCount = 8;
+CBEORnd rnd;
 
 /**
  * Optimization test class.
@@ -33,8 +34,8 @@ public:
 		}
 		else
 		{
-			p[ 0 ] = -10;
-			p[ 1 ] = -10;
+			p[ 0 ] = -10 + rnd.getRndValue() * 5.5;
+			p[ 1 ] = -10 + rnd.getRndValue() * 5.5;
 		}
 	}
 
@@ -47,8 +48,8 @@ public:
 		}
 		else
 		{
-			p[ 0 ] = 10;
-			p[ 1 ] = 10;
+			p[ 0 ] = 10 - rnd.getRndValue() * 5.5;
+			p[ 1 ] = 10 - rnd.getRndValue() * 5.5;
 		}
 	}
 
@@ -61,24 +62,35 @@ public:
 		if( fn == 2 ) return( 0.26 * ( x * x + y * y ) - 0.48 * x * y );
 		if( fn == 3 ) return( x * x + y * y );
 		if( fn == 4 ) return( sqr( sin( 3 * M_PI * x )) + sqr( x - 1 ) * ( 1 + sqr( sin( 3 * M_PI * y ))) + sqr( y - 1 ) * ( 1 + sqr( sin( 2 * M_PI * y ))));
-		if( fn == 5 ) return( sqr( 1.5 - x + x * y ) + sqr( 2.25 - x + x * y * y ) + sqr( 2.625 - x + x * y * y * y ));
+		if( fn == 5 ) return( 0.5 + ( sqr( sin( x * x - y * y )) - 0.5 ) / sqr( 1 + 0.001 * ( x * x + y * y )));
 		if( fn == 6 ) return( -20 * exp( -0.2 * sqrt( 0.5 * ( x * x + y * y ))) - exp( 0.5 * ( cos( 2 * M_PI * x ) + cos( 2 * M_PI * y ))) + 2.71828182845904524 + 20 );
-		if( fn == 7 ) return( 0.5 + ( sqr( sin( x * x - y * y )) - 0.5 ) / sqr( 1 + 0.001 * ( x * x + y * y )));
-		if( fn == 8 ) return( 100 * sqr( y - x * x ) + sqr( x - 1 ));
+		if( fn == 7 ) return( 100 * sqr( y - x * x ) + sqr( x - 1 ));
+		if( fn == 8 ) return( sqr( 1.5 - x + x * y ) + sqr( 2.25 - x + x * y * y ) + sqr( 2.625 - x + x * y * y * y ));
 		if( fn == 9 ) return( 100 * sqrt( fabs( y - 0.01 * x * x )) + 0.01 * fabs( x + 10 ));
 		return( 2 * x * x - 1.05 * sqr( sqr( x )) + sqr( sqr( sqr( x ))) / 6 + x * y + y * y );
 	}
 };
 
+	inline __declspec( naked ) uint64_t rdtsc()
+	{
+		__asm
+		{
+			rdtsc
+			ret
+		}
+	}
+
 int main()
 {
 	CTestOpt opt;
-	CBEORnd rnd;
 	rnd.init( 0 );
 
-	double FnAvg = 0.0;
+	double ItAvg = 0.0;
+	double ItRtAvg = 0.0;
 	double RjAvg = 0.0;
 	int k;
+
+	uint64_t tc = 0;
 
 	for( k = 0; k < FnCount; k++ )
 	{
@@ -117,11 +129,14 @@ int main()
 			AvgP2 += Params[ 1 ];
 */
 			opt.init( rnd, Params );
+
 			opt.optimize( rnd );
+
 			double PrevBestCost = opt.getBestCost();
 			int PrevBestCostCount = 0;
+			const int InnerIterCount = 10000;
 
-			for( i = 0; i < 10000; i++ )
+			for( i = 0; i < InnerIterCount; i++ )
 			{
 				if( opt.getBestCost() < 0.001 )
 				{
@@ -139,12 +154,19 @@ int main()
 
 					if( PrevBestCostCount == 10000 )
 					{
-						Rej++;
+						i = InnerIterCount;
 						break;
 					}
 				}
 
+				const uint64_t t1 = rdtsc();
 				opt.optimize( rnd );
+				tc += rdtsc() - t1;
+			}
+
+			if( i == InnerIterCount )
+			{
+				Rej++;
 			}
 
 			AvgCost += opt.getBestCost();
@@ -181,14 +203,18 @@ int main()
 			"RMSRj:%5.1f Cost:%10.8f%6.3f%6.3f\n", Avg,
 			RMS, Avg2, RMS2, AvgCost, AvgP1, AvgP2 );
 
-		FnAvg += Avg;
+		ItAvg += Avg;
 		RjAvg += Avg2;
+		ItRtAvg += RMS / Avg;
 	}
 
-	FnAvg /= FnCount;
+	ItAvg /= FnCount;
+	ItRtAvg /= FnCount;
 	RjAvg /= FnCount;
-	printf( "FnAvg: %.1f\n", FnAvg );
+	printf( "ItAvg: %.1f\n", ItAvg );
+	printf( "ItRtAvg: %.3f\n", ItRtAvg );
 	printf( "RjAvg: %.1f\n", RjAvg );
+	printf( "%llu\n", tc );
 
 	return( 0 );
 }

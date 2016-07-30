@@ -3,7 +3,7 @@
 /**
  * @file biteopt.h
  *
- * @brief The "main" inclusion file.
+ * @brief The inclusion file for the CBEOOptimizer class.
  *
  * @section license License
  * 
@@ -34,12 +34,13 @@
 #include "biternd.h"
 
 /**
- * "Bitmask evolution" optimization class. Implements a very simple
+ * "Bitmask evolution" optimization class. Implements a very simple stochastic
  * evolutionary optimization method (strategy) which involves inversion of a
  * random segment of parameter value's lowest bits at each step. Additionally
  * includes a crossing-over operation which in some cases improves convergence
  * considerably. For more robustness it is possible to assign several internal
- * values to each optimization parameter.
+ * values to each optimization parameter. This strategy is associated with
+ * a very small code size and a minimal memory requirement.
  *
  * This strategy was tested on several classic 2-parameter optimization
  * problems and it performed fairly well. Global problems (with multiple local
@@ -47,9 +48,10 @@
  * strategy strives to provide "minimum among minima" nevertheless.
  *
  * @tparam ParamCount0 The number of parameters being optimized.
- * @tparam ValuesPerParam The number of internal optimization values to use
- * for each parameter (1 or more). Increasing this value increases
- * optimization robustness, but may increase the time of convergence.
+ * @tparam ValuesPerParam The number of internal parameter values assigned to
+ * each optimization parameter. Set to 2 or 3 to better solve more complex
+ * functions. Not all functions will benefit from an increased value. Note
+ * that the overhead is increased proportionally to this value.
  * @tparam HistSize Best parameter values history size. Affects convergence
  * time. Setting too low or too high values increases convergence time.
  */
@@ -91,9 +93,19 @@ public:
 			{
 				const int k = i / ValuesPerParam;
 				const double v = ( InitParams[ k ] - MinValues[ k ]) /
-					( MaxValues[ k ] - MinValues[ k ]) / ValuesPerParam;
+					( MaxValues[ k ] - MinValues[ k ]);
 
 				Params[ i ] = (int) ( v * MantMult );
+
+				if( Params[ i ] < 0 )
+				{
+					Params[ i ] = 0;
+				}
+				else
+				if( Params[ i ] >= ( 1 << MantSize ))
+				{
+					Params[ i ] = ( 1 << MantSize ) - 1;
+				}
 			}
 		}
 		else
@@ -138,17 +150,26 @@ public:
 
 		if( rnd.getRndValue() < CrossProb )
 		{
+			// Crossing-over with the historic best solutions.
+
 			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
 			const int* UseParams = HistParams[ CrossHistPos ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
 				SaveParams[ i ] = Params[ i ];
+
+				// Crossing-over operation: copies lower bits of the historic
+				// best solution.
+
 				const int icmask =
 					( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
 
 				Params[ i ] &= ~icmask;
 				Params[ i ] |= UseParams[ i ] & icmask;
+
+				// Bitmask inversion operation, works as a "driver" of
+				// optimization process.
 
 				const int imask =
 					( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
@@ -161,6 +182,10 @@ public:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				SaveParams[ i ] = Params[ i ];
+
+				// Bitmask inversion operation, works as a "driver" of
+				// optimization process.
+
 				const int imask =
 					( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
 

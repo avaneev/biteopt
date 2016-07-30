@@ -36,9 +36,9 @@
 
 /**
  * "Bitmask evolution" version 2 optimization class. Implements a very simple
- * evolutionary optimization method (strategy) which involves inversion of a
- * random segment of parameter value's lowest bits at each step. Additionally
- * includes the "step in the right direction" operation.
+ * stochastic evolutionary optimization method (strategy) which involves
+ * inversion of a random segment of parameter value's lowest bits at each
+ * step. Additionally includes the "step in the right direction" operation.
  *
  * This version provides a faster convergence time.
  *
@@ -139,7 +139,7 @@ public:
 		double SaveParams[ ParamCount ];
 		int i;
 
-		if( rnd.getRndValue() < 0.37 )
+		if( rnd.getRndValue() < 0.36 )
 		{
 			// Crossing-over with the historic best solutions.
 
@@ -150,12 +150,11 @@ public:
 			{
 				SaveParams[ i ] = Params[ i ];
 
-				// The "step in the right direction" operation, with reduction
-				// of swing by 30%, and with value clamping.
+				// The "step in the right direction" operation.
 
 				const double d = UseParams[ i ] - Params[ i ];
 				Params[ i ] = wrapParam( Params[ i ] -
-					d * rnd.getRndValue() * 1.06 );
+					d * rnd.getRndValue() );
 			}
 		}
 		else
@@ -167,10 +166,10 @@ public:
 				// The "step in the right direction" operation.
 
 				const double d = PrevParams[ i ] - Params[ i ];
-				double np = Params[ i ] - d * rnd.getRndValue();
+				double np = wrapParam( Params[ i ] - d * rnd.getRndValue() );
 
-				// Bitmask inversion operation with value clamping, works as
-				// a "driver" of optimization process.
+				// Bitmask inversion operation, works as a "driver" of
+				// optimization process.
 
 				const int imask = ( 2 <<
 					(int) ( rnd.getRndValue() * MantSize )) - 1;
@@ -179,7 +178,7 @@ public:
 
 				// Reduce swing of randomization by 20%.
 
-				Params[ i ] = wrapParam( Params[ i ] * 0.2 + np * MantDiv08 );
+				Params[ i ] = Params[ i ] * 0.2 + np * MantDiv08;
 			}
 		}
 
