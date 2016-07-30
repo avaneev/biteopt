@@ -13,7 +13,10 @@
 #endif // !defined( M_PI )
 
 const int ParamCount = 2;
-const int FnCount = 8;
+const int FnCount = 9;
+const double CostThreshold = 0.001;
+const int IterCount = 10000;
+const int InnerIterCount = 10000;
 CBEORnd rnd;
 
 /**
@@ -95,7 +98,6 @@ int main()
 	for( k = 0; k < FnCount; k++ )
 	{
 		opt.fn = k;
-		const int IterCount = 10000;
 		int Iters[ IterCount ];
 		int Rejects[ IterCount ];
 		int AvgIter = 0;
@@ -134,11 +136,10 @@ int main()
 
 			double PrevBestCost = opt.getBestCost();
 			int PrevBestCostCount = 0;
-			const int InnerIterCount = 10000;
 
 			for( i = 0; i < InnerIterCount; i++ )
 			{
-				if( opt.getBestCost() < 0.001 )
+				if( opt.getBestCost() < CostThreshold )
 				{
 					break;
 				}
@@ -211,9 +212,11 @@ int main()
 	ItAvg /= FnCount;
 	ItRtAvg /= FnCount;
 	RjAvg /= FnCount;
-	printf( "ItAvg: %.1f\n", ItAvg );
-	printf( "ItRtAvg: %.3f\n", ItRtAvg );
-	printf( "RjAvg: %.1f\n", RjAvg );
+	printf( "ItAvg: %.1f (average convergence time)\n", ItAvg );
+	printf( "ItRtAvg: %.3f (ratio of std.deviation and average)\n", ItRtAvg );
+	printf( "RjAvg: %.1f (average number of rejects, out of %i)\n", RjAvg,
+		InnerIterCount );
+
 	printf( "%llu\n", tc );
 
 	return( 0 );

@@ -85,7 +85,7 @@
  * "bitmask evolution" (inversion of a random range of the lowest bits)
  * operation which is the main driver of the evolutionary process.
  *
- * 7. Additionally, with 34% probability the "step in the right direction"
+ * 7. Additionally, with 30% probability the "step in the right direction"
  * is performed using centroid vector.
  *
  * 8. If a better solution was not found at the current step, an attempt to
@@ -262,7 +262,7 @@ public:
 				}
 				else
 				{
-					d = ( Params[ i ] - UseParams[ i ]) * 0.62;
+					d = ( Params[ i ] - UseParams[ i ]) * 0.61;
 				}
 
 				Params[ i ] = wrapParam( Params[ i ] -
@@ -284,7 +284,9 @@ public:
 				// Bitmask inversion operation, works as a "driver" of
 				// optimization process.
 
-				const int imask = ( 2 << (int) ( r * MantSize )) - 1;
+				const int imask = ( 2 <<
+					(int) ( sqrt( rnd.getRndValue() ) * MantSize )) - 1;
+
 				np = (int) ( np * MantMult ) ^ imask;
 
 				// Reduce swing of randomization by 20%.
@@ -293,7 +295,7 @@ public:
 			}
 		}
 
-		if( rnd.getRndValue() < 0.34 )
+		if( rnd.getRndValue() < 0.30 )
 		{
 			const double m = rnd.getRndValue() * 0.63;
 
