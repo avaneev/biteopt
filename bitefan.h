@@ -238,6 +238,10 @@ public:
 		const int s = (int) ( isqr( rnd.getRndValue() ) * FanSize );
 		double* const Params = CurParams[ s ];
 		double SaveParams[ ParamCount ];
+
+		static const double SpanMults[ FanSize ] = { 1.0, 0.9, 0.58 };
+		const double fm = SpanMults[ s ];
+
 		int i;
 
 		if( rnd.getRndValue() < 0.53 )
@@ -258,15 +262,15 @@ public:
 
 				if( CurCosts[ s ] < HistCosts[ CrossHistPos ])
 				{
-					d = ( UseParams[ i ] - Params[ i ]) * 0.60;
+					d = UseParams[ i ] - Params[ i ];
 				}
 				else
 				{
-					d = ( Params[ i ] - UseParams[ i ]) * 0.61;
+					d = Params[ i ] - UseParams[ i ];
 				}
 
 				Params[ i ] = wrapParam( Params[ i ] -
-					d * sqrt( rnd.getRndValue() ));
+					d * sqrt( rnd.getRndValue() ) * fm );
 			}
 		}
 		else
@@ -281,7 +285,7 @@ public:
 				const int imask = ( 2 <<
 					(int) ( sqrt( rnd.getRndValue() ) * MantSize )) - 1;
 
-				double np = ((int) ( Params[ i ] * MantMult ) ^ imask ) /
+				double np = ( (int) ( Params[ i ] * MantMult ) ^ imask ) /
 					MantMult;
 
 				// The "step in the right direction" operation.
@@ -303,7 +307,7 @@ public:
 
 		if( rnd.getRndValue() < 0.30 )
 		{
-			const double m = rnd.getRndValue() * 0.63;
+			const double m = rnd.getRndValue() * fm;
 
 			// The "step in the right direction" operation.
 
@@ -492,6 +496,7 @@ protected:
 		///<
 	double CentParams[ ParamCount ]; ///< Centroid of the best parameter
 		///< vectors.
+		///<
 	double CentCost; ///< Average cost of the best parameter vectors.
 		///<
 	double AvgCoeff; ///< Averaging coefficient for update of CentParams and
