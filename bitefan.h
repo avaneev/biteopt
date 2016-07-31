@@ -80,13 +80,13 @@
  * involves a random historic solution. This operation consists of the
  * "step in the right direction" operation.
  *
- * 6. With the remaining probability the "step in the right direction"
- * operation is performed using the previous solution, followed by the
- * "bitmask evolution" (inversion of a random range of the lowest bits)
- * operation which is the main driver of the evolutionary process.
+ * 6. With the remaining probability the "bitmask evolution" (inversion of a
+ * random range of the lowest bits) operation is performed, which is the main
+ * driver of the evolutionary process, followed by the "step in the right
+ * direction" operation using the previous solution.
  *
  * 7. Additionally, with 30% probability the "step in the right direction"
- * is performed using centroid vector.
+ * operation is performed using the centroid vector.
  *
  * 8. If a better solution was not found at the current step, an attempt to
  * replace one of the "fan elements" is performed using cost and parameter
@@ -112,7 +112,6 @@ public:
 
 	CBEOOptimizerFan()
 		: MantMult( 1 << MantSize )
-		, MantDiv08( 0.8 / ( 1 << MantSize ))
 		, AvgCoeff( calcAvgCoeff( 10 ))
 	{
 	}
@@ -193,6 +192,7 @@ public:
 			}
 
 			CurCosts[ j ] = optcost( Params );
+			PrevCosts[ j ] = CurCosts[ j ];
 			CentCost += CurCosts[ j ];
 
 			if( j == 0 || CurCosts[ j ] < BestCost )
@@ -275,23 +275,29 @@ public:
 			{
 				SaveParams[ i ] = Params[ i ];
 
-				// The "step in the right direction" operation.
-
-				const double r = sqrt( rnd.getRndValue() );
-				double np = wrapParam( Params[ i ] -
-					( PrevParams[ s ][ i ] - Params[ i ]) * r );
-
 				// Bitmask inversion operation, works as a "driver" of
 				// optimization process.
 
 				const int imask = ( 2 <<
 					(int) ( sqrt( rnd.getRndValue() ) * MantSize )) - 1;
 
-				np = (int) ( np * MantMult ) ^ imask;
+				double np = ((int) ( Params[ i ] * MantMult ) ^ imask ) /
+					MantMult;
 
-				// Reduce swing of randomization by 20%.
+				// The "step in the right direction" operation.
 
-				Params[ i ] = Params[ i ] * 0.2 + np * MantDiv08;
+				double d;
+
+				if( CurCosts[ s ] < PrevCosts[ s ])
+				{
+					d = PrevParams[ s ][ i ] - np;
+				}
+				else
+				{
+					d = np - PrevParams[ s ][ i ];
+				}
+
+				Params[ i ] = wrapParam( np - d * sqrt( rnd.getRndValue() ));
 			}
 		}
 
@@ -341,6 +347,8 @@ public:
 				CopyParams[ i ] = Params[ i ];
 				Params[ i ] = SaveParams[ i ];
 			}
+
+			PrevCosts[ i ] = NewCost;
 
 			// Possibly replace another least-performing "fan element".
 
@@ -473,8 +481,6 @@ protected:
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
 		///<
-	double MantDiv08; ///< Mantissa divisor (0.8 / MantMult).
-		///<
 	double CurParams[ FanSize ][ ParamCount ]; ///< Current working parameter
 		///< vectors.
 		///<
@@ -488,14 +494,17 @@ protected:
 		///< vectors.
 	double CentCost; ///< Average cost of the best parameter vectors.
 		///<
-	double AvgCoeff; ///< Averaging coefficient for update of AvgParams and
-		///< AvgCentrDists values.
+	double AvgCoeff; ///< Averaging coefficient for update of CentParams and
+		///< CentCost values.
 		///<
 	double AvgDist; ///< Average distance of all working parameter vectors.
 		///<
 	double AvgCost; ///< Average cost of all working parameter vectors.
 		///<
 	double PrevParams[ FanSize ][ ParamCount ]; ///< Previously evaluated
+		///< parameters.
+		///<
+	double PrevCosts[ FanSize ]; ///< Costs of previously evaluated
 		///< parameters.
 		///<
 	double HistParams[ HistSize ][ ParamCount ]; ///< Best historic parameter
@@ -663,11 +672,13 @@ protected:
 		double CurCostsS[ FanSize ];
 		double CurDistsS[ FanSize ];
 		double PrevParamsS[ FanSize ][ ParamCount ];
+		double PrevCostsS[ FanSize ];
 
 		memcpy( CurParamsS, CurParams, sizeof( CurParamsS ));
 		memcpy( CurCostsS, CurCosts, sizeof( CurCostsS ));
 		memcpy( CurDistsS, CurDists, sizeof( CurDistsS ));
 		memcpy( PrevParamsS, PrevParams, sizeof( PrevParamsS ));
+		memcpy( PrevCostsS, PrevCosts, sizeof( PrevCostsS ));
 
 		for( i = 0; i < FanSize; i++ )
 		{
@@ -678,6 +689,8 @@ protected:
 			CurDists[ i ] = CurDistsS[ s ];
 			memcpy( PrevParams[ i ], PrevParamsS[ s ],
 				sizeof( PrevParams[ i ]));
+
+			PrevCosts[ i ] = PrevCostsS[ s ];
 		}
 	}
 
@@ -731,17 +744,12 @@ protected:
 		}
 
 		AvgDist /= FanSize;
+
 		AvgCost = CurCosts[ 0 ];
-		double MinCost = CurCosts[ 0 ];
 
 		for( i = 1; i < FanSize; i++ )
 		{
 			AvgCost += CurCosts[ i ];
-
-			if( CurCosts[ i ] < MinCost )
-			{
-				MinCost = CurCosts[ i ];
-			}
 		}
 
 		AvgCost /= FanSize;

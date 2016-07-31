@@ -37,8 +37,8 @@ public:
 		}
 		else
 		{
-			p[ 0 ] = -10 + rnd.getRndValue() * 5.5;
-			p[ 1 ] = -10 + rnd.getRndValue() * 5.5;
+			p[ 0 ] = -10 + rnd.getRndValue() * 6;
+			p[ 1 ] = -10 + rnd.getRndValue() * 6;
 		}
 	}
 
@@ -51,8 +51,8 @@ public:
 		}
 		else
 		{
-			p[ 0 ] = 10 - rnd.getRndValue() * 5.5;
-			p[ 1 ] = 10 - rnd.getRndValue() * 5.5;
+			p[ 0 ] = 10 - rnd.getRndValue() * 6;
+			p[ 1 ] = 10 - rnd.getRndValue() * 6;
 		}
 	}
 
@@ -212,9 +212,9 @@ int main()
 	ItAvg /= FnCount;
 	ItRtAvg /= FnCount;
 	RjAvg /= FnCount;
-	printf( "ItAvg: %.1f (average convergence time)\n", ItAvg );
-	printf( "ItRtAvg: %.3f (ratio of std.deviation and average)\n", ItRtAvg );
-	printf( "RjAvg: %.1f (average number of rejects, out of %i)\n", RjAvg,
+	printf( "ItAvg: %.1f (avg convergence time)\n", ItAvg );
+	printf( "ItRtAvg: %.3f (avg ratio of std.deviation and average)\n", ItRtAvg );
+	printf( "RjAvg: %.1f (avg number of rejects, out of %i)\n", RjAvg,
 		InnerIterCount );
 
 	printf( "%llu\n", tc );
