@@ -173,14 +173,14 @@ public:
 			}
 		}
 
-		for( i = 0; i < FanSize; i++ )
+		for( i = 0; i < ParamCount; i++ )
 		{
 			CentParams[ i ] /= FanSize;
 		}
 
 		// Calculate costs of "fan elements" and find the best cost.
 
-		double CentCost = 0.0;
+		CentCost = 0.0;
 
 		for( j = 0; j < FanSize; j++ )
 		{
@@ -352,7 +352,7 @@ public:
 				Params[ i ] = SaveParams[ i ];
 			}
 
-			PrevCosts[ i ] = NewCost;
+			PrevCosts[ s ] = NewCost;
 
 			// Possibly replace another least-performing "fan element".
 
