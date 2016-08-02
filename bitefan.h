@@ -648,7 +648,7 @@ protected:
 	{
 		if( v < 0.0 )
 		{
-			return( v );
+			return( 0.0 );
 		}
 
 		if( v > 0.9999999999 )
