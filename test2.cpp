@@ -85,8 +85,9 @@ public:
 
 int main()
 {
-	CTestOpt opt;
 	rnd.init( 0 );
+
+	CTestOpt opt;
 
 	double ItAvg = 0.0;
 	double ItRtAvg = 0.0;
@@ -99,9 +100,7 @@ int main()
 	{
 		opt.fn = k;
 		int Iters[ IterCount ];
-		int Rejects[ IterCount ];
-		int AvgIter = 0;
-		int AvgRej = 0;
+		double AvgIter = 0;
 		double AvgCost = 0.0;
 		double AvgP1 = 0.0;
 		double AvgP2 = 0.0;
@@ -110,12 +109,12 @@ int main()
 
 		for( j = 0; j < IterCount; j++ )
 		{
-			double Params[ ParamCount ];
+			int i;
+/*			double Params[ ParamCount ];
 			double minv[ ParamCount ];
 			double maxv[ ParamCount ];
 			opt.getMinValues( minv );
 			opt.getMaxValues( maxv );
-			int i;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -123,15 +122,14 @@ int main()
 					rnd.getRndValue();
 			}
 
-/*			i = 10000;
+			i = 10000;
 			AvgCost += vox :: solveNMSimplex( opt, ParamCount, Params, true,
 				0.000001, &i );
 
 			AvgP1 += Params[ 0 ];
 			AvgP2 += Params[ 1 ];
 */
-			opt.init( rnd, Params );
-
+			opt.init( rnd );
 			opt.optimize( rnd );
 
 			double PrevBestCost = opt.getBestCost();
@@ -176,36 +174,28 @@ int main()
 
 			Iters[ j ] = i;
 			AvgIter += i;
-			Rejects[ j ] = Rej;
-			AvgRej += Rej;
 		}
 
 		AvgCost /= IterCount;
 		AvgP1 /= IterCount;
 		AvgP2 /= IterCount;
 
-		double Avg = (double) AvgIter / IterCount;
+		const double Avg = AvgIter / IterCount;
 		double RMS = 0.0;
-		double Avg2 = (double) AvgRej / IterCount;
-		double RMS2 = 0.0;
 
 		for( j = 0; j < IterCount; j++ )
 		{
-			double v = Iters[ j ] - Avg;
+			const double v = Iters[ j ] - Avg;
 			RMS += v * v;
-			v = Rejects[ j ] - Avg2;
-			RMS2 += v * v;
 		}
 
 		RMS = sqrt( RMS / IterCount );
-		RMS2 = sqrt( RMS2 / IterCount );
 
-		printf( "AvgIt:%6.1f RMSIt:%6.1f AvgRj:%5.1f "
-			"RMSRj:%5.1f Cost:%10.8f%6.3f%6.3f\n", Avg,
-			RMS, Avg2, RMS2, AvgCost, AvgP1, AvgP2 );
+		printf( "AvgIt:%6.1f RMSIt:%6.1f Rj:%5i Cost:%10.8f%6.3f%6.3f\n",
+			Avg, RMS, Rej, AvgCost, AvgP1, AvgP2 );
 
 		ItAvg += Avg;
-		RjAvg += Avg2;
+		RjAvg += Rej;
 		ItRtAvg += RMS / Avg;
 	}
 

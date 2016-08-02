@@ -63,8 +63,8 @@
  *
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
  * parameter vector which is randomly evolved towards a better solution. The
- * "fan element" with the highest cost is evolved more frequently than
- * "fan elements" with lower costs.
+ * "fan element" with the lowest cost is evolved more frequently than
+ * "fan elements" with the higher costs.
  *
  * 2. A set of 14 best historic solutions is maintained. The history is shared
  * among all "fan elements". History is at first initialized with random
@@ -76,7 +76,7 @@
  * 4. The previous attempted solution parameter vector for each "fan element"
  * is maintained.
  *
- * 5. With 53% probability a crossing-over operation is performed which
+ * 5. With 47% probability a crossing-over operation is performed which
  * involves a random historic solution. This operation consists of the
  * "step in the right direction" operation.
  *
@@ -85,7 +85,7 @@
  * driver of the evolutionary process, followed by the "step in the right
  * direction" operation using the previous solution.
  *
- * 7. Additionally, with 30% probability the "step in the right direction"
+ * 7. Additionally, with 35% probability the "step in the right direction"
  * operation is performed using the centroid vector.
  *
  * 8. If a better solution was not found at the current step, an attempt to
@@ -106,14 +106,53 @@ template< int ParamCount0, int ValuesPerParam = 1 >
 class CBEOOptimizerFan
 {
 public:
+	double CrossProb; ///< Crossing-over probability.
+		///<
+	double CentProb; ///< Centroid move probability.
+		///<
+	double CentTime; ///< Centroid averaging time (samples).
+		///<
+	double AvgCostMult; ///< Average "fan element" cost threshold multiplier.
+		///<
+	double AvgDistMult; ///< Average "fan element" distance threshold
+		///< multiplier.
+		///<
+	double CrossMults[5]/*[ 3 ]*/; ///< Crossing-over range multipliers for each
+		///< "fan element".
+		///<
+	double CentMult; ///< Centroid move range multiplier.
+		///<
+
 	/**
 	 * Constructor.
 	 */
 
 	CBEOOptimizerFan()
 		: MantMult( 1 << MantSize )
-		, AvgCoeff( calcAvgCoeff( 10 ))
 	{
+		// Original manually-selected values.
+
+/*		CrossProb = 0.53;
+		CentProb = 0.30;
+		CentTime = 10.0;
+		AvgCostMult = 1.85;
+		AvgDistMult = 0.33;
+		CrossMults[ 0 ] = 1.0;
+		CrossMults[ 1 ] = 0.9;
+		CrossMults[ 2 ] = 0.58;
+		CentMult = 1.0;
+*/
+		// Machine-optimized values.
+
+		CrossProb = 0.474072;
+		CentProb = 0.336040;
+		CentTime = 8.863409;
+		AvgCostMult = 1.708017;
+		AvgDistMult = 0.338186;
+		CrossMults[ 0 ] = 0.731545;
+		CrossMults[ 1 ] = 0.917677;
+		CrossMults[ 2 ] = 0.578602;
+		CentMult = 0.942713;
 	}
 
 	/**
@@ -125,6 +164,8 @@ public:
 
 	void init( CBEORnd& rnd, const double* const InitParams = NULL )
 	{
+		AvgCoeff = calcAvgCoeff( CentTime );
+
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
 		int i;
@@ -150,7 +191,7 @@ public:
 				{
 					const int k = i / ValuesPerParam;
 					const double v = ( j == 0 ?
-						wrapParam(( InitParams[ k ] - MinValues[ k ]) /
+						clampParam(( InitParams[ k ] - MinValues[ k ]) /
 						DiffValues[ k ]) : rnd.getRndValue() );
 
 					CurParams[ j ][ i ] = v * v;
@@ -236,15 +277,13 @@ public:
 	void optimize( CBEORnd& rnd )
 	{
 		const int s = (int) ( isqr( rnd.getRndValue() ) * FanSize );
+		const double cm = CrossMults[ s ];
 		double* const Params = CurParams[ s ];
 		double SaveParams[ ParamCount ];
 
-		static const double SpanMults[ FanSize ] = { 1.0, 0.9, 0.58 };
-		const double fm = SpanMults[ s ];
-
 		int i;
 
-		if( rnd.getRndValue() < 0.53 )
+		if( rnd.getRndValue() < CrossProb )
 		{
 			// Crossing-over with one of the historic solutions.
 
@@ -270,7 +309,7 @@ public:
 				}
 
 				Params[ i ] = wrapParam( Params[ i ] -
-					d * sqrt( rnd.getRndValue() ) * fm );
+					d * sqrt( rnd.getRndValue() ) * cm );
 			}
 		}
 		else
@@ -305,9 +344,9 @@ public:
 			}
 		}
 
-		if( rnd.getRndValue() < 0.30 )
+		if( rnd.getRndValue() < CentProb )
 		{
-			const double m = rnd.getRndValue() * fm;
+			const double m = rnd.getRndValue() * cm * CentMult;
 
 			// The "step in the right direction" operation.
 
@@ -361,7 +400,7 @@ public:
 
 			for( i = 0; i < FanSize; i++ )
 			{
-				double d = ( CurCosts[ i ] - AvgCost ) * 1.85;
+				double d = ( CurCosts[ i ] - AvgCost ) * AvgCostMult;
 
 				if( d < 0.0 )
 				{
@@ -372,7 +411,7 @@ public:
 				{
 					const double NewDist = calcDistance( CopyParams, i );
 
-					if( NewDist > MaxDist && NewDist > AvgDist * 0.33 )
+					if( NewDist > MaxDist && NewDist > AvgDist * AvgDistMult )
 					{
 						MaxDist = NewDist;
 						f = i;
@@ -551,7 +590,7 @@ protected:
 	 * @param Count The approximate number of values to average.
 	 */
 
-	static double calcAvgCoeff( const int Count )
+	static double calcAvgCoeff( const double Count )
 	{
 		const double theta = 2.79507498389883904 / Count;
 		const double costheta2 = 2.0 - cos( theta );
@@ -595,6 +634,29 @@ protected:
 
 			return( v );
 		}
+	}
+
+	/**
+	 * Function clamps the specified parameter value so that it stays in the
+	 * [0.0; 1.0) range.
+	 *
+	 * @param v Parameter value to clamp.
+	 * @return Clamped parameter value.
+	 */
+
+	static double clampParam( double v )
+	{
+		if( v < 0.0 )
+		{
+			return( v );
+		}
+
+		if( v > 0.9999999999 )
+		{
+			return( 0.9999999999 );
+		}
+
+		return( v );
 	}
 
 	/**
