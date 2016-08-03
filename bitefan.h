@@ -429,11 +429,13 @@ public:
 						( CurParams[ f ][ i ] - CentParams[ i ]) * AvgCoeff;
 
 					hp[ i ] = CurParams[ f ][ i ];
+					PrevParams[ f ][ i ] = CurParams[ f ][ i ];
 					CurParams[ f ][ i ] = CopyParams[ i ];
 				}
 
 				CentCost += ( CurCosts[ f ] - CentCost ) * AvgCoeff;
 				HistCosts[ HistPos ] = CurCosts[ f ];
+				PrevCosts[ f ] = CurCosts[ f ];
 				CurCosts[ f ] = NewCost;
 				updateDistances();
 			}

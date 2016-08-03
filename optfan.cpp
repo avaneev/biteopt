@@ -123,6 +123,7 @@ public:
 		opt.CentMult = roundp( p[ 8 ]);
 
 		double ItAvg = 0.0;
+		double RMSAvg = 0.0;
 		double ItRtAvg = 0.0;
 		double RjAvg = 0.0;
 		int k;
@@ -203,15 +204,17 @@ public:
 			RMS = sqrt( RMS / IterCount );
 
 			ItAvg += Avg;
+			RMSAvg += RMS;
 			RjAvg += Rej;
 			ItRtAvg += RMS / Avg;
 		}
 
 		ItAvg /= FnCount;
+		RMSAvg /= FnCount;
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
 
-		return( ItAvg * sqrt( ItRtAvg ));
+		return( RMSAvg/* * sqrt( ItRtAvg )*/);
 	}
 };
 
