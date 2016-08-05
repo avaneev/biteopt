@@ -117,7 +117,7 @@ public:
 	double AvgDistMult; ///< Average "fan element" distance threshold
 		///< multiplier.
 		///<
-	double CrossMults[5]/*[ 3 ]*/; ///< Crossing-over range multipliers for each
+	double CrossMults[ 3 ]; ///< Crossing-over range multipliers for each
 		///< "fan element".
 		///<
 	double CentMult; ///< Centroid move range multiplier.

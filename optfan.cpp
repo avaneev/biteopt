@@ -214,7 +214,7 @@ public:
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
 
-		return( RMSAvg/* * sqrt( ItRtAvg )*/);
+		return( ItAvg * sqrt( ItRtAvg ));
 	}
 };
 
