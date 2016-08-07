@@ -312,6 +312,8 @@ public:
 		}
 		else
 		{
+			const double m = sqrt( rnd.getRndValue() );
+
 			for( i = 0; i < ParamCount; i++ )
 			{
 				SaveParams[ i ] = Params[ i ];
@@ -327,8 +329,8 @@ public:
 
 				// The "step in the right direction" operation.
 
-				Params[ i ] = wrapParam( np - ( PrevParams[ s ][ i ] - np ) *
-					sqrt( rnd.getRndValue() ));
+				Params[ i ] = wrapParam( np -
+					( PrevParams[ s ][ i ] - np ) * m );
 			}
 		}
 
