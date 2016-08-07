@@ -144,15 +144,15 @@ public:
 */
 		// Machine-optimized values.
 
-		CrossProb = 0.474072;
-		CentProb = 0.336040;
-		CentTime = 8.863409;
-		AvgCostMult = 1.708017;
-		AvgDistMult = 0.338186;
-		CrossMults[ 0 ] = 0.731545;
-		CrossMults[ 1 ] = 0.917677;
-		CrossMults[ 2 ] = 0.578602;
-		CentMult = 0.942713;
+		CrossProb = 0.479266;
+		CentProb = 0.337614;
+		CentTime = 8.532032;
+		AvgCostMult = 1.433995;
+		AvgDistMult = 0.339414;
+		CrossMults[ 0 ] = 0.730239;
+		CrossMults[ 1 ] = 0.921428;
+		CrossMults[ 2 ] = 0.568134;
+		CentMult = 0.958661;
 	}
 
 	/**
@@ -221,8 +221,6 @@ public:
 
 		// Calculate costs of "fan elements" and find the best cost.
 
-		CentCost = 0.0;
-
 		for( j = 0; j < FanSize; j++ )
 		{
 			double Params[ ParamCount0 ];
@@ -233,8 +231,6 @@ public:
 			}
 
 			CurCosts[ j ] = optcost( Params );
-			PrevCosts[ j ] = CurCosts[ j ];
-			CentCost += CurCosts[ j ];
 
 			if( j == 0 || CurCosts[ j ] < BestCost )
 			{
@@ -246,8 +242,6 @@ public:
 				}
 			}
 		}
-
-		CentCost /= FanSize;
 
 		// Initialize history with random values. This works as an additional
 		// source of initial randomization.
@@ -280,7 +274,6 @@ public:
 		const double cm = CrossMults[ s ];
 		double* const Params = CurParams[ s ];
 		double SaveParams[ ParamCount ];
-
 		int i;
 
 		if( rnd.getRndValue() < CrossProb )
@@ -290,26 +283,31 @@ public:
 			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
 			const double* const UseParams = HistParams[ CrossHistPos ];
 
-			for( i = 0; i < ParamCount; i++ )
+			if( CurCosts[ s ] < HistCosts[ CrossHistPos ])
 			{
-				SaveParams[ i ] = Params[ i ];
-
-				// The "step in the right direction" operation, with reduction
-				// of swing.
-
-				double d;
-
-				if( CurCosts[ s ] < HistCosts[ CrossHistPos ])
+				for( i = 0; i < ParamCount; i++ )
 				{
-					d = UseParams[ i ] - Params[ i ];
-				}
-				else
-				{
-					d = Params[ i ] - UseParams[ i ];
-				}
+					SaveParams[ i ] = Params[ i ];
 
-				Params[ i ] = wrapParam( Params[ i ] -
-					d * sqrt( rnd.getRndValue() ) * cm );
+					// The "step in the right direction" operation.
+
+					Params[ i ] = wrapParam( Params[ i ] -
+						( UseParams[ i ] - Params[ i ]) *
+						sqrt( rnd.getRndValue() ) * cm );
+				}
+			}
+			else
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					SaveParams[ i ] = Params[ i ];
+
+					// The "step in the right direction" operation.
+
+					Params[ i ] = wrapParam( Params[ i ] -
+						( Params[ i ] - UseParams[ i ]) *
+						sqrt( rnd.getRndValue() ) * cm );
+				}
 			}
 		}
 		else
@@ -329,18 +327,8 @@ public:
 
 				// The "step in the right direction" operation.
 
-				double d;
-
-				if( CurCosts[ s ] < PrevCosts[ s ])
-				{
-					d = PrevParams[ s ][ i ] - np;
-				}
-				else
-				{
-					d = np - PrevParams[ s ][ i ];
-				}
-
-				Params[ i ] = wrapParam( np - d * sqrt( rnd.getRndValue() ));
+				Params[ i ] = wrapParam( np - ( PrevParams[ s ][ i ] - np ) *
+					sqrt( rnd.getRndValue() ));
 			}
 		}
 
@@ -350,21 +338,10 @@ public:
 
 			// The "step in the right direction" operation.
 
-			if( CurCosts[ s ] > CentCost )
+			for( i = 0; i < ParamCount; i++ )
 			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] = wrapParam( Params[ i ] -
-						( CentParams[ i ] - Params[ i ]) * m );
-				}
-			}
-			else
-			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] = wrapParam( Params[ i ] -
-						( Params[ i ] - CentParams[ i ]) * m );
-				}
+				Params[ i ] = wrapParam( Params[ i ] -
+					( Params[ i ] - CentParams[ i ]) * m );
 			}
 		}
 
@@ -390,8 +367,6 @@ public:
 				CopyParams[ i ] = Params[ i ];
 				Params[ i ] = SaveParams[ i ];
 			}
-
-			PrevCosts[ s ] = NewCost;
 
 			// Possibly replace another least-performing "fan element".
 
@@ -433,9 +408,7 @@ public:
 					CurParams[ f ][ i ] = CopyParams[ i ];
 				}
 
-				CentCost += ( CurCosts[ f ] - CentCost ) * AvgCoeff;
 				HistCosts[ HistPos ] = CurCosts[ f ];
-				PrevCosts[ f ] = CurCosts[ f ];
 				CurCosts[ f ] = NewCost;
 				updateDistances();
 			}
@@ -461,7 +434,6 @@ public:
 					( SaveParams[ i ] - CentParams[ i ]) * AvgCoeff;
 			}
 
-			CentCost += ( CurCosts[ s ] - CentCost ) * AvgCoeff;
 			HistCosts[ HistPos ] = CurCosts[ s ];
 			CurCosts[ s ] = NewCost;
 			updateDistances();
@@ -532,25 +504,17 @@ protected:
 	double CurCosts[ FanSize ]; ///< Best costs of current working parameter
 		///< vectors.
 		///<
-	double CurDists[ FanSize ]; ///< Average distances to other working
-		///< parameters vectors.
-		///<
 	double CentParams[ ParamCount ]; ///< Centroid of the best parameter
 		///< vectors.
 		///<
-	double CentCost; ///< Average cost of the best parameter vectors.
-		///<
-	double AvgCoeff; ///< Averaging coefficient for update of CentParams and
-		///< CentCost values.
+	double AvgCoeff; ///< Averaging coefficient for update of CentParams
+		///< values.
 		///<
 	double AvgDist; ///< Average distance of all working parameter vectors.
 		///<
 	double AvgCost; ///< Average cost of all working parameter vectors.
 		///<
 	double PrevParams[ FanSize ][ ParamCount ]; ///< Previously evaluated
-		///< parameters.
-		///<
-	double PrevCosts[ FanSize ]; ///< Costs of previously evaluated
 		///< parameters.
 		///<
 	double HistParams[ HistSize ][ ParamCount ]; ///< Best historic parameter
@@ -737,17 +701,26 @@ protected:
 
 		qsort( fe, FanSize, sizeof( fe[ 0 ]), FanElementSortFn );
 
+		for( i = 0; i < FanSize; i++ )
+		{
+			if( fe[ i ].i != i )
+			{
+				break;
+			}
+		}
+
+		if( i == FanSize )
+		{
+			return;
+		}
+
 		double CurParamsS[ FanSize ][ ParamCount ];
 		double CurCostsS[ FanSize ];
-		double CurDistsS[ FanSize ];
 		double PrevParamsS[ FanSize ][ ParamCount ];
-		double PrevCostsS[ FanSize ];
 
 		memcpy( CurParamsS, CurParams, sizeof( CurParamsS ));
 		memcpy( CurCostsS, CurCosts, sizeof( CurCostsS ));
-		memcpy( CurDistsS, CurDists, sizeof( CurDistsS ));
 		memcpy( PrevParamsS, PrevParams, sizeof( PrevParamsS ));
-		memcpy( PrevCostsS, PrevCosts, sizeof( PrevCostsS ));
 
 		for( i = 0; i < FanSize; i++ )
 		{
@@ -755,11 +728,8 @@ protected:
 
 			memcpy( CurParams[ i ], CurParamsS[ s ], sizeof( CurParams[ i ]));
 			CurCosts[ i ] = CurCostsS[ s ];
-			CurDists[ i ] = CurDistsS[ s ];
 			memcpy( PrevParams[ i ], PrevParamsS[ s ],
 				sizeof( PrevParams[ i ]));
-
-			PrevCosts[ i ] = PrevCostsS[ s ];
 		}
 	}
 
@@ -808,8 +778,7 @@ protected:
 
 		for( i = 0; i < FanSize; i++ )
 		{
-			CurDists[ i ] = calcDistance( CurParams[ i ], i );
-			AvgDist += CurDists[ i ];
+			AvgDist += calcDistance( CurParams[ i ], i );
 		}
 
 		AvgDist /= FanSize;
