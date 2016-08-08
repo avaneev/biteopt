@@ -270,7 +270,7 @@ public:
 
 	void optimize( CBEORnd& rnd )
 	{
-		const int s = (int) ( isqr( rnd.getRndValue() ) * FanSize );
+		const int s = FanSize1 - (int) ( sqr( rnd.getRndValue() ) * FanSize );
 		const double cm = CrossMults[ s ];
 		double* const Params = CurParams[ s ];
 		double SaveParams[ ParamCount ];
@@ -492,6 +492,8 @@ protected:
 		///<
 	static const int FanSize = 3; ///< The number of "fan elements" to use.
 		///<
+	static const int FanSize1 = FanSize - 1; ///< = FanSize - 1.
+		///<
 	static const int HistSize = 14; ///< The size of the history.
 		///<
 	static const int MantSize = 29; ///< Mantissa size of bitmask inversion
@@ -566,14 +568,13 @@ protected:
 	}
 
 	/**
-	 * @param x Value to invert-square, in the range 0 to 1.
-	 * @return Inverted square of the argument.
+	 * @param x Value to square.
+	 * @return Square of the argument.
 	 */
 
-	static double isqr( const double x )
+	static double sqr( const double x )
 	{
-		const double x1 = 1.0 - x;
-		return( 1.0 - x1 * x1 );
+		return( x * x );
 	}
 
 	/**
