@@ -40,12 +40,11 @@
  * "Bitmask evolution" version "fan" optimization class. This strategy is
  * based on the CBEOOptimizer2 strategy, but uses several current parameter
  * vectors ("fan elements"). Any parameter vector can be replaced with a new
- * solution if parameter vector's cost is higher than that of the new
- * solution's and the "distance" of the new solution is not considerably low.
- * The "distance" constraint allows parameter vectors to be spaced apart from
- * each other thus making them cover a larger parameter search space
- * collectively. The "fan elements" are used unevenly: some are evolved more
- * frequently than the others.
+ * solution if parameter vector's cost (with some margin) is higher than that
+ * of the new solution's. Having several "fan elements" allows parameter
+ * vectors to be spaced apart from each other thus making them cover a larger
+ * parameter search space collectively. The "fan elements" are used unevenly:
+ * lower cost ones are evolved more frequently than the others.
  *
  * The benefit of this strategy is increased robustness: it can successfully
  * optimize a wider range of functions. Another benefit is a considerably
@@ -76,7 +75,7 @@
  * 4. The previous attempted solution parameter vector for each "fan element"
  * is maintained.
  *
- * 5. With 47% probability a crossing-over operation is performed which
+ * 5. With 50% probability a crossing-over operation is performed which
  * involves a random historic solution. This operation consists of the
  * "step in the right direction" operation.
  *
@@ -85,12 +84,11 @@
  * driver of the evolutionary process, followed by the "step in the right
  * direction" operation using the previous solution.
  *
- * 7. Additionally, with 35% probability the "step in the right direction"
+ * 7. Additionally, with 33% probability the "step in the right direction"
  * operation is performed using the centroid vector.
  *
  * 8. If a better solution was not found at the current step, an attempt to
- * replace one of the "fan elements" is performed using cost and parameter
- * distance constraints.
+ * replace one of the "fan elements" is performed using cost constraints.
  *
  * 9. History is updated with a previous solution whenever a better solution
  * is found or when a "fan element" is replaced.
@@ -114,9 +112,6 @@ public:
 		///<
 	double AvgCostMult; ///< Average "fan element" cost threshold multiplier.
 		///<
-	double AvgDistMult; ///< Average "fan element" distance threshold
-		///< multiplier.
-		///<
 	double CrossMults[ 3 ]; ///< Crossing-over range multipliers for each
 		///< "fan element".
 		///<
@@ -130,29 +125,16 @@ public:
 	CBEOOptimizerFan()
 		: MantMult( 1 << MantSize )
 	{
-		// Original manually-selected values.
-
-/*		CrossProb = 0.53;
-		CentProb = 0.30;
-		CentTime = 10.0;
-		AvgCostMult = 1.85;
-		AvgDistMult = 0.33;
-		CrossMults[ 0 ] = 1.0;
-		CrossMults[ 1 ] = 0.9;
-		CrossMults[ 2 ] = 0.58;
-		CentMult = 1.0;
-*/
 		// Machine-optimized values.
 
-		CrossProb = 0.479266;
-		CentProb = 0.337614;
-		CentTime = 8.532032;
-		AvgCostMult = 1.433995;
-		AvgDistMult = 0.339414;
-		CrossMults[ 0 ] = 0.730239;
-		CrossMults[ 1 ] = 0.921428;
-		CrossMults[ 2 ] = 0.568134;
-		CentMult = 0.958661;
+		CrossProb = 0.500000;
+		CentProb = 0.333333;
+		CentTime = 7.489100;
+		AvgCostMult = 2.174790;
+		CrossMults[ 0 ] = 0.812871;
+		CrossMults[ 1 ] = 0.896751;
+		CrossMults[ 2 ] = 0.862706;
+		CentMult = 0.867665;
 	}
 
 	/**
@@ -259,7 +241,7 @@ public:
 			HistCosts[ j ] = BestCost; // Not entirely correct, but works.
 		}
 
-		updateDistances();
+		updateAvgCost();
 	}
 
 	/**
@@ -270,7 +252,46 @@ public:
 
 	void optimize( CBEORnd& rnd )
 	{
-		const int s = FanSize1 - (int) ( sqr( rnd.getRndValue() ) * FanSize );
+		int s = (int) ( sqr( rnd.getRndValue() ) * FanSize );
+
+		// "Fan element" sorting, for 3 items.
+
+		if( CurCosts[ 1 ] < CurCosts[ 0 ])
+		{
+			if( CurCosts[ 2 ] < CurCosts[ 1 ])
+			{
+				static const int sorder[ 3 ] = { 2, 1, 0 };
+				s = sorder[ s ];
+			}
+			else
+			if( CurCosts[ 2 ] < CurCosts[ 0 ])
+			{
+				static const int sorder[ 3 ] = { 1, 2, 0 };
+				s = sorder[ s ];
+			}
+			else
+			{
+				static const int sorder[ 3 ] = { 1, 0, 2 };
+				s = sorder[ s ];
+			}
+		}
+		else
+		{
+			if( CurCosts[ 2 ] < CurCosts[ 1 ])
+			{
+				if( CurCosts[ 2 ] < CurCosts[ 0 ])
+				{
+					static const int sorder[ 3 ] = { 2, 0, 1 };
+					s = sorder[ s ];
+				}
+				else
+				{
+					static const int sorder[ 3 ] = { 0, 2, 1 };
+					s = sorder[ s ];
+				}
+			}
+		}
+
 		const double cm = CrossMults[ s ];
 		double* const Params = CurParams[ s ];
 		double SaveParams[ ParamCount ];
@@ -361,7 +382,6 @@ public:
 		if( NewCost >= CurCosts[ s ])
 		{
 			double CopyParams[ ParamCount ];
-			int i;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -373,7 +393,7 @@ public:
 			// Possibly replace another least-performing "fan element".
 
 			int f = -1;
-			double MaxDist = 0.0;
+			double MaxCost;
 
 			for( i = 0; i < FanSize; i++ )
 			{
@@ -386,11 +406,9 @@ public:
 
 				if( NewCost < CurCosts[ i ] + d )
 				{
-					const double NewDist = calcDistance( CopyParams, i );
-
-					if( NewDist > MaxDist && NewDist > AvgDist * AvgDistMult )
+					if( f == -1 || CurCosts[ i ] > MaxCost )
 					{
-						MaxDist = NewDist;
+						MaxCost = CurCosts[ i ];
 						f = i;
 					}
 				}
@@ -412,7 +430,7 @@ public:
 
 				HistCosts[ HistPos ] = CurCosts[ f ];
 				CurCosts[ f ] = NewCost;
-				updateDistances();
+				updateAvgCost();
 			}
 		}
 		else
@@ -438,7 +456,7 @@ public:
 
 			HistCosts[ HistPos ] = CurCosts[ s ];
 			CurCosts[ s ] = NewCost;
-			updateDistances();
+			updateAvgCost();
 		}
 	}
 
@@ -492,8 +510,6 @@ protected:
 		///<
 	static const int FanSize = 3; ///< The number of "fan elements" to use.
 		///<
-	static const int FanSize1 = FanSize - 1; ///< = FanSize - 1.
-		///<
 	static const int HistSize = 14; ///< The size of the history.
 		///<
 	static const int MantSize = 29; ///< Mantissa size of bitmask inversion
@@ -513,8 +529,6 @@ protected:
 		///<
 	double AvgCoeff; ///< Averaging coefficient for update of CentParams
 		///< values.
-		///<
-	double AvgDist; ///< Average distance of all working parameter vectors.
 		///<
 	double AvgCost; ///< Average cost of all working parameter vectors.
 		///<
@@ -663,130 +677,13 @@ protected:
 	}
 
 	/**
-	 * "Fan element" sorting function, used in the qsort() function call.
-	 *
-	 * @param p1 Element 1.
-	 * @param p2 Element 2.
-	 */
-
-	static int FanElementSortFn( const void* p1, const void* p2 )
-	{
-		const double c1 = ( (CFanSortStruct*) p1 ) -> Cost;
-		const double c2 = ( (CFanSortStruct*) p2 ) -> Cost;
-
-		if( c1 < c2 )
-		{
-			return( 1 );
-		}
-
-		if( c1 > c2 )
-		{
-			return( -1 );
-		}
-
-		return( 0 );
-	}
-
-	/**
-	 * Function sorts "fan elements" by cost.
-	 */
-
-	void sortFanElements()
-	{
-		CFanSortStruct fe[ FanSize ];
-		int i;
-
-		for( i = 0; i < FanSize; i++ )
-		{
-			fe[ i ].i = i;
-			fe[ i ].Cost = CurCosts[ i ];
-		}
-
-		qsort( fe, FanSize, sizeof( fe[ 0 ]), FanElementSortFn );
-
-		for( i = 0; i < FanSize; i++ )
-		{
-			if( fe[ i ].i != i )
-			{
-				break;
-			}
-		}
-
-		if( i == FanSize )
-		{
-			return;
-		}
-
-		double CurParamsS[ FanSize ][ ParamCount ];
-		double CurCostsS[ FanSize ];
-		double PrevParamsS[ FanSize ][ ParamCount ];
-
-		memcpy( CurParamsS, CurParams, sizeof( CurParamsS ));
-		memcpy( CurCostsS, CurCosts, sizeof( CurCostsS ));
-		memcpy( PrevParamsS, PrevParams, sizeof( PrevParamsS ));
-
-		for( i = 0; i < FanSize; i++ )
-		{
-			const int s = fe[ i ].i;
-
-			memcpy( CurParams[ i ], CurParamsS[ s ], sizeof( CurParams[ i ]));
-			CurCosts[ i ] = CurCostsS[ s ];
-			memcpy( PrevParams[ i ], PrevParamsS[ s ],
-				sizeof( PrevParams[ i ]));
-		}
-	}
-
-	/**
-	 * Function calculates distance of the specified parameter values to all
-	 * other parameter vectors ("fan elements").
-	 *
-	 * @param Params Parameters whose distance to calculate.
-	 * @param Skip The index of "fan element" to skip from calculation.
-	 * @return Distance to "fan elements".
-	 */
-
-	double calcDistance( const double* const Params, const int Skip ) const
-	{
-		double Dist = 0.0;
-		int j;
-		int i;
-
-		for( j = 0; j < Skip; j++ )
-		{
-			for( i = 0; i < ParamCount; i++ )
-			{
-				Dist += fabs( CurParams[ j ][ i ] - Params[ i ]);
-			}
-		}
-
-		for( j = Skip + 1; j < FanSize; j++ )
-		{
-			for( i = 0; i < ParamCount; i++ )
-			{
-				Dist += fabs( CurParams[ j ][ i ] - Params[ i ]);
-			}
-		}
-
-		return( Dist / ( ParamCount * ( FanSize - 1 )));
-	}
-
-	/**
 	 * Function updates distances of all "fan elements".
 	 */
 
-	void updateDistances()
+	void updateAvgCost()
 	{
-		AvgDist = 0.0;
-		int i;
-
-		for( i = 0; i < FanSize; i++ )
-		{
-			AvgDist += calcDistance( CurParams[ i ], i );
-		}
-
-		AvgDist /= FanSize;
-
 		AvgCost = CurCosts[ 0 ];
+		int i;
 
 		for( i = 1; i < FanSize; i++ )
 		{
@@ -794,8 +691,6 @@ protected:
 		}
 
 		AvgCost /= FanSize;
-
-		sortFanElements();
 	}
 };
 

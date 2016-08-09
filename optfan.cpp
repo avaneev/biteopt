@@ -11,10 +11,10 @@
 
 const int ParamCount = 2;
 const int FnCount = 9;
-const double CostThreshold = 0.00001;
+const double CostThreshold = 0.0001;
 const int IterCount = 10000;
 const int InnerIterCount = 10000;
-const int FanParamCount = 9;
+const int FanParamCount = 6;
 const int FanIterCount = 2000;
 CBEORnd rnd;
 
@@ -83,28 +83,22 @@ class CFanOpt : public CBEOOptimizerFan< FanParamCount, 3 >
 public:
 	virtual void getMinValues( double* const p ) const
 	{
-		p[ 0 ] = 0.1;
-		p[ 1 ] = 0.1;
-		p[ 2 ] = 1.0;
-		p[ 3 ] = 0.5;
-		p[ 4 ] = 0.1;
-		p[ 5 ] = 0.25;
-		p[ 6 ] = 0.25;
-		p[ 7 ] = 0.25;
-		p[ 8 ] = 0.25;
+		p[ 0 ] = 2.0;
+		p[ 1 ] = 0.5;
+		p[ 2 ] = 0.4;
+		p[ 3 ] = 0.4;
+		p[ 4 ] = 0.4;
+		p[ 5 ] = 0.4;
 	}
 
 	virtual void getMaxValues( double* const p ) const
 	{
-		p[ 0 ] = 0.7;
-		p[ 1 ] = 0.7;
-		p[ 2 ] = 20.0;
-		p[ 3 ] = 6.0;
-		p[ 4 ] = 0.7;
-		p[ 5 ] = 1.1;
-		p[ 6 ] = 1.1;
-		p[ 7 ] = 1.1;
-		p[ 8 ] = 1.1;
+		p[ 0 ] = 20.0;
+		p[ 1 ] = 4.0;
+		p[ 2 ] = 1.2;
+		p[ 3 ] = 1.2;
+		p[ 4 ] = 1.2;
+		p[ 5 ] = 1.2;
 	}
 
 	virtual double optcost( const double* const p ) const
@@ -112,15 +106,14 @@ public:
 		rnd.init( 0 );
 
 		CTestOpt opt;
-		opt.CrossProb = roundp( p[ 0 ]);
-		opt.CentProb = roundp( p[ 1 ]);
-		opt.CentTime = roundp( p[ 2 ]);
-		opt.AvgCostMult = roundp( p[ 3 ]);
-		opt.AvgDistMult = roundp( p[ 4 ]);
-		opt.CrossMults[ 0 ] = roundp( p[ 5 ]);
-		opt.CrossMults[ 1 ] = roundp( p[ 6 ]);
-		opt.CrossMults[ 2 ] = roundp( p[ 7 ]);
-		opt.CentMult = roundp( p[ 8 ]);
+		opt.CrossProb = 0.500000;
+		opt.CentProb = 0.333333;
+		opt.CentTime = roundp( p[ 0 ]);
+		opt.AvgCostMult = roundp( p[ 1 ]);
+		opt.CrossMults[ 0 ] = roundp( p[ 2 ]);
+		opt.CrossMults[ 1 ] = roundp( p[ 3 ]);
+		opt.CrossMults[ 2 ] = roundp( p[ 4 ]);
+		opt.CentMult = roundp( p[ 5 ]);
 
 		double ItAvg = 0.0;
 		double RMSAvg = 0.0;
@@ -214,7 +207,7 @@ public:
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
 
-		return( ItAvg * sqrt( ItRtAvg ));
+		return( ItAvg * pow( ItRtAvg, 0.5 ));
 	}
 };
 
@@ -224,15 +217,12 @@ int main()
 	rnd2.init( 0 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 0.474072;
-	Params[ 1 ] = 0.336040;
-	Params[ 2 ] = 8.863409;
-	Params[ 3 ] = 1.708017;
-	Params[ 4 ] = 0.338186;
-	Params[ 5 ] = 0.731545;
-	Params[ 6 ] = 0.917677;
-	Params[ 7 ] = 0.578602;
-	Params[ 8 ] = 0.942713;
+	Params[ 0 ] = 7.489100;
+	Params[ 1 ] = 2.174790;
+	Params[ 2 ] = 0.812871;
+	Params[ 3 ] = 0.896751;
+	Params[ 4 ] = 0.862706;
+	Params[ 5 ] = 0.867665;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );
@@ -250,15 +240,14 @@ int main()
 			Params[ j ] = roundp( opt.getBestParams()[ j ]);
 		}
 
-		printf( "CrossProb = %.6f;\n", Params[ 0 ]);
-		printf( "CentProb = %.6f;\n", Params[ 1 ]);
-		printf( "CentTime = %.6f;\n", Params[ 2 ]);
-		printf( "AvgCostMult = %.6f;\n", Params[ 3 ]);
-		printf( "AvgDistMult = %.6f;\n", Params[ 4 ]);
-		printf( "CrossMults[ 0 ] = %.6f;\n", Params[ 5 ]);
-		printf( "CrossMults[ 1 ] = %.6f;\n", Params[ 6 ]);
-		printf( "CrossMults[ 2 ] = %.6f;\n", Params[ 7 ]);
-		printf( "CentMult = %.6f;\n", Params[ 8 ]);
+		printf( "CrossProb = %.6f;\n", 0.500000 );
+		printf( "CentProb = %.6f;\n", 0.333333 );
+		printf( "CentTime = %.6f;\n", Params[ 0 ]);
+		printf( "AvgCostMult = %.6f;\n", Params[ 1 ]);
+		printf( "CrossMults[ 0 ] = %.6f;\n", Params[ 2 ]);
+		printf( "CrossMults[ 1 ] = %.6f;\n", Params[ 3 ]);
+		printf( "CrossMults[ 2 ] = %.6f;\n", Params[ 4 ]);
+		printf( "CentMult = %.6f;\n", Params[ 5 ]);
 	}
 
 	return( 0 );
