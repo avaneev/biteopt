@@ -75,7 +75,7 @@
  * 4. The previous attempted solution parameter vector for each "fan element"
  * is maintained.
  *
- * 5. With 50% probability a crossing-over operation is performed which
+ * 5. With 48% probability a crossing-over operation is performed which
  * involves a random historic solution. This operation consists of the
  * "step in the right direction" operation.
  *
@@ -87,8 +87,10 @@
  * 7. Additionally, with 33% probability the "step in the right direction"
  * operation is performed using the centroid vector.
  *
- * 8. If a better solution was not found at the current step, an attempt to
- * replace one of the "fan elements" is performed using cost constraints.
+ * 8. After each function evaluation, an attempt to replace one of the "fan
+ * elements" is performed using cost constraints. This method is based on an
+ * assumption that the later solutions tend to be better than the earlier
+ * solutions.
  *
  * 9. History is updated with a previous solution whenever a better solution
  * is found or when a "fan element" is replaced.
@@ -127,14 +129,14 @@ public:
 	{
 		// Machine-optimized values.
 
-		CrossProb = 0.500000;
+		CrossProb = 0.480000;
 		CentProb = 0.333333;
-		CentTime = 7.489100;
-		AvgCostMult = 2.174790;
-		CrossMults[ 0 ] = 0.812871;
-		CrossMults[ 1 ] = 0.896751;
-		CrossMults[ 2 ] = 0.862706;
-		CentMult = 0.867665;
+		CentTime = 9.570437;
+		AvgCostMult = 2.721252;
+		CrossMults[ 0 ] = 0.969624;
+		CrossMults[ 1 ] = 0.977170;
+		CrossMults[ 2 ] = 0.869048;
+		CentMult = 0.942157;
 	}
 
 	/**
@@ -303,6 +305,7 @@ public:
 
 			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
 			const double* const UseParams = HistParams[ CrossHistPos ];
+			const double m = sqrt( rnd.getRndValue() ) * cm;
 
 			if( CurCosts[ s ] < HistCosts[ CrossHistPos ])
 			{
@@ -313,8 +316,7 @@ public:
 					// The "step in the right direction" operation.
 
 					Params[ i ] = wrapParam( Params[ i ] -
-						( UseParams[ i ] - Params[ i ]) *
-						sqrt( rnd.getRndValue() ) * cm );
+						( UseParams[ i ] - Params[ i ]) * m );
 				}
 			}
 			else
@@ -326,8 +328,7 @@ public:
 					// The "step in the right direction" operation.
 
 					Params[ i ] = wrapParam( Params[ i ] -
-						( Params[ i ] - UseParams[ i ]) *
-						sqrt( rnd.getRndValue() ) * cm );
+						( Params[ i ] - UseParams[ i ]) * m );
 				}
 			}
 		}
@@ -379,83 +380,71 @@ public:
 
 		const double NewCost = optcost( NewParams );
 
-		if( NewCost >= CurCosts[ s ])
+		if( NewCost < BestCost )
 		{
-			double CopyParams[ ParamCount ];
+			for( i = 0; i < ParamCount0; i++ )
+			{
+				BestParams[ i ] = NewParams[ i ];
+			}
 
+			BestCost = NewCost;
+		}
+
+		double CopyParams[ ParamCount ];
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			CopyParams[ i ] = Params[ i ];
+			Params[ i ] = SaveParams[ i ];
+		}
+
+		// Possibly replace another least-performing "fan element".
+
+		int f = -1;
+		double MaxCost;
+
+		for( i = 0; i < FanSize; i++ )
+		{
+			double d = ( CurCosts[ i ] - AvgCost ) * AvgCostMult;
+
+			if( d < 0.0 )
+			{
+				d = 0.0;
+			}
+
+			if( NewCost < CurCosts[ i ] + d )
+			{
+				if( f == -1 || CurCosts[ i ] > MaxCost )
+				{
+					MaxCost = CurCosts[ i ];
+					f = i;
+				}
+			}
+		}
+
+		if( f == -1 )
+		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				PrevParams[ s ][ i ] = Params[ i ];
-				CopyParams[ i ] = Params[ i ];
-				Params[ i ] = SaveParams[ i ];
-			}
-
-			// Possibly replace another least-performing "fan element".
-
-			int f = -1;
-			double MaxCost;
-
-			for( i = 0; i < FanSize; i++ )
-			{
-				double d = ( CurCosts[ i ] - AvgCost ) * AvgCostMult;
-
-				if( d < 0.0 )
-				{
-					d = 0.0;
-				}
-
-				if( NewCost < CurCosts[ i ] + d )
-				{
-					if( f == -1 || CurCosts[ i ] > MaxCost )
-					{
-						MaxCost = CurCosts[ i ];
-						f = i;
-					}
-				}
-			}
-
-			if( f != -1 )
-			{
-				double* const hp = advanceHist();
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					CentParams[ i ] +=
-						( CurParams[ f ][ i ] - CentParams[ i ]) * AvgCoeff;
-
-					hp[ i ] = CurParams[ f ][ i ];
-					PrevParams[ f ][ i ] = CurParams[ f ][ i ];
-					CurParams[ f ][ i ] = CopyParams[ i ];
-				}
-
-				HistCosts[ HistPos ] = CurCosts[ f ];
-				CurCosts[ f ] = NewCost;
-				updateAvgCost();
+				PrevParams[ s ][ i ] = CopyParams[ i ];
 			}
 		}
 		else
 		{
-			if( NewCost < BestCost )
-			{
-				for( i = 0; i < ParamCount0; i++ )
-				{
-					BestParams[ i ] = NewParams[ i ];
-				}
-
-				BestCost = NewCost;
-			}
-
 			double* const hp = advanceHist();
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				hp[ i ] = SaveParams[ i ];
 				CentParams[ i ] +=
-					( SaveParams[ i ] - CentParams[ i ]) * AvgCoeff;
+					( CurParams[ f ][ i ] - CentParams[ i ]) * AvgCoeff;
+
+				hp[ i ] = CurParams[ f ][ i ];
+				PrevParams[ f ][ i ] = CurParams[ f ][ i ];
+				CurParams[ f ][ i ] = CopyParams[ i ];
 			}
 
-			HistCosts[ HistPos ] = CurCosts[ s ];
-			CurCosts[ s ] = NewCost;
+			HistCosts[ HistPos ] = CurCosts[ f ];
+			CurCosts[ f ] = NewCost;
 			updateAvgCost();
 		}
 	}
@@ -543,10 +532,6 @@ protected:
 		///<
 	int HistPos; ///< Best parameter value history position.
 		///<
-	double BestParams[ ParamCount0 ]; ///< Best parameter vector.
-		///<
-	double BestCost; ///< Cost of the best parameter vector.
-		///<
 	double MinValues[ ParamCount0 ]; ///< Minimal parameter values.
 		///<
 	double MaxValues[ ParamCount0 ]; ///< Maximal parameter values.
@@ -554,18 +539,10 @@ protected:
 	double DiffValues[ ParamCount0 ]; ///< Difference between maximal and
 		///< minimal parameter values.
 		///<
-
-	/**
-	 * Structure used for "fan element" sorting.
-	 */
-
-	struct CFanSortStruct
-	{
-		int i; ///< The index of the element.
-			///<
-		double Cost; ///< The cost of the element.
-			///<
-	};
+	double BestParams[ ParamCount0 ]; ///< Best parameter vector.
+		///<
+	double BestCost; ///< Cost of the best parameter vector.
+		///<
 
 	/**
 	 * Function calculates the averaging coefficient for 1st order low-pass
