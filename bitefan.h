@@ -114,10 +114,11 @@ public:
 		///<
 	double AvgCostMult; ///< Average "fan element" cost threshold multiplier.
 		///<
-	double CrossMults[ 3 ]; ///< Crossing-over range multipliers for each
-		///< "fan element".
+	double CrossMult; ///< Crossing-over range multiplier.
 		///<
 	double CentMult; ///< Centroid move range multiplier.
+		///<
+	double PrevMult; ///< Previous move range multiplier.
 		///<
 
 	/**
@@ -131,12 +132,11 @@ public:
 
 		CrossProb = 0.480000;
 		CentProb = 0.333333;
-		CentTime = 9.570437;
-		AvgCostMult = 2.721252;
-		CrossMults[ 0 ] = 0.969624;
-		CrossMults[ 1 ] = 0.977170;
-		CrossMults[ 2 ] = 0.869048;
-		CentMult = 0.942157;
+		CentTime = 8.704776;
+		AvgCostMult = 3.150315;
+		CrossMult = 0.942131;
+		CentMult = 0.809221;
+		PrevMult = 1.007488;
 	}
 
 	/**
@@ -294,7 +294,6 @@ public:
 			}
 		}
 
-		const double cm = CrossMults[ s ];
 		double* const Params = CurParams[ s ];
 		double SaveParams[ ParamCount ];
 		int i;
@@ -305,7 +304,7 @@ public:
 
 			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
 			const double* const UseParams = HistParams[ CrossHistPos ];
-			const double m = sqrt( rnd.getRndValue() ) * cm;
+			const double m = sqrt( rnd.getRndValue() ) * CrossMult;
 
 			if( CurCosts[ s ] < HistCosts[ CrossHistPos ])
 			{
@@ -334,7 +333,7 @@ public:
 		}
 		else
 		{
-			const double m = sqrt( rnd.getRndValue() );
+			const double m = sqrt( rnd.getRndValue() ) * PrevMult;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -358,7 +357,7 @@ public:
 
 		if( rnd.getRndValue() < CentProb )
 		{
-			const double m = rnd.getRndValue() * cm * CentMult;
+			const double m = rnd.getRndValue() * CentMult;
 
 			// The "step in the right direction" operation.
 

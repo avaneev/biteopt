@@ -14,7 +14,7 @@ const int FnCount = 9;
 const double CostThreshold = 0.0001;
 const int IterCount = 10000;
 const int InnerIterCount = 10000;
-const int FanParamCount = 6;
+const int FanParamCount = 5;
 const int FanIterCount = 2000;
 CBEORnd rnd;
 
@@ -88,7 +88,6 @@ public:
 		p[ 2 ] = 0.4;
 		p[ 3 ] = 0.4;
 		p[ 4 ] = 0.4;
-		p[ 5 ] = 0.4;
 	}
 
 	virtual void getMaxValues( double* const p ) const
@@ -98,7 +97,6 @@ public:
 		p[ 2 ] = 1.2;
 		p[ 3 ] = 1.2;
 		p[ 4 ] = 1.2;
-		p[ 5 ] = 1.2;
 	}
 
 	virtual double optcost( const double* const p ) const
@@ -106,14 +104,13 @@ public:
 		rnd.init( 0 );
 
 		CTestOpt opt;
-		opt.CrossProb = 0.500000;
+		opt.CrossProb = 0.480000;
 		opt.CentProb = 0.333333;
 		opt.CentTime = roundp( p[ 0 ]);
 		opt.AvgCostMult = roundp( p[ 1 ]);
-		opt.CrossMults[ 0 ] = roundp( p[ 2 ]);
-		opt.CrossMults[ 1 ] = roundp( p[ 3 ]);
-		opt.CrossMults[ 2 ] = roundp( p[ 4 ]);
-		opt.CentMult = roundp( p[ 5 ]);
+		opt.CrossMult = roundp( p[ 2 ]);
+		opt.CentMult = roundp( p[ 3 ]);
+		opt.PrevMult = roundp( p[ 4 ]);
 
 		double ItAvg = 0.0;
 		double RMSAvg = 0.0;
@@ -217,12 +214,11 @@ int main()
 	rnd2.init( 0 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 7.489100;
-	Params[ 1 ] = 2.174790;
-	Params[ 2 ] = 0.812871;
-	Params[ 3 ] = 0.896751;
-	Params[ 4 ] = 0.862706;
-	Params[ 5 ] = 0.867665;
+	Params[ 0 ] = 9.452306;
+	Params[ 1 ] = 3.015346;
+	Params[ 2 ] = 0.958876;
+	Params[ 3 ] = 0.886217;
+	Params[ 4 ] = 1.007010;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );
@@ -240,14 +236,13 @@ int main()
 			Params[ j ] = roundp( opt.getBestParams()[ j ]);
 		}
 
-		printf( "CrossProb = %.6f;\n", 0.500000 );
+		printf( "CrossProb = %.6f;\n", 0.480000 );
 		printf( "CentProb = %.6f;\n", 0.333333 );
 		printf( "CentTime = %.6f;\n", Params[ 0 ]);
 		printf( "AvgCostMult = %.6f;\n", Params[ 1 ]);
-		printf( "CrossMults[ 0 ] = %.6f;\n", Params[ 2 ]);
-		printf( "CrossMults[ 1 ] = %.6f;\n", Params[ 3 ]);
-		printf( "CrossMults[ 2 ] = %.6f;\n", Params[ 4 ]);
-		printf( "CentMult = %.6f;\n", Params[ 5 ]);
+		printf( "CrossMult = %.6f;\n", Params[ 2 ]);
+		printf( "CentMult = %.6f;\n", Params[ 3 ]);
+		printf( "PrevMult = %.6f;\n", Params[ 4 ]);
 	}
 
 	return( 0 );

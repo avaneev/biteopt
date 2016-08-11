@@ -48,7 +48,7 @@ their design these strategies may be particularly good at improving an
 existing sub-optimal local solution.
 
 Optimization of more complex functions may benefit from increasing of the
-ValuesPerParam template parameter value to 2 or 3, but this obviously
+ValuesPerParam template parameter value to 2, 3 or 4, but this obviously
 increases the overhead.
 
 The minimal and maximal allowed parameter values should be specified in a way
