@@ -104,11 +104,11 @@ public:
 		rnd.init( 0 );
 
 		CTestOpt opt;
-		opt.CrossProb = 0.480000;
+		opt.HistProb = 0.480000;
 		opt.CentProb = 0.333333;
 		opt.CentTime = roundp( p[ 0 ]);
 		opt.AvgCostMult = roundp( p[ 1 ]);
-		opt.CrossMult = roundp( p[ 2 ]);
+		opt.HistMult = roundp( p[ 2 ]);
 		opt.CentMult = roundp( p[ 3 ]);
 		opt.PrevMult = roundp( p[ 4 ]);
 
@@ -236,11 +236,11 @@ int main()
 			Params[ j ] = roundp( opt.getBestParams()[ j ]);
 		}
 
-		printf( "CrossProb = %.6f;\n", 0.480000 );
+		printf( "HistProb = %.6f;\n", 0.480000 );
 		printf( "CentProb = %.6f;\n", 0.333333 );
 		printf( "CentTime = %.6f;\n", Params[ 0 ]);
 		printf( "AvgCostMult = %.6f;\n", Params[ 1 ]);
-		printf( "CrossMult = %.6f;\n", Params[ 2 ]);
+		printf( "HistMult = %.6f;\n", Params[ 2 ]);
 		printf( "CentMult = %.6f;\n", Params[ 3 ]);
 		printf( "PrevMult = %.6f;\n", Params[ 4 ]);
 	}

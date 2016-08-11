@@ -23,12 +23,12 @@ faster convergence time.
 ### CBEOOptimizerFan ###
 
 This strategy is based on the CBEOOptimizer2 strategy, but uses several
-current parameter vectors ("fan elements"). Any parameter vector can be replaced with a new
-solution if parameter vector's cost (with some margin) is higher than that
-of the new solution's. Having several "fan elements" allows parameter
-vectors to be spaced apart from each other thus making them cover a larger
-parameter search space collectively. The "fan elements" are used unevenly:
-lower cost ones are evolved more frequently than the others.
+current parameter vectors ("fan elements"). Any parameter vector can be
+replaced with a new solution if parameter vector's cost (with some margin) is
+higher than that of the new solution's. Having several "fan elements" allows
+parameter vectors to be spaced apart from each other thus making them cover a
+larger parameter search space collectively. The "fan elements" are used
+unevenly: lower cost ones are evolved more frequently than the others.
 
 The benefit of this strategy is increased robustness: it can optimize
 successfully a wider range of functions. Another benefit is a considerably
@@ -49,7 +49,8 @@ existing sub-optimal local solution.
 
 Optimization of more complex functions may benefit from increasing of the
 ValuesPerParam template parameter value to 2, 3 or 4, but this obviously
-increases the overhead.
+increases the overhead (increase of overhead does not necessarily increase the
+number of cost function evaluations).
 
 The minimal and maximal allowed parameter values should be specified in a way
 to cover a wider value range in order to reduce boundary effects that may

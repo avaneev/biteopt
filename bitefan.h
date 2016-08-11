@@ -65,17 +65,17 @@
  * "fan element" with the lowest cost is evolved more frequently than
  * "fan elements" with the higher costs.
  *
- * 2. A set of 14 best historic solutions is maintained. The history is shared
- * among all "fan elements". History is at first initialized with random
- * values that work as an additional source of randomization on initial
+ * 2. A set of 14 better historic solutions is maintained. The history is
+ * shared among all "fan elements". History is at first initialized with
+ * random values that work as an additional source of randomization on initial
  * optimization steps.
  *
- * 3. A running-average centroid vector of best solutions is maintained.
+ * 3. A running-average centroid vector of better solutions is maintained.
  *
  * 4. The previous attempted solution parameter vector for each "fan element"
  * is maintained.
  *
- * 5. With 48% probability a crossing-over operation is performed which
+ * 5. With 48% probability a "history move" operation is performed which
  * involves a random historic solution. This operation consists of the
  * "step in the right direction" operation.
  *
@@ -89,8 +89,8 @@
  *
  * 8. After each function evaluation, an attempt to replace one of the "fan
  * elements" is performed using cost constraints. This method is based on an
- * assumption that the later solutions tend to be better than the earlier
- * solutions.
+ * assumption that the later solutions tend to be statistically better than
+ * the earlier solutions.
  *
  * 9. History is updated with a previous solution whenever a better solution
  * is found or when a "fan element" is replaced.
@@ -106,7 +106,7 @@ template< int ParamCount0, int ValuesPerParam = 1 >
 class CBEOOptimizerFan
 {
 public:
-	double CrossProb; ///< Crossing-over probability.
+	double HistProb; ///< History move probability.
 		///<
 	double CentProb; ///< Centroid move probability.
 		///<
@@ -114,7 +114,7 @@ public:
 		///<
 	double AvgCostMult; ///< Average "fan element" cost threshold multiplier.
 		///<
-	double CrossMult; ///< Crossing-over range multiplier.
+	double HistMult; ///< History move range multiplier.
 		///<
 	double CentMult; ///< Centroid move range multiplier.
 		///<
@@ -130,11 +130,11 @@ public:
 	{
 		// Machine-optimized values.
 
-		CrossProb = 0.480000;
+		HistProb = 0.480000;
 		CentProb = 0.333333;
 		CentTime = 8.704776;
 		AvgCostMult = 3.150315;
-		CrossMult = 0.942131;
+		HistMult = 0.942131;
 		CentMult = 0.809221;
 		PrevMult = 1.007488;
 	}
@@ -298,15 +298,15 @@ public:
 		double SaveParams[ ParamCount ];
 		int i;
 
-		if( rnd.getRndValue() < CrossProb )
+		if( rnd.getRndValue() < HistProb )
 		{
-			// Crossing-over with one of the historic solutions.
+			// Move towards one of the historic solutions.
 
-			const int CrossHistPos = (int) ( rnd.getRndValue() * HistSize );
-			const double* const UseParams = HistParams[ CrossHistPos ];
-			const double m = sqrt( rnd.getRndValue() ) * CrossMult;
+			const int Pos = (int) ( rnd.getRndValue() * HistSize );
+			const double* const UseParams = HistParams[ Pos ];
+			const double m = sqrt( rnd.getRndValue() ) * HistMult;
 
-			if( CurCosts[ s ] < HistCosts[ CrossHistPos ])
+			if( CurCosts[ s ] < HistCosts[ Pos ])
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
@@ -430,7 +430,9 @@ public:
 		}
 		else
 		{
-			double* const hp = advanceHist();
+			HistPos = ( HistPos + 1 ) % HistSize;
+			HistCosts[ HistPos ] = CurCosts[ f ];
+			double* const hp = HistParams[ HistPos ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -442,7 +444,6 @@ public:
 				CurParams[ f ][ i ] = CopyParams[ i ];
 			}
 
-			HistCosts[ HistPos ] = CurCosts[ f ];
 			CurCosts[ f ] = NewCost;
 			updateAvgCost();
 		}
@@ -639,17 +640,6 @@ protected:
 
 		return( MinValues[ i ] +
 			DiffValues[ i ] * sqrt( v / ValuesPerParam ));
-	}
-
-	/**
-	 * @return Function advances the history position and returns pointer to
-	 * the history vector.
-	 */
-
-	double* advanceHist()
-	{
-		HistPos = ( HistPos + 1 ) % HistSize;
-		return( HistParams[ HistPos ]);
 	}
 
 	/**
