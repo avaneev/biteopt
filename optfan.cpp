@@ -11,7 +11,7 @@
 
 const int ParamCount = 2;
 const int FnCount = 9;
-const double CostThreshold = 0.0001;
+const double CostThreshold = 0.001;
 const int IterCount = 10000;
 const int InnerIterCount = 10000;
 const int FanParamCount = 5;
@@ -107,7 +107,7 @@ public:
 		opt.HistProb = 0.480000;
 		opt.CentProb = 0.333333;
 		opt.CentTime = roundp( p[ 0 ]);
-		opt.AvgCostMult = roundp( p[ 1 ]);
+		opt.CostMult = roundp( p[ 1 ]);
 		opt.HistMult = roundp( p[ 2 ]);
 		opt.CentMult = roundp( p[ 3 ]);
 		opt.PrevMult = roundp( p[ 4 ]);
@@ -239,7 +239,7 @@ int main()
 		printf( "HistProb = %.6f;\n", 0.480000 );
 		printf( "CentProb = %.6f;\n", 0.333333 );
 		printf( "CentTime = %.6f;\n", Params[ 0 ]);
-		printf( "AvgCostMult = %.6f;\n", Params[ 1 ]);
+		printf( "CostMult = %.6f;\n", Params[ 1 ]);
 		printf( "HistMult = %.6f;\n", Params[ 2 ]);
 		printf( "CentMult = %.6f;\n", Params[ 3 ]);
 		printf( "PrevMult = %.6f;\n", Params[ 4 ]);

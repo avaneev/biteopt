@@ -74,15 +74,6 @@ public:
 	}
 };
 
-	inline __declspec( naked ) uint64_t rdtsc()
-	{
-		__asm
-		{
-			rdtsc
-			ret
-		}
-	}
-
 int main()
 {
 	rnd.init( 0 );
@@ -158,9 +149,9 @@ int main()
 					}
 				}
 
-				const uint64_t t1 = rdtsc();
+				const uint64_t t1 = __rdtsc();
 				opt.optimize( rnd );
-				tc += rdtsc() - t1;
+				tc += __rdtsc() - t1;
 			}
 
 			if( i == InnerIterCount )

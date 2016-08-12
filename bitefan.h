@@ -32,8 +32,6 @@
 #define BITEFAN_INCLUDED
 
 #include <math.h>
-#include <stdlib.h>
-#include <string.h>
 #include "biternd.h"
 
 /**
@@ -65,15 +63,15 @@
  * "fan element" with the lowest cost is evolved more frequently than
  * "fan elements" with the higher costs.
  *
- * 2. A set of 14 better historic solutions is maintained. The history is
+ * 2. The previous attempted solution parameter vector for each "fan element"
+ * is maintained.
+ *
+ * 3. A set of 14 better historic solutions is maintained. The history is
  * shared among all "fan elements". History is at first initialized with
  * random values that work as an additional source of randomization on initial
  * optimization steps.
  *
- * 3. A running-average centroid vector of better solutions is maintained.
- *
- * 4. The previous attempted solution parameter vector for each "fan element"
- * is maintained.
+ * 4. A running-average centroid vector of better solutions is maintained.
  *
  * 5. With 48% probability a "history move" operation is performed which
  * involves a random historic solution. This operation consists of the
@@ -87,13 +85,11 @@
  * 7. Additionally, with 33% probability the "step in the right direction"
  * operation is performed using the centroid vector.
  *
- * 8. After each function evaluation, an attempt to replace one of the "fan
- * elements" is performed using cost constraints. This method is based on an
- * assumption that the later solutions tend to be statistically better than
- * the earlier solutions.
- *
- * 9. History is updated with a previous solution whenever a better solution
- * is found or when a "fan element" is replaced.
+ * 8. After each function evaluation, an attempt to replace the highest cost
+ * "fan element" is performed using cost constraint. This method is based on
+ * an assumption that the later solutions tend to be statistically better than
+ * the earlier solutions. History is updated with a previous (replaced)
+ * solution whenever a "fan element" is replaced.
  *
  * @tparam ParamCount0 The number of parameters being optimized.
  * @tparam ValuesPerParam The number of internal parameter values assigned to
@@ -112,7 +108,7 @@ public:
 		///<
 	double CentTime; ///< Centroid averaging time (samples).
 		///<
-	double AvgCostMult; ///< Average "fan element" cost threshold multiplier.
+	double CostMult; ///< "Fan element" cost threshold multiplier.
 		///<
 	double HistMult; ///< History move range multiplier.
 		///<
@@ -132,11 +128,11 @@ public:
 
 		HistProb = 0.480000;
 		CentProb = 0.333333;
-		CentTime = 8.704776;
-		AvgCostMult = 3.150315;
-		HistMult = 0.942131;
-		CentMult = 0.809221;
-		PrevMult = 1.007488;
+		CentTime = 6.237185;
+		CostMult = 1.508305;
+		HistMult = 0.951514;
+		CentMult = 0.901520;
+		PrevMult = 0.997929;
 	}
 
 	/**
@@ -148,7 +144,7 @@ public:
 
 	void init( CBEORnd& rnd, const double* const InitParams = NULL )
 	{
-		AvgCoeff = calcAvgCoeff( CentTime );
+		CentCoeff = calcAvgCoeff( CentTime );
 
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
@@ -215,6 +211,7 @@ public:
 			}
 
 			CurCosts[ j ] = optcost( Params );
+			insertFanOrder( CurCosts[ j ], j, j );
 
 			if( j == 0 || CurCosts[ j ] < BestCost )
 			{
@@ -242,8 +239,6 @@ public:
 
 			HistCosts[ j ] = BestCost; // Not entirely correct, but works.
 		}
-
-		updateAvgCost();
 	}
 
 	/**
@@ -254,46 +249,7 @@ public:
 
 	void optimize( CBEORnd& rnd )
 	{
-		int s = (int) ( sqr( rnd.getRndValue() ) * FanSize );
-
-		// "Fan element" sorting, for 3 items.
-
-		if( CurCosts[ 1 ] < CurCosts[ 0 ])
-		{
-			if( CurCosts[ 2 ] < CurCosts[ 1 ])
-			{
-				static const int sorder[ 3 ] = { 2, 1, 0 };
-				s = sorder[ s ];
-			}
-			else
-			if( CurCosts[ 2 ] < CurCosts[ 0 ])
-			{
-				static const int sorder[ 3 ] = { 1, 2, 0 };
-				s = sorder[ s ];
-			}
-			else
-			{
-				static const int sorder[ 3 ] = { 1, 0, 2 };
-				s = sorder[ s ];
-			}
-		}
-		else
-		{
-			if( CurCosts[ 2 ] < CurCosts[ 1 ])
-			{
-				if( CurCosts[ 2 ] < CurCosts[ 0 ])
-				{
-					static const int sorder[ 3 ] = { 2, 0, 1 };
-					s = sorder[ s ];
-				}
-				else
-				{
-					static const int sorder[ 3 ] = { 0, 2, 1 };
-					s = sorder[ s ];
-				}
-			}
-		}
-
+		const int s = FanOrder[ (int) ( sqr( rnd.getRndValue() ) * FanSize )];
 		double* const Params = CurParams[ s ];
 		double SaveParams[ ParamCount ];
 		int i;
@@ -397,31 +353,13 @@ public:
 			Params[ i ] = SaveParams[ i ];
 		}
 
-		// Possibly replace another least-performing "fan element".
+		// Possibly replace the highest cost "fan element".
 
-		int f = -1;
-		double MaxCost;
+		const int sH = FanOrder[ FanSize1 ];
+		const double cT = CurCosts[ sH ] +
+			( CurCosts[ sH ] - CurCosts[ FanOrder[ 0 ]]) * CostMult;
 
-		for( i = 0; i < FanSize; i++ )
-		{
-			double d = ( CurCosts[ i ] - AvgCost ) * AvgCostMult;
-
-			if( d < 0.0 )
-			{
-				d = 0.0;
-			}
-
-			if( NewCost < CurCosts[ i ] + d )
-			{
-				if( f == -1 || CurCosts[ i ] > MaxCost )
-				{
-					MaxCost = CurCosts[ i ];
-					f = i;
-				}
-			}
-		}
-
-		if( f == -1 )
+		if( NewCost > cT )
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -431,21 +369,20 @@ public:
 		else
 		{
 			HistPos = ( HistPos + 1 ) % HistSize;
-			HistCosts[ HistPos ] = CurCosts[ f ];
+			HistCosts[ HistPos ] = CurCosts[ sH ];
 			double* const hp = HistParams[ HistPos ];
+			double* const rp = CurParams[ sH ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				CentParams[ i ] +=
-					( CurParams[ f ][ i ] - CentParams[ i ]) * AvgCoeff;
-
-				hp[ i ] = CurParams[ f ][ i ];
-				PrevParams[ f ][ i ] = CurParams[ f ][ i ];
-				CurParams[ f ][ i ] = CopyParams[ i ];
+				CentParams[ i ] += ( rp[ i ] - CentParams[ i ]) * CentCoeff;
+				hp[ i ] = rp[ i ];
+				PrevParams[ sH ][ i ] = rp[ i ];
+				rp[ i ] = CopyParams[ i ];
 			}
 
-			CurCosts[ f ] = NewCost;
-			updateAvgCost();
+			CurCosts[ sH ] = NewCost;
+			insertFanOrder( NewCost, sH, FanSize1 );
 		}
 	}
 
@@ -497,7 +434,9 @@ protected:
 	static const int ParamCount = ParamCount0 * ValuesPerParam; ///< The total
 		///< number of internal parameter values in use.
 		///<
-	static const int FanSize = 3; ///< The number of "fan elements" to use.
+	static const int FanSize = 4; ///< The number of "fan elements" to use.
+		///<
+	static const int FanSize1 = FanSize - 1; ///< = FanSize - 1.
 		///<
 	static const int HistSize = 14; ///< The size of the history.
 		///<
@@ -506,6 +445,9 @@ protected:
 		///< precision.
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
+		///<
+	int FanOrder[ FanSize ]; ///< The current "fan element" ordering,
+		///< ascending-sorted by cost.
 		///<
 	double CurParams[ FanSize ][ ParamCount ]; ///< Current working parameter
 		///< vectors.
@@ -516,10 +458,8 @@ protected:
 	double CentParams[ ParamCount ]; ///< Centroid of the best parameter
 		///< vectors.
 		///<
-	double AvgCoeff; ///< Averaging coefficient for update of CentParams
+	double CentCoeff; ///< Averaging coefficient for update of CentParams
 		///< values.
-		///<
-	double AvgCost; ///< Average cost of all working parameter vectors.
 		///<
 	double PrevParams[ FanSize ][ ParamCount ]; ///< Previously evaluated
 		///< parameters.
@@ -643,20 +583,34 @@ protected:
 	}
 
 	/**
-	 * Function updates distances of all "fan elements".
+	 * Function inserts the specified "fan element" index into the FanOrder
+	 * array at the appropriate offset, increasing the number of items by 1.
+	 *
+	 * @param Cost "Fan element's" cost.
+	 * @param f "Fan element's" index.
+	 * @param ItemCount The current number of items in the array.
 	 */
 
-	void updateAvgCost()
+	void insertFanOrder( const double Cost, const int f, const int ItemCount )
 	{
-		AvgCost = CurCosts[ 0 ];
-		int i;
+		int z;
 
-		for( i = 1; i < FanSize; i++ )
+		for( z = 0; z < ItemCount; z++ )
 		{
-			AvgCost += CurCosts[ i ];
+			if( Cost <= CurCosts[ FanOrder[ z ]])
+			{
+				break;
+			}
 		}
 
-		AvgCost /= FanSize;
+		int i;
+
+		for( i = ItemCount; i > z; i-- )
+		{
+			FanOrder[ i ] = FanOrder[ i - 1 ];
+		}
+
+		FanOrder[ z ] = f;
 	}
 };
 
