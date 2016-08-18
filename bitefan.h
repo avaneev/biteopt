@@ -37,12 +37,12 @@
 /**
  * "Bitmask evolution" version "fan" optimization class. This strategy is
  * based on the CBEOOptimizer2 strategy, but uses several current parameter
- * vectors ("fan elements"). Any parameter vector can be replaced with a new
- * solution if parameter vector's cost (with some margin) is higher than that
+ * vectors ("fan elements"). Highest cost "fan element" can be replaced with a
+ * new solution if "fan element's" cost (plus some margin) is higher than that
  * of the new solution's. Having several "fan elements" allows parameter
  * vectors to be spaced apart from each other thus making them cover a larger
  * parameter search space collectively. The "fan elements" are used unevenly:
- * lower cost ones are evolved more frequently than the others.
+ * the lower cost ones are evolved more frequently than the higher cost ones.
  *
  * The benefit of this strategy is increased robustness: it can successfully
  * optimize a wider range of functions. Another benefit is a considerably
@@ -55,8 +55,8 @@
  * more beneficial to use the CBEOOptimizer2 class.
  *
  * The strategy consists of the following elements. Most operations utilize a
- * square root distributed random number values. The parameter space is itself
- * square rooted on each function evaluation.
+ * log-like distributed random number values. The parameter space is itself
+ * log-like transformed on each function evaluation.
  *
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
  * parameter vector which is randomly evolved towards a better solution. The
@@ -93,7 +93,7 @@
  *
  * @tparam ParamCount0 The number of parameters being optimized.
  * @tparam ValuesPerParam The number of internal parameter values assigned to
- * each optimization parameter. Set to 2 or 3 to better solve more complex
+ * each optimization parameter. Set to 2, 3 or 4 to better solve more complex
  * functions. Not all functions will benefit from an increased value. Note
  * that the overhead is increased proportionally to this value.
  */
@@ -116,6 +116,14 @@ public:
 		///<
 	double PrevMult; ///< Previous move range multiplier.
 		///<
+	double BestMult; ///< Best move range multiplier.
+		///<
+	double SpaceMult; ///< Parameter space adjustment multiplier.
+		///<
+	double HistRMult; ///< History move adjustment multiplier.
+		///<
+	double PrevRMult; ///< Previous move adjustment multiplier.
+		///<
 
 	/**
 	 * Constructor.
@@ -126,13 +134,17 @@ public:
 	{
 		// Machine-optimized values.
 
+		SpaceMult = 0.268346;
+		HistRMult = 0.433420;
+		PrevRMult = 0.573783;
 		HistProb = 0.480000;
 		CentProb = 0.333333;
-		CentTime = 6.237185;
-		CostMult = 1.508305;
-		HistMult = 0.951514;
-		CentMult = 0.901520;
-		PrevMult = 0.997929;
+		CentTime = 8.144686;
+		CostMult = 1.370876;
+		HistMult = 0.840073;
+		CentMult = 0.845718;
+		PrevMult = 1.001365;
+		BestMult = 0.744041;
 	}
 
 	/**
@@ -145,6 +157,13 @@ public:
 	void init( CBEORnd& rnd, const double* const InitParams = NULL )
 	{
 		CentCoeff = calcAvgCoeff( CentTime );
+
+		HistM1 = HistRMult * sqr( sqr( HistMult ));
+		HistM2 = ( 1.0 - HistRMult ) * sqr( sqr( HistMult ));
+
+		PrevM1 = PrevRMult * sqr( sqr( PrevMult ));
+		PrevM2 = ( 1.0 - PrevRMult ) * sqr( sqr( PrevMult ));
+		SpaceMult2 = 1.0 - SpaceMult;
 
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
@@ -174,7 +193,7 @@ public:
 						clampParam(( InitParams[ k ] - MinValues[ k ]) /
 						DiffValues[ k ]) : rnd.getRndValue() );
 
-					CurParams[ j ][ i ] = v * v;
+					CurParams[ j ][ i ] = getParamInv( v );
 					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
 					CentParams[ i ] += CurParams[ j ][ i ];
 				}
@@ -186,8 +205,7 @@ public:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					const double v = rnd.getRndValue();
-					CurParams[ j ][ i ] = v * v;
+					CurParams[ j ][ i ] = getParamInv( rnd.getRndValue() );
 					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
 					CentParams[ i ] += CurParams[ j ][ i ];
 				}
@@ -233,8 +251,7 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const double v = rnd.getRndValue();
-				HistParams[ j ][ i ] = v * v;
+				HistParams[ j ][ i ] = getParamInv( rnd.getRndValue() );
 			}
 
 			HistCosts[ j ] = BestCost; // Not entirely correct, but works.
@@ -245,14 +262,31 @@ public:
 	 * Function performs 1 parameter optimization step.
 	 *
 	 * @param rnd Random number generator.
+	 * @return "True" if optimizer's state was improved on this step. Many
+	 * successive "false" results means optimizer has reached a plateau.
 	 */
 
-	void optimize( CBEORnd& rnd )
+	bool optimize( CBEORnd& rnd )
 	{
 		const int s = FanOrder[ (int) ( sqr( rnd.getRndValue() ) * FanSize )];
-		double* const Params = CurParams[ s ];
-		double SaveParams[ ParamCount ];
+		double Params[ ParamCount ];
 		int i;
+
+		if( true )
+		{
+			const double* const OrigParams = CurParams[ s ];
+			const double* const UseParams = CurParams[ FanOrder[ 0 ]];
+			const double m = rnd.getRndValue() * BestMult;
+
+			// The "step in the right direction" operation towards the
+			// best parameter vector.
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = OrigParams[ i ] -
+					( OrigParams[ i ] - UseParams[ i ]) * m;
+			}
+		}
 
 		if( rnd.getRndValue() < HistProb )
 		{
@@ -260,16 +294,13 @@ public:
 
 			const int Pos = (int) ( rnd.getRndValue() * HistSize );
 			const double* const UseParams = HistParams[ Pos ];
-			const double m = sqrt( rnd.getRndValue() ) * HistMult;
+			const double r = rnd.getRndValue();
+			const double m = sqrt( sqrt( r * ( HistM1 + r * r * HistM2 )));
 
 			if( CurCosts[ s ] < HistCosts[ Pos ])
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					SaveParams[ i ] = Params[ i ];
-
-					// The "step in the right direction" operation.
-
 					Params[ i ] = wrapParam( Params[ i ] -
 						( UseParams[ i ] - Params[ i ]) * m );
 				}
@@ -278,10 +309,6 @@ public:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					SaveParams[ i ] = Params[ i ];
-
-					// The "step in the right direction" operation.
-
 					Params[ i ] = wrapParam( Params[ i ] -
 						( Params[ i ] - UseParams[ i ]) * m );
 				}
@@ -289,12 +316,11 @@ public:
 		}
 		else
 		{
-			const double m = sqrt( rnd.getRndValue() ) * PrevMult;
+			const double r = rnd.getRndValue();
+			const double m = sqrt( sqrt( r * ( PrevM1 + r * r * PrevM2 )));
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				SaveParams[ i ] = Params[ i ];
-
 				// Bitmask inversion operation, works as a "driver" of
 				// optimization process.
 
@@ -313,9 +339,9 @@ public:
 
 		if( rnd.getRndValue() < CentProb )
 		{
-			const double m = rnd.getRndValue() * CentMult;
+			// Move towards centroid vector.
 
-			// The "step in the right direction" operation.
+			const double m = rnd.getRndValue() * CentMult;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -345,15 +371,7 @@ public:
 			BestCost = NewCost;
 		}
 
-		double CopyParams[ ParamCount ];
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			CopyParams[ i ] = Params[ i ];
-			Params[ i ] = SaveParams[ i ];
-		}
-
-		// Possibly replace the highest cost "fan element".
+		// Try to replace the highest cost "fan element".
 
 		const int sH = FanOrder[ FanSize1 ];
 		const double cT = CurCosts[ sH ] +
@@ -363,8 +381,10 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				PrevParams[ s ][ i ] = CopyParams[ i ];
+				PrevParams[ s ][ i ] = Params[ i ];
 			}
+
+			return( false );
 		}
 		else
 		{
@@ -378,12 +398,96 @@ public:
 				CentParams[ i ] += ( rp[ i ] - CentParams[ i ]) * CentCoeff;
 				hp[ i ] = rp[ i ];
 				PrevParams[ sH ][ i ] = rp[ i ];
-				rp[ i ] = CopyParams[ i ];
+				rp[ i ] = Params[ i ];
 			}
 
 			CurCosts[ sH ] = NewCost;
 			insertFanOrder( NewCost, sH, FanSize1 );
+
+			return( true );
 		}
+	}
+
+	/**
+	 * Function performs iterative optimization function until the required
+	 * minimum cost is reached or the maximum number of iterations was
+	 * exceeded.
+	 *
+	 * @param rnd Random number generator.
+	 * @param MinCost Target minimum cost.
+	 * @param PlateauIters The number of successive iterations which have not
+	 * produced a useful change, to treat as reaching a plateau. When plateau
+	 * is reached, *this object will be reinitialized.
+	 * @param MaxIters The maximal number of iterations to perform.
+	 * @return The number of iterations performed, excluding reinitialization
+	 * calls.
+	 */
+
+	int optimizePlateau( CBEORnd& rnd, const double MinCost,
+		const int PlateauIters, const int MaxIters )
+	{
+		double TmpBestParams[ ParamCount0 ];
+		double TmpBestCost;
+		int Iters = 0;
+		int i;
+
+		init( rnd );
+		bool IsFirstInit = true;
+		int PlateauCount = 0;
+
+		while( true )
+		{
+			const bool WasImproved = optimize( rnd );
+			Iters++;
+
+			if( BestCost <= MinCost )
+			{
+				return( Iters );
+			}
+
+			if( Iters >= MaxIters )
+			{
+				break;
+			}
+
+			if( WasImproved )
+			{
+				PlateauCount = 0;
+			}
+			else
+			{
+				PlateauCount++;
+
+				if( PlateauCount >= PlateauIters )
+				{
+					if( IsFirstInit || BestCost < TmpBestCost )
+					{
+						TmpBestCost = BestCost;
+
+						for( i = 0; i < ParamCount0; i++ )
+						{
+							TmpBestParams[ i ] = BestParams[ i ];
+						}
+					}
+
+					init( rnd );
+					IsFirstInit = false;
+					PlateauCount = 0;
+				}
+			}
+		}
+
+		if( !IsFirstInit )
+		{
+			BestCost = TmpBestCost;
+
+			for( i = 0; i < ParamCount0; i++ )
+			{
+				BestParams[ i ] = TmpBestParams[ i ];
+			}
+		}
+
+		return( Iters );
 	}
 
 	/**
@@ -445,6 +549,16 @@ protected:
 		///< precision.
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
+		///<
+	double HistM1; ///< History move multiplier 1.
+		///<
+	double HistM2; ///< History move multiplier 1.
+		///<
+	double PrevM1; ///< Previous move multiplier 1.
+		///<
+	double PrevM2; ///< Previous move multiplier 2.
+		///<
+	double SpaceMult2; ///< Parameter space adjustment multiplier 2.
 		///<
 	int FanOrder[ FanSize ]; ///< The current "fan element" ordering,
 		///< ascending-sorted by cost.
@@ -560,6 +674,17 @@ protected:
 	}
 
 	/**
+	 * @param v Value to inverse.
+	 * @return Inverse of the parameter value space function.
+	 */
+
+	double getParamInv( const double v ) const
+	{
+		return(( sqrt( 4.0 * sqr( sqr( v )) * SpaceMult2 + sqr( SpaceMult )) -
+			SpaceMult ) / ( 2.0 * SpaceMult2 ));
+	}
+
+	/**
 	 * Function returns specified parameter's value taking into account
 	 * minimal and maximal value range.
 	 *
@@ -578,8 +703,10 @@ protected:
 			v += p[ k ];
 		}
 
-		return( MinValues[ i ] +
-			DiffValues[ i ] * sqrt( v / ValuesPerParam ));
+		v /= ValuesPerParam;
+		v = sqrt( sqrt( v * ( SpaceMult + v * SpaceMult2 )));
+
+		return( MinValues[ i ] + DiffValues[ i ] * v );
 	}
 
 	/**

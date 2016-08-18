@@ -12,7 +12,7 @@ values to each optimization parameter. This strategy is associated with
 a very small code size and a minimal memory requirement.
 
 Currently, this version should be considered as a "proof of concept" version.
-As a rule, the CBEOOptimizerFan or CBEOOptimizer2 class should be used.
+As a rule, the CBEOOptimizerFan class should be used.
 
 ### CBEOOptimizer2 ###
 
@@ -23,12 +23,13 @@ faster convergence time.
 ### CBEOOptimizerFan ###
 
 This strategy is based on the CBEOOptimizer2 strategy, but uses several
-current parameter vectors ("fan elements"). Any parameter vector can be
-replaced with a new solution if parameter vector's cost (with some margin) is
-higher than that of the new solution's. Having several "fan elements" allows
-parameter vectors to be spaced apart from each other thus making them cover a
-larger parameter search space collectively. The "fan elements" are used
-unevenly: lower cost ones are evolved more frequently than the others.
+current parameter vectors ("fan elements"). Highest cost "fan element" can
+be replaced with a new solution if "fan element's" cost (plus some margin)
+is higher than that of the new solution's. Having several "fan elements"
+allows parameter vectors to be spaced apart from each other thus making
+them cover a larger parameter search space collectively. The "fan elements"
+are used unevenly: the lower cost ones are evolved more frequently than the
+higher cost ones.
 
 The benefit of this strategy is increased robustness: it can optimize
 successfully a wider range of functions. Another benefit is a considerably
