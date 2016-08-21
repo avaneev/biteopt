@@ -399,7 +399,7 @@ public:
 
 	/**
 	 * Function performs iterative optimization function until the required
-	 * minimum cost is reached or the maximum number of iterations was
+	 * minimum cost is reached or the maximum number of iterations is
 	 * exceeded.
 	 *
 	 * @param rnd Random number generator.
@@ -408,8 +408,8 @@ public:
 	 * produced a useful change, to treat as reaching a plateau. When plateau
 	 * is reached, *this object will be reinitialized.
 	 * @param MaxIters The maximal number of iterations to perform.
-	 * @return The number of iterations performed, excluding reinitialization
-	 * calls.
+	 * @return The number of iterations performed, including reinitialization
+	 * calls. May be greater than MaxIters.
 	 */
 
 	int optimizePlateau( CBEORnd& rnd, const double MinCost,
@@ -417,7 +417,7 @@ public:
 	{
 		double TmpBestParams[ ParamCount0 ];
 		double TmpBestCost;
-		int Iters = 0;
+		int Iters = FanSize;
 		int i;
 
 		init( rnd );
@@ -426,9 +426,6 @@ public:
 
 		while( true )
 		{
-			const bool WasImproved = optimize( rnd );
-			Iters++;
-
 			if( BestCost <= MinCost )
 			{
 				return( Iters );
@@ -438,6 +435,9 @@ public:
 			{
 				break;
 			}
+
+			const bool WasImproved = optimize( rnd );
+			Iters++;
 
 			if( WasImproved )
 			{
@@ -460,13 +460,14 @@ public:
 					}
 
 					init( rnd );
+					Iters += FanSize;
 					IsFirstInit = false;
 					PlateauCount = 0;
 				}
 			}
 		}
 
-		if( !IsFirstInit )
+		if( !IsFirstInit && TmpBestCost < BestCost )
 		{
 			BestCost = TmpBestCost;
 
