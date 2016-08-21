@@ -54,9 +54,7 @@
  * Due to this fact, for simple functions and not deep optimization it may be
  * more beneficial to use the CBEOOptimizer2 class.
  *
- * The strategy consists of the following elements. Most operations utilize a
- * log-like distributed random number values. The parameter space is itself
- * log-like transformed on each function evaluation.
+ * The strategy consists of the following elements.
  *
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
  * parameter vector which is randomly evolved towards a better solution. The
@@ -73,7 +71,7 @@
  *
  * 4. A running-average centroid vector of better solutions is maintained.
  *
- * 5. With 48% probability a "history move" operation is performed which
+ * 5. With 50% probability a "history move" operation is performed which
  * involves a random historic solution. This operation consists of the
  * "step in the right direction" operation.
  *
@@ -110,19 +108,15 @@ public:
 		///<
 	double CostMult; ///< "Fan element" cost threshold multiplier.
 		///<
-	double HistMult; ///< History move range multiplier.
+	double BestMult; ///< Best move range multiplier.
 		///<
-	double CentMult; ///< Centroid move range multiplier.
+	double HistMult; ///< History move range multiplier.
 		///<
 	double PrevMult; ///< Previous move range multiplier.
 		///<
-	double BestMult; ///< Best move range multiplier.
-		///<
-	double SpaceMult; ///< Parameter space adjustment multiplier.
+	double CentMult; ///< Centroid move range multiplier.
 		///<
 	double HistRMult; ///< History move adjustment multiplier.
-		///<
-	double PrevRMult; ///< Previous move adjustment multiplier.
 		///<
 
 	/**
@@ -134,17 +128,15 @@ public:
 	{
 		// Machine-optimized values.
 
-		SpaceMult = 0.268346;
-		HistRMult = 0.433420;
-		PrevRMult = 0.573783;
-		HistProb = 0.480000;
+		HistProb = 0.500000;
 		CentProb = 0.333333;
-		CentTime = 8.144686;
-		CostMult = 1.370876;
-		HistMult = 0.840073;
-		CentMult = 0.845718;
-		PrevMult = 1.001365;
-		BestMult = 0.744041;
+		CentTime = 7.108153;
+		CostMult = 1.451104;
+		BestMult = 0.710009;
+		HistMult = 0.702489;
+		PrevMult = 2.237021;
+		CentMult = 1.788786;
+		HistRMult = 0.843421;
 	}
 
 	/**
@@ -158,12 +150,8 @@ public:
 	{
 		CentCoeff = calcAvgCoeff( CentTime );
 
-		HistM1 = HistRMult * sqr( sqr( HistMult ));
-		HistM2 = ( 1.0 - HistRMult ) * sqr( sqr( HistMult ));
-
-		PrevM1 = PrevRMult * sqr( sqr( PrevMult ));
-		PrevM2 = ( 1.0 - PrevRMult ) * sqr( sqr( PrevMult ));
-		SpaceMult2 = 1.0 - SpaceMult;
+		HistM1 = HistRMult * HistMult;
+		HistM2 = ( 1.0 - HistRMult ) * HistMult;
 
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
@@ -193,7 +181,7 @@ public:
 						clampParam(( InitParams[ k ] - MinValues[ k ]) /
 						DiffValues[ k ]) : rnd.getRndValue() );
 
-					CurParams[ j ][ i ] = getParamInv( v );
+					CurParams[ j ][ i ] = v;
 					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
 					CentParams[ i ] += CurParams[ j ][ i ];
 				}
@@ -205,7 +193,7 @@ public:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					CurParams[ j ][ i ] = getParamInv( rnd.getRndValue() );
+					CurParams[ j ][ i ] = rnd.getRndValue();
 					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
 					CentParams[ i ] += CurParams[ j ][ i ];
 				}
@@ -251,7 +239,7 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				HistParams[ j ][ i ] = getParamInv( rnd.getRndValue() );
+				HistParams[ j ][ i ] = rnd.getRndValue();
 			}
 
 			HistCosts[ j ] = BestCost; // Not entirely correct, but works.
@@ -290,34 +278,32 @@ public:
 
 		if( rnd.getRndValue() < HistProb )
 		{
-			// Move towards one of the historic solutions.
+			// Move towards random historic solution.
 
 			const int Pos = (int) ( rnd.getRndValue() * HistSize );
 			const double* const UseParams = HistParams[ Pos ];
 			const double r = rnd.getRndValue();
-			const double m = sqrt( sqrt( r * ( HistM1 + r * r * HistM2 )));
+			const double sr = sqrt( r );
+			const double m = sqrt( sr ) * HistM1 + sr * HistM2;
 
 			if( CurCosts[ s ] < HistCosts[ Pos ])
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] = wrapParam( Params[ i ] -
-						( UseParams[ i ] - Params[ i ]) * m );
+					Params[ i ] -= ( UseParams[ i ] - Params[ i ]) * m;
 				}
 			}
 			else
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] = wrapParam( Params[ i ] -
-						( Params[ i ] - UseParams[ i ]) * m );
+					Params[ i ] -= ( Params[ i ] - UseParams[ i ]) * m;
 				}
 			}
 		}
 		else
 		{
-			const double r = rnd.getRndValue();
-			const double m = sqrt( sqrt( r * ( PrevM1 + r * r * PrevM2 )));
+			const double m = rnd.getRndValue() * PrevMult;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -332,8 +318,7 @@ public:
 
 				// The "step in the right direction" operation.
 
-				Params[ i ] = wrapParam( np -
-					( PrevParams[ s ][ i ] - np ) * m );
+				Params[ i ] = np - ( PrevParams[ s ][ i ] - np ) * m;
 			}
 		}
 
@@ -345,9 +330,13 @@ public:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = wrapParam( Params[ i ] -
-					( Params[ i ] - CentParams[ i ]) * m );
+				Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
 			}
+		}
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			Params[ i ] = wrapParam( Params[ i ]);
 		}
 
 		// Evaluate function with new parameters.
@@ -538,7 +527,7 @@ protected:
 	static const int ParamCount = ParamCount0 * ValuesPerParam; ///< The total
 		///< number of internal parameter values in use.
 		///<
-	static const int FanSize = 4; ///< The number of "fan elements" to use.
+	static const int FanSize = 5; ///< The number of "fan elements" to use.
 		///<
 	static const int FanSize1 = FanSize - 1; ///< = FanSize - 1.
 		///<
@@ -553,12 +542,6 @@ protected:
 	double HistM1; ///< History move multiplier 1.
 		///<
 	double HistM2; ///< History move multiplier 1.
-		///<
-	double PrevM1; ///< Previous move multiplier 1.
-		///<
-	double PrevM2; ///< Previous move multiplier 2.
-		///<
-	double SpaceMult2; ///< Parameter space adjustment multiplier 2.
 		///<
 	int FanOrder[ FanSize ]; ///< The current "fan element" ordering,
 		///< ascending-sorted by cost.
@@ -642,7 +625,7 @@ protected:
 
 			if( v > 0.9999999999 )
 			{
-				v = 0.9999999999 - v;
+				v = 1.9999999998 - v;
 				continue;
 			}
 
@@ -674,17 +657,6 @@ protected:
 	}
 
 	/**
-	 * @param v Value to inverse.
-	 * @return Inverse of the parameter value space function.
-	 */
-
-	double getParamInv( const double v ) const
-	{
-		return(( sqrt( 4.0 * sqr( sqr( v )) * SpaceMult2 + sqr( SpaceMult )) -
-			SpaceMult ) / ( 2.0 * SpaceMult2 ));
-	}
-
-	/**
 	 * Function returns specified parameter's value taking into account
 	 * minimal and maximal value range.
 	 *
@@ -703,10 +675,7 @@ protected:
 			v += p[ k ];
 		}
 
-		v /= ValuesPerParam;
-		v = sqrt( sqrt( v * ( SpaceMult + v * SpaceMult2 )));
-
-		return( MinValues[ i ] + DiffValues[ i ] * v );
+		return( MinValues[ i ] + DiffValues[ i ] * v / ValuesPerParam );
 	}
 
 	/**

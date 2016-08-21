@@ -5,10 +5,6 @@
 	#define sqr( x ) (( x ) * ( x ))
 #endif // !defined( sqr )
 
-/**
- * Optimization test class.
- */
-
 class CTestOpt : public CBEOOptimizerFan< 2 >
 {
 public:

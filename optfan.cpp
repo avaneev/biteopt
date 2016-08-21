@@ -14,7 +14,7 @@ const int FnCount = 9;
 const double CostThreshold = 0.001;
 const int IterCount = 10000;
 const int InnerIterCount = 10000;
-const int FanParamCount = 5;
+const int FanParamCount = 7;
 const int FanIterCount = 2000;
 CBEORnd rnd;
 
@@ -31,6 +31,8 @@ class CTestOpt : public CBEOOptimizerFan< ParamCount >
 {
 public:
 	int fn;
+	double sign1;
+	double sign2;
 
 	virtual void getMinValues( double* const p ) const
 	{
@@ -62,8 +64,8 @@ public:
 
 	virtual double optcost( const double* const p ) const
 	{
-		const double x = p[ 0 ];
-		const double y = p[ 1 ];
+		const double x = p[ 0 ] * ( fn == 9 ? 1.0 : sign1 );
+		const double y = p[ 1 ] * ( fn == 9 ? 1.0 : sign2 );
 
 		if( fn == 1 ) return( sqr( x + 2 * y - 7 ) + sqr( 2 * x + y - 5 ));
 		if( fn == 2 ) return( 0.26 * ( x * x + y * y ) - 0.48 * x * y );
@@ -83,20 +85,24 @@ class CFanOpt : public CBEOOptimizerFan< FanParamCount, 3 >
 public:
 	virtual void getMinValues( double* const p ) const
 	{
-		p[ 0 ] = 2.0;
+		p[ 0 ] = 4.0;
 		p[ 1 ] = 0.5;
-		p[ 2 ] = 0.4;
-		p[ 3 ] = 0.4;
-		p[ 4 ] = 0.4;
+		p[ 2 ] = 0.3;
+		p[ 3 ] = 0.3;
+		p[ 4 ] = 0.3;
+		p[ 5 ] = 0.3;
+		p[ 6 ] = 0.3;
 	}
 
 	virtual void getMaxValues( double* const p ) const
 	{
-		p[ 0 ] = 20.0;
-		p[ 1 ] = 4.0;
-		p[ 2 ] = 1.2;
-		p[ 3 ] = 1.2;
-		p[ 4 ] = 1.2;
+		p[ 0 ] = 16.0;
+		p[ 1 ] = 3.5;
+		p[ 2 ] = 1.5;
+		p[ 3 ] = 1.5;
+		p[ 4 ] = 2.5;
+		p[ 5 ] = 2.5;
+		p[ 6 ] = 1.0;
 	}
 
 	virtual double optcost( const double* const p ) const
@@ -104,13 +110,13 @@ public:
 		rnd.init( 0 );
 
 		CTestOpt opt;
-		opt.HistProb = 0.480000;
-		opt.CentProb = 0.333333;
 		opt.CentTime = roundp( p[ 0 ]);
 		opt.CostMult = roundp( p[ 1 ]);
-		opt.HistMult = roundp( p[ 2 ]);
-		opt.CentMult = roundp( p[ 3 ]);
+		opt.BestMult = roundp( p[ 2 ]);
+		opt.HistMult = roundp( p[ 3 ]);
 		opt.PrevMult = roundp( p[ 4 ]);
+		opt.CentMult = roundp( p[ 5 ]);
+		opt.HistRMult = roundp( p[ 6 ]);
 
 		double ItAvg = 0.0;
 		double RMSAvg = 0.0;
@@ -133,6 +139,8 @@ public:
 			{
 				int i;
 
+				opt.sign1 = ( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
+				opt.sign2 = ( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
 				opt.init( rnd );
 				opt.optimize( rnd );
 
@@ -211,14 +219,16 @@ public:
 int main()
 {
 	CBEORnd rnd2;
-	rnd2.init( 0 );
+	rnd2.init( 1 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 9.452306;
-	Params[ 1 ] = 3.015346;
-	Params[ 2 ] = 0.958876;
-	Params[ 3 ] = 0.886217;
-	Params[ 4 ] = 1.007010;
+	Params[ 0 ] = 7.108153;
+	Params[ 1 ] = 1.451104;
+	Params[ 2 ] = 0.710009;
+	Params[ 3 ] = 0.702489;
+	Params[ 4 ] = 2.237021;
+	Params[ 5 ] = 1.788786;
+	Params[ 6 ] = 0.843421;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );
@@ -236,13 +246,13 @@ int main()
 			Params[ j ] = roundp( opt.getBestParams()[ j ]);
 		}
 
-		printf( "HistProb = %.6f;\n", 0.480000 );
-		printf( "CentProb = %.6f;\n", 0.333333 );
 		printf( "CentTime = %.6f;\n", Params[ 0 ]);
 		printf( "CostMult = %.6f;\n", Params[ 1 ]);
-		printf( "HistMult = %.6f;\n", Params[ 2 ]);
-		printf( "CentMult = %.6f;\n", Params[ 3 ]);
+		printf( "BestMult = %.6f;\n", Params[ 2 ]);
+		printf( "HistMult = %.6f;\n", Params[ 3 ]);
 		printf( "PrevMult = %.6f;\n", Params[ 4 ]);
+		printf( "CentMult = %.6f;\n", Params[ 5 ]);
+		printf( "HistRMult = %.6f;\n", Params[ 6 ]);
 	}
 
 	return( 0 );

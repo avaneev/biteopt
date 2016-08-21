@@ -27,6 +27,8 @@ class CTestOpt : public CBEOOptimizerFan< ParamCount >
 {
 public:
 	int fn;
+	double sign1;
+	double sign2;
 
 	virtual void getMinValues( double* const p ) const
 	{
@@ -37,8 +39,8 @@ public:
 		}
 		else
 		{
-			p[ 0 ] = -10 + rnd.getRndValue() * 6;
-			p[ 1 ] = -10 + rnd.getRndValue() * 6;
+			p[ 0 ] = -10 + rnd.getRndValue() * 6.0;
+			p[ 1 ] = -10 + rnd.getRndValue() * 6.0;
 		}
 	}
 
@@ -51,15 +53,15 @@ public:
 		}
 		else
 		{
-			p[ 0 ] = 10 - rnd.getRndValue() * 6;
-			p[ 1 ] = 10 - rnd.getRndValue() * 6;
+			p[ 0 ] = 10 - rnd.getRndValue() * 6.0;
+			p[ 1 ] = 10 - rnd.getRndValue() * 6.0;
 		}
 	}
 
 	virtual double optcost( const double* const p ) const
 	{
-		const double x = p[ 0 ];
-		const double y = p[ 1 ];
+		const double x = p[ 0 ] * ( fn == 9 ? 1.0 : sign1 );
+		const double y = p[ 1 ] * ( fn == 9 ? 1.0 : sign2 );
 
 		if( fn == 1 ) return( sqr( x + 2 * y - 7 ) + sqr( 2 * x + y - 5 ));
 		if( fn == 2 ) return( 0.26 * ( x * x + y * y ) - 0.48 * x * y );
@@ -120,6 +122,8 @@ int main()
 			AvgP1 += Params[ 0 ];
 			AvgP2 += Params[ 1 ];
 */
+			opt.sign1 = ( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
+			opt.sign2 = ( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
 			opt.init( rnd );
 			opt.optimize( rnd );
 
