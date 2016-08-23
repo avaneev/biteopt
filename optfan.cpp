@@ -86,8 +86,8 @@ public:
 	virtual void getMinValues( double* const p ) const
 	{
 		p[ 0 ] = 4.0;
-		p[ 1 ] = 0.5;
-		p[ 2 ] = 0.3;
+		p[ 1 ] = 0.7;
+		p[ 2 ] = 0.2;
 		p[ 3 ] = 0.3;
 		p[ 4 ] = 0.3;
 		p[ 5 ] = 0.3;
@@ -98,10 +98,10 @@ public:
 	{
 		p[ 0 ] = 16.0;
 		p[ 1 ] = 3.5;
-		p[ 2 ] = 1.5;
-		p[ 3 ] = 1.5;
-		p[ 4 ] = 2.5;
-		p[ 5 ] = 2.5;
+		p[ 2 ] = 1.0;
+		p[ 3 ] = 1.0;
+		p[ 4 ] = 3.0;
+		p[ 5 ] = 3.0;
 		p[ 6 ] = 1.0;
 	}
 
@@ -222,13 +222,13 @@ int main()
 	rnd2.init( 1 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 7.108153;
-	Params[ 1 ] = 1.451104;
-	Params[ 2 ] = 0.710009;
-	Params[ 3 ] = 0.702489;
-	Params[ 4 ] = 2.237021;
-	Params[ 5 ] = 1.788786;
-	Params[ 6 ] = 0.843421;
+	Params[ 0 ] = 8.839214;
+	Params[ 1 ] = 1.637074;
+	Params[ 2 ] = 0.395623;
+	Params[ 3 ] = 0.675312;
+	Params[ 4 ] = 2.360616;
+	Params[ 5 ] = 2.266216;
+	Params[ 6 ] = 0.699237;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );

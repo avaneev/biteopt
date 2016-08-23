@@ -100,10 +100,6 @@ template< int ParamCount0, int ValuesPerParam = 1 >
 class CBEOOptimizerFan
 {
 public:
-	double HistProb; ///< History move probability.
-		///<
-	double CentProb; ///< Centroid move probability.
-		///<
 	double CentTime; ///< Centroid averaging time (samples).
 		///<
 	double CostMult; ///< "Fan element" cost threshold multiplier.
@@ -128,15 +124,13 @@ public:
 	{
 		// Machine-optimized values.
 
-		HistProb = 0.500000;
-		CentProb = 0.333333;
-		CentTime = 7.108153;
-		CostMult = 1.451104;
-		BestMult = 0.710009;
-		HistMult = 0.702489;
-		PrevMult = 2.237021;
-		CentMult = 1.788786;
-		HistRMult = 0.843421;
+		CentTime = 8.839214;
+		CostMult = 1.637074;
+		BestMult = 0.395623;
+		HistMult = 0.675312;
+		PrevMult = 2.360616;
+		CentMult = 2.266216;
+		HistRMult = 0.699237;
 	}
 
 	/**
@@ -152,6 +146,8 @@ public:
 
 		HistM1 = HistRMult * HistMult;
 		HistM2 = ( 1.0 - HistRMult ) * HistMult;
+		HistCnt = 0;
+		CentCnt = 0;
 
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
@@ -178,7 +174,7 @@ public:
 				{
 					const int k = i / ValuesPerParam;
 					const double v = ( j == 0 ?
-						clampParam(( InitParams[ k ] - MinValues[ k ]) /
+						wrapParam(( InitParams[ k ] - MinValues[ k ]) /
 						DiffValues[ k ]) : rnd.getRndValue() );
 
 					CurParams[ j ][ i ] = v;
@@ -264,7 +260,6 @@ public:
 		{
 			const double* const OrigParams = CurParams[ s ];
 			const double* const UseParams = CurParams[ FanOrder[ 0 ]];
-			const double m = rnd.getRndValue() * BestMult;
 
 			// The "step in the right direction" operation towards the
 			// best parameter vector.
@@ -272,11 +267,13 @@ public:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				Params[ i ] = OrigParams[ i ] -
-					( OrigParams[ i ] - UseParams[ i ]) * m;
+					( OrigParams[ i ] - UseParams[ i ]) * BestMult;
 			}
 		}
 
-		if( rnd.getRndValue() < HistProb )
+		HistCnt ^= 1;
+
+		if( HistCnt == 0 )
 		{
 			// Move towards random historic solution.
 
@@ -322,7 +319,7 @@ public:
 			}
 		}
 
-		if( rnd.getRndValue() < CentProb )
+		if( CentCnt == 0 )
 		{
 			// Move towards centroid vector.
 
@@ -333,6 +330,8 @@ public:
 				Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
 			}
 		}
+
+		CentCnt = ( CentCnt + 1 ) % 3;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
@@ -544,6 +543,10 @@ protected:
 		///<
 	double HistM2; ///< History move multiplier 1.
 		///<
+	int HistCnt; ///< History move counter.
+		///<
+	int CentCnt; ///< Centroid move counter.
+		///<
 	int FanOrder[ FanSize ]; ///< The current "fan element" ordering,
 		///< ascending-sorted by cost.
 		///<
@@ -624,37 +627,14 @@ protected:
 				v = -v;
 			}
 
-			if( v > 0.9999999999 )
+			if( v > 1.0 )
 			{
-				v = 1.9999999998 - v;
+				v = 2.0 - v;
 				continue;
 			}
 
 			return( v );
 		}
-	}
-
-	/**
-	 * Function clamps the specified parameter value so that it stays in the
-	 * [0.0; 1.0) range.
-	 *
-	 * @param v Parameter value to clamp.
-	 * @return Clamped parameter value.
-	 */
-
-	static double clampParam( double v )
-	{
-		if( v < 0.0 )
-		{
-			return( 0.0 );
-		}
-
-		if( v > 0.9999999999 )
-		{
-			return( 0.9999999999 );
-		}
-
-		return( v );
 	}
 
 	/**

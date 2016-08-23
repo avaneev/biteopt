@@ -54,10 +54,17 @@ increases the overhead (increase of overhead does not necessarily increase the
 number of cost function evaluations).
 
 The minimal and maximal allowed parameter values should be specified in a way
-to cover a wider value range in order to reduce boundary effects that may
+to cover a wider value range, in order to reduce boundary effects that may
 greatly reduce convergence. If the target local or global minimum stands
 very close to the parameter value boundaries these strategies may fail to
 converge.
+
+It is usually necessary to run the optimization process several times with
+different random seeds since the process may get stuck in a local minimum.
+The optimizePlateau() function can be used to optimize functions that have a
+complex landscape. This function works within the bounds of allocated
+iteration limit, and performs re-initializations when the optimization
+process reaches the plateau.
 
 Strategy's "robustness" is a multi-factor non-formal estimation which includes
 average convergence time, standard deviation of convergence time, the set of
@@ -70,6 +77,8 @@ Use the test.cpp program to see the basic usage example.
 test2.cpp is a more complex test which performs optimization of several
 functions and calculates the average convergence time. Can be used with the
 CBEOOptimizer, CBEOOptimizer2 and CBEOOptimizerFan classes.
+
+test3.cpp demonstrates the usage of the optimizePlateau() function.
 
 ## Users ##
 This library is used by:
