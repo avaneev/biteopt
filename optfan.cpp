@@ -87,7 +87,7 @@ public:
 	{
 		p[ 0 ] = 4.0;
 		p[ 1 ] = 0.7;
-		p[ 2 ] = 0.2;
+		p[ 2 ] = 0.1;
 		p[ 3 ] = 0.3;
 		p[ 4 ] = 0.3;
 		p[ 5 ] = 0.3;
@@ -100,8 +100,8 @@ public:
 		p[ 1 ] = 3.5;
 		p[ 2 ] = 1.0;
 		p[ 3 ] = 1.0;
-		p[ 4 ] = 3.0;
-		p[ 5 ] = 3.0;
+		p[ 4 ] = 3.5;
+		p[ 5 ] = 3.5;
 		p[ 6 ] = 1.0;
 	}
 
@@ -222,13 +222,13 @@ int main()
 	rnd2.init( 1 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 8.839214;
-	Params[ 1 ] = 1.637074;
-	Params[ 2 ] = 0.395623;
-	Params[ 3 ] = 0.675312;
-	Params[ 4 ] = 2.360616;
-	Params[ 5 ] = 2.266216;
-	Params[ 6 ] = 0.699237;
+	Params[ 0 ] = 9.294990;
+	Params[ 1 ] = 1.681624;
+	Params[ 2 ] = 0.391339;
+	Params[ 3 ] = 0.558105;
+	Params[ 4 ] = 2.671046;
+	Params[ 5 ] = 2.454960;
+	Params[ 6 ] = 0.761648;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );

@@ -27,9 +27,7 @@ current parameter vectors ("fan elements"). Highest cost "fan element" can
 be replaced with a new solution if "fan element's" cost (plus some margin)
 is higher than that of the new solution's. Having several "fan elements"
 allows parameter vectors to be spaced apart from each other thus making
-them cover a larger parameter search space collectively. The "fan elements"
-are used unevenly: the lower cost ones are evolved more frequently than the
-higher cost ones.
+them cover a larger parameter search space collectively.
 
 The benefit of this strategy is increased robustness: it can optimize
 successfully a wider range of functions. Another benefit is a considerably

@@ -41,8 +41,7 @@
  * new solution if "fan element's" cost (plus some margin) is higher than that
  * of the new solution's. Having several "fan elements" allows parameter
  * vectors to be spaced apart from each other thus making them cover a larger
- * parameter search space collectively. The "fan elements" are used unevenly:
- * the lower cost ones are evolved more frequently than the higher cost ones.
+ * parameter search space collectively.
  *
  * The benefit of this strategy is increased robustness: it can successfully
  * optimize a wider range of functions. Another benefit is a considerably
@@ -57,9 +56,7 @@
  * The strategy consists of the following elements.
  *
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
- * parameter vector which is randomly evolved towards a better solution. The
- * "fan element" with the lowest cost is evolved more frequently than
- * "fan elements" with the higher costs.
+ * parameter vector which is randomly evolved towards a better solution.
  *
  * 2. The previous attempted solution parameter vector for each "fan element"
  * is maintained.
@@ -124,17 +121,18 @@ public:
 	{
 		// Machine-optimized values.
 
-		CentTime = 8.839214;
-		CostMult = 1.637074;
-		BestMult = 0.395623;
-		HistMult = 0.675312;
-		PrevMult = 2.360616;
-		CentMult = 2.266216;
-		HistRMult = 0.699237;
+		CentTime = 9.294990;
+		CostMult = 1.681624;
+		BestMult = 0.391339;
+		HistMult = 0.558105;
+		PrevMult = 2.671046;
+		CentMult = 2.454960;
+		HistRMult = 0.761648;
 	}
 
 	/**
-	 * Function initializes *this optimizer.
+	 * Function initializes *this optimizer. Performs N=FanSize cost function
+	 * evaluations.
 	 *
 	 * @param rnd Random number generator.
 	 * @param InitParams Initial parameter values.
@@ -243,7 +241,8 @@ public:
 	}
 
 	/**
-	 * Function performs 1 parameter optimization step.
+	 * Function performs the parameter optimization step that involves 1 cost
+	 * function evaluation.
 	 *
 	 * @param rnd Random number generator.
 	 * @return "True" if optimizer's state was improved on this step. Many
@@ -252,7 +251,7 @@ public:
 
 	bool optimize( CBEORnd& rnd )
 	{
-		const int s = FanOrder[ (int) ( sqr( rnd.getRndValue() ) * FanSize )];
+		const int s = FanOrder[ (int) ( rnd.getRndValue() * FanSize )];
 		double Params[ ParamCount ];
 		int i;
 
@@ -323,10 +322,9 @@ public:
 		{
 			// Move towards centroid vector.
 
-			const double m = rnd.getRndValue() * CentMult;
-
 			for( i = 0; i < ParamCount; i++ )
 			{
+				const double m = rnd.getRndValue() * CentMult;
 				Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
 			}
 		}
@@ -597,16 +595,6 @@ protected:
 		const double theta = 2.79507498389883904 / Count;
 		const double costheta2 = 2.0 - cos( theta );
 		return( 1.0 - ( costheta2 - sqrt( costheta2 * costheta2 - 1.0 )));
-	}
-
-	/**
-	 * @param x Value to square.
-	 * @return Square of the argument.
-	 */
-
-	static double sqr( const double x )
-	{
-		return( x * x );
 	}
 
 	/**
