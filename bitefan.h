@@ -49,19 +49,19 @@
  * solve all global optimization problems successfully, but strives to provide
  * the "minimum among minima" solution.
  *
- * This strategy is associated with a high overhead per function evaluation.
- * Due to this fact, for simple functions and not deep optimization it may be
- * more beneficial to use the CBEOOptimizer2 class.
+ * This strategy is associated with a high overhead per objective function
+ * evaluation. Due to this fact, for simple functions and not deep
+ * optimization it may be more beneficial to use the CBEOOptimizer2 class.
  *
- * The strategy consists of the following elements.
+ * The strategy consists of the following elements:
  *
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
- * parameter vector which is randomly evolved towards a better solution.
+ * parameter vector which is evolved towards a better solution.
  *
  * 2. The previous attempted solution parameter vector for each "fan element"
  * is maintained.
  *
- * 3. A set of 14 better historic solutions is maintained. The history is
+ * 3. A set of 12 better historic solutions is maintained. The history is
  * shared among all "fan elements". History is at first initialized with
  * random values that work as an additional source of randomization on initial
  * optimization steps.
@@ -80,17 +80,17 @@
  * 7. Additionally, with 33% probability the "step in the right direction"
  * operation is performed using the centroid vector.
  *
- * 8. After each function evaluation, an attempt to replace the highest cost
- * "fan element" is performed using cost constraint. This method is based on
- * an assumption that the later solutions tend to be statistically better than
- * the earlier solutions. History is updated with a previous (replaced)
- * solution whenever a "fan element" is replaced.
+ * 8. After each objective function evaluation, an attempt to replace the
+ * highest cost "fan element" is performed using cost constraint. This method
+ * is based on an assumption that the later solutions tend to be statistically
+ * better than the earlier solutions. History is updated with a previous
+ * (replaced) solution whenever a "fan element" is replaced.
  *
  * @tparam ParamCount0 The number of parameters being optimized.
  * @tparam ValuesPerParam The number of internal parameter values assigned to
  * each optimization parameter. Set to 2, 3 or 4 to better solve more complex
- * functions. Not all functions will benefit from an increased value. Note
- * that the overhead is increased proportionally to this value.
+ * objective functions. Not all functions will benefit from an increased
+ * value. Note that the overhead is increased proportionally to this value.
  */
 
 template< int ParamCount0, int ValuesPerParam = 1 >
@@ -121,18 +121,18 @@ public:
 	{
 		// Machine-optimized values.
 
-		CentTime = 9.294990;
-		CostMult = 1.681624;
-		BestMult = 0.391339;
-		HistMult = 0.558105;
-		PrevMult = 2.671046;
-		CentMult = 2.454960;
-		HistRMult = 0.761648;
+		CentTime = 11.660083;
+		CostMult = 1.766186;
+		BestMult = 0.620759;
+		HistMult = 0.563499;
+		PrevMult = 2.665262;
+		CentMult = 2.606906;
+		HistRMult = 0.722373;
 	}
 
 	/**
-	 * Function initializes *this optimizer. Performs N=FanSize cost function
-	 * evaluations.
+	 * Function initializes *this optimizer. Performs N=FanSize objective
+	 * function evaluations.
 	 *
 	 * @param rnd Random number generator.
 	 * @param InitParams Initial parameter values.
@@ -241,8 +241,8 @@ public:
 	}
 
 	/**
-	 * Function performs the parameter optimization step that involves 1 cost
-	 * function evaluation.
+	 * Function performs the parameter optimization step that involves 1
+	 * objective function evaluation.
 	 *
 	 * @param rnd Random number generator.
 	 * @return "True" if optimizer's state was improved on this step. Many
@@ -336,7 +336,7 @@ public:
 			Params[ i ] = wrapParam( Params[ i ]);
 		}
 
-		// Evaluate function with new parameters.
+		// Evaluate objective function with new parameters.
 
 		double NewParams[ ParamCount0 ];
 
@@ -512,8 +512,8 @@ public:
 	virtual void getMaxValues( double* const p ) const = 0;
 
 	/**
-	 * Virtual function that should calculate parameter vector's optimization
-	 * cost.
+	 * Virtual function (objective function) that should calculate parameter
+	 * vector's optimization cost.
 	 *
 	 * @param p Parameter vector to evaluate.
 	 * @return Optimized cost.
@@ -525,11 +525,11 @@ protected:
 	static const int ParamCount = ParamCount0 * ValuesPerParam; ///< The total
 		///< number of internal parameter values in use.
 		///<
-	static const int FanSize = 5; ///< The number of "fan elements" to use.
+	static const int FanSize = 6; ///< The number of "fan elements" to use.
 		///<
 	static const int FanSize1 = FanSize - 1; ///< = FanSize - 1.
 		///<
-	static const int HistSize = 14; ///< The size of the history.
+	static const int HistSize = 12; ///< The size of the history.
 		///<
 	static const int MantSize = 29; ///< Mantissa size of bitmask inversion
 		///< operation. Must be lower than the random number generator's
