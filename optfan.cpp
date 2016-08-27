@@ -100,9 +100,9 @@ public:
 		p[ 1 ] = 3.5;
 		p[ 2 ] = 1.0;
 		p[ 3 ] = 1.0;
-		p[ 4 ] = 3.5;
+		p[ 4 ] = 2.5;
 		p[ 5 ] = 3.5;
-		p[ 6 ] = 1.0;
+		p[ 6 ] = 3.5;
 	}
 
 	virtual double optcost( const double* const p ) const
@@ -114,9 +114,9 @@ public:
 		opt.CostMult = roundp( p[ 1 ]);
 		opt.BestMult = roundp( p[ 2 ]);
 		opt.HistMult = roundp( p[ 3 ]);
-		opt.PrevMult = roundp( p[ 4 ]);
-		opt.CentMult = roundp( p[ 5 ]);
-		opt.HistRMult = roundp( p[ 6 ]);
+		opt.HistMult2 = roundp( p[ 4 ]);
+		opt.PrevMult = roundp( p[ 5 ]);
+		opt.CentMult = roundp( p[ 6 ]);
 
 		double ItAvg = 0.0;
 		double RMSAvg = 0.0;
@@ -222,13 +222,13 @@ int main()
 	rnd2.init( 1 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 9.294990;
-	Params[ 1 ] = 1.681624;
-	Params[ 2 ] = 0.391339;
-	Params[ 3 ] = 0.558105;
-	Params[ 4 ] = 2.671046;
-	Params[ 5 ] = 2.454960;
-	Params[ 6 ] = 0.761648;
+	Params[ 0 ] = 10.952739;
+	Params[ 1 ] = 1.358032;
+	Params[ 2 ] = 0.658922;
+	Params[ 3 ] = 0.686314;
+	Params[ 4 ] = 1.107065;
+	Params[ 5 ] = 2.439861;
+	Params[ 6 ] = 2.794569;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );
@@ -250,9 +250,9 @@ int main()
 		printf( "CostMult = %.6f;\n", Params[ 1 ]);
 		printf( "BestMult = %.6f;\n", Params[ 2 ]);
 		printf( "HistMult = %.6f;\n", Params[ 3 ]);
-		printf( "PrevMult = %.6f;\n", Params[ 4 ]);
-		printf( "CentMult = %.6f;\n", Params[ 5 ]);
-		printf( "HistRMult = %.6f;\n", Params[ 6 ]);
+		printf( "HistMult2 = %.6f;\n", Params[ 4 ]);
+		printf( "PrevMult = %.6f;\n", Params[ 5 ]);
+		printf( "CentMult = %.6f;\n", Params[ 6 ]);
 	}
 
 	return( 0 );

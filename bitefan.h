@@ -61,16 +61,14 @@
  * 2. The previous attempted solution parameter vector for each "fan element"
  * is maintained.
  *
- * 3. A set of 12 better historic solutions is maintained. The history is
- * shared among all "fan elements". History is at first initialized with
- * random values that work as an additional source of randomization on initial
- * optimization steps.
+ * 3. A single historic solution is maintained, which is shared among all "fan
+ * elements".
  *
  * 4. A running-average centroid vector of better solutions is maintained.
  *
  * 5. With 50% probability a "history move" operation is performed which
- * involves a random historic solution. This operation consists of the
- * "step in the right direction" operation.
+ * involves a historic solution. This operation consists of the "step in the
+ * right direction" operation.
  *
  * 6. With the remaining probability the "bitmask evolution" (inversion of a
  * random range of the lowest bits) operation is performed, which is the main
@@ -81,10 +79,10 @@
  * operation is performed using the centroid vector.
  *
  * 8. After each objective function evaluation, an attempt to replace the
- * highest cost "fan element" is performed using cost constraint. This method
- * is based on an assumption that the later solutions tend to be statistically
- * better than the earlier solutions. History is updated with a previous
- * (replaced) solution whenever a "fan element" is replaced.
+ * highest cost "fan element" is performed using the cost constraint. This
+ * method is based on an assumption that the later solutions tend to be
+ * statistically better than the earlier solutions. History is updated with a
+ * previous (replaced) solution whenever a "fan element" is replaced.
  *
  * @tparam ParamCount0 The number of parameters being optimized.
  * @tparam ValuesPerParam The number of internal parameter values assigned to
@@ -105,11 +103,11 @@ public:
 		///<
 	double HistMult; ///< History move range multiplier.
 		///<
+	double HistMult2; ///< History move range 2 multiplier.
+		///<
 	double PrevMult; ///< Previous move range multiplier.
 		///<
 	double CentMult; ///< Centroid move range multiplier.
-		///<
-	double HistRMult; ///< History move adjustment multiplier.
 		///<
 
 	/**
@@ -121,13 +119,13 @@ public:
 	{
 		// Machine-optimized values.
 
-		CentTime = 11.660083;
-		CostMult = 1.766186;
-		BestMult = 0.620759;
-		HistMult = 0.563499;
-		PrevMult = 2.665262;
-		CentMult = 2.606906;
-		HistRMult = 0.722373;
+		CentTime = 10.952739;
+		CostMult = 1.358032;
+		BestMult = 0.658922;
+		HistMult = 0.686314;
+		HistMult2 = 1.107065;
+		PrevMult = 2.439861;
+		CentMult = 2.794569;
 	}
 
 	/**
@@ -142,8 +140,6 @@ public:
 	{
 		CentCoeff = calcAvgCoeff( CentTime );
 
-		HistM1 = HistRMult * HistMult;
-		HistM2 = ( 1.0 - HistRMult ) * HistMult;
 		HistCnt = 0;
 		CentCnt = 0;
 
@@ -224,20 +220,14 @@ public:
 			}
 		}
 
-		// Initialize history with random values. This works as an additional
-		// source of initial randomization.
+		// Initialize history with random values.
 
-		HistPos = 0;
-
-		for( j = 0; j < HistSize; j++ )
+		for( i = 0; i < ParamCount; i++ )
 		{
-			for( i = 0; i < ParamCount; i++ )
-			{
-				HistParams[ j ][ i ] = rnd.getRndValue();
-			}
-
-			HistCosts[ j ] = BestCost; // Not entirely correct, but works.
+			HistParams[ i ] = rnd.getRndValue();
 		}
+
+		HistCost = BestCost; // Not entirely correct, but works.
 	}
 
 	/**
@@ -274,26 +264,24 @@ public:
 
 		if( HistCnt == 0 )
 		{
-			// Move towards random historic solution.
+			// Move towards better historic solution.
 
-			const int Pos = (int) ( rnd.getRndValue() * HistSize );
-			const double* const UseParams = HistParams[ Pos ];
-			const double r = rnd.getRndValue();
-			const double sr = sqrt( r );
-			const double m = sqrt( sr ) * HistM1 + sr * HistM2;
-
-			if( CurCosts[ s ] < HistCosts[ Pos ])
+			if( CurCosts[ s ] < HistCost )
 			{
+				const double m = sqrt( sqrt( rnd.getRndValue() )) * HistMult;
+
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] -= ( UseParams[ i ] - Params[ i ]) * m;
+					Params[ i ] -= ( HistParams[ i ] - Params[ i ]) * m;
 				}
 			}
 			else
 			{
+				const double m = rnd.getRndValue() * HistMult2;
+
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] -= ( Params[ i ] - UseParams[ i ]) * m;
+					Params[ i ] -= ( Params[ i ] - HistParams[ i ]) * m;
 				}
 			}
 		}
@@ -374,19 +362,18 @@ public:
 		}
 		else
 		{
-			HistPos = ( HistPos + 1 ) % HistSize;
-			HistCosts[ HistPos ] = CurCosts[ sH ];
-			double* const hp = HistParams[ HistPos ];
 			double* const rp = CurParams[ sH ];
+			double* const pp = PrevParams[ sH ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
 				CentParams[ i ] += ( rp[ i ] - CentParams[ i ]) * CentCoeff;
-				hp[ i ] = rp[ i ];
-				PrevParams[ sH ][ i ] = rp[ i ];
+				HistParams[ i ] = rp[ i ];
+				pp[ i ] = rp[ i ];
 				rp[ i ] = Params[ i ];
 			}
 
+			HistCost = CurCosts[ sH ];
 			CurCosts[ sH ] = NewCost;
 			insertFanOrder( NewCost, sH, FanSize1 );
 
@@ -529,17 +516,11 @@ protected:
 		///<
 	static const int FanSize1 = FanSize - 1; ///< = FanSize - 1.
 		///<
-	static const int HistSize = 12; ///< The size of the history.
-		///<
 	static const int MantSize = 29; ///< Mantissa size of bitmask inversion
 		///< operation. Must be lower than the random number generator's
 		///< precision.
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
-		///<
-	double HistM1; ///< History move multiplier 1.
-		///<
-	double HistM2; ///< History move multiplier 1.
 		///<
 	int HistCnt; ///< History move counter.
 		///<
@@ -563,13 +544,10 @@ protected:
 	double PrevParams[ FanSize ][ ParamCount ]; ///< Previously evaluated
 		///< parameters.
 		///<
-	double HistParams[ HistSize ][ ParamCount ]; ///< Best historic parameter
-		///< values.
+	double HistParams[ ParamCount ]; ///< Last better parameter values.
 		///<
-	double HistCosts[ HistSize ]; ///< The costs of the best historic
+	double HistCost; ///< The costs of the last better
 		///< parameter values.
-		///<
-	int HistPos; ///< Best parameter value history position.
 		///<
 	double MinValues[ ParamCount0 ]; ///< Minimal parameter values.
 		///<
