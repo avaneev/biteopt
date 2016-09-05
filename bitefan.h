@@ -64,7 +64,7 @@
  * 3. A single historic solution is maintained, which is shared among all "fan
  * elements".
  *
- * 4. A running-average centroid vector of better solutions is maintained.
+ * 4. A centroid vector of all "fan elements" is maintained.
  *
  * 5. With 50% probability a "history move" operation is performed which
  * involves a historic solution. This operation consists of the "step in the
@@ -95,19 +95,19 @@ template< int ParamCount0, int ValuesPerParam = 1 >
 class CBEOOptimizerFan
 {
 public:
-	double CentTime; ///< Centroid averaging time (samples).
-		///<
 	double CostMult; ///< "Fan element" cost threshold multiplier.
 		///<
 	double BestMult; ///< Best move range multiplier.
 		///<
 	double HistMult; ///< History move range multiplier.
 		///<
-	double HistMult2; ///< History move range 2 multiplier.
+	double HistMult2; ///< History move range multiplier 2.
 		///<
 	double PrevMult; ///< Previous move range multiplier.
 		///<
 	double CentMult; ///< Centroid move range multiplier.
+		///<
+	double CentOffs; ///< Centroid move range shift.
 		///<
 
 	/**
@@ -119,13 +119,13 @@ public:
 	{
 		// Machine-optimized values.
 
-		CentTime = 10.952739;
-		CostMult = 1.358032;
-		BestMult = 0.658922;
-		HistMult = 0.686314;
-		HistMult2 = 1.107065;
-		PrevMult = 2.439861;
-		CentMult = 2.794569;
+		CostMult = 2.010788;
+		BestMult = 0.710192;
+		HistMult = 0.602230;
+		HistMult2 = 0.902332;
+		PrevMult = 2.234918;
+		CentMult = 1.845793;
+		CentOffs = 0.902136;
 	}
 
 	/**
@@ -138,9 +138,7 @@ public:
 
 	void init( CBEORnd& rnd, const double* const InitParams = NULL )
 	{
-		CentCoeff = calcAvgCoeff( CentTime );
-
-		HistCnt = 0;
+		PrevCnt = 0;
 		CentCnt = 0;
 
 		getMinValues( MinValues );
@@ -260,9 +258,7 @@ public:
 			}
 		}
 
-		HistCnt ^= 1;
-
-		if( HistCnt == 0 )
+		if( true )
 		{
 			// Move towards better historic solution.
 
@@ -285,7 +281,10 @@ public:
 				}
 			}
 		}
-		else
+
+		PrevCnt ^= 1;
+
+		if( PrevCnt == 1 )
 		{
 			const double m = rnd.getRndValue() * PrevMult;
 
@@ -306,18 +305,18 @@ public:
 			}
 		}
 
-		if( CentCnt == 0 )
+		CentCnt = ( CentCnt + 1 ) % 3;
+
+		if( CentCnt == 1 )
 		{
 			// Move towards centroid vector.
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const double m = rnd.getRndValue() * CentMult;
+				const double m = CentOffs + rnd.getRndValue() * CentMult;
 				Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
 			}
 		}
-
-		CentCnt = ( CentCnt + 1 ) % 3;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
@@ -335,16 +334,6 @@ public:
 
 		const double NewCost = optcost( NewParams );
 
-		if( NewCost < BestCost )
-		{
-			for( i = 0; i < ParamCount0; i++ )
-			{
-				BestParams[ i ] = NewParams[ i ];
-			}
-
-			BestCost = NewCost;
-		}
-
 		// Try to replace the highest cost "fan element".
 
 		const int sH = FanOrder[ FanSize1 ];
@@ -360,25 +349,33 @@ public:
 
 			return( false );
 		}
-		else
-		{
-			double* const rp = CurParams[ sH ];
-			double* const pp = PrevParams[ sH ];
 
-			for( i = 0; i < ParamCount; i++ )
+		if( NewCost < BestCost )
+		{
+			for( i = 0; i < ParamCount0; i++ )
 			{
-				CentParams[ i ] += ( rp[ i ] - CentParams[ i ]) * CentCoeff;
-				HistParams[ i ] = rp[ i ];
-				pp[ i ] = rp[ i ];
-				rp[ i ] = Params[ i ];
+				BestParams[ i ] = NewParams[ i ];
 			}
 
-			HistCost = CurCosts[ sH ];
-			CurCosts[ sH ] = NewCost;
-			insertFanOrder( NewCost, sH, FanSize1 );
-
-			return( true );
+			BestCost = NewCost;
 		}
+
+		double* const rp = CurParams[ sH ];
+		double* const pp = PrevParams[ sH ];
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			CentParams[ i ] += ( Params[ i ] - rp[ i ]) / FanSize;
+			HistParams[ i ] = rp[ i ];
+			pp[ i ] = rp[ i ];
+			rp[ i ] = Params[ i ];
+		}
+
+		HistCost = CurCosts[ sH ];
+		CurCosts[ sH ] = NewCost;
+		insertFanOrder( NewCost, sH, FanSize1 );
+
+		return( true );
 	}
 
 	/**
@@ -512,7 +509,7 @@ protected:
 	static const int ParamCount = ParamCount0 * ValuesPerParam; ///< The total
 		///< number of internal parameter values in use.
 		///<
-	static const int FanSize = 6; ///< The number of "fan elements" to use.
+	static const int FanSize = 8; ///< The number of "fan elements" to use.
 		///<
 	static const int FanSize1 = FanSize - 1; ///< = FanSize - 1.
 		///<
@@ -522,7 +519,7 @@ protected:
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
 		///<
-	int HistCnt; ///< History move counter.
+	int PrevCnt; ///< Previous move counter.
 		///<
 	int CentCnt; ///< Centroid move counter.
 		///<
@@ -535,19 +532,15 @@ protected:
 	double CurCosts[ FanSize ]; ///< Best costs of current working parameter
 		///< vectors.
 		///<
-	double CentParams[ ParamCount ]; ///< Centroid of the best parameter
+	double CentParams[ ParamCount ]; ///< Centroid of the current parameter
 		///< vectors.
-		///<
-	double CentCoeff; ///< Averaging coefficient for update of CentParams
-		///< values.
 		///<
 	double PrevParams[ FanSize ][ ParamCount ]; ///< Previously evaluated
 		///< parameters.
 		///<
 	double HistParams[ ParamCount ]; ///< Last better parameter values.
 		///<
-	double HistCost; ///< The costs of the last better
-		///< parameter values.
+	double HistCost; ///< The cost of the last better parameter values.
 		///<
 	double MinValues[ ParamCount0 ]; ///< Minimal parameter values.
 		///<
@@ -560,20 +553,6 @@ protected:
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
 		///<
-
-	/**
-	 * Function calculates the averaging coefficient for 1st order low-pass
-	 * filtering.
-	 *
-	 * @param Count The approximate number of values to average.
-	 */
-
-	static double calcAvgCoeff( const double Count )
-	{
-		const double theta = 2.79507498389883904 / Count;
-		const double costheta2 = 2.0 - cos( theta );
-		return( 1.0 - ( costheta2 - sqrt( costheta2 * costheta2 - 1.0 )));
-	}
 
 	/**
 	 * Function wraps the specified parameter value so that it stays in the
