@@ -55,8 +55,9 @@
  *
  * The strategy consists of the following elements:
  *
- * 1. A set of "fan elements" is maintained. A "fan element" is an independent
- * parameter vector which is evolved towards a better solution.
+ * 1. A set of "fan elements" is maintained, sorted in ascending order by the
+ * cost. A "fan element" is an independent parameter vector which is evolved
+ * towards a better solution. A random "fan element" is evolved on each step.
  *
  * 2. The previous attempted solution parameter vector for each "fan element"
  * is maintained.
@@ -66,19 +67,23 @@
  *
  * 4. A centroid vector of all "fan elements" is maintained.
  *
- * 5. With 50% probability a "history move" operation is performed which
- * involves a historic solution. This operation consists of the "step in the
- * right direction" operation.
+ * 5. A "best move" operation is performed which moves the parameter vector
+ * towards the current best solution. This operation consists of the "step in
+ * the right direction" operation.
  *
- * 6. With the remaining probability the "bitmask evolution" (inversion of a
+ * 6. A "history move" operation is performed which involves a historic
+ * solution. This operation consists of the "step in the right direction"
+ * operation.
+ *
+ * 7. With 50% probability the "bitmask evolution" (inversion of a
  * random range of the lowest bits) operation is performed, which is the main
  * driver of the evolutionary process, followed by the "step in the right
  * direction" operation using the previous solution.
  *
- * 7. Additionally, with 33% probability the "step in the right direction"
+ * 8. Additionally, with 33% probability the "step in the right direction"
  * operation is performed using the centroid vector.
  *
- * 8. After each objective function evaluation, an attempt to replace the
+ * 9. After each objective function evaluation, an attempt to replace the
  * highest cost "fan element" is performed using the cost constraint. This
  * method is based on an assumption that the later solutions tend to be
  * statistically better than the earlier solutions. History is updated with a
