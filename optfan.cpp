@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "testopt.h"
 
-const int FnCount = 13;
+const int FnCount = 9;
 const double CostThreshold = 0.001;
 const int IterCount = 10000;
 const int InnerIterCount = 10000;
@@ -155,13 +155,13 @@ int main()
 	rnd2.init( 1 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 2.007745;
-	Params[ 1 ] = 0.688201;
-	Params[ 2 ] = 0.656926;
-	Params[ 3 ] = 1.058406;
-	Params[ 4 ] = 2.111917;
-	Params[ 5 ] = 1.696941;
-	Params[ 6 ] = 0.853378;
+	Params[ 0 ] = 1.616068;
+	Params[ 1 ] = 0.691123;
+	Params[ 2 ] = 0.658791;
+	Params[ 3 ] = 1.526439;
+	Params[ 4 ] = 1.699573;
+	Params[ 5 ] = 1.498926;
+	Params[ 6 ] = 0.808418;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );

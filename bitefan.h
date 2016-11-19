@@ -55,9 +55,8 @@
  *
  * The strategy consists of the following elements:
  *
- * 1. A set of "fan elements" is maintained, sorted in ascending order by the
- * cost. A "fan element" is an independent parameter vector which is evolved
- * towards a better solution. A random "fan element" is evolved on each step.
+ * 1. A set of "fan elements" is maintained. A "fan element" is an independent
+ * parameter vector which is evolved towards a better solution.
  *
  * 2. The previous attempted solution parameter vector for each "fan element"
  * is maintained.
@@ -67,23 +66,19 @@
  *
  * 4. A centroid vector of all "fan elements" is maintained.
  *
- * 5. A "best move" operation is performed which moves the parameter vector
- * towards the current best solution. This operation consists of the "step in
- * the right direction" operation.
+ * 5. With 50% probability a "history move" operation is performed which
+ * involves a historic solution. This operation consists of the "step in the
+ * right direction" operation.
  *
- * 6. A "history move" operation is performed which involves a historic
- * solution. This operation consists of the "step in the right direction"
- * operation.
- *
- * 7. With 50% probability the "bitmask evolution" (inversion of a
+ * 6. With the remaining probability the "bitmask evolution" (inversion of a
  * random range of the lowest bits) operation is performed, which is the main
  * driver of the evolutionary process, followed by the "step in the right
  * direction" operation using the previous solution.
  *
- * 8. Additionally, with 33% probability the "step in the right direction"
+ * 7. Additionally, with 33% probability the "step in the right direction"
  * operation is performed using the centroid vector.
  *
- * 9. After each objective function evaluation, an attempt to replace the
+ * 8. After each objective function evaluation, an attempt to replace the
  * highest cost "fan element" is performed using the cost constraint. This
  * method is based on an assumption that the later solutions tend to be
  * statistically better than the earlier solutions. History is updated with a
@@ -124,13 +119,13 @@ public:
 	{
 		// Machine-optimized values.
 
-		CostMult = 2.010788;
-		BestMult = 0.710192;
-		HistMult = 0.602230;
-		HistMult2 = 0.902332;
-		PrevMult = 2.234918;
-		CentMult = 1.845793;
-		CentOffs = 0.902136;
+		CostMult = 1.616068;
+		BestMult = 0.691123;
+		HistMult = 0.658791;
+		HistMult2 = 1.526439;
+		PrevMult = 1.699573;
+		CentMult = 1.498926;
+		CentOffs = 0.808418;
 	}
 
 	/**
@@ -256,10 +251,20 @@ public:
 			// The "step in the right direction" operation towards the
 			// best parameter vector.
 
-			for( i = 0; i < ParamCount; i++ )
+			if( PrevCnt == 1 )
 			{
-				Params[ i ] = OrigParams[ i ] -
-					( OrigParams[ i ] - UseParams[ i ]) * BestMult;
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = OrigParams[ i ] -
+						( OrigParams[ i ] - UseParams[ i ]) * BestMult;
+				}
+			}
+			else
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = OrigParams[ i ];
+				}
 			}
 		}
 
@@ -347,9 +352,12 @@ public:
 
 		if( NewCost > cT )
 		{
-			for( i = 0; i < ParamCount; i++ )
+			if( PrevCnt == 1 )
 			{
-				PrevParams[ s ][ i ] = Params[ i ];
+				for( i = 0; i < ParamCount; i++ )
+				{
+					PrevParams[ s ][ i ] = Params[ i ];
+				}
 			}
 
 			return( false );

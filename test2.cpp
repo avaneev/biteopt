@@ -2,7 +2,7 @@
 #include "testopt.h"
 //#include "CNMSimplexSolver.h"
 
-const int FnCount = 13;
+const int FnCount = 9;
 const double CostThreshold = 0.001;
 const int IterCount = 10000;
 const int InnerIterCount = 10000;

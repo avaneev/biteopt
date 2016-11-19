@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "bitefan.h"
 
-class CTestOpt : public CBEOOptimizerFan< 2, 4 >
+class CTestOpt : public CBEOOptimizerFan< 2 >
 {
 public:
 	virtual void getMinValues( double* const p ) const

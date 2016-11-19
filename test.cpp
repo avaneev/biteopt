@@ -29,13 +29,16 @@ public:
 //		return( 0.26 * ( x * x + y * y ) - 0.48 * x * y );
 //		return( x * x + y * y );
 //		return( 2 * x * x - 1.05 * sqr( sqr( x )) + sqr( sqr( sqr( x ))) / 6 + x * y + y * y );
+//		return( 0.5 + ( sqr( sin( x * x - y * y )) - 0.5 ) / sqr( 1 + 0.001 * ( x * x + y * y )));
+//		return( 100 * sqr( y - x * x ) + sqr( x - 1 ));
+//		return( sqr( 1.5 - x + x * y ) + sqr( 2.25 - x + x * y * y ) + sqr( 2.625 - x + x * y * y * y ));
 	}
 };
 
 int main()
 {
 	CBEORnd rnd;
-	rnd.init( 0 ); // Needs to be seeded with different values on each run.
+	rnd.init( 1 ); // Needs to be seeded with different values on each run.
 
 	CTestOpt opt;
 	opt.init( rnd );
