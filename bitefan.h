@@ -119,13 +119,13 @@ public:
 	{
 		// Machine-optimized values.
 
-		CostMult = 1.616068;
-		BestMult = 0.691123;
-		HistMult = 0.658791;
-		HistMult2 = 1.526439;
-		PrevMult = 1.699573;
-		CentMult = 1.498926;
-		CentOffs = 0.808418;
+		CostMult = 2.040037;
+		BestMult = 0.712701;
+		HistMult = 0.710949;
+		HistMult2 = 1.544876;
+		PrevMult = 1.374690;
+		CentMult = 1.278461;
+		CentOffs = 0.755409;
 	}
 
 	/**
@@ -191,6 +191,7 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			CentParams[ i ] /= FanSize;
+			PrevCentParams[ i ] = CentParams[ i ];
 		}
 
 		// Calculate costs of "fan elements" and find the best cost.
@@ -246,13 +247,14 @@ public:
 		if( true )
 		{
 			const double* const OrigParams = CurParams[ s ];
-			const double* const UseParams = CurParams[ FanOrder[ 0 ]];
 
 			// The "step in the right direction" operation towards the
 			// best parameter vector.
 
 			if( PrevCnt == 1 )
 			{
+				const double* const UseParams = CurParams[ FanOrder[ 0 ]];
+
 				for( i = 0; i < ParamCount; i++ )
 				{
 					Params[ i ] = OrigParams[ i ] -
@@ -311,7 +313,8 @@ public:
 
 				// The "step in the right direction" operation.
 
-				Params[ i ] = np - ( PrevParams[ s ][ i ] - np ) * m;
+				Params[ i ] = np - (( PrevParams[ s ][ i ] +
+					PrevCentParams[ i ]) * 0.5 - np ) * m;
 			}
 		}
 
@@ -356,6 +359,9 @@ public:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
+					PrevCentParams[ i ] += ( Params[ i ] -
+						PrevParams[ s ][ i ]) / FanSize;
+
 					PrevParams[ s ][ i ] = Params[ i ];
 				}
 			}
@@ -551,6 +557,9 @@ protected:
 	double PrevParams[ FanSize ][ ParamCount ]; ///< Previously evaluated
 		///< parameters.
 		///<
+	double PrevCentParams[ ParamCount ]; ///< Previously evaluated
+		///< parameters' centroid.
+		///<
 	double HistParams[ ParamCount ]; ///< Last better parameter values.
 		///<
 	double HistCost; ///< The cost of the last better parameter values.
@@ -569,7 +578,7 @@ protected:
 
 	/**
 	 * Function wraps the specified parameter value so that it stays in the
-	 * [0.0; 1.0) range, by wrapping it over the boundaries. This operation
+	 * [0.0; 1.0] range, by wrapping it over the boundaries. This operation
 	 * increases convergence in comparison to clamping.
 	 *
 	 * @param v Parameter value to wrap.

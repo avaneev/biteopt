@@ -155,13 +155,13 @@ int main()
 	rnd2.init( 1 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 1.616068;
-	Params[ 1 ] = 0.691123;
-	Params[ 2 ] = 0.658791;
-	Params[ 3 ] = 1.526439;
-	Params[ 4 ] = 1.699573;
-	Params[ 5 ] = 1.498926;
-	Params[ 6 ] = 0.808418;
+	Params[ 0 ] = 2.040037;
+	Params[ 1 ] = 0.712701;
+	Params[ 2 ] = 0.710949;
+	Params[ 3 ] = 1.544876;
+	Params[ 4 ] = 1.374690;
+	Params[ 5 ] = 1.278461;
+	Params[ 6 ] = 0.755409;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );
