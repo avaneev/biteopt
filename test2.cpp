@@ -33,6 +33,8 @@ int main()
 
 		for( j = 0; j < IterCount; j++ )
 		{
+			opt.sign1 = ( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
+			opt.sign2 = ( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
 			int i;
 /*			double Params[ ParamCount ];
 			double minv[ ParamCount ];
@@ -47,14 +49,14 @@ int main()
 			}
 
 			i = 10000;
+			const uint64_t t1 = __rdtsc();
 			AvgCost += vox :: solveNMSimplex( opt, ParamCount, Params, true,
 				0.000001, &i );
+			tc += __rdtsc() - t1;
 
 			AvgP1 += Params[ 0 ];
 			AvgP2 += Params[ 1 ];
 */
-			opt.sign1 = ( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
-			opt.sign2 = ( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
 			opt.init( rnd );
 			opt.optimize( rnd );
 

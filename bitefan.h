@@ -7,7 +7,7 @@
  *
  * @section license License
  * 
- * Copyright (c) 2016 Aleksey Vaneev
+ * Copyright (c) 2016-2017 Aleksey Vaneev
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -58,27 +58,32 @@
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
  * parameter vector which is evolved towards a better solution.
  *
- * 2. The previous attempted solution parameter vector for each "fan element"
- * is maintained.
+ * 2. The previous attempted/rejected solution parameter vector for each
+ * "fan element" is maintained. Also a centroid of such previous parameter
+ * vectors is maintained.
  *
- * 3. A single historic solution is maintained, which is shared among all "fan
- * elements".
+ * 3. A single previous (outdated) historic solution is maintained, which is
+ * shared among all "fan elements".
  *
  * 4. A centroid vector of all "fan elements" is maintained.
  *
- * 5. With 50% probability a "history move" operation is performed which
- * involves a historic solution. This operation consists of the "step in the
- * right direction" operation.
+ * 5. With 50% probability the "best move" operation is performed which
+ * involves the current best solution. Otherwise a move away from centroid of
+ * previous parameter vectors is performed.
  *
- * 6. With the remaining probability the "bitmask evolution" (inversion of a
- * random range of the lowest bits) operation is performed, which is the main
- * driver of the evolutionary process, followed by the "step in the right
- * direction" operation using the previous solution.
+ * 6. On every step an "away from history move" operation is performed which
+ * involves an outdated historic solution.
  *
- * 7. Additionally, with 33% probability the "step in the right direction"
+ * 7. With 50% probability (not together with the "best move" operation) the
+ * "bitmask evolution" (inversion of a random range of the lowest bits)
+ * operation is performed, which is the main driver of the evolutionary
+ * process, followed by the "step in the right direction" operation using a
+ * previous (rejected) solution.
+ *
+ * 8. Additionally, with 33% probability the "step in the right direction"
  * operation is performed using the centroid vector.
  *
- * 8. After each objective function evaluation, an attempt to replace the
+ * 9. After each objective function evaluation, an attempt to replace the
  * highest cost "fan element" is performed using the cost constraint. This
  * method is based on an assumption that the later solutions tend to be
  * statistically better than the earlier solutions. History is updated with a
@@ -101,13 +106,16 @@ public:
 		///<
 	double HistMult; ///< History move range multiplier.
 		///<
-	double HistMult2; ///< History move range multiplier 2.
+	double HistOffs; ///< History move range shift.
 		///<
 	double PrevMult; ///< Previous move range multiplier.
 		///<
 	double CentMult; ///< Centroid move range multiplier.
 		///<
 	double CentOffs; ///< Centroid move range shift.
+		///<
+	double CePrMult; ///< Centroid of previous parameters move range
+		///< multiplier.
 		///<
 
 	/**
@@ -119,13 +127,15 @@ public:
 	{
 		// Machine-optimized values.
 
-		CostMult = 2.040037;
-		BestMult = 0.712701;
-		HistMult = 0.710949;
-		HistMult2 = 1.544876;
-		PrevMult = 1.374690;
-		CentMult = 1.278461;
-		CentOffs = 0.755409;
+		//94.011202
+		CostMult = 1.989190;
+		BestMult = 0.713237;
+		HistMult = 0.290583;
+		HistOffs = 0.382646;
+		PrevMult = 0.628569;
+		CentMult = 1.042760;
+		CentOffs = 0.727179;
+		CePrMult = 1.599013;
 	}
 
 	/**
@@ -191,7 +201,7 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			CentParams[ i ] /= FanSize;
-			PrevCentParams[ i ] = CentParams[ i ];
+			CentPrevParams[ i ] = CentParams[ i ];
 		}
 
 		// Calculate costs of "fan elements" and find the best cost.
@@ -205,8 +215,7 @@ public:
 				Params[ i ] = getParamValue( CurParams[ j ], i );
 			}
 
-			CurCosts[ j ] = optcost( Params );
-			insertFanOrder( CurCosts[ j ], j, j );
+			insertFanOrder( optcost( Params ), j, j );
 
 			if( j == 0 || CurCosts[ j ] < BestCost )
 			{
@@ -225,8 +234,6 @@ public:
 		{
 			HistParams[ i ] = rnd.getRndValue();
 		}
-
-		HistCost = BestCost; // Not entirely correct, but works.
 	}
 
 	/**
@@ -248,11 +255,11 @@ public:
 		{
 			const double* const OrigParams = CurParams[ s ];
 
-			// The "step in the right direction" operation towards the
-			// best parameter vector.
-
 			if( PrevCnt == 1 )
 			{
+				// The "step in the right direction" operation towards the
+				// best parameter vector.
+
 				const double* const UseParams = CurParams[ FanOrder[ 0 ]];
 
 				for( i = 0; i < ParamCount; i++ )
@@ -263,34 +270,26 @@ public:
 			}
 			else
 			{
+				// The "step in the right direction" operation: away from the
+				// centroid of previous (rejected) parameter vectors.
+
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] = OrigParams[ i ];
+					Params[ i ] = OrigParams[ i ] -
+						( CentPrevParams[ i ] - OrigParams[ i ]) * CePrMult;
 				}
 			}
 		}
 
 		if( true )
 		{
-			// Move towards better historic solution.
+			// Move away from a previous historic solution.
 
-			if( CurCosts[ s ] < HistCost )
+			const double m = HistOffs + rnd.getRndValue() * HistMult;
+
+			for( i = 0; i < ParamCount; i++ )
 			{
-				const double m = sqrt( sqrt( rnd.getRndValue() )) * HistMult;
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] -= ( HistParams[ i ] - Params[ i ]) * m;
-				}
-			}
-			else
-			{
-				const double m = rnd.getRndValue() * HistMult2;
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] -= ( Params[ i ] - HistParams[ i ]) * m;
-				}
+				Params[ i ] -= ( HistParams[ i ] - Params[ i ]) * m;
 			}
 		}
 
@@ -305,16 +304,15 @@ public:
 				// Bitmask inversion operation, works as a "driver" of
 				// optimization process.
 
-				const int imask = ( 2 <<
-					(int) ( sqrt( rnd.getRndValue() ) * MantSize )) - 1;
+				const int imask =
+					( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
 
 				double np = ( (int) ( Params[ i ] * MantMult ) ^ imask ) /
 					MantMult;
 
 				// The "step in the right direction" operation.
 
-				Params[ i ] = np - (( PrevParams[ s ][ i ] +
-					PrevCentParams[ i ]) * 0.5 - np ) * m;
+				Params[ i ] = np - ( PrevParams[ s ][ i ] - np ) * m;
 			}
 		}
 
@@ -359,8 +357,8 @@ public:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					PrevCentParams[ i ] += ( Params[ i ] -
-						PrevParams[ s ][ i ]) / FanSize;
+					CentPrevParams[ i ] +=
+						( Params[ i ] - PrevParams[ s ][ i ]) / FanSize;
 
 					PrevParams[ s ][ i ] = Params[ i ];
 				}
@@ -386,12 +384,11 @@ public:
 		{
 			CentParams[ i ] += ( Params[ i ] - rp[ i ]) / FanSize;
 			HistParams[ i ] = rp[ i ];
+			CentPrevParams[ i ] += ( rp[ i ] - pp[ i ]) / FanSize;
 			pp[ i ] = rp[ i ];
 			rp[ i ] = Params[ i ];
 		}
 
-		HistCost = CurCosts[ sH ];
-		CurCosts[ sH ] = NewCost;
 		insertFanOrder( NewCost, sH, FanSize1 );
 
 		return( true );
@@ -555,14 +552,12 @@ protected:
 		///< vectors.
 		///<
 	double PrevParams[ FanSize ][ ParamCount ]; ///< Previously evaluated
+		///< (and rejected) parameters.
+		///<
+	double CentPrevParams[ ParamCount ]; ///< Centroid of previously evaluated
 		///< parameters.
 		///<
-	double PrevCentParams[ ParamCount ]; ///< Previously evaluated
-		///< parameters' centroid.
-		///<
 	double HistParams[ ParamCount ]; ///< Last better parameter values.
-		///<
-	double HistCost; ///< The cost of the last better parameter values.
 		///<
 	double MinValues[ ParamCount0 ]; ///< Minimal parameter values.
 		///<
@@ -637,6 +632,7 @@ protected:
 
 	void insertFanOrder( const double Cost, const int f, const int ItemCount )
 	{
+		CurCosts[ f ] = Cost;
 		int z;
 
 		for( z = 0; z < ItemCount; z++ )
