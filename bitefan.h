@@ -49,10 +49,6 @@
  * solve all global optimization problems successfully, but strives to provide
  * the "minimum among minima" solution.
  *
- * This strategy is associated with a high overhead per objective function
- * evaluation. Due to this fact, for simple functions and not deep
- * optimization it may be more beneficial to use the CBEOOptimizer2 class.
- *
  * The strategy consists of the following elements:
  *
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
@@ -67,18 +63,18 @@
  *
  * 4. A centroid vector of all "fan elements" is maintained.
  *
- * 5. With 50% probability the "best move" operation is performed which
- * involves the current best solution. Otherwise a move away from centroid of
- * previous parameter vectors is performed.
+ * 5. On every step the "best move" operation is performed which involves the
+ * current best solution.
  *
  * 6. On every step an "away from history move" operation is performed which
  * involves an outdated historic solution.
  *
- * 7. With 50% probability (not together with the "best move" operation) the
- * "bitmask evolution" (inversion of a random range of the lowest bits)
- * operation is performed, which is the main driver of the evolutionary
- * process, followed by the "step in the right direction" operation using a
- * previous (rejected) solution.
+ * 7. With 50% probability the "bitmask evolution" (inversion of a random
+ * range of the lowest bits of a single random parameter) operation is
+ * performed, which is the main driver of the evolutionary process, followed
+ * by the "step in the right direction" operation using a previous (rejected)
+ * solution. Also a move away from centroid of previous parameter vectors is
+ * performed.
  *
  * 8. Additionally, with 33% probability the "step in the right direction"
  * operation is performed using the centroid vector.
@@ -106,8 +102,6 @@ public:
 		///<
 	double HistMult; ///< History move range multiplier.
 		///<
-	double HistOffs; ///< History move range shift.
-		///<
 	double PrevMult; ///< Previous move range multiplier.
 		///<
 	double CentMult; ///< Centroid move range multiplier.
@@ -127,15 +121,14 @@ public:
 	{
 		// Machine-optimized values.
 
-		//94.011202
-		CostMult = 1.989190;
-		BestMult = 0.713237;
-		HistMult = 0.290583;
-		HistOffs = 0.382646;
-		PrevMult = 0.628569;
-		CentMult = 1.042760;
-		CentOffs = 0.727179;
-		CePrMult = 1.599013;
+		//91.146415
+		CostMult = 2.29950926;
+		BestMult = 0.67308665;
+		HistMult = 0.52532568;
+		PrevMult = 0.33980730;
+		CentMult = 1.07802881;
+		CentOffs = 0.85483975;
+		CePrMult = 1.59035384;
 	}
 
 	/**
@@ -150,6 +143,7 @@ public:
 	{
 		PrevCnt = 0;
 		CentCnt = 0;
+		ParamCnt = 0;
 
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
@@ -253,31 +247,27 @@ public:
 
 		if( true )
 		{
+			// The "step in the right direction" operation towards the
+			// best parameter vector.
+
 			const double* const OrigParams = CurParams[ s ];
+			const double* const UseParams = CurParams[ FanOrder[ 0 ]];
 
-			if( PrevCnt == 1 )
+			for( i = 0; i < ParamCount; i++ )
 			{
-				// The "step in the right direction" operation towards the
-				// best parameter vector.
-
-				const double* const UseParams = CurParams[ FanOrder[ 0 ]];
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] = OrigParams[ i ] -
-						( OrigParams[ i ] - UseParams[ i ]) * BestMult;
-				}
+				Params[ i ] = OrigParams[ i ] -
+					( OrigParams[ i ] - UseParams[ i ]) * BestMult;
 			}
-			else
-			{
-				// The "step in the right direction" operation: away from the
-				// centroid of previous (rejected) parameter vectors.
+		}
 
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] = OrigParams[ i ] -
-						( CentPrevParams[ i ] - OrigParams[ i ]) * CePrMult;
-				}
+		if( PrevCnt != 1 )
+		{
+			// The "step in the right direction" operation: away from the
+			// centroid of previous (rejected) parameter vectors.
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] -= ( CentPrevParams[ i ] - Params[ i ]) * CePrMult;
 			}
 		}
 
@@ -285,11 +275,9 @@ public:
 		{
 			// Move away from a previous historic solution.
 
-			const double m = HistOffs + rnd.getRndValue() * HistMult;
-
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] -= ( HistParams[ i ] - Params[ i ]) * m;
+				Params[ i ] -= ( HistParams[ i ] - Params[ i ]) * HistMult;
 			}
 		}
 
@@ -297,22 +285,24 @@ public:
 
 		if( PrevCnt == 1 )
 		{
-			const double m = rnd.getRndValue() * PrevMult;
+			// Bitmask inversion operation, works as a "driver" of
+			// optimization process, applied to 1 random parameter at a time.
+
+			const int imask =
+				( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
+
+			Params[ ParamCnt ] = ( (int) ( Params[ ParamCnt ] * MantMult ) ^
+				imask ) / MantMult;
+
+			ParamCnt = ( ParamCnt == 0 ? ParamCount : ParamCnt ) - 1;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				// Bitmask inversion operation, works as a "driver" of
-				// optimization process.
+				// The "step in the right direction" operation, away from the
+				// previously rejected solution.
 
-				const int imask =
-					( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
-
-				double np = ( (int) ( Params[ i ] * MantMult ) ^ imask ) /
-					MantMult;
-
-				// The "step in the right direction" operation.
-
-				Params[ i ] = np - ( PrevParams[ s ][ i ] - np ) * m;
+				Params[ i ] -=
+					( PrevParams[ s ][ i ] - Params[ i ]) * PrevMult;
 			}
 		}
 
@@ -538,6 +528,8 @@ protected:
 	int PrevCnt; ///< Previous move counter.
 		///<
 	int CentCnt; ///< Centroid move counter.
+		///<
+	int ParamCnt; ///< Parameter index counter.
 		///<
 	int FanOrder[ FanSize ]; ///< The current "fan element" ordering,
 		///< ascending-sorted by cost.

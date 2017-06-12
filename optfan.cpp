@@ -5,12 +5,12 @@ const int FnCount = 9;
 const double CostThreshold = 0.001;
 const int IterCount = 10000;
 const int InnerIterCount = 10000;
-const int FanParamCount = 8;
+const int FanParamCount = 7;
 const int FanIterCount = 2000;
 
 static double roundp( const double x )
 {
-	return( floor( x * 1000000.0 + 0.5 ) / 1000000.0 );
+	return( floor( x * 100000000.0 + 0.5 ) / 100000000.0 );
 }
 
 class CFanOpt : public CBEOOptimizerFan< FanParamCount, 3 >
@@ -21,11 +21,10 @@ public:
 		p[ 0 ] = 0.7;
 		p[ 1 ] = 0.1;
 		p[ 2 ] = 0.0;
-		p[ 3 ] = 0.0;
+		p[ 3 ] = 0.3;
 		p[ 4 ] = 0.3;
-		p[ 5 ] = 0.3;
+		p[ 5 ] = 0.0;
 		p[ 6 ] = 0.0;
-		p[ 7 ] = 0.0;
 	}
 
 	virtual void getMaxValues( double* const p ) const
@@ -33,11 +32,10 @@ public:
 		p[ 0 ] = 3.5;
 		p[ 1 ] = 1.0;
 		p[ 2 ] = 3.0;
-		p[ 3 ] = 1.5;
+		p[ 3 ] = 3.0;
 		p[ 4 ] = 3.0;
-		p[ 5 ] = 3.0;
-		p[ 6 ] = 1.5;
-		p[ 7 ] = 3.0;
+		p[ 5 ] = 1.5;
+		p[ 6 ] = 3.0;
 	}
 
 	virtual double optcost( const double* const p ) const
@@ -48,11 +46,10 @@ public:
 		opt.CostMult = roundp( p[ 0 ]);
 		opt.BestMult = roundp( p[ 1 ]);
 		opt.HistMult = roundp( p[ 2 ]);
-		opt.HistOffs = roundp( p[ 3 ]);
-		opt.PrevMult = roundp( p[ 4 ]);
-		opt.CentMult = roundp( p[ 5 ]);
-		opt.CentOffs = roundp( p[ 6 ]);
-		opt.CePrMult = roundp( p[ 7 ]);
+		opt.PrevMult = roundp( p[ 3 ]);
+		opt.CentMult = roundp( p[ 4 ]);
+		opt.CentOffs = roundp( p[ 5 ]);
+		opt.CePrMult = roundp( p[ 6 ]);
 
 		double ItAvg = 0.0;
 		double RMSAvg = 0.0;
@@ -158,14 +155,13 @@ int main()
 	rnd2.init( 1 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 1.912644;
-	Params[ 1 ] = 0.709112;
-	Params[ 2 ] = 0.244386;
-	Params[ 3 ] = 0.400969;
-	Params[ 4 ] = 0.701294;
-	Params[ 5 ] = 1.057241;
-	Params[ 6 ] = 0.697565;
-	Params[ 7 ] = 1.625032;
+	Params[ 0 ] = 2.29950926;
+	Params[ 1 ] = 0.67308665;
+	Params[ 2 ] = 0.52532568;
+	Params[ 3 ] = 0.33980730;
+	Params[ 4 ] = 1.07802881;
+	Params[ 5 ] = 0.85483975;
+	Params[ 6 ] = 1.59035384;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );
@@ -183,14 +179,13 @@ int main()
 			Params[ j ] = roundp( opt.getBestParams()[ j ]);
 		}
 
-		printf( "CostMult = %.6f;\n", Params[ 0 ]);
-		printf( "BestMult = %.6f;\n", Params[ 1 ]);
-		printf( "HistMult = %.6f;\n", Params[ 2 ]);
-		printf( "HistOffs = %.6f;\n", Params[ 3 ]);
-		printf( "PrevMult = %.6f;\n", Params[ 4 ]);
-		printf( "CentMult = %.6f;\n", Params[ 5 ]);
-		printf( "CentOffs = %.6f;\n", Params[ 6 ]);
-		printf( "CePrMult = %.6f;\n", Params[ 7 ]);
+		printf( "CostMult = %.8f;\n", Params[ 0 ]);
+		printf( "BestMult = %.8f;\n", Params[ 1 ]);
+		printf( "HistMult = %.8f;\n", Params[ 2 ]);
+		printf( "PrevMult = %.8f;\n", Params[ 3 ]);
+		printf( "CentMult = %.8f;\n", Params[ 4 ]);
+		printf( "CentOffs = %.8f;\n", Params[ 5 ]);
+		printf( "CePrMult = %.8f;\n", Params[ 6 ]);
 	}
 
 	return( 0 );

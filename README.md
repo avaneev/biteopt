@@ -33,10 +33,6 @@ The benefit of this strategy is increased robustness: it can optimize
 successfully a wider range of functions. Another benefit is a considerably
 decreased convergence time in deeper optimizations.
 
-This strategy is associated with a high overhead per objective function
-evaluation. Due to this fact, for simple functions and not deep optimization
-it may be more beneficial to use the CBEOOptimizer2 class.
-
 ### Notes ###
 
 All these strategies were tested on several classic 2-parameter optimization
@@ -63,6 +59,10 @@ The optimizePlateau() function can be used to optimize functions that have a
 complex landscape. This function works within the bounds of allocated
 iteration limit, and performs re-initializations when the optimization
 process reaches the plateau.
+
+Most hard constraints can be introduced by applying huge penalties to the
+objective function. Even binary penalties like "if(x>1)cost+=10000" should
+work acceptably in most cases.
 
 Strategy's "robustness" is a multi-factor non-formal estimation which includes
 average convergence time, standard deviation of convergence time, the set of
