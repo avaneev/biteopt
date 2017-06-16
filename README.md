@@ -1,46 +1,37 @@
 # biteopt - "Bitmask Evolution" Function Optimizer #
 ## Introduction ##
 
-### CBEOOptimizer ###
+### CBEOOptimizerFan (bitefan.h) ###
 
-"Bitmask evolution" optimization class. Implements a very simple stochastic
-evolutionary optimization method (strategy) which involves inversion of a
-random segment of parameter value's lowest bits at each step. Additionally
-includes a crossing-over operation which in some cases improves convergence
-considerably. For more robustness it is possible to assign several internal
-values to each optimization parameter. This strategy is associated with
-a very small code size and a minimal memory requirement.
+"Bitmask evolution" version "fan" optimization class. This strategy is
+based on now outdated CBEOOptimizer and CBEOOptimizer2 stochastic
+strategies, and uses several current parameter vectors ("fan elements").
+Highest cost "fan element" can be replaced with a new solution if "fan
+element's" cost (plus some margin) is higher than that of the new
+solution's. Having several "fan elements" allows parameter vectors to be
+spaced apart from each other thus making them cover a larger parameter
+search space collectively. The strategy was named as "bitmask evolution",
+because at its core an operation of inversion of a random segment of
+parameter value's lowest bits is used. Beside that, several "step in the
+right direction" operations are used that move the solution vector into
+position with a probably lower objective function value.
 
-Currently, this version should be considered as a "proof of concept" version.
-As a rule, the CBEOOptimizerFan class should be used.
-
-### CBEOOptimizer2 ###
-
-The CBEOOptimizer2 class is a further evolution of this strategy. Additionally
-includes the "step in the right direction" operation. This version provides a
-faster convergence time.
-
-### CBEOOptimizerFan ###
-
-This strategy is based on the CBEOOptimizer2 strategy, but uses several
-current parameter vectors ("fan elements"). Highest cost "fan element" can
-be replaced with a new solution if "fan element's" cost (plus some margin)
-is higher than that of the new solution's. Having several "fan elements"
-allows parameter vectors to be spaced apart from each other thus making
-them cover a larger parameter search space collectively.
-
-The benefit of this strategy is increased robustness: it can optimize
-successfully a wider range of functions. Another benefit is a considerably
-decreased convergence time in deeper optimizations.
+The benefit of this strategy is a relatively high robustness: it can
+successfully optimize a wide range of test functions. Another benefit is a
+low convergence time which depends on the complexity of the objective
+function. This strategy does not solve all global optimization problems
+successfully, but strives to provide the "minimum among minima" solution.
+Like many stochastic optimization strategies, this strategy can't solve
+problems with narrow or rogue optimums.
 
 ### Notes ###
 
-All these strategies were tested on several classic 2-parameter optimization
-problems and performed fairly well. Global problems (with multiple local
-minima) may not be handled well by these strategies, but in practice these
-strategies strive to provide the "minimum among minima" nevertheless. Due to
-their design these strategies may be particularly good at improving an
-existing sub-optimal local solution.
+This strategy was tested on many classic 2-parameter optimization problems and
+performed well. Global problems (with multiple local minima) may not be
+handled well by this strategy, but in practice this strategy strives to
+provide the "minimum among minima" nevertheless. Due to its design this
+strategy may be particularly good at improving an existing sub-optimal local
+solution.
 
 Optimization of more complex functions may benefit from increasing of the
 ValuesPerParam template parameter value to 2, 3 or 4, but this obviously

@@ -36,23 +36,31 @@
 
 /**
  * "Bitmask evolution" version "fan" optimization class. This strategy is
- * based on the CBEOOptimizer2 strategy, but uses several current parameter
- * vectors ("fan elements"). Highest cost "fan element" can be replaced with a
- * new solution if "fan element's" cost (plus some margin) is higher than that
- * of the new solution's. Having several "fan elements" allows parameter
- * vectors to be spaced apart from each other thus making them cover a larger
- * parameter search space collectively.
+ * based on now outdated CBEOOptimizer and CBEOOptimizer2 stochastic
+ * strategies, and uses several current parameter vectors ("fan elements").
+ * Highest cost "fan element" can be replaced with a new solution if "fan
+ * element's" cost (plus some margin) is higher than that of the new
+ * solution's. Having several "fan elements" allows parameter vectors to be
+ * spaced apart from each other thus making them cover a larger parameter
+ * search space collectively. The strategy was named as "bitmask evolution",
+ * because at its core an operation of inversion of a random segment of
+ * parameter value's lowest bits is used. Beside that, several "step in the
+ * right direction" operations are used that move the solution vector into
+ * position with a probably lower objective function value.
  *
- * The benefit of this strategy is increased robustness: it can successfully
- * optimize a wider range of functions. Another benefit is a considerably
- * decreased convergence time in deeper optimizations. This strategy does not
- * solve all global optimization problems successfully, but strives to provide
- * the "minimum among minima" solution.
+ * The benefit of this strategy is a relatively high robustness: it can
+ * successfully optimize a wide range of test functions. Another benefit is a
+ * low convergence time which depends on the complexity of the objective
+ * function. This strategy does not solve all global optimization problems
+ * successfully, but strives to provide the "minimum among minima" solution.
+ * Like many stochastic optimization strategies, this strategy can't solve
+ * problems with narrow or rogue optimums.
  *
  * The strategy consists of the following elements:
  *
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
- * parameter vector which is evolved towards a better solution.
+ * parameter vector which is evolved towards a better solution. Also an
+ * ordered list of "fan elements" is maintaned.
  *
  * 2. The previous attempted/rejected solution parameter vector for each
  * "fan element" is maintained. Also a centroid of such previous parameter
@@ -90,9 +98,12 @@
  * each optimization parameter. Set to 2, 3 or 4 to better solve more complex
  * objective functions. Not all functions will benefit from an increased
  * value. Note that the overhead is increased proportionally to this value.
+ * @tparam FanSize The number of "fan elements" to use. Higher values increase
+ * convergence time, but improve solution quality.
  */
 
-template< int ParamCount0, int ValuesPerParam = 1 >
+template< int ParamCount0, int ValuesPerParam = 1,
+	int FanSize = 4 + ParamCount0 * ParamCount0 >
 class CBEOOptimizerFan
 {
 public:
@@ -393,8 +404,11 @@ public:
 	 * @param MinCost Target minimum cost.
 	 * @param PlateauIters The number of successive iterations which have not
 	 * produced a useful change, to treat as reaching a plateau. When plateau
-	 * is reached, *this object will be reinitialized.
-	 * @param MaxIters The maximal number of iterations to perform.
+	 * is reached, *this object will be reinitialized (if MaxIters>0).
+	 * Effective values depend on the FanSize value, lower FanSize values
+	 * require higher PlateauIters values.
+	 * @param MaxIters The maximal number of iterations to perform. Set to 0
+	 * to run any number of iterations until plateau is reached.
 	 * @return The number of iterations performed, including reinitialization
 	 * calls. May be greater than MaxIters.
 	 */
@@ -418,7 +432,7 @@ public:
 				return( Iters );
 			}
 
-			if( Iters >= MaxIters )
+			if( Iters >= MaxIters && MaxIters > 0 )
 			{
 				break;
 			}
@@ -446,9 +460,15 @@ public:
 						}
 					}
 
+					IsFirstInit = false;
+
+					if( MaxIters <= 0 )
+					{
+						break;
+					}
+
 					init( rnd );
 					Iters += FanSize;
-					IsFirstInit = false;
 					PlateauCount = 0;
 				}
 			}
@@ -514,8 +534,6 @@ public:
 protected:
 	static const int ParamCount = ParamCount0 * ValuesPerParam; ///< The total
 		///< number of internal parameter values in use.
-		///<
-	static const int FanSize = 8; ///< The number of "fan elements" to use.
 		///<
 	static const int FanSize1 = FanSize - 1; ///< = FanSize - 1.
 		///<
@@ -625,15 +643,27 @@ protected:
 	void insertFanOrder( const double Cost, const int f, const int ItemCount )
 	{
 		CurCosts[ f ] = Cost;
-		int z;
 
-		for( z = 0; z < ItemCount; z++ )
+		// Perform binary search.
+
+		int z = 0;
+		int hi = ItemCount;
+
+		while( z < hi )
 		{
-			if( Cost <= CurCosts[ FanOrder[ z ]])
+			int mid = ( z + hi ) >> 1;
+
+			if( CurCosts[ FanOrder[ mid ]] >= Cost )
 			{
-				break;
+				hi = mid;
+			}
+			else
+			{
+				z = mid + 1;
 			}
 		}
+
+		// Insert element at the correct sorted position.
 
 		int i;
 
