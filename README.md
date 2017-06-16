@@ -38,10 +38,15 @@ ValuesPerParam template parameter value to 2, 3 or 4, but this obviously
 increases the overhead (increase of overhead does not necessarily increase the
 number of objective function evaluations).
 
+The FanSize template parameter can be adjusted to increase quality of
+solutions, especially in high dimensionality problems. By default, FanSize is
+equal to the square of the number of dimensions. FanSize controls robustness
+of the strategy at the cost of convergence time.
+
 The minimal and maximal allowed parameter values should be specified in a way
 to cover a wider value range, in order to reduce boundary effects that may
 greatly reduce convergence. If the target local or global minimum stands
-very close to the parameter value boundaries these strategies may fail to
+very close to the parameter value boundaries this strategy may fail to
 converge.
 
 It is usually necessary to run the optimization process several times with
