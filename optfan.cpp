@@ -1,19 +1,15 @@
 #include <stdio.h>
-#include "testopt.h"
+#include "tester.h"
 
-const int FnCount = 9;
-const double CostThreshold = 0.001;
-const int IterCount = 10000;
-const int InnerIterCount = 10000;
-const int FanParamCount = 7;
-const int FanIterCount = 2000;
+const int FanParamCount = 6;
+const int FanIterCount = 4000;
 
 static double roundp( const double x )
 {
 	return( floor( x * 100000000.0 + 0.5 ) / 100000000.0 );
 }
 
-class CFanOpt : public CBEOOptimizerFan< FanParamCount, 3 >
+class CFanOpt : public CBEOOptimizerFan< FanParamCount, 3, 16 >
 {
 public:
 	virtual void getMinValues( double* const p ) const
@@ -24,128 +20,37 @@ public:
 		p[ 3 ] = 0.3;
 		p[ 4 ] = 0.3;
 		p[ 5 ] = 0.0;
-		p[ 6 ] = 0.0;
 	}
 
 	virtual void getMaxValues( double* const p ) const
 	{
-		p[ 0 ] = 3.5;
+		p[ 0 ] = 5.0;
 		p[ 1 ] = 1.0;
 		p[ 2 ] = 3.0;
 		p[ 3 ] = 3.0;
 		p[ 4 ] = 3.0;
 		p[ 5 ] = 1.5;
-		p[ 6 ] = 3.0;
 	}
 
 	virtual double optcost( const double* const p ) const
 	{
 		rnd.init( 0 );
 
-		CTestOpt opt;
-		opt.CostMult = roundp( p[ 0 ]);
-		opt.BestMult = roundp( p[ 1 ]);
-		opt.HistMult = roundp( p[ 2 ]);
-		opt.PrevMult = roundp( p[ 3 ]);
-		opt.CentMult = roundp( p[ 4 ]);
-		opt.CentOffs = roundp( p[ 5 ]);
-		opt.CePrMult = roundp( p[ 6 ]);
+//		CTester< 2 > Tester;
+		CTester< 10 > Tester;
+		Tester.opt -> CostMult = roundp( p[ 0 ]);
+		Tester.opt -> BestMult = roundp( p[ 1 ]);
+		Tester.opt -> HistMult = roundp( p[ 2 ]);
+		Tester.opt -> PrevMult = roundp( p[ 3 ]);
+		Tester.opt -> CentMult = roundp( p[ 4 ]);
+		Tester.opt -> CentOffs = roundp( p[ 5 ]);
+//		Tester.init( OptCorpus2D, 0.001, 5000, 10000, true, false );
+		Tester.init( OptCorpusND, 0.01, 60, 150000, false, false );
 
-		double ItAvg = 0.0;
-		double RMSAvg = 0.0;
-		double ItRtAvg = 0.0;
-		double RjAvg = 0.0;
-		int k;
+		Tester.run();
 
-		for( k = 0; k < FnCount; k++ )
-		{
-			opt.fn = k;
-			int Iters[ IterCount ];
-			double AvgIter = 0.0;
-			double IterAvgCost = 0.0;
-			double AvgP1 = 0.0;
-			double AvgP2 = 0.0;
-			int Rej = 0;
-			int j;
-
-			for( j = 0; j < IterCount; j++ )
-			{
-				int i;
-
-				opt.sign1 = ( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
-				opt.sign2 = ( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
-				opt.init( rnd );
-				opt.optimize( rnd );
-
-				double PrevBestCost = opt.getBestCost();
-				int PrevBestCostCount = 0;
-
-				for( i = 0; i < InnerIterCount; i++ )
-				{
-					if( opt.getBestCost() < CostThreshold )
-					{
-						break;
-					}
-
-					if( PrevBestCost > opt.getBestCost() )
-					{
-						PrevBestCost = opt.getBestCost();
-						PrevBestCostCount = 0;
-					}
-					else
-					{
-						PrevBestCostCount++;
-
-						if( PrevBestCostCount == 10000 )
-						{
-							i = InnerIterCount;
-							break;
-						}
-					}
-
-					opt.optimize( rnd );
-				}
-
-				if( i == InnerIterCount )
-				{
-					Rej++;
-				}
-
-				IterAvgCost += opt.getBestCost();
-				AvgP1 += opt.getBestParams()[ 0 ];
-				AvgP2 += opt.getBestParams()[ 1 ];
-
-				Iters[ j ] = i;
-				AvgIter += i;
-			}
-
-			IterAvgCost /= IterCount;
-			AvgP1 /= IterCount;
-			AvgP2 /= IterCount;
-
-			const double Avg = AvgIter / IterCount;
-			double RMS = 0.0;
-
-			for( j = 0; j < IterCount; j++ )
-			{
-				const double v = Iters[ j ] - Avg;
-				RMS += v * v;
-			}
-
-			RMS = sqrt( RMS / IterCount );
-
-			ItAvg += Avg;
-			RMSAvg += RMS;
-			RjAvg += Rej;
-			ItRtAvg += RMS / Avg;
-		}
-
-		ItAvg /= FnCount;
-		RMSAvg /= FnCount;
-		ItRtAvg /= FnCount;
-		RjAvg /= FnCount;
-
-		return( ItAvg * pow( ItRtAvg, 0.5 ));
+		return( Tester.ItAvg * pow( Tester.ItRtAvg, 0.5 ) *
+			( 1.0 + Tester.RjAvg * 50.0 ));
 	}
 };
 
@@ -155,13 +60,12 @@ int main()
 	rnd2.init( 1 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 2.29950926;
-	Params[ 1 ] = 0.67308665;
-	Params[ 2 ] = 0.52532568;
-	Params[ 3 ] = 0.33980730;
-	Params[ 4 ] = 1.07802881;
-	Params[ 5 ] = 0.85483975;
-	Params[ 6 ] = 1.59035384;
+	Params[ 0 ] = 1.38268407;
+	Params[ 1 ] = 0.65546784;
+	Params[ 2 ] = 0.54561030;
+	Params[ 3 ] = 0.42395983;
+	Params[ 4 ] = 1.23362461;
+	Params[ 5 ] = 0.69574673;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );
@@ -185,7 +89,6 @@ int main()
 		printf( "PrevMult = %.8f;\n", Params[ 3 ]);
 		printf( "CentMult = %.8f;\n", Params[ 4 ]);
 		printf( "CentOffs = %.8f;\n", Params[ 5 ]);
-		printf( "CePrMult = %.8f;\n", Params[ 6 ]);
 	}
 
 	return( 0 );

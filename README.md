@@ -5,10 +5,10 @@
 
 "Bitmask evolution" version "fan" optimization class. This strategy is
 based on now outdated CBEOOptimizer and CBEOOptimizer2 stochastic
-strategies, and uses several current parameter vectors ("fan elements").
-Highest cost "fan element" can be replaced with a new solution if "fan
-element's" cost (plus some margin) is higher than that of the new
-solution's. Having several "fan elements" allows parameter vectors to be
+derivative-less strategies, and uses several current parameter vectors
+("fan elements"). Highest cost "fan element" can be replaced with a new
+solution if "fan element's" cost (plus some margin) is higher than that of the
+new solution's. Having several "fan elements" allows parameter vectors to be
 spaced apart from each other thus making them cover a larger parameter
 search space collectively. The strategy was named as "bitmask evolution",
 because at its core an operation of inversion of a random segment of
@@ -26,22 +26,18 @@ problems with narrow or rogue optimums.
 
 ### Notes ###
 
-This strategy was tested on many classic 2-parameter optimization problems and
-performed well. Global problems (with multiple local minima) may not be
-handled well by this strategy, but in practice this strategy strives to
-provide the "minimum among minima" nevertheless. Due to its design this
-strategy may be particularly good at improving an existing sub-optimal local
-solution.
-
-Optimization of more complex functions may benefit from increasing of the
-ValuesPerParam template parameter value to 2, 3 or 4, but this obviously
-increases the overhead (increase of overhead does not necessarily increase the
-number of objective function evaluations).
+This strategy was tested on many classic 2-dimensional and 30-dimensional
+optimization problems and performed well. Global problems (with multiple local
+minima) may not be handled very well by this strategy, but in practice this
+strategy strives to provide the "minimum among minima" nevertheless. Due to
+its design this strategy may be particularly good at improving an existing
+sub-optimal local solution.
 
 The FanSize template parameter can be adjusted to increase quality of
 solutions, especially in high dimensionality problems. By default, FanSize is
-equal to the square of the number of dimensions. FanSize controls robustness
-of the strategy at the cost of convergence time.
+equal to the square of the number of dimensions divided by 2. FanSize controls
+robustness of the strategy at the cost of convergence time. However, setting
+FanSize too high may reduce convergence.
 
 The minimal and maximal allowed parameter values should be specified in a way
 to cover a wider value range, in order to reduce boundary effects that may
@@ -51,14 +47,19 @@ converge.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
-The optimizePlateau() function can be used to optimize functions that have a
-complex landscape. This function works within the bounds of allocated
-iteration limit, and performs re-initializations when the optimization
-process reaches the plateau.
+Running 10-20 times is a minimal requirement. The optimizePlateau() function
+can be used to optimize functions that have a complex landscape. This function
+works within the bounds of allocated iteration limit, and performs
+re-initializations when the optimization process reaches the plateau.
 
 Most hard constraints can be introduced by applying huge penalties to the
 objective function. Even binary penalties like "if(x>1)cost+=10000" should
 work acceptably in most cases.
+
+Optimization of more complex functions may benefit from increasing of the
+ValuesPerParam template parameter value to 2, 3 or 4, but this obviously
+increases the overhead (increase of overhead does not necessarily increase the
+number of objective function evaluations). This is an experimental feature.
 
 Strategy's "robustness" is a multi-factor non-formal estimation which includes
 average convergence time, standard deviation of convergence time, the set of
@@ -68,11 +69,13 @@ robustness also includes the lowest achieved cost in average.
 
 Use the test.cpp program to see the basic usage example.
 
-test2.cpp is a more complex test which performs optimization of several
-functions and calculates the average convergence time. Can be used with the
-CBEOOptimizer, CBEOOptimizer2 and CBEOOptimizerFan classes.
+test2.cpp is a convergence test for all available functions. Performs many
+optimization attempts on all functions. Prints various performance
+information, including percentage of rejected attempts.
 
 test3.cpp demonstrates the usage of the optimizePlateau() function.
+
+test4.cpp is a convergence test for multi-dimensional functions.
 
 ## Users ##
 This library is used by:

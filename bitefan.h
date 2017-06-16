@@ -37,16 +37,16 @@
 /**
  * "Bitmask evolution" version "fan" optimization class. This strategy is
  * based on now outdated CBEOOptimizer and CBEOOptimizer2 stochastic
- * strategies, and uses several current parameter vectors ("fan elements").
- * Highest cost "fan element" can be replaced with a new solution if "fan
- * element's" cost (plus some margin) is higher than that of the new
- * solution's. Having several "fan elements" allows parameter vectors to be
- * spaced apart from each other thus making them cover a larger parameter
- * search space collectively. The strategy was named as "bitmask evolution",
- * because at its core an operation of inversion of a random segment of
- * parameter value's lowest bits is used. Beside that, several "step in the
- * right direction" operations are used that move the solution vector into
- * position with a probably lower objective function value.
+ * derivative-less strategies, and uses several current parameter vectors
+ * ("fan elements"). Highest cost "fan element" can be replaced with a new
+ * solution if "fan element's" cost (plus some margin) is higher than that of
+ * the new solution's. Having several "fan elements" allows parameter vectors
+ * to be spaced apart from each other thus making them cover a larger
+ * parameter search space collectively. The strategy was named as "bitmask
+ * evolution", because at its core an operation of inversion of a random
+ * segment of parameter value's lowest bits is used. Beside that, several
+ * "step in the right direction" operations are used that move the solution
+ * vector into position with a probably lower objective function value.
  *
  * The benefit of this strategy is a relatively high robustness: it can
  * successfully optimize a wide range of test functions. Another benefit is a
@@ -63,8 +63,7 @@
  * ordered list of "fan elements" is maintaned.
  *
  * 2. The previous attempted/rejected solution parameter vector for each
- * "fan element" is maintained. Also a centroid of such previous parameter
- * vectors is maintained.
+ * "fan element" is maintained.
  *
  * 3. A single previous (outdated) historic solution is maintained, which is
  * shared among all "fan elements".
@@ -81,8 +80,7 @@
  * range of the lowest bits of a single random parameter) operation is
  * performed, which is the main driver of the evolutionary process, followed
  * by the "step in the right direction" operation using a previous (rejected)
- * solution. Also a move away from centroid of previous parameter vectors is
- * performed.
+ * solution.
  *
  * 8. Additionally, with 33% probability the "step in the right direction"
  * operation is performed using the centroid vector.
@@ -103,7 +101,7 @@
  */
 
 template< int ParamCount0, int ValuesPerParam = 1,
-	int FanSize = 4 + ParamCount0 * ParamCount0 >
+	int FanSize = 6 + ParamCount0 * ParamCount0 / 2 >
 class CBEOOptimizerFan
 {
 public:
@@ -119,9 +117,6 @@ public:
 		///<
 	double CentOffs; ///< Centroid move range shift.
 		///<
-	double CePrMult; ///< Centroid of previous parameters move range
-		///< multiplier.
-		///<
 
 	/**
 	 * Constructor.
@@ -130,16 +125,12 @@ public:
 	CBEOOptimizerFan()
 		: MantMult( 1 << MantSize )
 	{
-		// Machine-optimized values.
-
-		//91.146415
-		CostMult = 2.29950926;
-		BestMult = 0.67308665;
-		HistMult = 0.52532568;
-		PrevMult = 0.33980730;
-		CentMult = 1.07802881;
-		CentOffs = 0.85483975;
-		CePrMult = 1.59035384;
+		CostMult = 1.44176476;
+		BestMult = 0.65528962;
+		HistMult = 0.53627432;
+		PrevMult = 0.43633471;
+		CentMult = 1.26765785;
+		CentOffs = 0.67884726;
 	}
 
 	/**
@@ -206,7 +197,6 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			CentParams[ i ] /= FanSize;
-			CentPrevParams[ i ] = CentParams[ i ];
 		}
 
 		// Calculate costs of "fan elements" and find the best cost.
@@ -256,40 +246,23 @@ public:
 		double Params[ ParamCount ];
 		int i;
 
-		if( true )
+		// The "step in the right direction" operation towards the best
+		// (minimal) parameter vector.
+
+		const double* const OrigParams = CurParams[ s ];
+		const double* const MinParams = CurParams[ FanOrder[ 0 ]];
+
+		for( i = 0; i < ParamCount; i++ )
 		{
-			// The "step in the right direction" operation towards the
-			// best parameter vector.
-
-			const double* const OrigParams = CurParams[ s ];
-			const double* const UseParams = CurParams[ FanOrder[ 0 ]];
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				Params[ i ] = OrigParams[ i ] -
-					( OrigParams[ i ] - UseParams[ i ]) * BestMult;
-			}
+			Params[ i ] = OrigParams[ i ] -
+				( OrigParams[ i ] - MinParams[ i ]) * BestMult;
 		}
 
-		if( PrevCnt != 1 )
+		// Move away from a previous historic solution.
+
+		for( i = 0; i < ParamCount; i++ )
 		{
-			// The "step in the right direction" operation: away from the
-			// centroid of previous (rejected) parameter vectors.
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				Params[ i ] -= ( CentPrevParams[ i ] - Params[ i ]) * CePrMult;
-			}
-		}
-
-		if( true )
-		{
-			// Move away from a previous historic solution.
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				Params[ i ] -= ( HistParams[ i ] - Params[ i ]) * HistMult;
-			}
+			Params[ i ] -= ( HistParams[ i ] - Params[ i ]) * HistMult;
 		}
 
 		PrevCnt ^= 1;
@@ -307,11 +280,11 @@ public:
 
 			ParamCnt = ( ParamCnt == 0 ? ParamCount : ParamCnt ) - 1;
 
+			// The "step in the right direction" operation, away from the
+			// previously rejected solution.
+
 			for( i = 0; i < ParamCount; i++ )
 			{
-				// The "step in the right direction" operation, away from the
-				// previously rejected solution.
-
 				Params[ i ] -=
 					( PrevParams[ s ][ i ] - Params[ i ]) * PrevMult;
 			}
@@ -321,7 +294,7 @@ public:
 
 		if( CentCnt == 1 )
 		{
-			// Move towards centroid vector.
+			// Move towards centroid vector randomly.
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -358,9 +331,6 @@ public:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					CentPrevParams[ i ] +=
-						( Params[ i ] - PrevParams[ s ][ i ]) / FanSize;
-
 					PrevParams[ s ][ i ] = Params[ i ];
 				}
 			}
@@ -378,6 +348,8 @@ public:
 			BestCost = NewCost;
 		}
 
+		// Replace highest cost "fan element".
+
 		double* const rp = CurParams[ sH ];
 		double* const pp = PrevParams[ sH ];
 
@@ -385,7 +357,6 @@ public:
 		{
 			CentParams[ i ] += ( Params[ i ] - rp[ i ]) / FanSize;
 			HistParams[ i ] = rp[ i ];
-			CentPrevParams[ i ] += ( rp[ i ] - pp[ i ]) / FanSize;
 			pp[ i ] = rp[ i ];
 			rp[ i ] = Params[ i ];
 		}
@@ -563,9 +534,6 @@ protected:
 		///<
 	double PrevParams[ FanSize ][ ParamCount ]; ///< Previously evaluated
 		///< (and rejected) parameters.
-		///<
-	double CentPrevParams[ ParamCount ]; ///< Centroid of previously evaluated
-		///< parameters.
 		///<
 	double HistParams[ ParamCount ]; ///< Last better parameter values.
 		///<
