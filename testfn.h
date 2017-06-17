@@ -785,7 +785,7 @@ static double calcDolan( const double* const p, const int N )
 
 CTestFn TestFnDolan = { "Dolan", 5, -100.0, 100.0, 0.00001, &calcDolan };
 
-static double calcTrid( const double* const p, const int N )
+static double calcTrid6( const double* const p, const int N )
 {
 	double s1 = 0.0;
 	double s2 = 0.0;
@@ -804,7 +804,29 @@ static double calcTrid( const double* const p, const int N )
 	return( s1 - s2 );
 }
 
-CTestFn TestFnTrid = { "Trid", 6, -20.0, 20.0, -50.0, &calcTrid };
+CTestFn TestFnTrid6 = { "Trid6", 6, -20.0, 20.0, -50.0, &calcTrid6 };
+
+static double calcTrid10( const double* const p, const int N )
+{
+	double s1 = 0.0;
+	double s2 = 0.0;
+	int i;
+
+	for( i = 0; i < 10; i++ )
+	{
+		s1 += sqr(p[i]-1.0);
+	}
+
+	for( i = 1; i < 10; i++ )
+	{
+		s2 += p[i]*p[i-1];
+	}
+
+	return( s1 - s2 );
+}
+
+CTestFn TestFnTrid10 = { "Trid10", 10, -100.0, 100.0, -210.0,
+	&calcTrid10 };
 
 static double calcMieleCantrell( const double* const p, const int N )
 {
@@ -849,7 +871,8 @@ const CTestFn* OptCorpusND[] = { &TestFnSphere, &TestFnAckley,
 
 // Failing functions.
 
-const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnDolan, NULL };
+const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnDolan,
+	&TestFnTrid10, NULL };
 
 // Test corpus including all functions.
 
@@ -868,5 +891,5 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel,
 	&TestFnSumOfDiffPowers, &TestFnPrice01, &TestFnPrice03, &TestFnPrice04,
 	&TestFnBrown, &TestFnBrent, &TestFnNewFunction01, &TestFnNewFunction02,
 	&TestFnLevy05, &TestFnPowerSum, &TestFnPowell, &TestFnPaviani,
-	&TestFnTrid, &TestFnMieleCantrell, &TestFnColville, &TestFnWolfe,
-	NULL };
+	&TestFnTrid6, &TestFnMieleCantrell, &TestFnColville,
+	&TestFnWolfe, NULL };

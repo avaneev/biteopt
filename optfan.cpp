@@ -9,9 +9,14 @@ static double roundp( const double x )
 	return( floor( x * 100000000.0 + 0.5 ) / 100000000.0 );
 }
 
-class CFanOpt : public CBEOOptimizerFan< FanParamCount, 3, 16 >
+class CFanOpt : public CBEOOptimizerFan
 {
 public:
+	CFanOpt()
+	{
+		updateDims( FanParamCount, 16 );
+	}
+
 	virtual void getMinValues( double* const p ) const
 	{
 		p[ 0 ] = 0.7;
@@ -26,9 +31,9 @@ public:
 	{
 		p[ 0 ] = 5.0;
 		p[ 1 ] = 1.0;
-		p[ 2 ] = 1.0;
-		p[ 3 ] = 1.0;
-		p[ 4 ] = 2.0;
+		p[ 2 ] = 3.0;
+		p[ 3 ] = 3.0;
+		p[ 4 ] = 3.0;
 		p[ 5 ] = 1.5;
 	}
 
@@ -36,16 +41,15 @@ public:
 	{
 		rnd.init( 0 );
 
-//		CTester< 2 > Tester;
-		CTester< 10 > Tester;
+		CTester Tester;
 		Tester.opt -> CostMult = roundp( p[ 0 ]);
 		Tester.opt -> BestMult = roundp( p[ 1 ]);
 		Tester.opt -> HistMult = roundp( p[ 2 ]);
 		Tester.opt -> PrevMult = roundp( p[ 3 ]);
 		Tester.opt -> CentMult = roundp( p[ 4 ]);
 		Tester.opt -> CentOffs = roundp( p[ 5 ]);
-//		Tester.init( OptCorpus2D, 0.001, 5000, 10000, true, false );
-		Tester.init( OptCorpusND, 0.01, 120, 150000, false, false );
+//		Tester.init( 2, OptCorpus2D, 0.001, 5000, 10000, true, false );
+		Tester.init( 10, OptCorpusND, 0.01, 120, 150000, false, false );
 
 		Tester.run();
 
@@ -60,12 +64,12 @@ int main()
 	rnd2.init( 1 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 1.36232993;
-	Params[ 1 ] = 0.63217411;
-	Params[ 2 ] = 0.55474765;
-	Params[ 3 ] = 0.43400424;
-	Params[ 4 ] = 1.31470436;
-	Params[ 5 ] = 0.61169491;
+	Params[ 0 ] = 1.19002383;
+	Params[ 1 ] = 0.63504273;
+	Params[ 2 ] = 0.57471040;
+	Params[ 3 ] = 0.42249913;
+	Params[ 4 ] = 1.26880243;
+	Params[ 5 ] = 0.60540170;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );
