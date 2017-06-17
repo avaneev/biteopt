@@ -35,7 +35,11 @@ different random seeds since the process may get stuck in a local minimum.
 Running 10-20 times is a minimal requirement. This method is hugely
 probabilistic and it highly depends on its initial state, which is selected
 randomly. In most cases it is more efficient to rerun the optimization with a
-new random seed than to wait for the optimization process to converge.
+new random seed than to wait for the optimization process to converge. Based
+on the results of optimization of the test corpus, for 2-dimensional functions
+it is reasonable to expect convergence in 2000 iterations (in a successful
+attempt), for 10-dimensional functions it is reasonable to expect convergence
+in 10000 iterations.
 
 The minimal and maximal allowed parameter values should be specified in a way
 to cover a wider value range, in order to reduce boundary effects that may
