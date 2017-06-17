@@ -26,9 +26,9 @@ public:
 	{
 		p[ 0 ] = 5.0;
 		p[ 1 ] = 1.0;
-		p[ 2 ] = 3.0;
-		p[ 3 ] = 3.0;
-		p[ 4 ] = 3.0;
+		p[ 2 ] = 1.0;
+		p[ 3 ] = 1.0;
+		p[ 4 ] = 2.0;
 		p[ 5 ] = 1.5;
 	}
 
@@ -45,7 +45,7 @@ public:
 		Tester.opt -> CentMult = roundp( p[ 4 ]);
 		Tester.opt -> CentOffs = roundp( p[ 5 ]);
 //		Tester.init( OptCorpus2D, 0.001, 5000, 10000, true, false );
-		Tester.init( OptCorpusND, 0.01, 60, 150000, false, false );
+		Tester.init( OptCorpusND, 0.01, 120, 150000, false, false );
 
 		Tester.run();
 
@@ -60,12 +60,12 @@ int main()
 	rnd2.init( 1 );
 
 	double Params[ FanParamCount ];
-	Params[ 0 ] = 1.38268407;
-	Params[ 1 ] = 0.65546784;
-	Params[ 2 ] = 0.54561030;
-	Params[ 3 ] = 0.42395983;
-	Params[ 4 ] = 1.23362461;
-	Params[ 5 ] = 0.69574673;
+	Params[ 0 ] = 1.36232993;
+	Params[ 1 ] = 0.63217411;
+	Params[ 2 ] = 0.55474765;
+	Params[ 3 ] = 0.43400424;
+	Params[ 4 ] = 1.31470436;
+	Params[ 5 ] = 0.61169491;
 
 	CFanOpt opt;
 	opt.init( rnd2, Params );

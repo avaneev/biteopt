@@ -576,6 +576,146 @@ static double calcChichinadze( const double* const p, const int N )
 CTestFn TestFnChichinadze = { "Chichinadze", 2, -30.0, 30.0, -42.944387018991,
 	&calcChichinadze };
 
+static double calcEggHolder( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( -x*sin(sqrt(fabs(x-y-47.0)))-
+		(y+47.0)*sin(sqrt(fabs(0.5*x+y+47.0))) );
+}
+
+CTestFn TestFnEggHolder = { "EggHolder", 2, -512.0, 512.0, -959.640662711,
+	&calcEggHolder };
+
+static double calcHolderTable( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( -fabs(exp(fabs(1.0-sqrt(x*x+y*y)/M_PI))*sin(x)*cos(y)) );
+}
+
+CTestFn TestFnHolderTable = { "HolderTable", 2, -10.0, 10.0, -19.20850256789,
+	&calcHolderTable };
+
+static double calcSumOfDiffPowers( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += pow( fabs( p[ i ]), i + 2.0 );
+	}
+
+	return( s );
+}
+
+CTestFn TestFnSumOfDiffPowers = { "SumOfDiffPowers", 0, -1.0, 1.0, 0.0,
+	&calcSumOfDiffPowers };
+
+static double calcPrice01( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( sqr(fabs(x)-5.0)+sqr(fabs(y)-5.0) );
+}
+
+CTestFn TestFnPrice01 = { "Price01", 2, -500.0, 500.0, 0.0,
+	&calcPrice01 };
+
+static double calcPrice03( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( 100.0*sqr(y-x*x)+sqr(6.4*sqr(y-0.5)-x-0.6) );
+}
+
+CTestFn TestFnPrice03 = { "Price03", 2, -50.0, 50.0, 0.0,
+	&calcPrice03 };
+
+static double calcPrice04( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( sqr(2.0*x*x*x*y-y*y*y)+sqr(6.0*x-y*y+y) );
+}
+
+CTestFn TestFnPrice04 = { "Price04", 2, -50.0, 50.0, 0.0,
+	&calcPrice04 };
+
+static double calcBrown( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N - 1; i++ )
+	{
+		s += pow(sqr(p[i]),sqr(p[i+1])+1.0) +
+			pow(sqr(p[i+1]),sqr(p[i]+1.0));
+	}
+
+	return( s );
+}
+
+CTestFn TestFnBrown = { "Brown", 0, -1.0, 4.0, 0.0, &calcBrown };
+
+static double calcBrent( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( sqr(x+10.0)+sqr(y+10.0)+exp(-x*x-y*y) );
+}
+
+CTestFn TestFnBrent = { "Brent", 2, -10.0, 10.0, 0.0, &calcBrent };
+
+static double calcNewFunction01( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( sqrt(fabs(cos(sqrt(fabs(x*x+y)))))+(x+y)/100.0 );
+}
+
+CTestFn TestFnNewFunction01 = { "NewFunction01", 2, -10.0, 10.0, -0.178945093,
+	&calcNewFunction01 };
+
+static double calcNewFunction02( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( sqrt(fabs(sin(sqrt(fabs(x*x+y)))))+(x+y)/100.0 );
+}
+
+CTestFn TestFnNewFunction02 = { "NewFunction02", 2, -10.0, 10.0, -0.197188106,
+	&calcNewFunction02 };
+
+static double calcLevy05( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	double s1 = 0.0;
+	double s2 = 0.0;
+	int i;
+
+	for( i = 1; i <= 5; i++ )
+	{
+		s1 += i*cos((i-1)*x+i);
+		s2 += i*cos((i+1)*y+i);
+	}
+
+	return( s1*s2+sqr(x+1.42513)+sqr(y+0.80032) );
+}
+
+CTestFn TestFnLevy05 = { "Levy05", 2, -10.0, 10.0, -176.1375,
+	&calcLevy05 };
+
 // Strategy optimization corpus based on simple 2D functions.
 
 const CTestFn* OptCorpus2D[] = { &TestFnMatyas, &TestFnThreeHumpCamel,
@@ -589,7 +729,7 @@ const CTestFn* OptCorpus2D[] = { &TestFnMatyas, &TestFnThreeHumpCamel,
 const CTestFn* OptCorpusND[] = { &TestFnSphere, &TestFnAckley,
 	&TestFnRosenbrock, &TestFnBohachevsky, &TestFnEasom, &TestFnRastrigin,
 	&TestFnSumSquares, &TestFnZacharov, &TestFnRotatedHyperEllipsoid,
-	&TestFnWavy, NULL };
+	&TestFnWavy, &TestFnBrown, NULL };
 
 // Test corpus including all functions.
 
@@ -604,4 +744,7 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel,
 	&TestFnWavy, &TestFnShubert01, &TestFnWeierstrass,
 	&TestFnFreudensteinRoth, &TestFnTrigonometric02, &TestFnBird,
 	&TestFnTreccani, &TestFnXinSheYang04, &TestFnExp2, &TestFnSchwefel06,
-	&TestFnChichinadze, NULL };
+	&TestFnChichinadze, &TestFnEggHolder, &TestFnHolderTable,
+	&TestFnSumOfDiffPowers, &TestFnPrice01, &TestFnPrice03, &TestFnPrice04,
+	&TestFnBrown, &TestFnBrent, &TestFnNewFunction01, &TestFnNewFunction02,
+	&TestFnLevy05, NULL };

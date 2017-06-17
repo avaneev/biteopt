@@ -101,7 +101,7 @@
  */
 
 template< int ParamCount0, int ValuesPerParam = 1,
-	int FanSize = 6 + ParamCount0 * ParamCount0 / 2 >
+	int FanSize = 7 + ParamCount0 * ParamCount0 / 3 >
 class CBEOOptimizerFan
 {
 public:
@@ -125,12 +125,12 @@ public:
 	CBEOOptimizerFan()
 		: MantMult( 1 << MantSize )
 	{
-		CostMult = 1.44176476;
-		BestMult = 0.65528962;
-		HistMult = 0.53627432;
-		PrevMult = 0.43633471;
-		CentMult = 1.26765785;
-		CentOffs = 0.67884726;
+		CostMult = 1.19002383;
+		BestMult = 0.63504273;
+		HistMult = 0.57471040;
+		PrevMult = 0.42249913;
+		CentMult = 1.26880243;
+		CentOffs = 0.60540170;
 	}
 
 	/**
@@ -294,7 +294,7 @@ public:
 
 		if( CentCnt == 1 )
 		{
-			// Move towards centroid vector randomly.
+			// Move towards centroid vector or beyond it, randomly.
 
 			for( i = 0; i < ParamCount; i++ )
 			{

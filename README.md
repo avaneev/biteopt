@@ -77,6 +77,30 @@ test3.cpp demonstrates the usage of the optimizePlateau() function.
 
 test4.cpp is a convergence test for multi-dimensional functions.
 
+## Development ##
+
+While the basic algorithm of the strategy is finished, the built-in parameters
+of the algorithm is an area of ongoing research. There are several things that
+were discovered that may need to be addressed:
+
+1. The CostMult parameter must probably depend on the FanSize parameter. For
+example, at FanSize=8 the best CostMult which gives a faster convergence is
+around 2.5, at FanSize=40 the best CostMult is around 1.2. This is
+understandable, because when FanSize is higher, the difference between the
+lowest cost and highest cost "fan element" is naturally higher due to a larger
+pool of "fan elements" (attempted solutions).
+
+2. The formula of dependence of FanSize on the number of dimensions may need
+to be updated.
+
+3. When the algorithm reaches convergence point, parameter vector used in
+"non-bitmask inversion" round of function evaluation changes very little.
+Which probably means that the "bitmask inversion" operation's frequency should
+be increased when the convergence point approaches. Also the range of bits
+in this operation should probably be shifted towards lower bits. This should
+reduce convergence time when the optimum's area was correctly found, but may
+also increase optimization rejection rate.
+
 ## Users ##
 This library is used by:
 
