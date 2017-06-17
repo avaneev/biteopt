@@ -30,11 +30,12 @@ This strategy was tested on many classic 2-dimensional and 30-dimensional
 optimization problems and performed well. Due to its design this strategy may
 be particularly good at improving an existing sub-optimal local solution.
 
-The FanSize parameter can be adjusted to increase quality of solutions,
-especially in high dimensionality problems. By default, FanSize is equal to
-the square of the number of dimensions divided by 3. FanSize controls
-robustness of the strategy at the cost of convergence time. However, setting
-FanSize too high may reduce convergence.
+It is usually necessary to run the optimization process several times with
+different random seeds since the process may get stuck in a local minimum.
+Running 10-20 times is a minimal requirement. This method is hugely
+probabilistic and it highly depends on its initial state, which is selected
+randomly. In most cases it is more efficient to rerun the optimization with a
+new random seed than to wait for the optimization process to converge.
 
 The minimal and maximal allowed parameter values should be specified in a way
 to cover a wider value range, in order to reduce boundary effects that may
@@ -42,16 +43,20 @@ greatly reduce convergence. If the target local or global minimum stands
 very close to the parameter value boundaries this strategy may fail to
 converge.
 
-It is usually necessary to run the optimization process several times with
-different random seeds since the process may get stuck in a local minimum.
-Running 10-20 times is a minimal requirement. The optimizePlateau() function
-can be used to optimize functions that have a complex landscape. This function
-works within the bounds of allocated iteration limit, and performs
-re-initializations when the optimization process reaches the plateau.
+The optimizePlateau() function can be used to optimize functions that have a
+complex landscape. This function works within the bounds of allocated
+iteration limit, and performs re-initializations when the optimization process
+reaches the plateau.
 
 Most hard constraints can be introduced by applying huge penalties to the
 objective function. Even binary penalties like "if(x>1)cost+=10000" should
 work acceptably in most cases.
+
+The FanSize parameter can be adjusted to increase quality of solutions,
+especially in high dimensionality problems. By default, FanSize is equal to
+the square of the number of dimensions divided by 3. FanSize controls
+robustness of the strategy at the cost of convergence time. However, setting
+FanSize too high may reduce convergence.
 
 Strategy's "robustness" is a multi-factor non-formal estimation which includes
 average convergence time, standard deviation of convergence time, the set of
