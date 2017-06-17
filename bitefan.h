@@ -51,22 +51,21 @@
  * The benefit of this strategy is a relatively high robustness: it can
  * successfully optimize a wide range of test functions. Another benefit is a
  * low convergence time which depends on the complexity of the objective
- * function. This strategy does not solve all global optimization problems
- * successfully, but strives to provide the "minimum among minima" solution.
- * Like many stochastic optimization strategies, this strategy can't solve
- * problems with narrow or rogue optimums.
+ * function. Like many stochastic optimization strategies with fast
+ * convergence, this strategy can't solve problems with narrow or rogue
+ * optimums. Harder problems may require dozens of optimization attempts to
+ * reach optimum.
  *
  * The strategy consists of the following elements:
  *
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
- * parameter vector which is evolved towards a better solution. Also an
- * ordered list of "fan elements" is maintaned.
+ * parameter vector which is evolved towards a better solution. Also a
+ * cost-ordered list of "fan elements" is maintaned.
  *
  * 2. The previous attempted/rejected solution parameter vector for each
  * "fan element" is maintained.
  *
- * 3. A single previous (outdated) historic solution is maintained, which is
- * shared among all "fan elements".
+ * 3. A single previous (outdated) historic solution is maintained.
  *
  * 4. A centroid vector of all "fan elements" is maintained.
  *
@@ -89,19 +88,9 @@
  * highest cost "fan element" is performed using the cost constraint. This
  * method is based on an assumption that the later solutions tend to be
  * statistically better than the earlier solutions. History is updated with a
- * previous (replaced) solution whenever a "fan element" is replaced.
- *
- * @tparam ParamCount0 The number of parameters being optimized.
- * @tparam ValuesPerParam The number of internal parameter values assigned to
- * each optimization parameter. Set to 2, 3 or 4 to better solve more complex
- * objective functions. Not all functions will benefit from an increased
- * value. Note that the overhead is increased proportionally to this value.
- * @tparam FanSize The number of "fan elements" to use. Higher values increase
- * convergence time, but improve solution quality.
+ * previous (outdated) solution whenever a "fan element" is replaced.
  */
 
-template< int ParamCount0, int ValuesPerParam = 1,
-	int FanSize = 7 + ParamCount0 * ParamCount0 / 3 >
 class CBEOOptimizerFan
 {
 public:
@@ -124,6 +113,22 @@ public:
 
 	CBEOOptimizerFan()
 		: MantMult( 1 << MantSize )
+		, ParamCount( 0 )
+		, FanSize( 0 )
+		, FanOrder( NULL )
+		, CurParamsBuf( NULL )
+		, CurParams( NULL )
+		, CurCosts( NULL )
+		, CentParams( NULL )
+		, PrevParamsBuf( NULL )
+		, PrevParams( NULL )
+		, HistParams( NULL )
+		, MinValues( NULL )
+		, MaxValues( NULL )
+		, DiffValues( NULL )
+		, BestParams( NULL )
+		, Params( NULL )
+		, NewParams( NULL )
 	{
 		CostMult = 1.19002383;
 		BestMult = 0.63504273;
@@ -131,6 +136,60 @@ public:
 		PrevMult = 0.42249913;
 		CentMult = 1.26880243;
 		CentOffs = 0.60540170;
+	}
+
+	~CBEOOptimizerFan()
+	{
+		deleteBuffers();
+	}
+
+	/**
+	 * Function updates dimensionality of *this object. Function does nothing
+	 * if dimensionality has not changed since the last call. This function
+	 * should be called at least once before calling the init() function.
+	 *
+	 * @param aParamCount The number of parameters being optimized.
+	 * @param FanSize0 The number of "fan elements" to use. If set to 0, the
+	 * default formula will be used.
+	 */
+
+	void updateDims( const int aParamCount, const int FanSize0 = 0 )
+	{
+		const int aFanSize = ( FanSize0 > 0 ? FanSize0 :
+			7 + aParamCount * aParamCount / 3 );
+
+		if( aParamCount == ParamCount && aFanSize == FanSize )
+		{
+			return;
+		}
+
+		deleteBuffers();
+
+		ParamCount = aParamCount;
+		FanSize = aFanSize;
+		FanSize1 = aFanSize - 1;
+		FanOrder = new int[ FanSize ];
+		CurParamsBuf = new double[ FanSize * ParamCount ];
+		CurParams = new double*[ FanSize ];
+		CurCosts = new double[ FanSize ];
+		CentParams = new double[ ParamCount ];
+		PrevParamsBuf = new double[ FanSize * ParamCount ];
+		PrevParams = new double*[ FanSize ];
+		HistParams = new double[ ParamCount ];
+		MinValues = new double[ ParamCount ];
+		MaxValues = new double[ ParamCount ];
+		DiffValues = new double[ ParamCount ];
+		BestParams = new double[ ParamCount ];
+		Params = new double[ ParamCount ];
+		NewParams = new double[ ParamCount ];
+
+		int i;
+
+		for( i = 0; i < FanSize; i++ )
+		{
+			CurParams[ i ] = CurParamsBuf + i * ParamCount;
+			PrevParams[ i ] = PrevParamsBuf + i * ParamCount;
+		}
 	}
 
 	/**
@@ -152,7 +211,7 @@ public:
 		int i;
 		int j;
 
-		for( i = 0; i < ParamCount0; i++ )
+		for( i = 0; i < ParamCount; i++ )
 		{
 			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
 		}
@@ -170,10 +229,9 @@ public:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					const int k = i / ValuesPerParam;
 					const double v = ( j == 0 ?
-						wrapParam(( InitParams[ k ] - MinValues[ k ]) /
-						DiffValues[ k ]) : rnd.getRndValue() );
+						wrapParam(( InitParams[ i ] - MinValues[ i ]) /
+						DiffValues[ i ]) : rnd.getRndValue() );
 
 					CurParams[ j ][ i ] = v;
 					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
@@ -203,9 +261,7 @@ public:
 
 		for( j = 0; j < FanSize; j++ )
 		{
-			double Params[ ParamCount0 ];
-
-			for( i = 0; i < ParamCount0; i++ )
+			for( i = 0; i < ParamCount; i++ )
 			{
 				Params[ i ] = getParamValue( CurParams[ j ], i );
 			}
@@ -216,7 +272,7 @@ public:
 			{
 				BestCost = CurCosts[ j ];
 
-				for( i = 0; i < ParamCount0; i++ )
+				for( i = 0; i < ParamCount; i++ )
 				{
 					BestParams[ i ] = Params[ i ];
 				}
@@ -243,7 +299,6 @@ public:
 	bool optimize( CBEORnd& rnd )
 	{
 		const int s = FanOrder[ (int) ( rnd.getRndValue() * FanSize )];
-		double Params[ ParamCount ];
 		int i;
 
 		// The "step in the right direction" operation towards the best
@@ -310,9 +365,7 @@ public:
 
 		// Evaluate objective function with new parameters.
 
-		double NewParams[ ParamCount0 ];
-
-		for( i = 0; i < ParamCount0; i++ )
+		for( i = 0; i < ParamCount; i++ )
 		{
 			NewParams[ i ] = getParamValue( Params, i );
 		}
@@ -340,7 +393,7 @@ public:
 
 		if( NewCost < BestCost )
 		{
-			for( i = 0; i < ParamCount0; i++ )
+			for( i = 0; i < ParamCount; i++ )
 			{
 				BestParams[ i ] = NewParams[ i ];
 			}
@@ -387,7 +440,7 @@ public:
 	int optimizePlateau( CBEORnd& rnd, const double MinCost,
 		const int PlateauIters, const int MaxIters )
 	{
-		double TmpBestParams[ ParamCount0 ];
+		double* TmpBestParams = new double[ ParamCount ];
 		double TmpBestCost;
 		int Iters = FanSize;
 		int i;
@@ -400,6 +453,7 @@ public:
 		{
 			if( BestCost <= MinCost )
 			{
+				delete TmpBestParams;
 				return( Iters );
 			}
 
@@ -425,7 +479,7 @@ public:
 					{
 						TmpBestCost = BestCost;
 
-						for( i = 0; i < ParamCount0; i++ )
+						for( i = 0; i < ParamCount; i++ )
 						{
 							TmpBestParams[ i ] = BestParams[ i ];
 						}
@@ -449,12 +503,13 @@ public:
 		{
 			BestCost = TmpBestCost;
 
-			for( i = 0; i < ParamCount0; i++ )
+			for( i = 0; i < ParamCount; i++ )
 			{
 				BestParams[ i ] = TmpBestParams[ i ];
 			}
 		}
 
+		delete TmpBestParams;
 		return( Iters );
 	}
 
@@ -503,16 +558,17 @@ public:
 	virtual double optcost( const double* const p ) const = 0;
 
 protected:
-	static const int ParamCount = ParamCount0 * ValuesPerParam; ///< The total
-		///< number of internal parameter values in use.
-		///<
-	static const int FanSize1 = FanSize - 1; ///< = FanSize - 1.
-		///<
 	static const int MantSize = 29; ///< Mantissa size of bitmask inversion
 		///< operation. Must be lower than the random number generator's
 		///< precision.
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
+		///<
+	int ParamCount; ///< The total number of internal parameter values in use.
+		///<
+	int FanSize; ///< The number of "fan elements" in use.
+		///<
+	int FanSize1; ///< = FanSize - 1.
 		///<
 	int PrevCnt; ///< Previous move counter.
 		///<
@@ -520,34 +576,60 @@ protected:
 		///<
 	int ParamCnt; ///< Parameter index counter.
 		///<
-	int FanOrder[ FanSize ]; ///< The current "fan element" ordering,
-		///< ascending-sorted by cost.
+	int* FanOrder; ///< The current "fan element" ordering, ascending-sorted
+		///< by cost.
 		///<
-	double CurParams[ FanSize ][ ParamCount ]; ///< Current working parameter
-		///< vectors.
+	double* CurParamsBuf; ///< CurParams buffer.
 		///<
-	double CurCosts[ FanSize ]; ///< Best costs of current working parameter
-		///< vectors.
+	double** CurParams; ///< Current working parameter vectors.
 		///<
-	double CentParams[ ParamCount ]; ///< Centroid of the current parameter
-		///< vectors.
+	double* CurCosts; ///< Best costs of current working parameter vectors.
 		///<
-	double PrevParams[ FanSize ][ ParamCount ]; ///< Previously evaluated
-		///< (and rejected) parameters.
+	double* CentParams; ///< Centroid of the current parameter vectors.
 		///<
-	double HistParams[ ParamCount ]; ///< Last better parameter values.
+	double* PrevParamsBuf; ///< PrevParams buffer.
 		///<
-	double MinValues[ ParamCount0 ]; ///< Minimal parameter values.
+	double** PrevParams; ///< Previously evaluated (and rejected) parameters.
 		///<
-	double MaxValues[ ParamCount0 ]; ///< Maximal parameter values.
+	double* HistParams; ///< Last better parameter values.
 		///<
-	double DiffValues[ ParamCount0 ]; ///< Difference between maximal and
-		///< minimal parameter values.
+	double* MinValues; ///< Minimal parameter values.
 		///<
-	double BestParams[ ParamCount0 ]; ///< Best parameter vector.
+	double* MaxValues; ///< Maximal parameter values.
+		///<
+	double* DiffValues; ///< Difference between maximal and minimal parameter
+		///< values.
+		///<
+	double* BestParams; ///< Best parameter vector.
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
 		///<
+	double* Params; ///< Temporary parameter buffer.
+		///<
+	double* NewParams; ///< Temporary new parameter buffer.
+		///<
+
+	/**
+	 * Function deletes previously allocated buffers.
+	 */
+
+	void deleteBuffers()
+	{
+		delete FanOrder;
+		delete CurParamsBuf;
+		delete CurParams;
+		delete CurCosts;
+		delete CentParams;
+		delete PrevParamsBuf;
+		delete PrevParams;
+		delete HistParams;
+		delete MinValues;
+		delete MaxValues;
+		delete DiffValues;
+		delete BestParams;
+		delete Params;
+		delete NewParams;
+	}
 
 	/**
 	 * Function wraps the specified parameter value so that it stays in the
@@ -585,18 +667,9 @@ protected:
 	 * @param i Parameter index.
 	 */
 
-	double getParamValue( const double* const Params, const int i ) const
+	double getParamValue( const double* const aParams, const int i ) const
 	{
-		const double* const p = Params + i * ValuesPerParam;
-		double v = p[ 0 ];
-		int k;
-
-		for( k = 1; k < ValuesPerParam; k++ )
-		{
-			v += p[ k ];
-		}
-
-		return( MinValues[ i ] + DiffValues[ i ] * v / ValuesPerParam );
+		return( MinValues[ i ] + DiffValues[ i ] * aParams[ i ]);
 	}
 
 	/**

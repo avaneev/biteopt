@@ -8,11 +8,8 @@ CBEORnd rnd;
 
 /**
  * Function test corpus class.
- *
- * @tparam Dims The number of dimensions in each function.
  */
 
-template< int Dims >
 class CTester
 {
 public:
@@ -20,15 +17,40 @@ public:
 	 * Function optimizer class.
 	 */
 
-	class CTestOpt : public CBEOOptimizerFan< Dims >
+	class CTestOpt : public CBEOOptimizerFan
 	{
 	public:
 		const CTestFn* fn; ///< Test function.
 			///<
 		bool DoRandomize; ///< Randomize signs and function range.
 			///<
-		double signs[ Dims ]; ///< Signs to apply to function parameters.
+		int Dims; ///< Dimensions in the function.
 			///<
+		double* signs; ///< Signs to apply to function parameters.
+			///<
+		double* tp; ///< Temporary parameter storage.
+			///<
+
+		CTestOpt()
+			: signs( NULL )
+			, tp( NULL )
+		{
+		}
+
+		~CTestOpt()
+		{
+			delete signs;
+		}
+
+		void updateDims( const int aDims, const int aFanSize = 0 )
+		{
+			Dims = aDims;
+			delete signs;
+			signs = new double[ Dims ];
+			delete tp;
+			tp = new double[ Dims ];
+			CBEOOptimizerFan :: updateDims( Dims, aFanSize );
+		}
 
 		virtual void getMinValues( double* const p ) const
 		{
@@ -74,18 +96,19 @@ public:
 
 		virtual double optcost( const double* const p ) const
 		{
-			double pp[ Dims ];
 			int i;
 
 			for( i = 0; i < Dims; i++ )
 			{
-				pp[ i ] = p[ i ] * signs[ i ];
+				tp[ i ] = p[ i ] * signs[ i ];
 			}
 
-			return( (*fn -> Calc)( pp, Dims ));
+			return( (*fn -> Calc)( tp, Dims ));
 		}
 	};
 
+	int DefDims; ///< The default number of dimensions to use.
+		///<
 	CTestOpt* opt; ///< Optimizer.
 		///<
 	double ItAvg; ///< Average convergence time after run().
@@ -110,6 +133,8 @@ public:
 	/**
 	 * Function initalizes the tester.
 	 *
+ 	 * @param aDefDims The number of dimensions in each function with variable
+	 * number of dimensions.
 	 * @param Corpus NULL-limited list of test functions.
 	 * @param Threshold Objective function value threshold - stop condition.
 	 * @param IterCount The number of attempts to solve a function to perform.
@@ -120,32 +145,28 @@ public:
 	 * @param DoPrint "True" if results should be printed to "stdout".
 	 */
 
-	void init( const CTestFn** Corpus, const double aThreshold,
-		const int aIterCount, const int aInnerIterCount,
-		const bool aDoRandomize, const bool aDoPrint )
+	void init( const int aDefDims, const CTestFn** Corpus,
+		const double aThreshold, const int aIterCount,
+		const int aInnerIterCount, const bool aDoRandomize,
+		const bool aDoPrint )
 	{
+		DefDims = aDefDims;
 		CostThreshold = aThreshold;
 		IterCount = aIterCount;
 		InnerIterCount = aInnerIterCount;
 		DoRandomize = aDoRandomize;
 		DoPrint = aDoPrint;
 		FnCount = 0;
+		Funcs = Corpus;
 
 		while( true )
 		{
-			const CTestFn* const fn = *Corpus;
-
-			if( fn == NULL )
+			if( *Corpus == NULL )
 			{
 				break;
 			}
 
-			if( fn -> Dims == Dims || fn -> Dims == 0 )
-			{
-				Funcs[ FnCount ] = fn;
-				FnCount++;
-			}
-
+			FnCount++;
 			Corpus++;
 		}
 	}
@@ -161,11 +182,11 @@ public:
 		ItRtAvg = 0.0;
 		RjAvg = 0.0;
 		tc = 0;
+		int* Iters = new int[ IterCount ];
 		int k;
 
 		for( k = 0; k < FnCount; k++ )
 		{
-			int Iters[ IterCount ];
 			double AvgIter = 0;
 			double AvgCost = 0.0;
 			double AvgRjCost = 0.0;
@@ -174,6 +195,10 @@ public:
 			int i;
 
 			opt -> fn = Funcs[ k ];
+			const int Dims = ( opt -> fn -> Dims == 0 ?
+				DefDims : opt -> fn -> Dims );
+
+			opt -> updateDims( Dims );
 			opt -> DoRandomize = DoRandomize;
 
 			if( !DoRandomize )
@@ -254,9 +279,9 @@ public:
 
 			if( DoPrint )
 			{
-				printf( "AIt:%6.0f RIt:%6.0f Rj:%5.2f%% C:%11.8f RjC:%7.4f %s\n",
-					Avg, RMS, 100.0 * Rej / IterCount, AvgCost, AvgRjCost,
-					opt -> fn -> Name );
+				printf( "AIt:%6.0f RIt:%6.0f Rj:%5.2f%% C:%11.8f RjC:%7.4f "
+					"%s_%i\n", Avg, RMS, 100.0 * Rej / IterCount, AvgCost,
+					AvgRjCost, opt -> fn -> Name, Dims );
 			}
 
 			ItAvg += Avg;
@@ -279,12 +304,12 @@ public:
 
 			printf( "Ticks: %llu\n", tc );
 		}
+
+		delete Iters;
 	}
 
 protected:
-	static const int FnCountMax = 50; ///< Funcs array capacity.
-		///<
-	const CTestFn* Funcs[ FnCountMax ]; ///< Test functions corpus.
+	const CTestFn** Funcs; ///< Test functions corpus.
 		///<
 	int FnCount; ///< Test function count.
 		///<

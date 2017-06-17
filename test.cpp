@@ -5,19 +5,24 @@
 	#define sqr( x ) (( x ) * ( x ))
 #endif // !defined( sqr )
 
-class CTestOpt : public CBEOOptimizerFan< 2 >
+class CTestOpt : public CBEOOptimizerFan
 {
 public:
+	CTestOpt()
+	{
+		updateDims( 2 );
+	}
+
 	virtual void getMinValues( double* const p ) const
 	{
-		p[ 0 ] = -10;
-		p[ 1 ] = -10;
+		p[ 0 ] = -10.0;
+		p[ 1 ] = -10.0;
 	}
 
 	virtual void getMaxValues( double* const p ) const
 	{
-		p[ 0 ] = 10;
-		p[ 1 ] = 10;
+		p[ 0 ] = 10.0;
+		p[ 1 ] = 10.0;
 	}
 
 	virtual double optcost( const double* const p ) const

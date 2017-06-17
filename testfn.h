@@ -282,7 +282,7 @@ static double calcRotatedHyperEllipsoid( const double* const p, const int N )
 	return( s );
 }
 
-CTestFn TestFnRotatedHyperEllipsoid = { "RotatedHyperEllipsoid", 0,
+CTestFn TestFnRotatedHyperEllipsoid = { "RotatHyperEllips", 0,
 	-65.536, 65.536, 0.0, &calcRotatedHyperEllipsoid };
 
 static double calcGriewank( const double* const p, const int N )
@@ -716,6 +716,122 @@ static double calcLevy05( const double* const p, const int N )
 CTestFn TestFnLevy05 = { "Levy05", 2, -10.0, 10.0, -176.1375,
 	&calcLevy05 };
 
+static double calcDamavandi( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( (1.0-pow(fabs(sin(M_PI*(x-2.0))*sin(M_PI*(y-2.0))/
+		(M_PI*M_PI*(x-2.0)*(y-2.0))),5.0))*(2.0+sqr(x-7.0)+2.0*sqr(y-7.0)) );
+}
+
+CTestFn TestFnDamavandi = { "Damavandi", 2, 0.0, 14.0, 0.0, &calcDamavandi };
+
+static double calcPowerSum( const double* const p, const int N )
+{
+	const double b[ 4 ] = { 8.0, 18.0, 44.0, 114.0 };
+	double s1 = 0.0;
+	int i;
+	int k;
+
+	for( k = 0; k < 4; k++ )
+	{
+		double s2 = 0.0;
+
+		for( i = 0; i < 4; i++ )
+		{
+			s2 += pow( p[ i ], k + 1.0 );
+		}
+
+		s1 += sqr( s2 - b[ k ]);
+	}
+
+	return( s1 );
+}
+
+CTestFn TestFnPowerSum = { "PowerSum", 4, 0.0, 4.0, 0.0, &calcPowerSum };
+
+static double calcPowell( const double* const p, const int N )
+{
+	return( sqr(p[2]+10.0*p[0])+5.0*sqr(p[1]-p[3])+sqr(sqr(p[0]-2.0*p[1]))+
+		10.0*sqr(sqr(p[2]-p[3])) );
+}
+
+CTestFn TestFnPowell = { "Powell", 4, -4.0, 5.0, 0.0, &calcPowell };
+
+static double calcPaviani( const double* const p, const int N )
+{
+	double s1 = 0.0;
+	double s2 = 1.0;
+	int i;
+
+	for( i = 0; i < 10; i++ )
+	{
+		s1 += sqr(log(10.0-p[i]))+sqr(log(p[i]-2.0));
+		s2 *= p[i];
+	}
+
+	return( s1 - pow( s2, 0.2 ));
+}
+
+CTestFn TestFnPaviani = { "Paviani", 10, 2.001, 9.999, -45.7784684040686,
+	&calcPaviani };
+
+static double calcDolan( const double* const p, const int N )
+{
+	return( fabs((p[0]+1.7*p[1])*sin(p[0])-1.5*p[2]-
+		0.1*p[3]*cos(p[4]+p[4]-p[0])+0.2*sqr(p[4])-p[1]-1.0) );
+}
+
+CTestFn TestFnDolan = { "Dolan", 5, -100.0, 100.0, 0.00001, &calcDolan };
+
+static double calcTrid( const double* const p, const int N )
+{
+	double s1 = 0.0;
+	double s2 = 0.0;
+	int i;
+
+	for( i = 0; i < 6; i++ )
+	{
+		s1 += sqr(p[i]-1.0);
+	}
+
+	for( i = 1; i < 6; i++ )
+	{
+		s2 += p[i]*p[i-1];
+	}
+
+	return( s1 - s2 );
+}
+
+CTestFn TestFnTrid = { "Trid", 6, -20.0, 20.0, -50.0, &calcTrid };
+
+static double calcMieleCantrell( const double* const p, const int N )
+{
+	return( sqr(sqr(exp(-p[0])-p[1]))+100.0*pow(p[1]-p[2],6.0)+
+		sqr(sqr(tan(p[2]-p[3])))+pow(p[0],8.0) );
+}
+
+CTestFn TestFnMieleCantrell = { "MieleCantrell", 4, -1.0, 1.0, 0.0,
+	&calcMieleCantrell };
+
+static double calcColville( const double* const p, const int N )
+{
+	return( 100.0*sqr(p[0]-sqr(p[1]))+sqr(1.0-p[0])+90.0*sqr(p[3]-sqr(p[2]))+
+		sqr(1.0-p[2])+10.1*(sqr(p[1]-1.0)+sqr(p[3]-1.0))+
+		19.8*(p[1]-1.0)*(p[3]-1.0) );
+}
+
+CTestFn TestFnColville = { "Colville", 4, -10.0, 10.0, 0.0,
+	&calcColville };
+
+static double calcWolfe( const double* const p, const int N )
+{
+	return( 4.0/3.0*pow(sqr(p[0])+sqr(p[1])-p[0]*p[1],0.75)+p[2] );
+}
+
+CTestFn TestFnWolfe = { "Wolfe", 3, 0.0, 2.0, 0.0, &calcWolfe };
+
 // Strategy optimization corpus based on simple 2D functions.
 
 const CTestFn* OptCorpus2D[] = { &TestFnMatyas, &TestFnThreeHumpCamel,
@@ -730,6 +846,10 @@ const CTestFn* OptCorpusND[] = { &TestFnSphere, &TestFnAckley,
 	&TestFnRosenbrock, &TestFnBohachevsky, &TestFnEasom, &TestFnRastrigin,
 	&TestFnSumSquares, &TestFnZacharov, &TestFnRotatedHyperEllipsoid,
 	&TestFnWavy, &TestFnBrown, NULL };
+
+// Failing functions.
+
+const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnDolan, NULL };
 
 // Test corpus including all functions.
 
@@ -747,4 +867,6 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel,
 	&TestFnChichinadze, &TestFnEggHolder, &TestFnHolderTable,
 	&TestFnSumOfDiffPowers, &TestFnPrice01, &TestFnPrice03, &TestFnPrice04,
 	&TestFnBrown, &TestFnBrent, &TestFnNewFunction01, &TestFnNewFunction02,
-	&TestFnLevy05, NULL };
+	&TestFnLevy05, &TestFnPowerSum, &TestFnPowell, &TestFnPaviani,
+	&TestFnTrid, &TestFnMieleCantrell, &TestFnColville, &TestFnWolfe,
+	NULL };

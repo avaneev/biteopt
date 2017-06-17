@@ -5,8 +5,8 @@ int main()
 {
 	rnd.init( 0 );
 
-	CTester< 2 > Tester;
-	Tester.init( TestCorpusAll, 0.000001, 500, 2000, false, true );
+	CTester Tester;
+	Tester.init( 2, TestCorpusAll, 0.000001, 500, 2000, false, true );
 
 	Tester.run();
 }

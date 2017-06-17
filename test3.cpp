@@ -3,9 +3,14 @@
 #include <stdio.h>
 #include "bitefan.h"
 
-class CTestOpt : public CBEOOptimizerFan< 2 >
+class CTestOpt : public CBEOOptimizerFan
 {
 public:
+	CTestOpt()
+	{
+		updateDims( 2 );
+	}
+
 	virtual void getMinValues( double* const p ) const
 	{
 		p[ 0 ] = -15;
