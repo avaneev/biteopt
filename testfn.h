@@ -120,6 +120,21 @@ static double calcAckley( const double* const p, const int N )
 
 CTestFn TestFnAckley = { "Ackley", 0, -32.0, 32.0, 0.0, &calcAckley };
 
+static double calcAckley2( const double* const p, const int N )
+{
+	return( -200.0*exp(-0.02*sqrt(sqr(p[0])+sqr(p[1]))) );
+}
+
+CTestFn TestFnAckley2 = { "Ackley2", 2, -32.0, 32.0, -200.0, &calcAckley2 };
+
+static double calcAckley3( const double* const p, const int N )
+{
+	return( 200.0*exp(-0.02*sqrt(sqr(p[0])+sqr(p[1])))+
+		5.0*exp(cos(3.0*p[0])+sin(3.0*p[1])) );
+}
+
+CTestFn TestFnAckley3 = { "Ackley3", 2, -32.0, 32.0, -219.1418, &calcAckley3 };
+
 static double calcRosenbrock( const double* const p, const int N )
 {
 	double s = 0.0;
@@ -854,6 +869,89 @@ static double calcWolfe( const double* const p, const int N )
 
 CTestFn TestFnWolfe = { "Wolfe", 3, 0.0, 2.0, 0.0, &calcWolfe };
 
+static double calcAlpine1( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += fabs(p[i]*sin(p[i]) + 0.1*p[i]);
+	}
+
+	return( s );
+}
+
+CTestFn TestFnAlpine1 = { "Alpine1", 0, -10.0, 10.0, 0.0, &calcAlpine1 };
+
+static double calcBartelsConn( const double* const p, const int N )
+{
+	return( fabs(sqr(p[0])+sqr(p[1])+p[0]*p[1])+
+		fabs(sin(p[0]))+fabs(cos(p[1])) );
+}
+
+CTestFn TestFnBartelsConn = { "BartelsConn", 2, -500.0, 500.0, 1.0,
+	&calcBartelsConn };
+
+static double calcSixHumpCamel( const double* const p, const int N )
+{
+	return( (4.0-2.1*sqr(p[0])+pow(p[0],4.0)/3.0)*sqr(p[0])+p[0]*p[1]+
+		(4.0*sqr(p[1])-4.0)*sqr(p[1]) );
+}
+
+CTestFn TestFnSixHumpCamel = { "SixHumpCamel", 2, -5.0, 5.0, -1.0316,
+	&calcSixHumpCamel };
+
+static double calcChenBird( const double* const p, const int N )
+{
+	return( -0.001/(sqr(0.001)+sqr(p[0]-0.4*p[1]-0.1))-
+		0.001/(sqr(0.001)+sqr(2.0*p[0]+p[1]-1.5)) );
+}
+
+CTestFn TestFnChenBird = { "ChenBird", 2, -500.0, 500.0, -2000.0,
+	&calcChenBird };
+
+static double calcChenV( const double* const p, const int N )
+{
+	return( -0.001/(sqr(0.001)+sqr(sqr(p[0])+sqr(p[1])-1.0))-
+		0.001/(sqr(0.001)+sqr(sqr(p[0])+sqr(p[1])-0.5))-
+		0.001/(sqr(0.001)+sqr(sqr(p[0])+sqr(p[1]))) );
+}
+
+CTestFn TestFnChenV = { "ChenV", 2, -500.0, 500.0, -2000.0, &calcChenV };
+
+static double calcChungReynolds( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sqr(p[i]);
+	}
+
+	return( s );
+}
+
+CTestFn TestFnChungReynolds = { "ChungReynolds", 0, -100.0, 100.0, 0.0,
+	&calcChungReynolds };
+
+static double calcCube( const double* const p, const int N )
+{
+	return( 100.0*pow(p[1]-pow(p[0],3.0),2.0)+pow(1.0-p[0],2.0) );
+}
+
+CTestFn TestFnCube = { "Cube", 2, -10.0, 10.0, 0.0, &calcCube };
+
+static double calcDeckkersAarts( const double* const p, const int N )
+{
+	return( pow(10.0,5.0)*sqr(p[0])+sqr(p[1])-sqr(sqr(p[0])+sqr(p[1]))+
+		pow(10.0,-5.0)*pow(sqr(p[0])+sqr(p[1]),4.0) );
+}
+
+CTestFn TestFnDeckkersAarts = { "DeckkersAarts", 2, -20.0, 20.0, -24777.0,
+	&calcDeckkersAarts };
+
 // Strategy optimization corpus based on simple 2D functions.
 
 const CTestFn* OptCorpus2D[] = { &TestFnMatyas, &TestFnThreeHumpCamel,
@@ -867,29 +965,45 @@ const CTestFn* OptCorpus2D[] = { &TestFnMatyas, &TestFnThreeHumpCamel,
 const CTestFn* OptCorpusND[] = { &TestFnSphere, &TestFnAckley,
 	&TestFnRosenbrock, &TestFnBohachevsky, &TestFnEasom, &TestFnRastrigin,
 	&TestFnSumSquares, &TestFnZacharov, &TestFnRotatedHyperEllipsoid,
-	&TestFnWavy, &TestFnBrown, NULL };
+	&TestFnWavy, &TestFnBrown, &TestFnAlpine1, &TestFnChungReynolds, NULL };
 
 // Failing functions.
 
-const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnDolan,
-	&TestFnTrid10, NULL };
+const CTestFn* TestCorpusFail[] = { &TestFnAckley3, &TestFnDamavandi,
+	&TestFnDolan, &TestFnTrid10, &TestFnChenBird, &TestFnChenV,
+	&TestFnDeckkersAarts, NULL };
+
+// Hard functions.
+
+const CTestFn* TestCorpus2DHard[] = { &TestFnDropWave, &TestFnGriewank,
+	&TestFnSalomon, &TestFnBranin02, &TestFnTrefethen, &TestFnWhitley,
+	&TestFnPrice02, &TestFnEggHolder, &TestFnPrice03, &TestFnNewFunction01,
+	&TestFnNewFunction02, &TestFnLevy05, &TestFnColville, NULL };
+
+/*const CTestFn* TestCorpus2DHard[] = { &TestFnBeale, &TestFnDropWave,
+	&TestFnGriewank, &TestFnGoldsteinPrice, &TestFnSalomon, &TestFnBranin02,
+	&TestFnTrefethen, &TestFnWhitley, &TestFnPrice02, &TestFnFreudensteinRoth,
+	&TestFnBird, &TestFnXinSheYang04, &TestFnEggHolder, &TestFnPrice03,
+	&TestFnNewFunction01, &TestFnNewFunction02, &TestFnLevy05,
+	&TestFnColville, NULL };*/
 
 // Test corpus including all functions.
 
-const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel,
-	&TestFnBooth, &TestFnMatyas, &TestFnSphere, &TestFnLevy13,
-	&TestFnSchaffer02, &TestFnSchaffer04, &TestFnAckley, &TestFnRosenbrock,
+const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
+	&TestFnMatyas, &TestFnSphere, &TestFnLevy13, &TestFnSchaffer02,
+	&TestFnSchaffer04, &TestFnAckley, &TestFnAckley2, &TestFnRosenbrock,
 	&TestFnBeale, &TestFnBohachevsky, &TestFnEasom, &TestFnEasom2,
-	&TestFnCrossInTray, &TestFnRastrigin, &TestFnDropWave,
-	&TestFnSumSquares, &TestFnZacharov, &TestFnRotatedHyperEllipsoid,
-	&TestFnGriewank, &TestFnGoldsteinPrice, &TestFnSalomon, &TestFnBranin01,
-	&TestFnBranin02, &TestFnTrefethen, &TestFnWhitley, &TestFnPrice02,
-	&TestFnWavy, &TestFnShubert01, &TestFnWeierstrass,
-	&TestFnFreudensteinRoth, &TestFnTrigonometric02, &TestFnBird,
-	&TestFnTreccani, &TestFnXinSheYang04, &TestFnExp2, &TestFnSchwefel06,
-	&TestFnChichinadze, &TestFnEggHolder, &TestFnHolderTable,
-	&TestFnSumOfDiffPowers, &TestFnPrice01, &TestFnPrice03, &TestFnPrice04,
-	&TestFnBrown, &TestFnBrent, &TestFnNewFunction01, &TestFnNewFunction02,
-	&TestFnLevy05, &TestFnPowerSum, &TestFnPowell, &TestFnPaviani,
-	&TestFnTrid6, &TestFnMieleCantrell, &TestFnColville,
-	&TestFnWolfe, NULL };
+	&TestFnCrossInTray, &TestFnRastrigin, &TestFnDropWave, &TestFnSumSquares,
+	&TestFnZacharov, &TestFnRotatedHyperEllipsoid, &TestFnGriewank,
+	&TestFnGoldsteinPrice, &TestFnSalomon, &TestFnBranin01, &TestFnBranin02,
+	&TestFnTrefethen, &TestFnWhitley, &TestFnPrice02, &TestFnWavy,
+	&TestFnShubert01, &TestFnWeierstrass, &TestFnFreudensteinRoth,
+	&TestFnTrigonometric02, &TestFnBird, &TestFnTreccani, &TestFnXinSheYang04,
+	&TestFnExp2, &TestFnSchwefel06, &TestFnChichinadze, &TestFnEggHolder,
+	&TestFnHolderTable, &TestFnSumOfDiffPowers, &TestFnPrice01,
+	&TestFnPrice03, &TestFnPrice04, &TestFnBrown, &TestFnBrent,
+	&TestFnNewFunction01, &TestFnNewFunction02, &TestFnLevy05,
+	&TestFnPowerSum, &TestFnPowell, &TestFnPaviani, &TestFnTrid6,
+	&TestFnMieleCantrell, &TestFnColville, &TestFnWolfe, &TestFnAlpine1,
+	&TestFnBartelsConn, &TestFnSixHumpCamel, &TestFnChungReynolds,
+	&TestFnCube, NULL };

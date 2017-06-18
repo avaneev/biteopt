@@ -614,20 +614,20 @@ protected:
 
 	void deleteBuffers()
 	{
-		delete FanOrder;
-		delete CurParamsBuf;
-		delete CurParams;
-		delete CurCosts;
-		delete CentParams;
-		delete PrevParamsBuf;
-		delete PrevParams;
-		delete HistParams;
-		delete MinValues;
-		delete MaxValues;
-		delete DiffValues;
-		delete BestParams;
-		delete Params;
-		delete NewParams;
+		delete[] FanOrder;
+		delete[] CurParamsBuf;
+		delete[] CurParams;
+		delete[] CurCosts;
+		delete[] CentParams;
+		delete[] PrevParamsBuf;
+		delete[] PrevParams;
+		delete[] HistParams;
+		delete[] MinValues;
+		delete[] MaxValues;
+		delete[] DiffValues;
+		delete[] BestParams;
+		delete[] Params;
+		delete[] NewParams;
 	}
 
 	/**
