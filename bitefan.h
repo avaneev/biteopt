@@ -56,7 +56,7 @@
  * optimums. Harder problems may require dozens of optimization attempts to
  * reach optimum.
  *
- * The strategy consists of the following elements:
+ * The algorithm consists of the following elements:
  *
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
  * parameter vector which is evolved towards a better solution. Also a
@@ -69,11 +69,11 @@
  *
  * 4. A centroid vector of all "fan elements" is maintained.
  *
- * 5. On every step the "best move" operation is performed which involves the
+ * 5. On every iteration "best move" operation is performed which involves the
  * current best solution.
  *
- * 6. On every step an "away from history move" operation is performed which
- * involves an outdated historic solution.
+ * 6. On every iteration an "away from history move" operation is performed
+ * which involves an outdated historic solution.
  *
  * 7. With 50% probability the "bitmask evolution" (inversion of a random
  * range of the lowest bits of a single random parameter) operation is
@@ -86,7 +86,7 @@
  *
  * 9. After each objective function evaluation, an attempt to replace the
  * highest cost "fan element" is performed using the cost constraint. This
- * method is based on an assumption that the later solutions tend to be
+ * approach is based on an assumption that the later solutions tend to be
  * statistically better than the earlier solutions. History is updated with a
  * previous (outdated) solution whenever a "fan element" is replaced.
  */
@@ -130,12 +130,12 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		CostMult = 1.19002383;
-		BestMult = 0.63504273;
-		HistMult = 0.57471040;
-		PrevMult = 0.42249913;
-		CentMult = 1.26880243;
-		CentOffs = 0.60540170;
+		CostMult = 1.21876211;
+		BestMult = 0.63962505;
+		HistMult = 0.56917849;
+		PrevMult = 0.45634401;
+		CentMult = 1.08785820;
+		CentOffs = 0.64518802;
 	}
 
 	~CBEOOptimizerFan()
@@ -288,12 +288,12 @@ public:
 	}
 
 	/**
-	 * Function performs the parameter optimization step that involves 1
+	 * Function performs the parameter optimization iteration that involves 1
 	 * objective function evaluation.
 	 *
 	 * @param rnd Random number generator.
-	 * @return "True" if optimizer's state was improved on this step. Many
-	 * successive "false" results means optimizer has reached a plateau.
+	 * @return "True" if optimizer's state was improved on this iteration.
+	 * Many successive "false" results means optimizer has reached a plateau.
 	 */
 
 	bool optimize( CBEORnd& rnd )
@@ -329,10 +329,19 @@ public:
 			const int imask =
 				( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
 
-			Params[ ParamCnt ] = ( (int) ( Params[ ParamCnt ] * MantMult ) ^
+			const double p = ( (int) ( Params[ ParamCnt ] * MantMult ) ^
 				imask ) / MantMult;
 
 			ParamCnt = ( ParamCnt == 0 ? ParamCount : ParamCnt ) - 1;
+
+			// A very controversial approach: mix in the bitmask-inverted
+			// parameter to another random parameter. Such approach probably
+			// works due to mutual correlation between parameters, especially
+			// in multi-dimensional functions. "pm" uses TPDF.
+
+			const double pm = ( rnd.getRndValue() + rnd.getRndValue() ) * 0.5;
+			const int rp = (int) ( rnd.getRndValue() * ParamCount );
+			Params[ rp ] = p * pm + Params[ rp ] * ( 1.0 - pm );
 
 			// The "step in the right direction" operation, away from the
 			// previously rejected solution.
@@ -452,7 +461,7 @@ public:
 		{
 			if( BestCost <= MinCost )
 			{
-				delete TmpBestParams;
+				delete[] TmpBestParams;
 				return( Iters );
 			}
 
@@ -508,7 +517,7 @@ public:
 			}
 		}
 
-		delete TmpBestParams;
+		delete[] TmpBestParams;
 		return( Iters );
 	}
 

@@ -32,7 +32,7 @@ be particularly good at improving an existing sub-optimal local solution.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
-Running 10-20 times is a minimal requirement. This method is hugely
+Running 10-20 times is a minimal requirement. This strategy is hugely
 probabilistic and it highly depends on its initial state, which is selected
 randomly. In most cases it is more efficient to rerun the optimization with a
 new random seed than to wait for the optimization process to converge. Based
@@ -64,11 +64,11 @@ FanSize too high may reduce convergence.
 
 Strategy's "robustness" is a multi-factor non-formal estimation which includes
 average convergence time, standard deviation of convergence time, the set of
-functions the method can solve successfully given randomized initial
+functions the algorithm can solve successfully given randomized initial
 conditions, in a given number of attempts. For global optimization robustness
 also includes the lowest achieved cost.
 
-Use the test.cpp program to see the basic usage example.
+Use the example.cpp program to see the basic usage example.
 
 test2.cpp is a convergence test for all available functions. Performs many
 optimization attempts on all functions. Prints various performance
@@ -101,6 +101,17 @@ be increased when the convergence point approaches. Also the range of bits
 in this operation should probably be shifted towards lower bits. This should
 reduce convergence time when the optimum's area was correctly found, but may
 also increase optimization rejection rate.
+
+4. Any slight change (optimization) of the built-in probabilites of the
+"bitmask inversion" (50%) and "centroid move" (33%) operations does not seems
+to affect the performance of the algorithm given all other built-in parameters
+were optimized to meet a specific convergence time and optimization attempt
+rejection rate. These probabilites were chosen in the course of development of
+the algorithm and usually work well for all dimensionalities.
+
+5. It is possible to reoptimize algorithm's built-in parameters to reduce
+average convergence time by 10-20%. Currently, the built-in parameters were
+optimized to produce less optimization attempt rejections in the test corpus.
 
 ## Users ##
 This library is used by:

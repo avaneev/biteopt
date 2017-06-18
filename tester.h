@@ -39,15 +39,15 @@ public:
 
 		~CTestOpt()
 		{
-			delete signs;
+			delete[] signs;
 		}
 
 		void updateDims( const int aDims, const int aFanSize = 0 )
 		{
 			Dims = aDims;
-			delete signs;
+			delete[] signs;
 			signs = new double[ Dims ];
-			delete tp;
+			delete[] tp;
 			tp = new double[ Dims ];
 			CBEOOptimizerFan :: updateDims( Dims, aFanSize );
 		}
@@ -118,6 +118,8 @@ public:
 	double RjAvg; ///< Average number of rejects.
 		///<
 	uint64_t tc; ///< Processor clock ticks used in evaluation.
+		///<
+	double Score; ///< Optimization score.
 		///<
 
 	CTester()
@@ -292,6 +294,8 @@ public:
 		ItAvg /= FnCount;
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
+		Score = fabs( ItRtAvg - 0.200 ) * 500000.0 + ItAvg *
+			( 1.0 + RjAvg * 100.0 );
 
 		if( DoPrint )
 		{
@@ -302,10 +306,11 @@ public:
 			printf( "RjAvg: %.2f%% (avg percentage of rejects)\n",
 				RjAvg * 100.0 );
 
+			printf( "Score: %f\n", Score );
 			printf( "Ticks: %llu\n", tc );
 		}
 
-		delete Iters;
+		delete[] Iters;
 	}
 
 protected:

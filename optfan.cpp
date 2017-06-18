@@ -19,20 +19,20 @@ public:
 
 	virtual void getMinValues( double* const p ) const
 	{
-		p[ 0 ] = 0.7;
+		p[ 0 ] = 0.1;
 		p[ 1 ] = 0.1;
 		p[ 2 ] = 0.0;
-		p[ 3 ] = 0.3;
+		p[ 3 ] = 0.0;
 		p[ 4 ] = 0.3;
 		p[ 5 ] = 0.0;
 	}
 
 	virtual void getMaxValues( double* const p ) const
 	{
-		p[ 0 ] = 5.0;
+		p[ 0 ] = 4.0;
 		p[ 1 ] = 1.0;
-		p[ 2 ] = 3.0;
-		p[ 3 ] = 3.0;
+		p[ 2 ] = 1.5;
+		p[ 3 ] = 1.5;
 		p[ 4 ] = 3.0;
 		p[ 5 ] = 1.5;
 	}
@@ -49,12 +49,11 @@ public:
 		Tester.opt -> CentMult = roundp( p[ 4 ]);
 		Tester.opt -> CentOffs = roundp( p[ 5 ]);
 //		Tester.init( 2, OptCorpus2D, 0.001, 5000, 10000, true, false );
-		Tester.init( 10, OptCorpusND, 0.01, 120, 150000, false, false );
+		Tester.init( 10, OptCorpusND, 0.01, 120, 20000, false, false );
 
 		Tester.run();
 
-		return( Tester.ItAvg * pow( Tester.ItRtAvg, 0.5 ) *
-			( 1.0 + Tester.RjAvg * 50.0 ));
+		return( Tester.Score );
 	}
 };
 
