@@ -28,25 +28,24 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef BITEFAN_INCLUDED
-#define BITEFAN_INCLUDED
+#ifndef BITEOPT_INCLUDED
+#define BITEOPT_INCLUDED
 
 #include <math.h>
 #include "biternd.h"
 
 /**
- * "Bitmask evolution" version "fan" optimization class. This strategy is
- * based on now outdated CBEOOptimizer and CBEOOptimizer2 stochastic
+ * BiteOpt stochastic function optimization class. This optimization strategy
+ * is based on now outdated CBEOOptimizer and CBEOOptimizer2 stochastic
  * derivative-less strategies, and uses several current parameter vectors
  * ("fan elements"). Highest cost "fan element" can be replaced with a new
  * solution if "fan element's" cost (plus some margin) is higher than that of
  * the new solution's. Having several "fan elements" allows parameter vectors
  * to be spaced apart from each other thus making them cover a larger
- * parameter search space collectively. The strategy was named as "bitmask
- * evolution", because at its core an operation of inversion of a random
- * segment of parameter value's lowest bits is used. Beside that, several
- * "step in the right direction" operations are used that move the solution
- * vector into position with a probably lower objective function value.
+ * parameter search space collectively. Beside that, parameter randomization
+ * and several "step in the right direction" operations are used that move the
+ * solution vector into position with a probably lower objective function
+ * value.
  *
  * The benefit of this strategy is a relatively high robustness: it can
  * successfully optimize a wide range of test functions. Another benefit is a
@@ -62,36 +61,30 @@
  * parameter vector which is evolved towards a better solution. Also a
  * cost-ordered list of "fan elements" is maintaned.
  *
- * 2. The previous attempted/rejected solution parameter vector for each
- * "fan element" is maintained.
+ * 2. A single outdated historic solution is maintained.
  *
- * 3. A single previous (outdated) historic solution is maintained.
+ * 3. A centroid vector of all "fan elements" is maintained.
  *
- * 4. A centroid vector of all "fan elements" is maintained.
+ * 4. On every iteration "towards best move" operation is performed which
+ * involves the current best solution.
  *
- * 5. On every iteration "best move" operation is performed which involves the
- * current best solution.
- *
- * 6. On every iteration an "away from history move" operation is performed
+ * 5. On every iteration an "away from history move" operation is performed
  * which involves an outdated historic solution.
  *
- * 7. With 33% probability the "step in the right direction" operation is
+ * 6. With CentProb probability the "step in the right direction" operation is
  * performed using the centroid vector.
  *
- * 8. With 50% probability the "bitmask evolution" (inversion of a random
- * range of the lowest bits of a single random parameter) operation is
- * performed, which is the main driver of the evolutionary process, followed
- * by the "step in the right direction" operation using a previous (rejected)
- * solution.
+ * 7. With RandProb probability the parameter value randomization operation is
+ * performed, which is the main driver of the evolutionary process.
  *
- * 9. After each objective function evaluation, an attempt to replace the
+ * 8. After each objective function evaluation, an attempt to replace the
  * highest cost "fan element" is performed using the cost constraint. This
  * approach is based on an assumption that the later solutions tend to be
  * statistically better than the earlier solutions. History is updated with a
- * previous (outdated) solution whenever a "fan element" is replaced.
+ * replaced (outdated) solution whenever a "fan element" is replaced.
  */
 
-class CBEOOptimizerFan
+class CBiteOpt
 {
 public:
 	double CostMult; ///< "Fan element" cost threshold multiplier.
@@ -100,19 +93,25 @@ public:
 		///<
 	double HistMult; ///< History move range multiplier.
 		///<
-	double PrevMult; ///< Previous move range multiplier.
-		///<
 	double CentMult; ///< Centroid move range multiplier.
 		///<
 	double CentOffs; ///< Centroid move range shift.
+		///<
+	double CentProb; ///< Centroid move probability.
+		///<
+	double RandProb; ///< Parameter value randomization probability.
+		///<
+	double RandMult; ///< Parameter value randomization multiplier.
 		///<
 
 	/**
 	 * Constructor.
 	 */
 
-	CBEOOptimizerFan()
-		: MantMult( 1 << MantSize )
+	CBiteOpt()
+		: CentProb( 0.25 )
+		, RandProb( 0.65 )
+		, MantMult( 1 << MantSize )
 		, ParamCount( 0 )
 		, FanSize( 0 )
 		, FanOrder( NULL )
@@ -120,9 +119,8 @@ public:
 		, CurParams( NULL )
 		, CurCosts( NULL )
 		, CentParams( NULL )
-		, PrevParamsBuf( NULL )
-		, PrevParams( NULL )
 		, HistParams( NULL )
+		, RangParams( NULL )
 		, MinValues( NULL )
 		, MaxValues( NULL )
 		, DiffValues( NULL )
@@ -130,15 +128,15 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		CostMult = 1.03704579;
-		BestMult = 0.69339495;
-		HistMult = 0.45212795;
-		PrevMult = 0.05250073;
-		CentMult = 1.07819567;
-		CentOffs = 0.47704054;
+		CostMult = 1.47145812;
+		BestMult = 0.67023312;
+		HistMult = 0.47436061;
+		CentMult = 0.86876551;
+		CentOffs = 0.93165000;
+		RandMult = 5.73885369;
 	}
 
-	~CBEOOptimizerFan()
+	~CBiteOpt()
 	{
 		deleteBuffers();
 	}
@@ -173,9 +171,8 @@ public:
 		CurParams = new double*[ FanSize ];
 		CurCosts = new double[ FanSize ];
 		CentParams = new double[ ParamCount ];
-		PrevParamsBuf = new double[ FanSize * ParamCount ];
-		PrevParams = new double*[ FanSize ];
 		HistParams = new double[ ParamCount ];
+		RangParams = new double[ ParamCount ];
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
 		DiffValues = new double[ ParamCount ];
@@ -188,7 +185,6 @@ public:
 		for( i = 0; i < FanSize; i++ )
 		{
 			CurParams[ i ] = CurParamsBuf + i * ParamCount;
-			PrevParams[ i ] = PrevParamsBuf + i * ParamCount;
 		}
 	}
 
@@ -200,10 +196,10 @@ public:
 	 * @param InitParams Initial parameter values.
 	 */
 
-	void init( CBEORnd& rnd, const double* const InitParams = NULL )
+	void init( CBiteRnd& rnd, const double* const InitParams = NULL )
 	{
-		PrevCnt = 0;
-		CentCnt = 0;
+		CentCnt = 1.0;
+		RandCnt = 1.0;
 		ParamCnt = 0;
 
 		getMinValues( MinValues );
@@ -234,7 +230,6 @@ public:
 						DiffValues[ i ]) : rnd.getRndValue() );
 
 					CurParams[ j ][ i ] = v;
-					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
 					CentParams[ i ] += CurParams[ j ][ i ];
 				}
 			}
@@ -246,7 +241,6 @@ public:
 				for( i = 0; i < ParamCount; i++ )
 				{
 					CurParams[ j ][ i ] = rnd.getRndValue();
-					PrevParams[ j ][ i ] = CurParams[ j ][ i ];
 					CentParams[ i ] += CurParams[ j ][ i ];
 				}
 			}
@@ -279,11 +273,16 @@ public:
 			}
 		}
 
-		// Initialize history with random values.
+		// Initialize history with random values, also initialize the
+		// RangParams values.
+
+		const double* const MinParams = CurParams[ FanOrder[ 0 ]];
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			HistParams[ i ] = rnd.getRndValue();
+			RangParams[ i ] = fabs( CentParams[ i ] - MinParams[ i ]) *
+				RandMult;
 		}
 	}
 
@@ -296,7 +295,7 @@ public:
 	 * Many successive "false" results means optimizer has reached a plateau.
 	 */
 
-	bool optimize( CBEORnd& rnd )
+	bool optimize( CBiteRnd& rnd )
 	{
 		// Select a random "fan element" from the ordered list.
 
@@ -314,15 +313,15 @@ public:
 			Params[ i ] = OrigParams[ i ] -
 				( OrigParams[ i ] - MinParams[ i ]) * BestMult;
 
-			// Move away from a previous historic solution.
+			// Move away from an outdated historic solution.
 
 			Params[ i ] -= ( HistParams[ i ] - Params[ i ]) * HistMult;
 		}
 
-		CentCnt = ( CentCnt + 1 ) % 3;
-
-		if( CentCnt == 1 )
+		if( CentCnt >= 1.0 )
 		{
+			CentCnt -= 1.0;
+
 			// Move towards centroid vector or beyond it, randomly.
 
 			for( i = 0; i < ParamCount; i++ )
@@ -332,39 +331,37 @@ public:
 			}
 		}
 
-		PrevCnt ^= 1;
+		CentCnt += CentProb;
 
-		if( PrevCnt == 1 )
+		if( RandCnt >= 1.0 )
 		{
-			// Bitmask inversion operation, works as a "driver" of
-			// optimization process, applied to 1 random parameter at a time.
+			RandCnt -= 1.0;
 
-			const int imask =
-				( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
+			// Parameter randomization operation, works as a "driver" of
+			// optimization process, applied to a random parameter.
 
-			const double p = ( (int) ( Params[ ParamCnt ] * MantMult ) ^
-				imask ) / MantMult;
+			const double p = Params[ ParamCnt ] +
+				( rnd.getRndValue() - 0.5 ) * RangParams[ ParamCnt ];
 
-			ParamCnt = ( ParamCnt == 0 ? ParamCount : ParamCnt ) - 1;
+			// A very controversial approach: mix the randomized parameter
+			// with another random parameter. Such approach probably works due
+			// to possible mutual correlation between parameters, especially
+			// in multi-dimensional functions. Mix constant is randomized,
+			// with adjusted probability distribution.
 
-			// A very controversial approach: mix in the bitmask-inverted
-			// parameter to another random parameter. Such approach probably
-			// works due to mutual correlation between parameters, especially
-			// in multi-dimensional functions. "pm" uses TPDF.
-
-			const double pm = ( rnd.getRndValue() + rnd.getRndValue() ) * 0.5;
+			double rr = rnd.getRndValue();
+			double pm = 1.0 - rr * rr;
 			const int rp = (int) ( rnd.getRndValue() * ParamCount );
 			Params[ rp ] = p * pm + Params[ rp ] * ( 1.0 - pm );
+			pm = 1.0 - sqrt( rnd.getRndValue() );
+			Params[ ParamCnt ]= p * pm + Params[ rp ] * ( 1.0 - pm );
 
-			// The "step in the right direction" operation, away from the
-			// previously rejected solution.
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				Params[ i ] -=
-					( PrevParams[ s ][ i ] - Params[ i ]) * PrevMult;
-			}
+			ParamCnt = ( ParamCnt == 0 ? ParamCount : ParamCnt ) - 1;
 		}
+
+		RandCnt += RandProb;
+
+		// Wrap parameter values so that they stay in the [0; 1] range.
 
 		for( i = 0; i < ParamCount; i++ )
 		{
@@ -388,19 +385,13 @@ public:
 
 		if( NewCost > cT )
 		{
-			if( PrevCnt == 1 )
-			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					PrevParams[ s ][ i ] = Params[ i ];
-				}
-			}
-
 			return( false );
 		}
 
 		if( NewCost < BestCost )
 		{
+			// Record the best solution.
+
 			for( i = 0; i < ParamCount; i++ )
 			{
 				BestParams[ i ] = NewParams[ i ];
@@ -412,17 +403,24 @@ public:
 		// Replace highest cost "fan element".
 
 		double* const rp = CurParams[ sH ];
-		double* const pp = PrevParams[ sH ];
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			CentParams[ i ] += ( Params[ i ] - rp[ i ]) / FanSize;
 			HistParams[ i ] = rp[ i ];
-			pp[ i ] = rp[ i ];
 			rp[ i ] = Params[ i ];
 		}
 
 		insertFanOrder( NewCost, sH, FanSize1 );
+
+		// Update parameter randomization ranges.
+
+		const double* const mp = CurParams[ FanOrder[ 0 ]];
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			RangParams[ i ] = fabs( CentParams[ i ] - mp[ i ]) * RandMult;
+		}
 
 		return( true );
 	}
@@ -445,7 +443,7 @@ public:
 	 * calls. May be greater than MaxIters.
 	 */
 
-	int optimizePlateau( CBEORnd& rnd, const double MinCost,
+	int optimizePlateau( CBiteRnd& rnd, const double MinCost,
 		const int PlateauIters, const int MaxIters )
 	{
 		double* TmpBestParams = new double[ ParamCount ];
@@ -578,9 +576,9 @@ protected:
 		///<
 	int FanSize1; ///< = FanSize - 1.
 		///<
-	int PrevCnt; ///< Previous move counter.
+	double CentCnt; ///< Centroid move probability counter.
 		///<
-	int CentCnt; ///< Centroid move counter.
+	double RandCnt; ///< Randomization operation probability counter.
 		///<
 	int ParamCnt; ///< Parameter index counter.
 		///<
@@ -595,11 +593,9 @@ protected:
 		///<
 	double* CentParams; ///< Centroid of the current parameter vectors.
 		///<
-	double* PrevParamsBuf; ///< PrevParams buffer.
+	double* HistParams; ///< Outdated better parameter values.
 		///<
-	double** PrevParams; ///< Previously evaluated (and rejected) parameters.
-		///<
-	double* HistParams; ///< Last better parameter values.
+	double* RangParams; ///< Parameter value ranges for randomization.
 		///<
 	double* MinValues; ///< Minimal parameter values.
 		///<
@@ -628,9 +624,8 @@ protected:
 		delete[] CurParams;
 		delete[] CurCosts;
 		delete[] CentParams;
-		delete[] PrevParamsBuf;
-		delete[] PrevParams;
 		delete[] HistParams;
+		delete[] RangParams;
 		delete[] MinValues;
 		delete[] MaxValues;
 		delete[] DiffValues;
@@ -725,4 +720,4 @@ protected:
 	}
 };
 
-#endif // BITEFAN_INCLUDED
+#endif // BITEOPT_INCLUDED

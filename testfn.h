@@ -80,24 +80,46 @@ static double calcLevy13( const double* const p, const int N )
 
 CTestFn TestFnLevy13 = { "Levy13", 2, -10.0, 10.0, 0.0, &calcLevy13 };
 
+static double calcSchaffer01( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( 0.5+(sqr(sin(sqr(x*x+y*y)))-0.5)/sqr(1.0+0.001*sqr(x*x+y*y)));
+}
+
+CTestFn TestFnSchaffer01 = { "Schaffer01", 2, -100.0, 100.0, 0.0,
+	&calcSchaffer01 };
+
 static double calcSchaffer02( const double* const p, const int N )
 {
 	const double x = p[ 0 ];
 	const double y = p[ 1 ];
-	return( 0.5+(sqr(sin(sqr(x*x-y*y)))-0.5)/(1.0+0.001*sqr(x*x+y*y)));
+	return( 0.5+(sqr(sin(x*x-y*y))-0.5)/sqr(1.0+0.001*sqr(x*x+y*y)));
 }
 
 CTestFn TestFnSchaffer02 = { "Schaffer02", 2, -100.0, 100.0, 0.0,
 	&calcSchaffer02 };
 
+static double calcSchaffer03( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( 0.5+(sqr(sin(cos(fabs(x*x-y*y))))-0.5)/
+		sqr(1.0+0.001*sqr(x*x+y*y)));
+}
+
+CTestFn TestFnSchaffer03 = { "Schaffer03", 2, -100.0, 100.0, 0.001566854526,
+	&calcSchaffer03 };
+
 static double calcSchaffer04( const double* const p, const int N )
 {
 	const double x = p[ 0 ];
 	const double y = p[ 1 ];
-	return( 0.5+(sqr(cos(sin(x*x-y*y)))-0.5)/(1.0+0.001*sqr(x*x+y*y)));
+	return( 0.5+(sqr(cos(sin(fabs(x*x-y*y))))-0.5)/
+		sqr(1.0+0.001*sqr(x*x+y*y)));
 }
 
-CTestFn TestFnSchaffer04 = { "Schaffer04", 2, -100.0, 100.0, 0.292579,
+CTestFn TestFnSchaffer04 = { "Schaffer04", 2, -100.0, 100.0, 0.292578632,
 	&calcSchaffer04 };
 
 static double calcAckley( const double* const p, const int N )
@@ -129,11 +151,12 @@ CTestFn TestFnAckley2 = { "Ackley2", 2, -32.0, 32.0, -200.0, &calcAckley2 };
 
 static double calcAckley3( const double* const p, const int N )
 {
-	return( 200.0*exp(-0.02*sqrt(sqr(p[0])+sqr(p[1])))+
+	return( -200.0*exp(-0.02*sqrt(sqr(p[0])+sqr(p[1])))+
 		5.0*exp(cos(3.0*p[0])+sin(3.0*p[1])) );
 }
 
-CTestFn TestFnAckley3 = { "Ackley3", 2, -32.0, 32.0, -219.1418, &calcAckley3 };
+CTestFn TestFnAckley3 = { "Ackley3", 2, -32.0, 32.0, -195.629028238,
+	&calcAckley3 };
 
 static double calcRosenbrock( const double* const p, const int N )
 {
@@ -176,6 +199,26 @@ static double calcBohachevsky( const double* const p, const int N )
 
 CTestFn TestFnBohachevsky = { "Bohachevsky", 0, -15.0, 15.0, 0.0,
 	&calcBohachevsky };
+
+static double calcBohachevsky2( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( x*x+2.0*y*y-0.3*cos(3.0*M_PI*x)-0.4*cos(3.0*M_PI*y)+0.7 );
+}
+
+CTestFn TestFnBohachevsky2 = { "Bohachevsky2", 2, -100.0, 100.0, 0.0,
+	&calcBohachevsky2 };
+
+static double calcBohachevsky3( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( x*x+2.0*y*y-0.3*cos(3.0*M_PI*x)*cos(3.0*M_PI*y)+0.3 );
+}
+
+CTestFn TestFnBohachevsky3 = { "Bohachevsky3", 2, -100.0, 100.0, 0.0,
+	&calcBohachevsky3 };
 
 static double calcEasom( const double* const p, const int N )
 {
@@ -444,6 +487,56 @@ static double calcShubert01( const double* const p, const int N )
 CTestFn TestFnShubert01 = { "Shubert01", 2, -10.0, 10.0, -186.7309,
 	&calcShubert01 };
 
+static double calcShubert03( const double* const p, const int N )
+{
+	double s1 = 0.0;
+	double s2 = 0.0;
+	int j;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s2 = 0.0;
+
+		for( j = 1; j <= 5; j++ )
+		{
+			s2 += j*sin((j+1)*p[i]+j);
+		}
+
+		s1 += s2;
+	}
+
+	return( s1 );
+}
+
+CTestFn TestFnShubert03 = { "Shubert03", 2, -10.0, 10.0, -29.6733337,
+	&calcShubert03 };
+
+static double calcShubert04( const double* const p, const int N )
+{
+	double s1 = 0.0;
+	double s2 = 0.0;
+	int j;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s2 = 0.0;
+
+		for( j = 1; j <= 5; j++ )
+		{
+			s2 += j*cos((j+1)*p[i]+j);
+		}
+
+		s1 += s2;
+	}
+
+	return( s1 );
+}
+
+CTestFn TestFnShubert04 = { "Shubert04", 2, -10.0, 10.0, -25.740858,
+	&calcShubert04 };
+
 static double calcWeierstrass( const double* const p, const int N )
 {
 	const double a = 0.5;
@@ -527,6 +620,46 @@ static double calcTreccani( const double* const p, const int N )
 }
 
 CTestFn TestFnTreccani = { "Treccani", 2, -5.0, 5.0, 0.0, &calcTreccani };
+
+static double calcXinSheYang02( const double* const p, const int N )
+{
+	double s1 = 0.0;
+	double s2 = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s1 += fabs(p[i]);
+		s2 += sin(sqr(p[i]));
+	}
+
+	return( s1*exp(-s2) );
+}
+
+CTestFn TestFnXinSheYang02 = { "XinSheYang02", 0, -2.0 * M_PI, 2.0 * M_PI,
+	0.0, &calcXinSheYang02 };
+
+static double calcXinSheYang03( const double* const p, const int N )
+{
+	const double m = 5.0;
+	const double Beta = 15.0;
+	double s1 = 0.0;
+	double s2 = 0.0;
+	double s3 = 1.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s1 += pow(p[i]/Beta,2.0*m);
+		s2 += sqr(p[i]);
+		s3 *= sqr(cos(p[i]));
+	}
+
+	return( exp(-s1)-2.0*exp(-s2)*s3 );
+}
+
+CTestFn TestFnXinSheYang03 = { "XinSheYang03", 0, -2.0 * M_PI, 2.0 * M_PI,
+	-1.0, &calcXinSheYang03 };
 
 static double calcXinSheYang04( const double* const p, const int N )
 {
@@ -614,7 +747,7 @@ static double calcHolderTable( const double* const p, const int N )
 CTestFn TestFnHolderTable = { "HolderTable", 2, -10.0, 10.0, -19.20850256789,
 	&calcHolderTable };
 
-static double calcSumOfDiffPowers( const double* const p, const int N )
+static double calcPowellSum( const double* const p, const int N )
 {
 	double s = 0.0;
 	int i;
@@ -627,8 +760,7 @@ static double calcSumOfDiffPowers( const double* const p, const int N )
 	return( s );
 }
 
-CTestFn TestFnSumOfDiffPowers = { "SumOfDiffPowers", 0, -1.0, 1.0, 0.0,
-	&calcSumOfDiffPowers };
+CTestFn TestFnPowellSum = { "PowellSum", 0, -1.0, 1.0, 0.0, &calcPowellSum };
 
 static double calcPrice01( const double* const p, const int N )
 {
@@ -794,11 +926,12 @@ CTestFn TestFnPaviani = { "Paviani", 10, 2.001, 9.999, -45.7784684040686,
 
 static double calcDolan( const double* const p, const int N )
 {
-	return( fabs((p[0]+1.7*p[1])*sin(p[0])-1.5*p[2]-
-		0.1*p[3]*cos(p[4]+p[4]-p[0])+0.2*sqr(p[4])-p[1]-1.0) );
+	return( (p[0]+1.7*p[1])*sin(p[0])-1.5*p[2]-
+		0.1*p[3]*cos(p[4]+p[3]-p[0])+0.2*sqr(p[4])-p[1]-1.0 );
 }
 
-CTestFn TestFnDolan = { "Dolan", 5, -100.0, 100.0, 0.00001, &calcDolan };
+CTestFn TestFnDolan = { "Dolan", 5, -100.0, 100.0, -529.871438732,
+	&calcDolan };
 
 static double calcTrid6( const double* const p, const int N )
 {
@@ -904,8 +1037,10 @@ CTestFn TestFnSixHumpCamel = { "SixHumpCamel", 2, -5.0, 5.0, -1.0316,
 
 static double calcChenBird( const double* const p, const int N )
 {
-	return( -0.001/(sqr(0.001)+sqr(p[0]-0.4*p[1]-0.1))-
-		0.001/(sqr(0.001)+sqr(2.0*p[0]+p[1]-1.5)) );
+	const double b = 0.001;
+	return( -b/(sqr(b)+sqr(sqr(p[0])+sqr(p[1])-1.0))-
+		b/(sqr(b)+sqr(sqr(p[0])+sqr(p[1])-0.5))-
+		b/(sqr(b)+sqr(sqr(p[0])+sqr(p[1]))) );
 }
 
 CTestFn TestFnChenBird = { "ChenBird", 2, -500.0, 500.0, -2000.0,
@@ -913,9 +1048,9 @@ CTestFn TestFnChenBird = { "ChenBird", 2, -500.0, 500.0, -2000.0,
 
 static double calcChenV( const double* const p, const int N )
 {
-	return( -0.001/(sqr(0.001)+sqr(sqr(p[0])+sqr(p[1])-1.0))-
-		0.001/(sqr(0.001)+sqr(sqr(p[0])+sqr(p[1])-0.5))-
-		0.001/(sqr(0.001)+sqr(sqr(p[0])+sqr(p[1]))) );
+	const double b = 0.001;
+	return( -b/(sqr(b)+sqr(p[0]-0.4*p[1]-0.1))-
+		b/(sqr(b)+sqr(2.0*p[0]+p[1]-1.5)) );
 }
 
 CTestFn TestFnChenV = { "ChenV", 2, -500.0, 500.0, -2000.0, &calcChenV };
@@ -949,8 +1084,119 @@ static double calcDeckkersAarts( const double* const p, const int N )
 		pow(10.0,-5.0)*pow(sqr(p[0])+sqr(p[1]),4.0) );
 }
 
-CTestFn TestFnDeckkersAarts = { "DeckkersAarts", 2, -20.0, 20.0, -24777.0,
+CTestFn TestFnDeckkersAarts = { "DeckkersAarts", 2, -20.0, 20.0, -24771.09375,
 	&calcDeckkersAarts };
+
+static double calcEggCrate( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( x*x+y*y+25.0*(sqr(sin(x))+sqr(sin(y))) );
+}
+
+CTestFn TestFnEggCrate = { "EggCrate", 2, -5.0, 5.0, 0.0, &calcEggCrate };
+
+static double calcKeane( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( -sqr(sin(x-y))*sqr(sin(x+y))/sqrt(x*x+y*y) );
+}
+
+CTestFn TestFnKeane = { "Keane", 2, 0.00001, 10.0, -0.673667521147,
+	&calcKeane };
+
+static double calcLeon( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( 100.0*sqr(y-x*x*x)+sqr(1.0-x) );
+}
+
+CTestFn TestFnLeon = { "Leon", 2, 0.0, 10.0, 0.0, &calcLeon };
+
+static double calcQing( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sqr(sqr(p[i])-(i+1.0));
+	}
+
+	return( s );
+}
+
+CTestFn TestFnQing = { "Qing", 0, -500.0, 500.0, 0.0, &calcQing };
+
+static double calcSchwefel( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += p[i]*sin(sqrt(fabs(p[i])));
+	}
+
+	return( 418.9829 * N - s );
+}
+
+CTestFn TestFnSchwefel = { "Schwefel", 0, -500.0, 500.0, 0.0, &calcSchwefel };
+
+static double calcSchwefel220( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += fabs(p[i]);
+	}
+
+	return( s );
+}
+
+CTestFn TestFnSchwefel220 = { "Schwefel220", 0, -100.0, 100.0, 0.0,
+	&calcSchwefel220 };
+
+static double calcSchwefel221( const double* const p, const int N )
+{
+	double s = fabs(p[0]);
+	int i;
+
+	for( i = 1; i < N; i++ )
+	{
+		if( fabs(p[i]) > s )
+		{
+			s = fabs(p[i]);
+		}
+	}
+
+	return( s );
+}
+
+CTestFn TestFnSchwefel221 = { "Schwefel221", 0, -100.0, 100.0, 0.0,
+	&calcSchwefel221 };
+
+static double calcSchwefel222( const double* const p, const int N )
+{
+	double s1 = 0.0;
+	double s2 = 1.0;
+	int i;
+
+	for( i = 1; i < N; i++ )
+	{
+		s1 += fabs(p[i]);
+		s2 *= fabs(p[i]);
+	}
+
+	return( s1+s2 );
+}
+
+CTestFn TestFnSchwefel222 = { "Schwefel222", 0, -100.0, 100.0, 0.0,
+	&calcSchwefel222 };
 
 // Strategy optimization corpus based on simple 2D functions.
 
@@ -962,16 +1208,18 @@ const CTestFn* OptCorpus2D[] = { &TestFnMatyas, &TestFnThreeHumpCamel,
 
 // Strategy optimization corpus based on simple N-dimensional functions.
 
-const CTestFn* OptCorpusND[] = { &TestFnSphere, &TestFnAckley,
+const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
+	&TestFnSchwefel222, &TestFnQing, &TestFnSphere, &TestFnAckley,
 	&TestFnRosenbrock, &TestFnBohachevsky, &TestFnEasom, &TestFnRastrigin,
 	&TestFnSumSquares, &TestFnZacharov, &TestFnRotatedHyperEllipsoid,
-	&TestFnWavy, &TestFnBrown, &TestFnAlpine1, &TestFnChungReynolds, NULL };
+	&TestFnWavy, &TestFnBrown, &TestFnAlpine1, &TestFnChungReynolds,
+	NULL };
 
 // Failing functions.
 
-const CTestFn* TestCorpusFail[] = { &TestFnAckley3, &TestFnDamavandi,
-	&TestFnDolan, &TestFnTrid10, &TestFnChenBird, &TestFnChenV,
-	&TestFnDeckkersAarts, NULL };
+const CTestFn* TestCorpusFail[] = { &TestFnDamavandi,
+	&TestFnTrid10, &TestFnChenBird, &TestFnChenV, &TestFnSchaffer03,
+	&TestFnSchaffer04, &TestFnSchwefel, NULL };
 
 // Hard functions.
 
@@ -990,20 +1238,27 @@ const CTestFn* TestCorpus2DHard[] = { &TestFnDropWave, &TestFnGriewank,
 // Test corpus including all functions.
 
 const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
-	&TestFnMatyas, &TestFnSphere, &TestFnLevy13, &TestFnSchaffer02,
-	&TestFnSchaffer04, &TestFnAckley, &TestFnAckley2, &TestFnRosenbrock,
-	&TestFnBeale, &TestFnBohachevsky, &TestFnEasom, &TestFnEasom2,
-	&TestFnCrossInTray, &TestFnRastrigin, &TestFnDropWave, &TestFnSumSquares,
-	&TestFnZacharov, &TestFnRotatedHyperEllipsoid, &TestFnGriewank,
-	&TestFnGoldsteinPrice, &TestFnSalomon, &TestFnBranin01, &TestFnBranin02,
-	&TestFnTrefethen, &TestFnWhitley, &TestFnPrice02, &TestFnWavy,
-	&TestFnShubert01, &TestFnWeierstrass, &TestFnFreudensteinRoth,
-	&TestFnTrigonometric02, &TestFnBird, &TestFnTreccani, &TestFnXinSheYang04,
-	&TestFnExp2, &TestFnSchwefel06, &TestFnChichinadze, &TestFnEggHolder,
-	&TestFnHolderTable, &TestFnSumOfDiffPowers, &TestFnPrice01,
+	&TestFnMatyas, &TestFnSphere, &TestFnLevy13, &TestFnSchaffer01,
+	&TestFnSchaffer02, &TestFnAckley, &TestFnAckley2, &TestFnAckley3,
+	&TestFnRosenbrock, &TestFnBeale, &TestFnBohachevsky, &TestFnBohachevsky2,
+	&TestFnBohachevsky3, &TestFnEasom, &TestFnEasom2, &TestFnCrossInTray,
+	&TestFnRastrigin, &TestFnDropWave, &TestFnSumSquares, &TestFnZacharov,
+	&TestFnRotatedHyperEllipsoid, &TestFnGriewank, &TestFnGoldsteinPrice,
+	&TestFnSalomon, &TestFnBranin01, &TestFnBranin02, &TestFnTrefethen,
+	&TestFnWhitley, &TestFnPrice02, &TestFnWavy, &TestFnShubert01,
+	&TestFnShubert03, &TestFnShubert04, &TestFnWeierstrass,
+	&TestFnFreudensteinRoth, &TestFnTrigonometric02, &TestFnBird,
+	&TestFnTreccani, &TestFnXinSheYang02, &TestFnXinSheYang03,
+	&TestFnXinSheYang04, &TestFnExp2, &TestFnSchwefel06, &TestFnChichinadze,
+	&TestFnEggHolder, &TestFnHolderTable, &TestFnPowellSum, &TestFnPrice01,
 	&TestFnPrice03, &TestFnPrice04, &TestFnBrown, &TestFnBrent,
 	&TestFnNewFunction01, &TestFnNewFunction02, &TestFnLevy05,
 	&TestFnPowerSum, &TestFnPowell, &TestFnPaviani, &TestFnTrid6,
 	&TestFnMieleCantrell, &TestFnColville, &TestFnWolfe, &TestFnAlpine1,
 	&TestFnBartelsConn, &TestFnSixHumpCamel, &TestFnChungReynolds,
-	&TestFnCube, NULL };
+	&TestFnCube, &TestFnDeckkersAarts, &TestFnEggCrate, &TestFnKeane,
+	&TestFnLeon, &TestFnQing, &TestFnSchwefel220, &TestFnSchwefel221,
+	&TestFnSchwefel222, &TestFnDolan, NULL };
+
+//Need to consider:Adjiman,Alpine2,Bukin N.6,Exponential??,McCormick,Quartic??,
+//Styblinski-Tank

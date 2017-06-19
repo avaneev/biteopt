@@ -3,11 +3,11 @@
 /**
  * @file biternd.h
  *
- * @brief The inclusion file for the CBEORnd class.
+ * @brief The inclusion file for the CBiteRnd class.
  *
  * @section license License
  * 
- * Copyright (c) 2016 Aleksey Vaneev
+ * Copyright (c) 2016-2017 Aleksey Vaneev
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -43,7 +43,7 @@
  * for more details.
  */
 
-class CBEORnd
+class CBiteRnd
 {
 public:
 	/**

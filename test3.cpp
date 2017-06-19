@@ -1,9 +1,9 @@
 // Example of the optimizePlateau() function use.
 
 #include <stdio.h>
-#include "bitefan.h"
+#include "biteopt.h"
 
-class CTestOpt : public CBEOOptimizerFan
+class CTestOpt : public CBiteOpt
 {
 public:
 	CTestOpt()
@@ -34,7 +34,7 @@ public:
 
 int main()
 {
-	CBEORnd rnd;
+	CBiteRnd rnd;
 	rnd.init( 1 ); // Needs to be seeded with different values on each run.
 
 	CTestOpt opt;

@@ -1,20 +1,19 @@
-# biteopt - "Bitmask Evolution" Function Optimizer #
+# BiteOpt - Stochastic Function Optimizer #
 ## Introduction ##
 
-### CBEOOptimizerFan (bitefan.h) ###
+### CBiteOpt (biteopt.h) ###
 
-"Bitmask evolution" version "fan" optimization class. This strategy is
-based on now outdated CBEOOptimizer and CBEOOptimizer2 stochastic
+BiteOpt stochastic function optimization class. This optimization strategy
+is based on now outdated CBEOOptimizer and CBEOOptimizer2 stochastic
 derivative-less strategies, and uses several current parameter vectors
 ("fan elements"). Highest cost "fan element" can be replaced with a new
 solution if "fan element's" cost (plus some margin) is higher than that of
 the new solution's. Having several "fan elements" allows parameter vectors
 to be spaced apart from each other thus making them cover a larger
-parameter search space collectively. The strategy was named as "bitmask
-evolution", because at its core an operation of inversion of a random
-segment of parameter value's lowest bits is used. Beside that, several
-"step in the right direction" operations are used that move the solution
-vector into position with a probably lower objective function value.
+parameter search space collectively. Beside that, parameter randomization
+and several "step in the right direction" operations are used that move the
+solution vector into position with a probably lower objective function
+value.
 
 The benefit of this strategy is a relatively high robustness: it can
 successfully optimize a wide range of test functions. Another benefit is a
@@ -84,36 +83,12 @@ While the basic algorithm of the strategy is finished, the built-in parameters
 of the algorithm is an area of ongoing research. There are several things that
 were discovered that may need to be addressed in the future:
 
-1. The CostMult parameter must probably depend on the FanSize parameter. For
-example, at FanSize=8 the best CostMult which gives a faster convergence is
-around 2.5, at FanSize=40 the best CostMult is around 1.2. This is
-understandable, because when FanSize is higher, the difference between the
-lowest cost and highest cost "fan element" is naturally higher due to a larger
-pool of "fan elements".
-
-2. The formula of dependence of FanSize on the number of dimensions may need
+1. The formula of dependence of FanSize on the number of dimensions may need
 to be updated to better suit varying dimensionality of the problems.
 
-3. When the algorithm reaches convergence point, parameter vector used in
-"non-bitmask inversion" round of function evaluation changes very little.
-Which probably means that the "bitmask inversion" operation's frequency should
-be increased when the convergence point approaches. Also the range of bits
-in this operation should probably be shifted towards lower bits. This should
-reduce convergence time when the optimum's area was correctly found, but may
-also increase optimization rejection rate.
-
-4. Any slight change (optimization) of the built-in probabilites of the
-"bitmask inversion" (50%) and "centroid move" (33%) operations does not seems
-to affect the performance of the algorithm given all other built-in parameters
-were optimized to meet a specific convergence time and optimization attempt
-rejection rate. These probabilites were chosen in the course of development of
-the algorithm and usually work well for all dimensionalities.
-
-5. It was noted that the PrevMult built-in parameter has at least 2
-modalities that control the convergence time given other parameters are
-optimized. Values around 0.1 and values above 0.3. Values around 0.1 however
-increase rejection rate which probably means that reduced influence of
-PrevMult also reduces search space size.
+2. The values of the CentProb and RandProb mutually affect optimization
+rejection rate and convergence time. That is why it is reasonable to select
+these values manually and optimize other parameters with these values fixed.
 
 ## Users ##
 This library is used by:

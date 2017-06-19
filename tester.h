@@ -2,10 +2,10 @@
 
 #include <stdio.h>
 #include <emmintrin.h>
-#include "bitefan.h"
+#include "biteopt.h"
 #include "testfn.h"
 
-CBEORnd rnd;
+CBiteRnd rnd;
 
 /**
  * Function test corpus class.
@@ -18,7 +18,7 @@ public:
 	 * Function optimizer class.
 	 */
 
-	class CTestOpt : public CBEOOptimizerFan
+	class CTestOpt : public CBiteOpt
 	{
 	public:
 		const CTestFn* fn; ///< Test function.
@@ -50,7 +50,7 @@ public:
 			signs = new double[ Dims ];
 			delete[] tp;
 			tp = new double[ Dims ];
-			CBEOOptimizerFan :: updateDims( Dims, aFanSize );
+			CBiteOpt :: updateDims( Dims, aFanSize );
 		}
 
 		virtual void getMinValues( double* const p ) const
@@ -298,7 +298,7 @@ public:
 		ItAvg /= FnCount;
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
-		Score = fabs( ItRtAvg - 0.220 ) * 50000.0 + ItAvg *
+		Score = fabs( ItRtAvg - 0.185 ) * 50000.0 + ItAvg *
 			( 1.0 + RjAvg * 100.0 );
 
 		if( DoPrint )
