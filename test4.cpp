@@ -3,10 +3,10 @@
 
 int main()
 {
-	rnd.init( 0 );
-
 	CTester Tester;
-	Tester.init( 10, OptCorpusND, 0.01, 120, 150000, false, true );
+
+	rnd.init( 0 );
+	Tester.init( 10, OptCorpusND, 0.01, 120, 20000, false, true );
 
 	Tester.run();
 }

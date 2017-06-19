@@ -9,6 +9,10 @@ static double roundp( const double x )
 	return( floor( x * 100000000.0 + 0.5 ) / 100000000.0 );
 }
 
+double BestScore = 1e30;
+double BestItAvg;
+double BestItRtAvg;
+
 class CFanOpt : public CBEOOptimizerFan
 {
 public:
@@ -32,15 +36,13 @@ public:
 		p[ 0 ] = 4.0;
 		p[ 1 ] = 1.0;
 		p[ 2 ] = 1.5;
-		p[ 3 ] = 1.5;
+		p[ 3 ] = 0.25;
 		p[ 4 ] = 3.0;
 		p[ 5 ] = 1.5;
 	}
 
 	virtual double optcost( const double* const p ) const
 	{
-		rnd.init( 0 );
-
 		CTester Tester;
 		Tester.opt -> CostMult = roundp( p[ 0 ]);
 		Tester.opt -> BestMult = roundp( p[ 1 ]);
@@ -48,10 +50,18 @@ public:
 		Tester.opt -> PrevMult = roundp( p[ 3 ]);
 		Tester.opt -> CentMult = roundp( p[ 4 ]);
 		Tester.opt -> CentOffs = roundp( p[ 5 ]);
+		rnd.init( 0 );
 //		Tester.init( 2, OptCorpus2D, 0.001, 5000, 10000, true, false );
 		Tester.init( 10, OptCorpusND, 0.01, 120, 20000, false, false );
 
 		Tester.run();
+
+		if( BestScore > 1e20 || Tester.Score < BestScore )
+		{
+			BestScore = Tester.Score;
+			BestItAvg = Tester.ItAvg;
+			BestItRtAvg = Tester.ItRtAvg;
+		}
 
 		return( Tester.Score );
 	}
@@ -78,7 +88,9 @@ int main()
 	{
 		opt.optimize( rnd2 );
 
-		printf( "%f\n", opt.getBestCost() );
+		printf( "// Cost=%f ItAvg=%f ItRtAvg=%f\n", opt.getBestCost(),
+			BestItAvg, BestItRtAvg );
+
 		int j;
 
 		for( j = 0; j < FanParamCount; j++ )

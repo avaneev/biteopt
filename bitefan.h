@@ -75,14 +75,14 @@
  * 6. On every iteration an "away from history move" operation is performed
  * which involves an outdated historic solution.
  *
- * 7. With 50% probability the "bitmask evolution" (inversion of a random
+ * 7. With 33% probability the "step in the right direction" operation is
+ * performed using the centroid vector.
+ *
+ * 8. With 50% probability the "bitmask evolution" (inversion of a random
  * range of the lowest bits of a single random parameter) operation is
  * performed, which is the main driver of the evolutionary process, followed
  * by the "step in the right direction" operation using a previous (rejected)
  * solution.
- *
- * 8. Additionally, with 33% probability the "step in the right direction"
- * operation is performed using the centroid vector.
  *
  * 9. After each objective function evaluation, an attempt to replace the
  * highest cost "fan element" is performed using the cost constraint. This
@@ -130,12 +130,12 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		CostMult = 1.21876211;
-		BestMult = 0.63962505;
-		HistMult = 0.56917849;
-		PrevMult = 0.45634401;
-		CentMult = 1.08785820;
-		CentOffs = 0.64518802;
+		CostMult = 1.03704579;
+		BestMult = 0.69339495;
+		HistMult = 0.45212795;
+		PrevMult = 0.05250073;
+		CentMult = 1.07819567;
+		CentOffs = 0.47704054;
 	}
 
 	~CBEOOptimizerFan()
@@ -156,7 +156,7 @@ public:
 	void updateDims( const int aParamCount, const int FanSize0 = 0 )
 	{
 		const int aFanSize = ( FanSize0 > 0 ? FanSize0 :
-			7 + aParamCount * aParamCount / 3 );
+			16 + aParamCount * aParamCount / 3 );
 
 		if( aParamCount == ParamCount && aFanSize == FanSize )
 		{
@@ -319,6 +319,19 @@ public:
 			Params[ i ] -= ( HistParams[ i ] - Params[ i ]) * HistMult;
 		}
 
+		CentCnt = ( CentCnt + 1 ) % 3;
+
+		if( CentCnt == 1 )
+		{
+			// Move towards centroid vector or beyond it, randomly.
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				const double m = CentOffs + rnd.getRndValue() * CentMult;
+				Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
+			}
+		}
+
 		PrevCnt ^= 1;
 
 		if( PrevCnt == 1 )
@@ -350,19 +363,6 @@ public:
 			{
 				Params[ i ] -=
 					( PrevParams[ s ][ i ] - Params[ i ]) * PrevMult;
-			}
-		}
-
-		CentCnt = ( CentCnt + 1 ) % 3;
-
-		if( CentCnt == 1 )
-		{
-			// Move towards centroid vector or beyond it, randomly.
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				const double m = CentOffs + rnd.getRndValue() * CentMult;
-				Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
 			}
 		}
 

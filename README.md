@@ -109,9 +109,11 @@ were optimized to meet a specific convergence time and optimization attempt
 rejection rate. These probabilites were chosen in the course of development of
 the algorithm and usually work well for all dimensionalities.
 
-5. It is possible to reoptimize algorithm's built-in parameters to reduce
-average convergence time by 10-20%. Currently, the built-in parameters were
-optimized to produce less optimization attempt rejections in the test corpus.
+5. It was noted that the PrevMult built-in parameter has at least 2
+modalities that control the convergence time given other parameters are
+optimized. Values around 0.1 and values above 0.3. Values around 0.1 however
+increase rejection rate which probably means that reduced influence of
+PrevMult also reduces search space size.
 
 ## Users ##
 This library is used by:

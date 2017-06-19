@@ -1,6 +1,7 @@
 //$ nocpp
 
 #include <stdio.h>
+#include <emmintrin.h>
 #include "bitefan.h"
 #include "testfn.h"
 
@@ -189,6 +190,7 @@ public:
 
 		for( k = 0; k < FnCount; k++ )
 		{
+			_mm_empty();
 			double AvgIter = 0;
 			double AvgCost = 0.0;
 			double AvgRjCost = 0.0;
@@ -222,6 +224,7 @@ public:
 					}
 				}
 
+				_mm_empty();
 				opt -> init( rnd );
 				i = 0;
 
@@ -279,28 +282,29 @@ public:
 				RMS = sqrt( RMS / ( IterCount - Rej ));
 			}
 
+			ItAvg += Avg;
+			ItRtAvg += RMS / Avg;
+			RjAvg += (double) Rej / IterCount;
+
 			if( DoPrint )
 			{
 				printf( "AIt:%6.0f RIt:%6.0f Rj:%5.2f%% C:%11.8f RjC:%7.4f "
 					"%s_%i\n", Avg, RMS, 100.0 * Rej / IterCount, AvgCost,
 					AvgRjCost, opt -> fn -> Name, Dims );
 			}
-
-			ItAvg += Avg;
-			ItRtAvg += RMS / Avg;
-			RjAvg += (double) Rej / IterCount;
 		}
 
+		_mm_empty();
 		ItAvg /= FnCount;
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
-		Score = fabs( ItRtAvg - 0.200 ) * 500000.0 + ItAvg *
+		Score = fabs( ItRtAvg - 0.220 ) * 50000.0 + ItAvg *
 			( 1.0 + RjAvg * 100.0 );
 
 		if( DoPrint )
 		{
 			printf( "ItAvg: %.1f (avg convergence time)\n", ItAvg );
-			printf( "ItRtAvg: %.3f (avg ratio of std.dev and average)\n",
+			printf( "ItRtAvg: %.6f (avg ratio of std.dev and average)\n",
 				ItRtAvg );
 
 			printf( "RjAvg: %.2f%% (avg percentage of rejects)\n",
