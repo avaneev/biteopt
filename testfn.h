@@ -1198,6 +1198,26 @@ static double calcSchwefel222( const double* const p, const int N )
 CTestFn TestFnSchwefel222 = { "Schwefel222", 0, -100.0, 100.0, 0.0,
 	&calcSchwefel222 };
 
+static double calcTestTubeHolder( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( -4.0*fabs(exp(fabs(cos(x*x/200.0+y*y/200.0)))*cos(x)*cos(y)) );
+}
+
+CTestFn TestFnTestTubeHolder = { "TestTubeHolder", 2, -10.0, 10.0,
+	-10.872299901558, &calcTestTubeHolder };
+
+static double calcWayburnSeader02( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( sqr(1.613-4.0*sqr(x-0.3125)-4.0*sqr(y-1.625))+sqr(y-1.0) );
+}
+
+CTestFn TestFnWayburnSeader02 = { "WayburnSeader02", 2, -500.0, 500.0,
+	0.0, &calcWayburnSeader02 };
+
 // Strategy optimization corpus based on simple 2D functions.
 
 const CTestFn* OptCorpus2D[] = { &TestFnMatyas, &TestFnThreeHumpCamel,
@@ -1258,7 +1278,8 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnBartelsConn, &TestFnSixHumpCamel, &TestFnChungReynolds,
 	&TestFnCube, &TestFnDeckkersAarts, &TestFnEggCrate, &TestFnKeane,
 	&TestFnLeon, &TestFnQing, &TestFnSchwefel220, &TestFnSchwefel221,
-	&TestFnSchwefel222, &TestFnDolan, NULL };
+	&TestFnSchwefel222, &TestFnDolan, &TestFnTestTubeHolder,
+	&TestFnWayburnSeader02, NULL };
 
 //Need to consider:Adjiman,Alpine2,Bukin N.6,Exponential??,McCormick,Quartic??,
 //Styblinski-Tank

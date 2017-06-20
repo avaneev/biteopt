@@ -120,7 +120,6 @@ public:
 		, CurCosts( NULL )
 		, CentParams( NULL )
 		, HistParams( NULL )
-		, RangParams( NULL )
 		, MinValues( NULL )
 		, MaxValues( NULL )
 		, DiffValues( NULL )
@@ -172,7 +171,6 @@ public:
 		CurCosts = new double[ FanSize ];
 		CentParams = new double[ ParamCount ];
 		HistParams = new double[ ParamCount ];
-		RangParams = new double[ ParamCount ];
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
 		DiffValues = new double[ ParamCount ];
@@ -273,16 +271,13 @@ public:
 			}
 		}
 
-		// Initialize history with random values, also initialize the
-		// RangParams values.
+		// Initialize history with random values.
 
 		const double* const MinParams = CurParams[ FanOrder[ 0 ]];
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			HistParams[ i ] = rnd.getRndValue();
-			RangParams[ i ] = fabs( CentParams[ i ] - MinParams[ i ]) *
-				RandMult;
 		}
 	}
 
@@ -341,7 +336,8 @@ public:
 			// optimization process, applied to a random parameter.
 
 			const double p = Params[ ParamCnt ] +
-				( rnd.getRndValue() - 0.5 ) * RangParams[ ParamCnt ];
+				( rnd.getRndValue() - 0.5 ) * fabs( CentParams[ ParamCnt ] -
+				MinParams[ ParamCnt ]) * RandMult;
 
 			// A very controversial approach: mix the randomized parameter
 			// with another random parameter. Such approach probably works due
@@ -354,7 +350,7 @@ public:
 			const int rp = (int) ( rnd.getRndValue() * ParamCount );
 			Params[ rp ] = p * pm + Params[ rp ] * ( 1.0 - pm );
 			pm = 1.0 - sqrt( rnd.getRndValue() );
-			Params[ ParamCnt ]= p * pm + Params[ rp ] * ( 1.0 - pm );
+			Params[ ParamCnt ] = p * pm + Params[ rp ] * ( 1.0 - pm );
 
 			ParamCnt = ( ParamCnt == 0 ? ParamCount : ParamCnt ) - 1;
 		}
@@ -412,15 +408,6 @@ public:
 		}
 
 		insertFanOrder( NewCost, sH, FanSize1 );
-
-		// Update parameter randomization ranges.
-
-		const double* const mp = CurParams[ FanOrder[ 0 ]];
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			RangParams[ i ] = fabs( CentParams[ i ] - mp[ i ]) * RandMult;
-		}
 
 		return( true );
 	}
@@ -595,8 +582,6 @@ protected:
 		///<
 	double* HistParams; ///< Outdated better parameter values.
 		///<
-	double* RangParams; ///< Parameter value ranges for randomization.
-		///<
 	double* MinValues; ///< Minimal parameter values.
 		///<
 	double* MaxValues; ///< Maximal parameter values.
@@ -625,7 +610,6 @@ protected:
 		delete[] CurCosts;
 		delete[] CentParams;
 		delete[] HistParams;
-		delete[] RangParams;
 		delete[] MinValues;
 		delete[] MaxValues;
 		delete[] DiffValues;

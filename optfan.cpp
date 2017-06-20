@@ -103,7 +103,7 @@ int main()
 		printf( "HistMult = %.8f;\n", Params[ 2 ]);
 		printf( "CentMult = %.8f;\n", Params[ 3 ]);
 		printf( "CentOffs = %.8f;\n", Params[ 4 ]);
-		printf( "RangMult = %.8f;\n", Params[ 5 ]);
+		printf( "RandMult = %.8f;\n", Params[ 5 ]);
 	}
 
 	return( 0 );
