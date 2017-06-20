@@ -111,7 +111,6 @@ public:
 	CBiteOpt()
 		: CentProb( 0.25 )
 		, RandProb( 0.65 )
-		, MantMult( 1 << MantSize )
 		, ParamCount( 0 )
 		, FanSize( 0 )
 		, FanOrder( NULL )
@@ -255,10 +254,10 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = getParamValue( CurParams[ j ], i );
+				NewParams[ i ] = getParamValue( CurParams[ j ], i );
 			}
 
-			insertFanOrder( optcost( Params ), j, j );
+			insertFanOrder( optcost( NewParams ), j, j );
 
 			if( j == 0 || CurCosts[ j ] < BestCost )
 			{
@@ -266,14 +265,12 @@ public:
 
 				for( i = 0; i < ParamCount; i++ )
 				{
-					BestParams[ i ] = Params[ i ];
+					BestParams[ i ] = NewParams[ i ];
 				}
 			}
 		}
 
 		// Initialize history with random values.
-
-		const double* const MinParams = CurParams[ FanOrder[ 0 ]];
 
 		for( i = 0; i < ParamCount; i++ )
 		{
@@ -550,12 +547,6 @@ public:
 	virtual double optcost( const double* const p ) const = 0;
 
 protected:
-	static const int MantSize = 29; ///< Mantissa size of bitmask inversion
-		///< operation. Must be lower than the random number generator's
-		///< precision.
-		///<
-	double MantMult; ///< Mantissa multiplier (1 << MantSize).
-		///<
 	int ParamCount; ///< The total number of internal parameter values in use.
 		///<
 	int FanSize; ///< The number of "fan elements" in use.

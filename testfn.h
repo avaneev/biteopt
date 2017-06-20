@@ -1218,6 +1218,31 @@ static double calcWayburnSeader02( const double* const p, const int N )
 CTestFn TestFnWayburnSeader02 = { "WayburnSeader02", 2, -500.0, 500.0,
 	0.0, &calcWayburnSeader02 };
 
+static double calcSawtoothy( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	const double t = atan2( y, x );
+	const double r = sqrt( x * x + y * y );
+	const double ht = 0.5*cos(2*t-0.5)+cos(t)+2.0;
+	const double gr = (sin(r)-sin(2.0*r)/2.0+sin(3.0*r)/3.0-sin(4.0*r)/4.0+
+		4.0)*(r*r/(r+1.0));
+
+	return( gr * ht );
+}
+
+CTestFn TestFnSawtoothy = { "Sawtoothy", 2, -20.0, 20.0, 0.0, &calcSawtoothy };
+
+static double calcMishra04( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( sqrt(fabs(sin(sqrt(fabs(x*x+y)))))+(x+y)/100.0 );
+}
+
+CTestFn TestFnMishra04 = { "Mishra04", 2, -10.00, 10.0, -0.19940697,
+	&calcMishra04 };
+
 // Strategy optimization corpus based on simple 2D functions.
 
 const CTestFn* OptCorpus2D[] = { &TestFnMatyas, &TestFnThreeHumpCamel,
@@ -1239,7 +1264,7 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 
 const CTestFn* TestCorpusFail[] = { &TestFnDamavandi,
 	&TestFnTrid10, &TestFnChenBird, &TestFnChenV, &TestFnSchaffer03,
-	&TestFnSchaffer04, &TestFnSchwefel, NULL };
+	&TestFnSchaffer04, &TestFnSchwefel, &TestFnMishra04, NULL };
 
 // Hard functions.
 
@@ -1279,7 +1304,7 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnCube, &TestFnDeckkersAarts, &TestFnEggCrate, &TestFnKeane,
 	&TestFnLeon, &TestFnQing, &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnSchwefel222, &TestFnDolan, &TestFnTestTubeHolder,
-	&TestFnWayburnSeader02, NULL };
+	&TestFnWayburnSeader02, &TestFnSawtoothy, NULL };
 
 //Need to consider:Adjiman,Alpine2,Bukin N.6,Exponential??,McCormick,Quartic??,
 //Styblinski-Tank
