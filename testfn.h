@@ -1263,8 +1263,13 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 // Failing functions.
 
 const CTestFn* TestCorpusFail[] = { &TestFnDamavandi,
-	&TestFnTrid10, &TestFnChenBird, &TestFnChenV, &TestFnSchaffer03,
-	&TestFnSchaffer04, &TestFnSchwefel, &TestFnMishra04, NULL };
+	&TestFnChenBird, &TestFnSchaffer03, &TestFnSchaffer04,
+	&TestFnSchwefel, NULL };
+
+// Failing functions requiring more than 2000 iterations to converge.
+
+const CTestFn* TestCorpusFailTime[] = {
+	&TestFnTrid10, &TestFnChenV, &TestFnMishra04, NULL };
 
 // Hard functions.
 

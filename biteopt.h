@@ -329,8 +329,8 @@ public:
 		{
 			RandCnt -= 1.0;
 
-			// Parameter randomization operation, works as a "driver" of
-			// optimization process, applied to a random parameter.
+			// Parameter value randomization operation, works as a "driver" of
+			// the optimization process, applied to a random parameter.
 
 			const double p = Params[ ParamCnt ] +
 				( rnd.getRndValue() - 0.5 ) * fabs( CentParams[ ParamCnt ] -
@@ -620,31 +620,27 @@ protected:
 
 	static double wrapParam( CBiteRnd& rnd, double v )
 	{
-		while( true )
+		if( v < 0.0 )
 		{
-			if( v < 0.0 )
+			if( v > -1.0 )
 			{
-				if( v > -1.0 )
-				{
-					return( rnd.getRndValue() * -v );
-				}
-
-				v = -v;
+				return( rnd.getRndValue() * -v );
 			}
 
-			if( v > 1.0 )
-			{
-				if( v < 2.0 )
-				{
-					return( 1.0 - rnd.getRndValue() * ( v - 1.0 ));
-				}
-
-				v = 2.0 - v;
-				continue;
-			}
-
-			return( v );
+			return( rnd.getRndValue() );
 		}
+
+		if( v > 1.0 )
+		{
+			if( v < 2.0 )
+			{
+				return( 1.0 - rnd.getRndValue() * ( v - 1.0 ));
+			}
+
+			return( rnd.getRndValue() );
+		}
+
+		return( v );
 	}
 
 	/**
