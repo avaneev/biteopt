@@ -224,7 +224,7 @@ public:
 				for( i = 0; i < ParamCount; i++ )
 				{
 					const double v = ( j == 0 ?
-						wrapParam(( InitParams[ i ] - MinValues[ i ]) /
+						wrapParam( rnd, ( InitParams[ i ] - MinValues[ i ]) /
 						DiffValues[ i ]) : rnd.getRndValue() );
 
 					CurParams[ j ][ i ] = v;
@@ -339,17 +339,16 @@ public:
 				( rnd.getRndValue() - 0.5 ) * fabs( CentParams[ ParamCnt ] -
 				MinParams[ ParamCnt ]) * RandMult;
 
-			// A very controversial approach: mix the randomized parameter
-			// with another random parameter. Such approach probably works due
-			// to possible mutual correlation between parameters, especially
-			// in multi-dimensional functions. Mix constant is randomized,
-			// with adjusted probability distribution.
+			// A very interesting approach: mix the randomized parameter
+			// with another parameter. Such approach probably works due to
+			// possible mutual correlation between parameters, especially in
+			// multi-dimensional functions. Mix constant is randomized, with
+			// adjusted probability density.
 
-			double rr = rnd.getRndValue();
-			double pm = 1.0 - rr * rr;
 			const int rp = (int) ( rnd.getRndValue() * ParamCount );
-			Params[ rp ] = p * pm + Params[ rp ] * ( 1.0 - pm );
-			pm = 1.0 - sqrt( rnd.getRndValue() );
+			double rr = rnd.getRndValue();
+			Params[ rp ] -= ( Params[ rp ] - p ) * ( 1.0 - rr * rr );
+			double pm = 1.0 - sqrt( rnd.getRndValue() );
 			Params[ ParamCnt ] = p * pm + Params[ rp ] * ( 1.0 - pm );
 
 			ParamCnt = ( ParamCnt == 0 ? ParamCount : ParamCnt ) - 1;
@@ -361,7 +360,7 @@ public:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			Params[ i ] = wrapParam( Params[ i ]);
+			Params[ i ] = wrapParam( rnd, Params[ i ]);
 		}
 
 		// Evaluate objective function with new parameters.
@@ -620,24 +619,35 @@ protected:
 
 	/**
 	 * Function wraps the specified parameter value so that it stays in the
-	 * [0.0; 1.0] range, by wrapping it over the boundaries. This operation
-	 * increases convergence in comparison to clamping.
+	 * [0.0; 1.0] range, by wrapping it over the boundaries using random
+	 * operator. This operation increases convergence in comparison to
+	 * clamping.
 	 *
 	 * @param v Parameter value to wrap.
 	 * @return Wrapped parameter value.
 	 */
 
-	static double wrapParam( double v )
+	static double wrapParam( CBiteRnd& rnd, double v )
 	{
 		while( true )
 		{
 			if( v < 0.0 )
 			{
+				if( v > -1.0 )
+				{
+					return( rnd.getRndValue() * -v );
+				}
+
 				v = -v;
 			}
 
 			if( v > 1.0 )
 			{
+				if( v < 2.0 )
+				{
+					return( 1.0 - rnd.getRndValue() * ( v - 1.0 ));
+				}
+
 				v = 2.0 - v;
 				continue;
 			}
