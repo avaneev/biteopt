@@ -23,9 +23,13 @@ public:
 	public:
 		const CTestFn* fn; ///< Test function.
 			///<
-		bool DoRandomize; ///< Randomize signs and function range.
-			///<
 		int Dims; ///< Dimensions in the function.
+			///<
+		double* minv; ///< Minimal parameter values.
+			///<
+		double* maxv; ///< Maximal parameter values.
+			///<
+		double optv; ///< Optimal value.
 			///<
 		double* signs; ///< Signs to apply to function parameters.
 			///<
@@ -33,22 +37,31 @@ public:
 			///<
 
 		CTestOpt()
-			: signs( NULL )
+			: minv( NULL )
+			, maxv( NULL )
+			, signs( NULL )
 			, tp( NULL )
 		{
 		}
 
 		~CTestOpt()
 		{
+			delete[] minv;
+			delete[] maxv;
 			delete[] signs;
+			delete[] tp;
 		}
 
 		void updateDims( const int aDims, const int aFanSize = 0 )
 		{
 			Dims = aDims;
+			delete[] minv;
+			delete[] maxv;
 			delete[] signs;
-			signs = new double[ Dims ];
 			delete[] tp;
+			minv = new double[ Dims ];
+			maxv = new double[ Dims ];
+			signs = new double[ Dims ];
 			tp = new double[ Dims ];
 			CBiteOpt :: updateDims( Dims, aFanSize );
 		}
@@ -57,20 +70,9 @@ public:
 		{
 			int i;
 
-			if( DoRandomize )
+			for( i = 0; i < Dims; i++ )
 			{
-				for( i = 0; i < Dims; i++ )
-				{
-					p[ i ] = fn -> RangeMin *
-						( 0.5 + rnd.getRndValue() * 0.5 );
-				}
-			}
-			else
-			{
-				for( i = 0; i < Dims; i++ )
-				{
-					p[ i ] = fn -> RangeMin;
-				}
+				p[ i ] = minv[ i ];
 			}
 		}
 
@@ -78,20 +80,9 @@ public:
 		{
 			int i;
 
-			if( DoRandomize )
+			for( i = 0; i < Dims; i++ )
 			{
-				for( i = 0; i < Dims; i++ )
-				{
-					p[ i ] = fn -> RangeMax *
-						( 0.5 + rnd.getRndValue() * 0.5 );
-				}
-			}
-			else
-			{
-				for( i = 0; i < Dims; i++ )
-				{
-					p[ i ] = fn -> RangeMax;
-				}
+				p[ i ] = maxv[ i ];
 			}
 		}
 
@@ -104,7 +95,7 @@ public:
 				tp[ i ] = p[ i ] * signs[ i ];
 			}
 
-			return( (*fn -> Calc)( tp, Dims ));
+			return( (*fn -> CalcFunc)( tp, Dims ));
 		}
 	};
 
@@ -203,7 +194,6 @@ public:
 				DefDims : opt -> fn -> Dims );
 
 			opt -> updateDims( Dims );
-			opt -> DoRandomize = DoRandomize;
 
 			if( !DoRandomize )
 			{
@@ -215,6 +205,22 @@ public:
 
 			for( j = 0; j < IterCount; j++ )
 			{
+				if( opt -> fn -> ParamFunc != NULL )
+				{
+					(*opt -> fn -> ParamFunc)( opt -> minv, opt -> maxv,
+						&opt -> optv, Dims );
+				}
+				else
+				{
+					for( i = 0; i < Dims; i++ )
+					{
+						opt -> minv[ i ] = opt -> fn -> RangeMin;
+						opt -> maxv[ i ] = opt -> fn -> RangeMax;
+					}
+
+					opt -> optv = opt -> fn -> OptValue;
+				}
+
 				if( DoRandomize )
 				{
 					for( i = 0; i < Dims; i++ )
@@ -236,8 +242,7 @@ public:
 
 					i++;
 
-					if( opt -> getBestCost() -
-						opt -> fn -> OptValue < CostThreshold )
+					if( opt -> getBestCost() - opt -> optv < CostThreshold )
 					{
 						AvgCost += opt -> getBestCost();
 						Iters[ j ] = i;
@@ -298,8 +303,9 @@ public:
 		ItAvg /= FnCount;
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
-		Score = fabs( ItRtAvg - 0.185 ) * 50000.0 + ItAvg *
-			( 1.0 + RjAvg * 100.0 );
+//		Score = fabs( ItRtAvg - 0.160 ) * 50000.0 + ItAvg *
+//			( 1.0 + RjAvg * 100.0 );
+		Score = RjAvg * 100.0 + fabs( ItAvg - 360.0 ) * 0.1;
 
 		if( DoPrint )
 		{

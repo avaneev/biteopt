@@ -59,29 +59,27 @@
  *
  * 1. A set of "fan elements" is maintained. A "fan element" is an independent
  * parameter vector which is evolved towards a better solution. Also a
- * cost-ordered list of "fan elements" is maintaned.
+ * cost-ordered list of "fan elements" is maintaned. On every iteration a
+ * single random "fan element" is evolved.
  *
- * 2. A single outdated historic solution is maintained.
+ * 2. A centroid vector of all "fan elements" is maintained.
  *
- * 3. A centroid vector of all "fan elements" is maintained.
+ * 3. On every iteration the "step in the right direction" operation is
+ * performed using the current best solution.
  *
- * 4. On every iteration "towards best move" operation is performed which
- * involves the current best solution.
+ * 4. On every iteration the "step in the right direction" operation is
+ * performed using the current worst solution.
  *
- * 5. On every iteration an "away from history move" operation is performed
- * which involves an outdated historic solution.
- *
- * 6. With CentProb probability the "step in the right direction" operation is
+ * 5. With CentProb probability the "step in the right direction" operation is
  * performed using the centroid vector.
  *
- * 7. With RandProb probability the parameter value randomization operation is
+ * 6. With RandProb probability the parameter value randomization operation is
  * performed, which is the main driver of the evolutionary process.
  *
- * 8. After each objective function evaluation, an attempt to replace the
+ * 7. After each objective function evaluation, an attempt to replace the
  * highest cost "fan element" is performed using the cost constraint. This
  * approach is based on an assumption that the later solutions tend to be
- * statistically better than the earlier solutions. History is updated with a
- * replaced (outdated) solution whenever a "fan element" is replaced.
+ * statistically better than the earlier solutions.
  */
 
 class CBiteOpt
@@ -89,9 +87,9 @@ class CBiteOpt
 public:
 	double CostMult; ///< "Fan element" cost threshold multiplier.
 		///<
-	double BestMult; ///< Best move range multiplier.
+	double MinpMult; ///< Best solution's move range multiplier.
 		///<
-	double HistMult; ///< History move range multiplier.
+	double MaxpMult; ///< Worst solution's move range multiplier.
 		///<
 	double CentMult; ///< Centroid move range multiplier.
 		///<
@@ -103,6 +101,8 @@ public:
 		///<
 	double RandMult; ///< Parameter value randomization multiplier.
 		///<
+	double MixpMult; ///< Parameter randomization mix multiplier.
+		///<
 
 	/**
 	 * Constructor.
@@ -111,6 +111,7 @@ public:
 	CBiteOpt()
 		: CentProb( 0.25 )
 		, RandProb( 0.65 )
+		, RandMult( 8.0 )
 		, ParamCount( 0 )
 		, FanSize( 0 )
 		, FanOrder( NULL )
@@ -118,7 +119,6 @@ public:
 		, CurParams( NULL )
 		, CurCosts( NULL )
 		, CentParams( NULL )
-		, HistParams( NULL )
 		, MinValues( NULL )
 		, MaxValues( NULL )
 		, DiffValues( NULL )
@@ -126,12 +126,13 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		CostMult = 1.47145812;
-		BestMult = 0.67023312;
-		HistMult = 0.47436061;
-		CentMult = 0.86876551;
-		CentOffs = 0.93165000;
-		RandMult = 5.73885369;
+		// Cost=6.699928 ItAvg=360.073995 ItRtAvg=0.230761
+		CostMult = 0.52454116;
+		MinpMult = 0.66454491;
+		MaxpMult = 0.50613913;
+		CentMult = 1.06459336;
+		CentOffs = 0.61594786;
+		MixpMult = 1.19693742;
 	}
 
 	~CBiteOpt()
@@ -152,7 +153,7 @@ public:
 	void updateDims( const int aParamCount, const int FanSize0 = 0 )
 	{
 		const int aFanSize = ( FanSize0 > 0 ? FanSize0 :
-			16 + aParamCount * aParamCount / 3 );
+			18 + aParamCount * aParamCount / 5 );
 
 		if( aParamCount == ParamCount && aFanSize == FanSize )
 		{
@@ -169,7 +170,6 @@ public:
 		CurParams = new double*[ FanSize ];
 		CurCosts = new double[ FanSize ];
 		CentParams = new double[ ParamCount ];
-		HistParams = new double[ ParamCount ];
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
 		DiffValues = new double[ ParamCount ];
@@ -195,10 +195,6 @@ public:
 
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL )
 	{
-		CentCnt = 1.0;
-		RandCnt = 1.0;
-		ParamCnt = 0;
-
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
 		int i;
@@ -269,13 +265,6 @@ public:
 				}
 			}
 		}
-
-		// Initialize history with random values.
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			HistParams[ i ] = rnd.getRndValue();
-		}
 	}
 
 	/**
@@ -296,6 +285,7 @@ public:
 
 		const double* const OrigParams = CurParams[ s ];
 		const double* const MinParams = CurParams[ FanOrder[ 0 ]];
+		const double* const MaxParams = CurParams[ FanOrder[ FanSize1 ]];
 
 		for( i = 0; i < ParamCount; i++ )
 		{
@@ -303,17 +293,16 @@ public:
 			// (minimal) parameter vector.
 
 			Params[ i ] = OrigParams[ i ] -
-				( OrigParams[ i ] - MinParams[ i ]) * BestMult;
+				( OrigParams[ i ] - MinParams[ i ]) * MinpMult;
 
-			// Move away from an outdated historic solution.
+			// The "step in the right direction" operation away from the worst
+			// (maximal) parameter vector.
 
-			Params[ i ] -= ( HistParams[ i ] - Params[ i ]) * HistMult;
+			Params[ i ] -= ( MaxParams[ i ] - Params[ i ]) * MaxpMult;
 		}
 
-		if( CentCnt >= 1.0 )
+		if( rnd.getRndValue() < CentProb )
 		{
-			CentCnt -= 1.0;
-
 			// Move towards centroid vector or beyond it, randomly.
 
 			for( i = 0; i < ParamCount; i++ )
@@ -323,18 +312,14 @@ public:
 			}
 		}
 
-		CentCnt += CentProb;
-
-		if( RandCnt >= 1.0 )
+		if( rnd.getRndValue() < RandProb )
 		{
-			RandCnt -= 1.0;
-
 			// Parameter value randomization operation, works as a "driver" of
 			// the optimization process, applied to a random parameter.
 
-			const double p = Params[ ParamCnt ] +
-				( rnd.getRndValue() - 0.5 ) * fabs( CentParams[ ParamCnt ] -
-				MinParams[ ParamCnt ]) * RandMult;
+			const int sp = (int) ( rnd.getRndValue() * ParamCount );
+			const double p = Params[ sp ] + ( rnd.getRndValue() - 0.5 ) *
+				fabs( CentParams[ sp ] - MinParams[ sp ]) * RandMult;
 
 			// A very interesting approach: mix the randomized parameter
 			// with another parameter. Such approach probably works due to
@@ -344,14 +329,12 @@ public:
 
 			const int rp = (int) ( rnd.getRndValue() * ParamCount );
 			double rr = rnd.getRndValue();
-			Params[ rp ] -= ( Params[ rp ] - p ) * ( 1.0 - rr * rr );
+			Params[ rp ] -= ( Params[ rp ] - p ) *
+				( 1.0 - rr * rr ) * MixpMult;
+
 			double pm = 1.0 - sqrt( rnd.getRndValue() );
-			Params[ ParamCnt ] = p * pm + Params[ rp ] * ( 1.0 - pm );
-
-			ParamCnt = ( ParamCnt == 0 ? ParamCount : ParamCnt ) - 1;
+			Params[ sp ] = Params[ rp ] - ( Params[ rp ] - p ) * pm;
 		}
-
-		RandCnt += RandProb;
 
 		// Wrap parameter values so that they stay in the [0; 1] range.
 
@@ -399,7 +382,6 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			CentParams[ i ] += ( Params[ i ] - rp[ i ]) / FanSize;
-			HistParams[ i ] = rp[ i ];
 			rp[ i ] = Params[ i ];
 		}
 
@@ -553,12 +535,6 @@ protected:
 		///<
 	int FanSize1; ///< = FanSize - 1.
 		///<
-	double CentCnt; ///< Centroid move probability counter.
-		///<
-	double RandCnt; ///< Randomization operation probability counter.
-		///<
-	int ParamCnt; ///< Parameter index counter.
-		///<
 	int* FanOrder; ///< The current "fan element" ordering, ascending-sorted
 		///< by cost.
 		///<
@@ -569,8 +545,6 @@ protected:
 	double* CurCosts; ///< Best costs of current working parameter vectors.
 		///<
 	double* CentParams; ///< Centroid of the current parameter vectors.
-		///<
-	double* HistParams; ///< Outdated better parameter values.
 		///<
 	double* MinValues; ///< Minimal parameter values.
 		///<
@@ -599,7 +573,6 @@ protected:
 		delete[] CurParams;
 		delete[] CurCosts;
 		delete[] CentParams;
-		delete[] HistParams;
 		delete[] MinValues;
 		delete[] MaxValues;
 		delete[] DiffValues;
