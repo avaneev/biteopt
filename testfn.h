@@ -1382,6 +1382,16 @@ static double calcMcCormick_p( double* const minv, double* const maxv,
 CTestFn TestFnMcCormick = { "McCormick", 2, 0.0, 0.0, 0.0, &calcMcCormick,
 	&calcMcCormick_p };
 
+static double calcHimmelblau( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( sqr(x*x+y-11.0)+sqr(x+y*y-7.0) );
+}
+
+CTestFn TestFnHimmelblau = { "Himmelblau", 2, -6.0, 6.0, 0.0,
+	&calcHimmelblau };
+
 // Strategy optimization corpus based on simple 2D functions.
 
 const CTestFn* OptCorpus2D[] = { &TestFnMatyas, &TestFnThreeHumpCamel,
@@ -1445,4 +1455,4 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnSchwefel221, &TestFnSchwefel222, &TestFnDolan,
 	&TestFnTestTubeHolder, &TestFnWayburnSeader02, &TestFnSawtoothy,
 	&TestFnSchwefel, &TestFnAdjiman, &TestFnStyblinskiTank,
-	&TestFnMcCormick, NULL };
+	&TestFnMcCormick, /*&TestFnHimmelblau, */NULL };

@@ -13,7 +13,7 @@ to be spaced apart from each other thus making them cover a larger
 parameter search space collectively. Beside that, parameter randomization
 and several "step in the right direction" operations are used that move the
 solution vector into position with a probably lower objective function
-value.
+value (cost).
 
 The benefit of this strategy is a relatively high robustness: it can
 successfully optimize a wide range of test functions. Another benefit is a
@@ -95,11 +95,16 @@ to be updated to better suit varying dimensionality of the problems.
 2. The values of the CentProb and RandProb mutually affect optimization
 rejection rate and convergence time. That is why it is reasonable to select
 these values manually and optimize other parameters with these values fixed.
-The same applies to the RandMult parameter.
 
 3. If high optimization attempt rejection rate is not problematic, the
 parameters of the algorithm can be tuned to provide at least 20% lower
 convergence time.
+
+## Warning ##
+
+When solving problems whose solutions are critical and may be health-threating
+always use several optimization strategies (methods) to find the optimal
+solution.
 
 ## Users ##
 This library is used by:

@@ -64,19 +64,18 @@
  *
  * 2. A centroid vector of all "fan elements" is maintained.
  *
- * 3. On every iteration the "step in the right direction" operation is
- * performed using the current best solution.
+ * 3. On every iteration (not together with N.4) the "step in the right
+ * direction" operation is performed using the current best solution. Also
+ * the "step in the right direction" operation is performed using the current
+ * worst solution.
  *
- * 4. On every iteration the "step in the right direction" operation is
- * performed using the current worst solution.
- *
- * 5. With CentProb probability the "step in the right direction" operation is
+ * 4. With CentProb probability the "step in the right direction" operation is
  * performed using the centroid vector.
  *
- * 6. With RandProb probability the parameter value randomization operation is
+ * 5. With RandProb probability the parameter value randomization operation is
  * performed, which is the main driver of the evolutionary process.
  *
- * 7. After each objective function evaluation, an attempt to replace the
+ * 6. After each objective function evaluation, an attempt to replace the
  * highest cost "fan element" is performed using the cost constraint. This
  * approach is based on an assumption that the later solutions tend to be
  * statistically better than the earlier solutions.
@@ -101,8 +100,6 @@ public:
 		///<
 	double RandMult; ///< Parameter value randomization multiplier.
 		///<
-	double MixpMult; ///< Parameter randomization mix multiplier.
-		///<
 
 	/**
 	 * Constructor.
@@ -111,7 +108,6 @@ public:
 	CBiteOpt()
 		: CentProb( 0.25 )
 		, RandProb( 0.65 )
-		, RandMult( 8.0 )
 		, ParamCount( 0 )
 		, FanSize( 0 )
 		, FanOrder( NULL )
@@ -126,13 +122,13 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=6.699928 ItAvg=360.073995 ItRtAvg=0.230761
-		CostMult = 0.52454116;
-		MinpMult = 0.66454491;
-		MaxpMult = 0.50613913;
-		CentMult = 1.06459336;
-		CentOffs = 0.61594786;
-		MixpMult = 1.19693742;
+		// Cost=7.584144 ItAvg=360.002657 ItRtAvg=0.248897
+		CostMult = 1.13908874;
+		MinpMult = 0.61982836;
+		MaxpMult = 0.65579793;
+		CentMult = 0.72510780;
+		CentOffs = 0.31724443;
+		RandMult = 7.33739290;
 	}
 
 	~CBiteOpt()
@@ -153,7 +149,7 @@ public:
 	void updateDims( const int aParamCount, const int FanSize0 = 0 )
 	{
 		const int aFanSize = ( FanSize0 > 0 ? FanSize0 :
-			18 + aParamCount * aParamCount / 5 );
+			16 + aParamCount * aParamCount / 6 );
 
 		if( aParamCount == ParamCount && aFanSize == FanSize )
 		{
@@ -195,6 +191,10 @@ public:
 
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL )
 	{
+		CentCnt = 1.0;
+		RandCnt = 1.0;
+		ParamCnt = 0;
+
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
 		int i;
@@ -250,7 +250,7 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				NewParams[ i ] = getParamValue( CurParams[ j ], i );
+				NewParams[ i ] = getRealValue( CurParams[ j ][ i ], i );
 			}
 
 			insertFanOrder( optcost( NewParams ), j, j );
@@ -287,6 +287,20 @@ public:
 		const double* const MinParams = CurParams[ FanOrder[ 0 ]];
 		const double* const MaxParams = CurParams[ FanOrder[ FanSize1 ]];
 
+		if( CentCnt >= 1.0 )
+		{
+			CentCnt -= 1.0;
+
+			// Move towards centroid vector or beyond it, randomly.
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				const double m = CentOffs + rnd.getRndValue() * CentMult;
+				Params[ i ] = OrigParams[ i ] -
+					( OrigParams[ i ] - CentParams[ i ]) * m;
+			}
+		}
+		else
 		for( i = 0; i < ParamCount; i++ )
 		{
 			// The "step in the right direction" operation towards the best
@@ -301,40 +315,35 @@ public:
 			Params[ i ] -= ( MaxParams[ i ] - Params[ i ]) * MaxpMult;
 		}
 
-		if( rnd.getRndValue() < CentProb )
+		CentCnt += CentProb;
+
+		if( RandCnt >= 1.0 )
 		{
-			// Move towards centroid vector or beyond it, randomly.
+			RandCnt -= 1.0;
 
-			for( i = 0; i < ParamCount; i++ )
-			{
-				const double m = CentOffs + rnd.getRndValue() * CentMult;
-				Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
-			}
-		}
+			// Parameter randomization operation, works as a "driver" of
+			// optimization process, applied to a random parameter.
 
-		if( rnd.getRndValue() < RandProb )
-		{
-			// Parameter value randomization operation, works as a "driver" of
-			// the optimization process, applied to a random parameter.
+			const double p = Params[ ParamCnt ] +
+				( rnd.getRndValue() - 0.5 ) * fabs( CentParams[ ParamCnt ] -
+				MinParams[ ParamCnt ]) * RandMult;
 
-			const int sp = (int) ( rnd.getRndValue() * ParamCount );
-			const double p = Params[ sp ] + ( rnd.getRndValue() - 0.5 ) *
-				fabs( CentParams[ sp ] - MinParams[ sp ]) * RandMult;
-
-			// A very interesting approach: mix the randomized parameter
-			// with another parameter. Such approach probably works due to
-			// possible mutual correlation between parameters, especially in
-			// multi-dimensional functions. Mix constant is randomized, with
-			// adjusted probability density.
+			// A very interesting approach: mix (partially replace) another
+			// random parameter with randomized parameter. Such approach
+			// probably works due to possible mutual correlation between
+			// parameters, especially in multi-dimensional functions. Mix
+			// constant is randomized, with adjusted probability distribution.
 
 			const int rp = (int) ( rnd.getRndValue() * ParamCount );
 			double rr = rnd.getRndValue();
-			Params[ rp ] -= ( Params[ rp ] - p ) *
-				( 1.0 - rr * rr ) * MixpMult;
-
+			Params[ rp ] -= ( Params[ rp ] - p ) * ( 1.0 - rr * rr );
 			double pm = 1.0 - sqrt( rnd.getRndValue() );
-			Params[ sp ] = Params[ rp ] - ( Params[ rp ] - p ) * pm;
+			Params[ ParamCnt ] = Params[ rp ] - ( Params[ rp ] - p ) * pm;
+
+			ParamCnt = ( ParamCnt == 0 ? ParamCount : ParamCnt ) - 1;
 		}
+
+		RandCnt += RandProb;
 
 		// Wrap parameter values so that they stay in the [0; 1] range.
 
@@ -347,7 +356,7 @@ public:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			NewParams[ i ] = getParamValue( Params, i );
+			NewParams[ i ] = getRealValue( Params[ i ], i );
 		}
 
 		const double NewCost = optcost( NewParams );
@@ -535,6 +544,12 @@ protected:
 		///<
 	int FanSize1; ///< = FanSize - 1.
 		///<
+	double CentCnt; ///< Centroid move probability counter.
+		///<
+	double RandCnt; ///< Randomization operation probability counter.
+		///<
+	int ParamCnt; ///< Parameter index counter.
+		///<
 	int* FanOrder; ///< The current "fan element" ordering, ascending-sorted
 		///< by cost.
 		///<
@@ -624,9 +639,9 @@ protected:
 	 * @param i Parameter index.
 	 */
 
-	double getParamValue( const double* const aParams, const int i ) const
+	double getRealValue( const double v, const int i ) const
 	{
-		return( MinValues[ i ] + DiffValues[ i ] * aParams[ i ]);
+		return( MinValues[ i ] + DiffValues[ i ] * v );
 	}
 
 	/**
