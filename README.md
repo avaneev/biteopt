@@ -102,9 +102,9 @@ convergence time.
 
 ## Warning ##
 
-When solving problems whose solutions are critical and may be health-threating
-always use several optimization strategies (methods) to find the optimal
-solution.
+When solving problems whose solutions are critical and may be
+health-threatening, always use several optimization strategies (methods) to
+find the optimal solution.
 
 ## Users ##
 This library is used by:
