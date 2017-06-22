@@ -40,6 +40,13 @@ reasonable to expect convergence in 2000 iterations (in a successful attempt),
 for 10-dimensional functions it is reasonable to expect convergence in 10000
 iterations.
 
+The required number of optimization attempts is proportional to the number of
+strongly competing optimums in a function. Rogue optimums may not be found
+by this strategy. A rogue optimum is an optimum that has a very small area
+of descent and is placed apart from other competing optimums. The strategy
+favors optimums with a larger area of descent. The Damavandi test function
+is a perfect example of the limitation of this strategy.
+
 The minimal and maximal allowed parameter values should be specified in a way
 to cover a wider value range, in order to reduce boundary effects that may
 greatly reduce convergence. If the target local or global minimum stands

@@ -27,8 +27,7 @@ struct CTestFn
 	double (*CalcFunc)( const double* const p, const int N ); ///< Calculation
 		///< function.
 
-	double (*ParamFunc)( double* const minv, double* const maxv,
-		double* optv, const int N );
+	double (*ParamFunc)( double* const minv, double* const maxv, const int N );
 };
 
 static double calcThreeHumpCamel( const double* const p, const int N )
@@ -1271,13 +1270,13 @@ static double calcAdjiman( const double* const p, const int N )
 }
 
 static double calcAdjiman_p( double* const minv, double* const maxv,
-	double* optv, const int N )
+	const int N )
 {
 	minv[ 0 ] = -1.0;
 	maxv[ 0 ] = 2.0;
 	minv[ 1 ] = -1.0;
 	maxv[ 1 ] = 1.0;
-	*optv = -2.0218;
+	return( -2.0218 );
 }
 
 CTestFn TestFnAdjiman = { "Adjiman", 2, 0.0, 0.0, 0.0,
@@ -1297,7 +1296,7 @@ static double calcAlpine2( const double* const p, const int N )
 }
 
 static double calcAlpine2_p( double* const minv, double* const maxv,
-	double* optv, const int N )
+	const int N )
 {
 	int i;
 
@@ -1307,7 +1306,7 @@ static double calcAlpine2_p( double* const minv, double* const maxv,
 		maxv[ i ] = 10.0;
 	}
 
-	*optv = -pow( 2.808, (double) N );
+	return( -pow( 2.808, (double) N ));
 }
 
 CTestFn TestFnAlpine2 = { "Alpine2", 0, 0.0, 0.0, 0.0, &calcAlpine2,
@@ -1321,13 +1320,13 @@ static double calcBukin6( const double* const p, const int N )
 }
 
 static double calcBukin6_p( double* const minv, double* const maxv,
-	double* optv, const int N )
+	const int N )
 {
 	minv[ 0 ] = -15.0;
 	maxv[ 0 ] = -5.0;
 	minv[ 1 ] = -3.0;
 	maxv[ 1 ] = 3.0;
-	*optv = 0.0;
+	return( 0.0 );
 }
 
 CTestFn TestFnBukin6 = { "Bukin6", 2, 0.0, 0.0, 0.0, &calcBukin6,
@@ -1347,7 +1346,7 @@ static double calcStyblinskiTank( const double* const p, const int N )
 }
 
 static double calcStyblinskiTank_p( double* const minv, double* const maxv,
-	double* optv, const int N )
+	const int N )
 {
 	int i;
 
@@ -1357,7 +1356,7 @@ static double calcStyblinskiTank_p( double* const minv, double* const maxv,
 		maxv[ i ] = 5.0;
 	}
 
-	*optv = -39.16599 * N;
+	return( -39.16599 * N );
 }
 
 CTestFn TestFnStyblinskiTank = { "StyblinskiTank", 0, 0.0, 0.0, 0.0,
@@ -1371,13 +1370,13 @@ static double calcMcCormick( const double* const p, const int N )
 }
 
 static double calcMcCormick_p( double* const minv, double* const maxv,
-	double* optv, const int N )
+	const int N )
 {
 	minv[ 0 ] = -1.5;
 	maxv[ 0 ] = 4.0;
 	minv[ 1 ] = -3.0;
 	maxv[ 1 ] = 3.0;
-	*optv = -1.913222887;
+	return( -1.913222887 );
 }
 
 CTestFn TestFnMcCormick = { "McCormick", 2, 0.0, 0.0, 0.0, &calcMcCormick,

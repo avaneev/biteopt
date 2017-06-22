@@ -207,8 +207,8 @@ public:
 			{
 				if( opt -> fn -> ParamFunc != NULL )
 				{
-					(*opt -> fn -> ParamFunc)( opt -> minv, opt -> maxv,
-						&opt -> optv, Dims );
+					opt -> optv = (*opt -> fn -> ParamFunc)(
+						opt -> minv, opt -> maxv, Dims );
 				}
 				else
 				{
@@ -305,7 +305,7 @@ public:
 		RjAvg /= FnCount;
 //		Score = fabs( ItRtAvg - 0.160 ) * 50000.0 + ItAvg *
 //			( 1.0 + RjAvg * 100.0 );
-		Score = RjAvg * 100.0 + fabs( ItAvg - 360.0 ) * 0.1;
+		Score = RjAvg * 100.0 + fabs( ItAvg - 360.0/*360.0*/ ) * 0.1;
 
 		if( DoPrint )
 		{
