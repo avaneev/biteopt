@@ -123,13 +123,13 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=6.738502 ItAvg=354.287322 ItRtAvg=0.255668
-		CostMult = 0.53113778;
-		MinpMult = 0.61031248;
-		MaxpMult = 0.61286236;
-		CentMult = 0.71737198;
-		CentOffs = 0.70879940;
-		RandMult = 10.13476618;
+		// Cost=6.861364 ItAvg=348.792489 ItRtAvg=0.249729
+		CostMult = 0.69643934;
+		MinpMult = 0.59410786;
+		MaxpMult = 0.71090436;
+		CentMult = 0.61069564;
+		CentOffs = 0.73554560;
+		RandMult = 9.39813923;
 	}
 
 	~CBiteOpt()
@@ -330,16 +330,16 @@ public:
 				MinParams[ ParamCnt ]) * RandMult;
 
 			// A very interesting approach: mix (partially replace) another
-			// random parameter with randomized parameter. Such approach
-			// probably works due to possible mutual correlation between
-			// parameters, especially in multi-dimensional functions. Mix
-			// constant is randomized, with adjusted probability distribution.
+			// random parameter with previously randomized parameter. Such
+			// approach probably works due to possible mutual correlation
+			// between parameters, especially in multi-dimensional functions.
+			// Mix constant is randomized, with adjusted probability
+			// distribution.
 
 			const int rp = (int) ( rnd.getRndValue() * ParamCount );
 			double rr = rnd.getRndValue();
 			Params[ rp ] -= ( Params[ rp ] - p ) * ( 1.0 - rr * rr );
-			double pm = 1.0 - sqrt( rnd.getRndValue() );
-			Params[ ParamCnt ] = Params[ rp ] - ( Params[ rp ] - p ) * pm;
+			Params[ ParamCnt ] = Params[ rp ];
 
 			ParamCnt = ( ParamCnt == 0 ? ParamCount : ParamCnt ) - 1;
 		}

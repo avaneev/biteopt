@@ -305,8 +305,8 @@ public:
 		RjAvg /= FnCount;
 //		Score = fabs( ItRtAvg - 0.160 ) * 50000.0 + ItAvg *
 //			( 1.0 + RjAvg * 100.0 );
-		Score = RjAvg * 100.0 + fabs( ItAvg - 355.0/*360.0*/ ) * 0.1 +
-			fabs( ItRtAvg - 0.255 ) * 50;
+		Score = RjAvg * 100.0 + fabs( ItAvg - 350.0/*360.0*/ ) * 0.1 +
+			fabs( ItRtAvg - 0.250 ) * 50;
 
 		if( DoPrint )
 		{
