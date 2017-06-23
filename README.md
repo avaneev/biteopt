@@ -45,7 +45,9 @@ strongly competing optimums in a function. Rogue optimums may not be found
 by this strategy. A rogue optimum is an optimum that has a very small area
 of descent and is placed apart from other competing optimums. The strategy
 favors optimums with a larger area of descent. The Damavandi test function
-is a perfect example of the limitation of this strategy.
+is a perfect example of the limitation of this strategy. In practice, however,
+such optimums can be considered as undesired outliers that have an unstable
+real-life performance due to existing parameter value tolerances.
 
 The minimal and maximal allowed parameter values should be specified in a way
 to cover a wider value range, in order to reduce boundary effects that may
