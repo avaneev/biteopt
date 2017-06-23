@@ -150,7 +150,7 @@ public:
 	void updateDims( const int aParamCount, const int FanSize0 = 0 )
 	{
 		const int aFanSize = ( FanSize0 > 0 ? FanSize0 :
-			16 + aParamCount * aParamCount / 6 );
+			16 + aParamCount * aParamCount / 5 );
 
 		if( aParamCount == ParamCount && aFanSize == FanSize )
 		{
@@ -192,9 +192,9 @@ public:
 
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL )
 	{
-		CentCnt = 1.0;
-		RandCnt = 1.0;
-		ParamCnt = 0;
+		CentCntr = 1.0;
+		RandCntr = 1.0;
+		ParamCntr = 0;
 
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
@@ -288,9 +288,9 @@ public:
 		const double* const MinParams = CurParams[ FanOrder[ 0 ]];
 		const double* const MaxParams = CurParams[ FanOrder[ FanSize1 ]];
 
-		if( CentCnt >= 1.0 )
+		if( CentCntr >= 1.0 )
 		{
-			CentCnt -= 1.0;
+			CentCntr -= 1.0;
 
 			// Move towards centroid vector or beyond it, randomly.
 
@@ -316,18 +316,18 @@ public:
 			Params[ i ] -= ( MaxParams[ i ] - Params[ i ]) * MaxpMult;
 		}
 
-		CentCnt += CentProb;
+		CentCntr += CentProb;
 
-		if( RandCnt >= 1.0 )
+		if( RandCntr >= 1.0 )
 		{
-			RandCnt -= 1.0;
+			RandCntr -= 1.0;
 
 			// Parameter randomization operation, works as a "driver" of
 			// optimization process, applied to a random parameter.
 
-			const double p = Params[ ParamCnt ] +
-				( rnd.getRndValue() - 0.5 ) * fabs( CentParams[ ParamCnt ] -
-				MinParams[ ParamCnt ]) * RandMult;
+			const double p = Params[ ParamCntr ] +
+				( rnd.getRndValue() - 0.5 ) * fabs( CentParams[ ParamCntr ] -
+				MinParams[ ParamCntr ]) * RandMult;
 
 			// A very interesting approach: mix (partially replace) another
 			// random parameter with previously randomized parameter. Such
@@ -339,12 +339,12 @@ public:
 			const int rp = (int) ( rnd.getRndValue() * ParamCount );
 			double rr = rnd.getRndValue();
 			Params[ rp ] -= ( Params[ rp ] - p ) * ( 1.0 - rr * rr );
-			Params[ ParamCnt ] = Params[ rp ];
 
-			ParamCnt = ( ParamCnt == 0 ? ParamCount : ParamCnt ) - 1;
+			Params[ ParamCntr ] = Params[ rp ];
+			ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
 		}
 
-		RandCnt += RandProb;
+		RandCntr += RandProb;
 
 		// Wrap parameter values so that they stay in the [0; 1] range.
 
@@ -545,11 +545,11 @@ protected:
 		///<
 	int FanSize1; ///< = FanSize - 1.
 		///<
-	double CentCnt; ///< Centroid move probability counter.
+	double CentCntr; ///< Centroid move probability counter.
 		///<
-	double RandCnt; ///< Randomization operation probability counter.
+	double RandCntr; ///< Randomization operation probability counter.
 		///<
-	int ParamCnt; ///< Parameter index counter.
+	int ParamCntr; ///< Parameter index counter.
 		///<
 	int* FanOrder; ///< The current "fan element" ordering, ascending-sorted
 		///< by cost.
