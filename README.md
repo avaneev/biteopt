@@ -4,16 +4,17 @@
 ### CBiteOpt (biteopt.h) ###
 
 BiteOpt stochastic function optimization class. This optimization strategy
-is based on now outdated CBEOOptimizer and CBEOOptimizer2 stochastic
-derivative-less strategies, and uses several current parameter vectors
-("fan elements"). Highest cost "fan element" can be replaced with a new
-solution if "fan element's" cost (plus some margin) is higher than that of
-the new solution's. Having several "fan elements" allows parameter vectors
-to be spaced apart from each other thus making them cover a larger
+is based on now outdated CBEOOptimizer and CBEOOptimizer2, CBEOOptimizerFan
+stochastic derivative-less strategies. It uses an ordered list of several
+current parameter vectors (called "fan elements") that are evolved towards
+a lower cost. Highest-cost "fan element" in the list can be replaced with a
+new solution if "fan element's" cost (plus some margin) is higher than that
+of the new solution's. Having several "fan elements" allows the strategy
+to space them apart from each other thus making them cover a larger
 parameter search space collectively. Beside that, parameter randomization
 and several "step in the right direction" operations are used that move the
-solution vector into position with a probably lower objective function
-value (cost).
+parameter vector into position with a probabilistically lower objective
+function value.
 
 The benefit of this strategy is a relatively high robustness: it can
 successfully optimize a wide range of test functions. Another benefit is a
@@ -40,14 +41,14 @@ reasonable to expect convergence in 2000 iterations (in a successful attempt),
 for 10-dimensional functions it is reasonable to expect convergence in 10000
 iterations.
 
-The required number of optimization attempts is proportional to the number of
-strongly competing optimums in a function. Rogue optimums may not be found
-by this strategy. A rogue optimum is an optimum that has a very small area
-of descent and is placed apart from other competing optimums. The strategy
-favors optimums with a larger area of descent. The Damavandi test function
-is a perfect example of the limitation of this strategy. In practice, however,
-such optimums can be considered as undesired outliers that have an unstable
-real-life performance due to existing parameter value tolerances.
+The required number of optimization attempts is usually proportional to the
+number of strongly competing optimums in a function. Rogue optimums may not be
+found by this strategy. A rogue optimum is an optimum that has a very small
+area of descent and is placed apart from other competing optimums. The
+strategy favors optimums with a larger area of descent. The Damavandi test
+function is a perfect example of the limitation of this strategy. In practice,
+however, such optimums can be considered as undesired outliers that have an
+unstable real-life performance due to existing parameter value tolerances.
 
 The minimal and maximal allowed parameter values should be specified in a way
 to cover a wider value range, in order to reduce boundary effects that may
@@ -101,6 +102,10 @@ these values manually and optimize other parameters with these values fixed.
 3. If high optimization attempt rejection rate is not problematic, the
 parameters of the algorithm can be tuned to provide at least 20% lower
 convergence time.
+
+4. Parallelization of this algorithm is technically possible, but it is
+counter-productive. It is more efficient to run several optimizers in parallel
+with different random seeds.
 
 ## Warning ##
 

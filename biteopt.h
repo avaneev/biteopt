@@ -36,16 +36,17 @@
 
 /**
  * BiteOpt stochastic function optimization class. This optimization strategy
- * is based on now outdated CBEOOptimizer and CBEOOptimizer2 stochastic
- * derivative-less strategies, and uses several current parameter vectors
- * ("fan elements"). Highest cost "fan element" can be replaced with a new
- * solution if "fan element's" cost (plus some margin) is higher than that of
- * the new solution's. Having several "fan elements" allows parameter vectors
- * to be spaced apart from each other thus making them cover a larger
+ * is based on now outdated CBEOOptimizer and CBEOOptimizer2, CBEOOptimizerFan
+ * stochastic derivative-less strategies. It uses an ordered list of several
+ * current parameter vectors (called "fan elements") that are evolved towards
+ * a lower cost. Highest-cost "fan element" in the list can be replaced with a
+ * new solution if "fan element's" cost (plus some margin) is higher than that
+ * of the new solution's. Having several "fan elements" allows the strategy
+ * to space them apart from each other thus making them cover a larger
  * parameter search space collectively. Beside that, parameter randomization
  * and several "step in the right direction" operations are used that move the
- * solution vector into position with a probably lower objective function
- * value.
+ * parameter vector into position with a probabilistically lower objective
+ * function value.
  *
  * The benefit of this strategy is a relatively high robustness: it can
  * successfully optimize a wide range of test functions. Another benefit is a
@@ -57,10 +58,10 @@
  *
  * The algorithm consists of the following elements:
  *
- * 1. A set of "fan elements" is maintained. A "fan element" is an independent
- * parameter vector which is evolved towards a better solution. Also a
- * cost-ordered list of "fan elements" is maintaned. On every iteration a
- * single random "fan element" is evolved.
+ * 1. A complex of "fan elements" is maintained. A "fan element" is an
+ * independent parameter vector which is evolved towards a better solution.
+ * Also a cost-ordered list of "fan elements" is maintaned. On every iteration
+ * a single random "fan element" is evolved.
  *
  * 2. A centroid vector of all "fan elements" is maintained.
  *
@@ -76,7 +77,7 @@
  * performed, which is the main driver of the evolutionary process.
  *
  * 6. After each objective function evaluation, an attempt to replace the
- * highest cost "fan element" is performed using the cost constraint. This
+ * highest-cost "fan element" is performed using the cost constraint. This
  * approach is based on an assumption that the later solutions tend to be
  * statistically better than the earlier solutions.
  */
@@ -122,13 +123,13 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=7.584144 ItAvg=360.002657 ItRtAvg=0.248897
-		CostMult = 1.13908874;
-		MinpMult = 0.61982836;
-		MaxpMult = 0.65579793;
-		CentMult = 0.72510780;
-		CentOffs = 0.31724443;
-		RandMult = 7.33739290;
+		// Cost=6.738502 ItAvg=354.287322 ItRtAvg=0.255668
+		CostMult = 0.53113778;
+		MinpMult = 0.61031248;
+		MaxpMult = 0.61286236;
+		CentMult = 0.71737198;
+		CentOffs = 0.70879940;
+		RandMult = 10.13476618;
 	}
 
 	~CBiteOpt()

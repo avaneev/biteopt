@@ -1,6 +1,13 @@
 //$ nocpp
 
 // Test functions.
+//
+// Sources:
+// http://infinity77.net/global_optimization/test_functions.html
+// https://www.sfu.ca/~ssurjano/optimization.html
+// http://www-optima.amp.i.kyoto-u.ac.jp/member/student/hedar/Hedar_files/TestGO_files/Page364.htm
+// http://benchmarkfcns.xyz/fcns
+// http://al-roomi.org/benchmarks/unconstrained/2-dimensions/120-damavandi-s-function
 
 #include <math.h>
 
@@ -11,6 +18,12 @@
 #if !defined( M_PI )
 	#define M_PI 3.14159265358979324
 #endif // !defined( M_PI )
+
+template< class T >
+inline T roundf( const T d )
+{
+	return( d < 0.0 ? -floor( (T) 0.5 - d ) : floor( d + (T) 0.5 ));
+}
 
 /**
  * Structure holds details about test function.
@@ -186,7 +199,7 @@ static double calcBeale( const double* const p, const int N )
 
 CTestFn TestFnBeale = { "Beale", 2, -10.0, 10.0, 0.0, &calcBeale };
 
-static double calcBohachevsky( const double* const p, const int N )
+static double calcBohachevsky1( const double* const p, const int N )
 {
 	double s = 0.0;
 	int i;
@@ -200,14 +213,14 @@ static double calcBohachevsky( const double* const p, const int N )
 	return( s );
 }
 
-CTestFn TestFnBohachevsky = { "Bohachevsky", 0, -15.0, 15.0, 0.0,
-	&calcBohachevsky };
+CTestFn TestFnBohachevsky1 = { "Bohachevsky1", 0, -15.0, 15.0, 0.0,
+	&calcBohachevsky1 };
 
 static double calcBohachevsky2( const double* const p, const int N )
 {
 	const double x = p[ 0 ];
 	const double y = p[ 1 ];
-	return( x*x+2.0*y*y-0.3*cos(3.0*M_PI*x)-0.4*cos(3.0*M_PI*y)+0.7 );
+	return( x*x+2.0*y*y-0.3*cos(3.0*M_PI*x)*cos(4.0*M_PI*y)+0.3 );
 }
 
 CTestFn TestFnBohachevsky2 = { "Bohachevsky2", 2, -100.0, 100.0, 0.0,
@@ -217,13 +230,13 @@ static double calcBohachevsky3( const double* const p, const int N )
 {
 	const double x = p[ 0 ];
 	const double y = p[ 1 ];
-	return( x*x+2.0*y*y-0.3*cos(3.0*M_PI*x)*cos(3.0*M_PI*y)+0.3 );
+	return( x*x+2.0*y*y-0.3*cos(3.0*M_PI*x+4.0*M_PI*y)+0.3 );
 }
 
 CTestFn TestFnBohachevsky3 = { "Bohachevsky3", 2, -100.0, 100.0, 0.0,
 	&calcBohachevsky3 };
 
-static double calcEasom( const double* const p, const int N )
+static double calcEasomN( const double* const p, const int N )
 {
 	const double a = 20.0;
 	const double b = 0.2;
@@ -241,16 +254,16 @@ static double calcEasom( const double* const p, const int N )
 	return( a-a/exp(b*sqrt(s1/N))+exp(1.0)-exp(s2/N));
 }
 
-CTestFn TestFnEasom = { "Easom", 0, -100.0, 100.0, 0.0, &calcEasom };
+CTestFn TestFnEasomN = { "EasomN", 0, -100.0, 100.0, 0.0, &calcEasomN };
 
-static double calcEasom2( const double* const p, const int N )
+static double calcEasom( const double* const p, const int N )
 {
 	const double x = p[ 0 ];
 	const double y = p[ 1 ];
 	return( -cos(x)*cos(y)*exp(-sqr(x-M_PI)-sqr(y-M_PI)));
 }
 
-CTestFn TestFnEasom2 = { "Easom2", 2, -100.0, 100.0, -1.0, &calcEasom2 };
+CTestFn TestFnEasom = { "Easom", 2, -100.0, 100.0, -1.0, &calcEasom };
 
 static double calcCrossInTray( const double* const p, const int N )
 {
@@ -1312,6 +1325,26 @@ static double calcAlpine2_p( double* const minv, double* const maxv,
 CTestFn TestFnAlpine2 = { "Alpine2", 0, 0.0, 0.0, 0.0, &calcAlpine2,
 	&calcAlpine2_p };
 
+static double calcBukin4( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( 100.0*sqr(y)+0.01*fabs(x+10.0) );
+}
+
+static double calcBukin4_p( double* const minv, double* const maxv,
+	const int N )
+{
+	minv[ 0 ] = -15.0;
+	maxv[ 0 ] = -5.0;
+	minv[ 1 ] = -3.0;
+	maxv[ 1 ] = 3.0;
+	return( 0.0 );
+}
+
+CTestFn TestFnBukin4 = { "Bukin4", 2, 0.0, 0.0, 0.0, &calcBukin4,
+	&calcBukin4_p };
+
 static double calcBukin6( const double* const p, const int N )
 {
 	const double x = p[ 0 ];
@@ -1392,19 +1425,148 @@ static double calcHimmelblau( const double* const p, const int N )
 CTestFn TestFnHimmelblau = { "Himmelblau", 2, -6.0, 6.0, 0.0,
 	&calcHimmelblau };
 
+static double calcMichalewicz( const double* const p, const int N )
+{
+	const double m = 10.0;
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sin(p[i])*pow(sin((i+1)*sqr(p[i])/M_PI),2.0*m);
+	}
+
+	return( -s );
+}
+
+CTestFn TestFnMichalewicz = { "Michalewicz", 2, 0.0, M_PI, -1.8013,
+	&calcMichalewicz };
+
+static double calcBoxBettsExpQuadSum( const double* const p, const int N )
+{
+	double s = 0.0;
+	int j;
+
+	for( j = 1; j <= 10; j++ )
+	{
+		double g = exp(-0.1*j*p[0])-exp(-0.1*j*p[1])-
+			(exp(-0.1*j)-exp(-(double)j))*p[2];
+
+		s += g*g;
+	}
+
+	return( s );
+}
+
+static double calcBoxBettsExpQuadSum_p( double* const minv, double* const maxv,
+	const int N )
+{
+	minv[ 0 ] = 0.9;
+	maxv[ 0 ] = 1.2;
+	minv[ 1 ] = 9.0;
+	maxv[ 1 ] = 11.2;
+	minv[ 2 ] = 0.9;
+	maxv[ 2 ] = 1.2;
+	return( 0.0 );
+}
+
+CTestFn TestFnBoxBettsExpQuadSum = { "BoxBettsExpQuadSum", 3, 0.0, 0.0, 0.0,
+	&calcBoxBettsExpQuadSum, &calcBoxBettsExpQuadSum_p };
+
+static double calcPowellQuartic( const double* const p, const int N )
+{
+	return( sqr(p[0]+10.0*p[1])+5.0*sqr(p[2]-p[3])+sqr(sqr(p[1]-2.0*p[2]))+
+		10.0*sqr(sqr(p[0]-p[3])) );
+}
+
+CTestFn TestFnPowellQuartic = { "PowellQuartic", 4, -10.0, 10.0, 0.0,
+	&calcPowellQuartic };
+
+static double calcMishra09( const double* const p, const int N )
+{
+	const double f1 = 2.0*pow(p[0],3.0)+5.0*p[0]*p[1]+4.0*p[2]-
+		2.0*sqr(p[0])*p[2]-18.0;
+
+	const double f2 = p[0]+pow(p[1],3.0)+p[0]*sqr(p[1])+p[0]*sqr(p[2])-22.0;
+	const double f3 = 8.0*sqr(p[0])+2.0*p[1]*p[2]+2.0*sqr(p[1])+
+		3.0*pow(p[1],3.0)-52.0;
+
+	return( sqr(f1*sqr(f2)*f3+f1*f2*sqr(f3)+sqr(f2)+sqr(p[0]+p[1]-p[2])) );
+}
+
+CTestFn TestFnMishra09 = { "Mishra09", 3, -10.0, 10.0, 0.0, &calcMishra09 };
+
+static double calcZirilli( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( 0.25*sqr(sqr(x))-0.5*sqr(x)+0.1*x+0.5*sqr(y) );
+}
+
+CTestFn TestFnZirilli = { "Zirilli", 2, -10.0, 10.0, -0.3523860738,
+	&calcZirilli };
+
+static double calcCamel( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( -(-sqr(sqr(x))+4.5*sqr(x)+2.0)/exp(2.0*sqr(y)) );
+}
+
+CTestFn TestFnCamel = { "Camel", 2, -2.0, 2.0, -7.0625,
+	&calcCamel };
+
+static double calcComplex( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( sqr(pow(x,3.0)-3.0*x*sqr(y)-1.0)+sqr(3.0*y*sqr(x)-pow(y,3.0)) );
+}
+
+CTestFn TestFnComplex = { "Complex", 2, -2.0, 2.0, 0.0, &calcComplex };
+
+static double calcDavis( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( pow(sqr(x)+sqr(y),0.25)*(sqr(sin(50.0*pow(3.0*sqr(x)+sqr(y),0.1)))+
+		1.0) );
+}
+
+CTestFn TestFnDavis = { "Davis", 2, -100.0, 100.0, 0.0, &calcDavis };
+
+static double calcDownhillStep( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( roundf(10.0*(10.0-exp(-sqr(x)-3.0*sqr(y))))/10.0 );
+}
+
+CTestFn TestFnDownhillStep = { "DownhillStep", 2, -10.0, 10.0, 9.0,
+	&calcDownhillStep };
+
+static double calcEngvall( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( sqr(sqr(x))+sqr(sqr(y))+2.0*sqr(x)*sqr(y)-4.0*x+3.0 );
+}
+
+CTestFn TestFnEngvall = { "Engvall", 2, -2000.0, 2000.0, 0.0, &calcEngvall };
+
 // Strategy optimization corpus based on simple 2D functions.
 
 const CTestFn* OptCorpus2D[] = { &TestFnMatyas, &TestFnThreeHumpCamel,
 	&TestFnBooth, &TestFnCrossInTray, &TestFnRotatedHyperEllipsoid,
-	&TestFnBohachevsky, &TestFnLevy13, &TestFnAckley,
-	&TestFnSchaffer02, &TestFnRosenbrock, &TestFnEasom, &TestFnSchaffer04,
+	&TestFnBohachevsky1, &TestFnLevy13, &TestFnAckley,
+	&TestFnSchaffer02, &TestFnRosenbrock, &TestFnEasomN, &TestFnSchaffer04,
 	NULL };
 
 // Strategy optimization corpus based on simple N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnSchwefel222, &TestFnQing, &TestFnSphere, &TestFnAckley,
-	&TestFnRosenbrock, &TestFnBohachevsky, &TestFnEasom, &TestFnRastrigin,
+	&TestFnRosenbrock, &TestFnBohachevsky1, &TestFnEasomN, &TestFnRastrigin,
 	&TestFnSumSquares, &TestFnZacharov, &TestFnRotatedHyperEllipsoid,
 	&TestFnWavy, &TestFnBrown, &TestFnAlpine1, &TestFnChungReynolds,
 	NULL };
@@ -1434,8 +1596,8 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnMatyas, &TestFnSphere, &TestFnLevy13, &TestFnSchaffer01,
 	&TestFnSchaffer02, &TestFnSchaffer03, &TestFnSchaffer04, &TestFnAckley,
 	&TestFnAckley2, &TestFnAckley3, &TestFnRosenbrock, &TestFnBeale,
-	&TestFnBohachevsky, &TestFnBohachevsky2, &TestFnBohachevsky3,
-	&TestFnEasom, &TestFnEasom2, &TestFnCrossInTray, &TestFnRastrigin,
+	&TestFnBohachevsky1, &TestFnBohachevsky2, &TestFnBohachevsky3,
+	&TestFnEasomN, &TestFnEasom, &TestFnCrossInTray, &TestFnRastrigin,
 	&TestFnDropWave, &TestFnSumSquares, &TestFnZacharov,
 	&TestFnRotatedHyperEllipsoid, &TestFnGriewank, &TestFnGoldsteinPrice,
 	&TestFnSalomon, &TestFnBranin01, &TestFnBranin02, &TestFnTrefethen,
@@ -1449,10 +1611,13 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnBrown, &TestFnBrent, &TestFnNewFunction01, &TestFnNewFunction02,
 	&TestFnLevy05, &TestFnPowell, &TestFnPaviani,
 	&TestFnTrid6, &TestFnMieleCantrell, &TestFnColville, &TestFnWolfe,
-	&TestFnAlpine1, &TestFnAlpine2, &TestFnBartelsConn, &TestFnSixHumpCamel,
-	&TestFnChungReynolds, &TestFnCube, &TestFnDeckkersAarts, &TestFnEggCrate,
-	&TestFnKeane, &TestFnLeon, &TestFnQing, &TestFnSchwefel220,
-	&TestFnSchwefel221, &TestFnSchwefel222, &TestFnDolan,
-	&TestFnTestTubeHolder, &TestFnWayburnSeader02, &TestFnSawtoothy,
-	&TestFnSchwefel, &TestFnAdjiman, &TestFnStyblinskiTank,
-	&TestFnMcCormick, /*&TestFnHimmelblau, */NULL };
+	&TestFnAlpine1, &TestFnAlpine2, &TestFnBukin4, &TestFnBartelsConn,
+	&TestFnSixHumpCamel, &TestFnChungReynolds, &TestFnCube,
+	&TestFnDeckkersAarts, &TestFnEggCrate, &TestFnKeane, &TestFnLeon,
+	&TestFnQing, &TestFnSchwefel220, &TestFnSchwefel221, &TestFnSchwefel222,
+	&TestFnDolan, &TestFnTestTubeHolder, &TestFnWayburnSeader02,
+	&TestFnSawtoothy, &TestFnSchwefel, &TestFnAdjiman, &TestFnStyblinskiTank,
+	&TestFnMcCormick, &TestFnHimmelblau, &TestFnMichalewicz,
+	&TestFnBoxBettsExpQuadSum, &TestFnPowellQuartic, &TestFnMishra09,
+	&TestFnZirilli, &TestFnCamel, &TestFnComplex, &TestFnDavis,
+	&TestFnDownhillStep, &TestFnEngvall, NULL };
