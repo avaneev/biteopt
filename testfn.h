@@ -1605,7 +1605,7 @@ static double calcDownhillStep( const double* const p, const int N )
 {
 	const double x = p[ 0 ];
 	const double y = p[ 1 ];
-	return( roundf(10.0*(10.0-exp(-sqr(x)-3.0*sqr(y))))/10.0 );
+	return( floor(10.0*(10.0-exp(-sqr(x)-3.0*sqr(y))))/10.0 );
 }
 
 static const CTestFn TestFnDownhillStep = { "DownhillStep", 2, -10.0, 10.0,
@@ -1787,6 +1787,155 @@ static double calcYaoLiu04( const double* const p, const int N )
 static const CTestFn TestFnYaoLiu04 = { "YaoLiu04", 0, -10.0, 10.0, 0.0,
 	&calcYaoLiu04 };
 
+static double calcBentCigar( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i < N; i++ )
+	{
+		s += sqr( p[ i ]);
+	}
+
+	return( sqr(p[0])+1e6*s );
+}
+
+static const CTestFn TestFnBentCigar = { "BentCigar", 0, -100.0, 100.0, 0.0,
+	&calcBentCigar };
+
+static double calcDeflCorrSpring( const double* const p, const int N )
+{
+	const double a = 5.0;
+	const double k = 5.0;
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sqr(p[i]-a);
+	}
+
+	return( 0.1*s-cos(k*sqrt(s)) );
+}
+
+static const CTestFn TestFnDeflCorrSpring = { "DeflCorrSpring", 0,
+	0.0, 10.0, -1.0, &calcDeflCorrSpring };
+
+static double calcHolzman( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += (i+1)*sqr(sqr(p[i]));
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnHolzman = { "Holzman", 0, -10.0, 10.0, 0.0,
+	&calcHolzman };
+
+static double calcHyperGrid( const double* const p, const int N )
+{
+	const double a = 6.0;
+	const double c = 5.0;
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += pow(sin(c*M_PI*p[i]),a);
+	}
+
+	return( -s/N );
+}
+
+static const CTestFn TestFnHyperGrid = { "HyperGrid", 0, 0.0, 1.0, -1.0,
+	&calcHyperGrid };
+
+static double calcQuintic( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += fabs(pow(p[i],5.0)-3.0*pow(p[i],4.0)+4.0*pow(p[i],3.0)+
+			2.0*sqr(p[i])-10.0*p[i]-4.0);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnQuintic = { "Quintic", 0, -10.0, 10.0, 0.0,
+	&calcQuintic };
+
+static double calcVincent( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sin(10.0*log(p[i]));
+	}
+
+	return( -s/N );
+}
+
+static const CTestFn TestFnVincent = { "Vincent", 0, 0.25, 10.0, -1.0,
+	&calcVincent };
+
+static double calcStep01( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += floor(fabs(p[i]));
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnStep01 = { "Step01", 0, -100, 100.0, 0.0,
+	&calcStep01 };
+
+static double calcStep02( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sqr(floor(fabs(p[i]+0.5)));
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnStep02 = { "Step02", 0, -100, 100.0, 0.0,
+	&calcStep02 };
+
+static double calcStep03( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += floor(sqr(p[i]));
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnStep03 = { "Step03", 0, -100, 100.0, 0.0,
+	&calcStep03 };
+
 // Strategy optimization corpus based on simple N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -1794,7 +1943,8 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnRosenbrock, &TestFnBohachevsky1, &TestFnEasomN, &TestFnRastrigin,
 	&TestFnSumSquares, &TestFnZacharov, &TestFnRotatedHyperEllipsoid,
 	&TestFnWavy, &TestFnBrown, &TestFnAlpine1, &TestFnChungReynolds,
-	NULL };
+	&TestFnBentCigar, &TestFnHolzman, &TestFnHyperGrid, &TestFnVincent,
+	&TestFnStep01, &TestFnStep02, &TestFnStep03, NULL };
 
 // Failing functions.
 
@@ -1849,4 +1999,6 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnDavis, &TestFnDownhillStep, &TestFnEngvall, &TestFnGramacyLee02,
 	&TestFnGiunta, &TestFnHosaki, &TestFnKearfott, &TestFnJennrichSampson,
 	&TestFnMishra05, &TestFnMishra06, &TestFnMishra09, &TestFnTsoulos,
-	&TestFnUrsemWaves, &TestFnYaoLiu04, NULL };
+	&TestFnUrsemWaves, &TestFnYaoLiu04, &TestFnBentCigar,
+	&TestFnDeflCorrSpring, &TestFnHyperGrid, &TestFnQuintic, &TestFnVincent,
+	&TestFnStep01, &TestFnStep02, &TestFnStep03, NULL };

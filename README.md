@@ -50,25 +50,31 @@ function is a perfect example of the limitation of this strategy. In practice,
 however, rogue optimums can be considered as undesired outliers that have an
 unstable real-life performance due to existing parameter value tolerances.
 
+To some degree this strategy is immune to noise in the objective function.
+While this strategy was designed to be applied to continuous functions, it is
+also immune to discontinuities to some degree, and it can solve problems that
+utilize parameter value rounding. This strategy can't acceptably solve
+high-dimensional problems that are implicitly or explicitly combinatorial.
+
+Most hard constraints can be introduced by applying huge penalties to the
+objective function. Even binary penalties like "if(x>1)cost+=x*10000" should
+work acceptably in most cases.
+
 The minimal and maximal allowed parameter values should be specified in a way
 to cover a wider value range, in order to reduce boundary effects that may
 greatly reduce convergence. If the target local or global minimum stands
 very close to the parameter value boundaries this strategy may fail to
 converge.
 
+The FanSize parameter can be adjusted to increase quality of solutions,
+especially in high-dimensional problems. FanSize controls robustness of the
+strategy at the cost of convergence time. However, setting FanSize too high
+may increase rejection rate (equivalent to problem's overspecification).
+
 The optimizePlateau() function can be used to optimize functions that have a
 complex landscape. This function works within the bounds of allocated
 iteration limit, and performs re-initializations when the optimization process
 reaches the plateau.
-
-Most hard constraints can be introduced by applying huge penalties to the
-objective function. Even binary penalties like "if(x>1)cost+=10000" should
-work acceptably in most cases.
-
-The FanSize parameter can be adjusted to increase quality of solutions,
-especially in high dimensionality problems. FanSize controls robustness of the
-strategy at the cost of convergence time. However, setting FanSize too high
-may increase rejection rate (equivalent to problem's overspecification).
 
 Strategy's "robustness" is a multi-factor non-formal estimation which includes
 average convergence time, standard deviation of convergence time, the set of
@@ -104,14 +110,15 @@ parameters of the algorithm can be tuned to provide at least 20% lower
 convergence time.
 
 4. Parallelization of this algorithm is technically possible, but is
-counter-productive. It is more efficient to run several optimizers in parallel
-with different random seeds.
+counter-productive (increases convergence time considerably). It is more
+efficient to run several optimizers in parallel with different random seeds.
 
 ## Warning ##
 
 When solving problems whose solutions are critical and may be
 health-threatening, always use several optimization strategies (methods) to
-find the optimal solution.
+find the optimal solution, do not rely on a single strategy when solving
+multi-modal problems.
 
 ## Users ##
 This library is used by:

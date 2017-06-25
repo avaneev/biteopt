@@ -318,8 +318,8 @@ public:
 //		Score = fabs( ItRtAvg - 0.160 ) * 50000.0 + ItAvg *
 //			( 1.0 + RjAvg * 100.0 );
 		Score = ( AtAvg - 1.0 ) * 100.0 /*RjAvg * 100.0*/ +
-			fabs( ItAvg - 350.0/*360.0*/ ) * 0.1 +
-			fabs( ItRtAvg - 0.250 ) * 50;
+			fabs( ItAvg - 347.0 ) * 0.1 +
+			fabs( ItRtAvg - 0.260 ) * 50;
 
 		if( DoPrint )
 		{
