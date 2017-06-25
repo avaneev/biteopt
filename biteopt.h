@@ -123,13 +123,13 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=7.104471 ItAvg=349.982222 ItRtAvg=0.250586
-		CostMult = 1.48487449;
-		MinpMult = 0.66812309;
-		MaxpMult = 0.51780331;
-		CentMult = 1.14755020;
-		CentOffs = 0.56182834;
-		RandMult = 8.68751133;
+		// Cost=7.405512 ItAvg=349.584079 ItRtAvg=0.250832
+		CostMult = 1.10872617;
+		MinpMult = 0.67233286;
+		MaxpMult = 0.50546567;
+		CentMult = 1.11878624;
+		CentOffs = 0.55570931;
+		RandMult = 9.68633640;
 	}
 
 	~CBiteOpt()

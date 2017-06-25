@@ -109,6 +109,8 @@ public:
 		///<
 	double RjAvg; ///< Average number of rejects.
 		///<
+	double AtAvg; ///< Average number of attempts.
+		///<
 	uint64_t tc; ///< Processor clock ticks used in evaluation.
 		///<
 	double Score; ///< Optimization score.
@@ -175,6 +177,9 @@ public:
 		ItAvg = 0.0;
 		ItRtAvg = 0.0;
 		RjAvg = 0.0;
+		AtAvg = 0.0;
+		int RejTotal = 0;
+		int ItTotal = 0;
 		tc = 0;
 		int* Iters = new int[ IterCount ];
 		int k;
@@ -247,6 +252,7 @@ public:
 						AvgCost += opt -> getBestCost();
 						Iters[ j ] = i;
 						AvgIter += i;
+						ItTotal += i;
 						break;
 					}
 
@@ -289,12 +295,16 @@ public:
 
 			ItAvg += Avg;
 			ItRtAvg += RMS / Avg;
-			RjAvg += (double) Rej / IterCount;
+			const double Rj = (double) Rej / IterCount;
+			RjAvg += Rj;
+			const double At = 1.0 / ( 1.0 - (double) Rej / IterCount );
+			AtAvg += At;
+			RejTotal += Rej;
 
 			if( DoPrint )
 			{
-				printf( "AIt:%6.0f RIt:%6.0f Rj:%5.2f%% C:%11.8f RjC:%7.4f "
-					"%s_%i\n", Avg, RMS, 100.0 * Rej / IterCount, AvgCost,
+				printf( "AIt:%6.0f RIt:%6.0f At:%5.2f C:%11.8f RjC:%7.4f "
+					"%s_%i\n", Avg, RMS, At, AvgCost,
 					AvgRjCost, opt -> fn -> Name, Dims );
 			}
 		}
@@ -303,9 +313,12 @@ public:
 		ItAvg /= FnCount;
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
+//		AtAvg /= FnCount;
+		AtAvg = 1.0 / ( 1.0 - (double) RejTotal / IterCount / FnCount );
 //		Score = fabs( ItRtAvg - 0.160 ) * 50000.0 + ItAvg *
 //			( 1.0 + RjAvg * 100.0 );
-		Score = RjAvg * 100.0 + fabs( ItAvg - 350.0/*360.0*/ ) * 0.1 +
+		Score = ( AtAvg - 1.0 ) * 100.0 /*RjAvg * 100.0*/ +
+			fabs( ItAvg - 350.0/*360.0*/ ) * 0.1 +
 			fabs( ItRtAvg - 0.250 ) * 50;
 
 		if( DoPrint )
@@ -317,6 +330,7 @@ public:
 			printf( "RjAvg: %.2f%% (avg percentage of rejects)\n",
 				RjAvg * 100.0 );
 
+			printf( "AtAvg: %.3f (avg number of attempts)\n", AtAvg );
 			printf( "Score: %f\n", Score );
 			printf( "Ticks: %llu\n", tc );
 		}
