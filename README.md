@@ -26,7 +26,7 @@ reach optimum.
 
 ### Notes ###
 
-This strategy was tested on many classic 2-dimensional and 30-dimensional
+This strategy was tested on 100+ classic 2-dimensional and 30-dimensional
 optimization problems and performed well. Due to its design this strategy may
 be particularly good at improving an existing sub-optimal local solution.
 
@@ -39,15 +39,15 @@ seed than to wait for the optimization process to converge. Based on the
 results of optimization of the test corpus, for 2-dimensional functions it is
 reasonable to expect convergence in 2000 iterations (in a successful attempt),
 for 10-dimensional functions it is reasonable to expect convergence in 10000
-iterations.
+iterations (harder functions may require more iterations to converge).
 
 The required number of optimization attempts is usually proportional to the
-number of strongly competing optimums in a function. Rogue optimums may not be
+number of strongly competing minima in a function. Rogue optimums may not be
 found by this strategy. A rogue optimum is an optimum that has a very small
-area of descent and is placed apart from other competing optimums. The
-strategy favors optimums with a larger area of descent. The Damavandi test
+area of descent and is placed apart from other competing minima. The
+strategy favors minimum with a larger area of descent. The Damavandi test
 function is a perfect example of the limitation of this strategy. In practice,
-however, such optimums can be considered as undesired outliers that have an
+however, rogue optimums can be considered as undesired outliers that have an
 unstable real-life performance due to existing parameter value tolerances.
 
 The minimal and maximal allowed parameter values should be specified in a way
@@ -80,7 +80,7 @@ Use the example.cpp program to see the basic usage example.
 
 test2.cpp is a convergence test for all available functions. Performs many
 optimization attempts on all functions. Prints various performance
-information, including percentage of rejected attempts.
+information, including percentage of rejected attempts (rejection rate).
 
 test3.cpp demonstrates the usage of the optimizePlateau() function.
 
@@ -103,7 +103,7 @@ these values manually and optimize other parameters with these values fixed.
 parameters of the algorithm can be tuned to provide at least 20% lower
 convergence time.
 
-4. Parallelization of this algorithm is technically possible, but it is
+4. Parallelization of this algorithm is technically possible, but is
 counter-productive. It is more efficient to run several optimizers in parallel
 with different random seeds.
 

@@ -1770,6 +1770,23 @@ static double calcGulfResearchProblem_p( double* const minv,
 static const CTestFn TestFnGulfResearchProblem = { "GulfRsrchProblem", 3,
 	0.0, 0.0, 0.0, &calcGulfResearchProblem, &calcGulfResearchProblem_p };
 
+static double calcYaoLiu04( const double* const p, const int N )
+{
+	double m = fabs(p[0]);
+	int i;
+
+	for( i = 1; i < N; i++ )
+	{
+		const double v = fabs(p[i]);
+		m = ( v > m ? v : m );
+	}
+
+	return( m );
+}
+
+static const CTestFn TestFnYaoLiu04 = { "YaoLiu04", 0, -10.0, 10.0, 0.0,
+	&calcYaoLiu04 };
+
 // Strategy optimization corpus based on simple N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -1832,4 +1849,4 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnDavis, &TestFnDownhillStep, &TestFnEngvall, &TestFnGramacyLee02,
 	&TestFnGiunta, &TestFnHosaki, &TestFnKearfott, &TestFnJennrichSampson,
 	&TestFnMishra05, &TestFnMishra06, &TestFnMishra09, &TestFnTsoulos,
-	&TestFnUrsemWaves, NULL };
+	&TestFnUrsemWaves, &TestFnYaoLiu04, NULL };

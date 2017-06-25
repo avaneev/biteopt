@@ -123,13 +123,13 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=6.861364 ItAvg=348.792489 ItRtAvg=0.249729
-		CostMult = 0.69643934;
-		MinpMult = 0.59410786;
-		MaxpMult = 0.71090436;
-		CentMult = 0.61069564;
-		CentOffs = 0.73554560;
-		RandMult = 9.39813923;
+		// Cost=7.104471 ItAvg=349.982222 ItRtAvg=0.250586
+		CostMult = 1.48487449;
+		MinpMult = 0.66812309;
+		MaxpMult = 0.51780331;
+		CentMult = 1.14755020;
+		CentOffs = 0.56182834;
+		RandMult = 8.68751133;
 	}
 
 	~CBiteOpt()
@@ -323,24 +323,31 @@ public:
 			RandCntr -= 1.0;
 
 			// Parameter randomization operation, works as a "driver" of
-			// optimization process, applied to a random parameter.
+			// optimization process, applied to two random parameters (can be
+			// the same parameter). Uses TPDF.
 
 			const double p = Params[ ParamCntr ] +
-				( rnd.getRndValue() - 0.5 ) * fabs( CentParams[ ParamCntr ] -
-				MinParams[ ParamCntr ]) * RandMult;
+				( rnd.getRndValue() + rnd.getRndValue() - 1.0 ) *
+				fabs( CentParams[ ParamCntr ] - MinParams[ ParamCntr ]) *
+				RandMult;
 
-			// A very interesting approach: mix (partially replace) another
-			// random parameter with previously randomized parameter. Such
-			// approach probably works due to possible mutual correlation
+			const int rp = (int) ( rnd.getRndValue() * ParamCount );
+			Params[ rp ] += ( rnd.getRndValue() + rnd.getRndValue() - 1.0 ) *
+				fabs( CentParams[ rp ] - MinParams[ rp ]) * RandMult;
+
+			// A very interesting approach: mix two randomized parameters.
+			// Such approach probably works due to possible mutual correlation
 			// between parameters, especially in multi-dimensional functions.
 			// Mix constant is randomized, with adjusted probability
 			// distribution.
 
-			const int rp = (int) ( rnd.getRndValue() * ParamCount );
 			double rr = rnd.getRndValue();
 			Params[ rp ] -= ( Params[ rp ] - p ) * ( 1.0 - rr * rr );
 
-			Params[ ParamCntr ] = Params[ rp ];
+			rr = rnd.getRndValue();
+			Params[ ParamCntr ] =
+				Params[ rp ] - ( Params[ rp ] - p ) * rr * rr;
+
 			ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
 		}
 
