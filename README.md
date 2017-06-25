@@ -39,7 +39,8 @@ seed than to wait for the optimization process to converge. Based on the
 results of optimization of the test corpus, for 2-dimensional functions it is
 reasonable to expect convergence in 2000 iterations (in a successful attempt),
 for 10-dimensional functions it is reasonable to expect convergence in 10000
-iterations (harder functions may require more iterations to converge).
+iterations (harder functions may require more iterations to converge). Most
+classic 2-dimensional problems converge in 300 iterations.
 
 The required number of optimization attempts is usually proportional to the
 number of strongly competing minima in a function. Rogue optimums may not be
