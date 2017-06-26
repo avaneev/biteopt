@@ -1,7 +1,7 @@
 //$ nocpp
 
 /**
- * @file bitefan.h
+ * @file biteopt.h
  *
  * @brief The inclusion file for the CBEOOptimizerFan class.
  *
@@ -358,14 +358,10 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			Params[ i ] = wrapParam( rnd, Params[ i ]);
+			NewParams[ i ] = getRealValue( Params[ i ], i );
 		}
 
 		// Evaluate objective function with new parameters.
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			NewParams[ i ] = getRealValue( Params[ i ], i );
-		}
 
 		const double NewCost = optcost( NewParams );
 

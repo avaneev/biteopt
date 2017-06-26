@@ -1936,6 +1936,26 @@ static double calcStep03( const double* const p, const int N )
 static const CTestFn TestFnStep03 = { "Step03", 0, -100, 100.0, 0.0,
 	&calcStep03 };
 
+static double calcHelicalValley( const double* const p, const int N )
+{
+	double theta;
+
+	if( p[ 0 ] >= 0.0 )
+	{
+		theta = (M_PI/2.0)/tan(p[1]/p[0]);
+	}
+	else
+	{
+		theta = (M_PI/2.0)/tan(p[1]/p[0]+M_PI);
+	}
+
+	return( 100.0*(sqr(p[2]-10.0*theta)+sqr(sqrt(sqr(p[0])+sqr(p[1]))-1.0))+
+		sqr(p[2]) );
+}
+
+static const CTestFn TestFnHelicalValley = { "HelicalValley", 3,
+	-10.0, 10.0, 0.0, &calcHelicalValley };
+
 // Strategy optimization corpus based on simple N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -2001,4 +2021,4 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnMishra05, &TestFnMishra06, &TestFnMishra09, &TestFnTsoulos,
 	&TestFnUrsemWaves, &TestFnYaoLiu04, &TestFnBentCigar,
 	&TestFnDeflCorrSpring, &TestFnHyperGrid, &TestFnQuintic, &TestFnVincent,
-	&TestFnStep01, &TestFnStep02, &TestFnStep03, NULL };
+	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnHelicalValley, NULL };
