@@ -26,7 +26,7 @@ reach optimum.
 
 ### Notes ###
 
-This strategy was tested on 100+ classic 2-dimensional and 30-dimensional
+This strategy was tested on 120+ classic 2-dimensional and 30-dimensional
 optimization problems and performed well. Due to its design this strategy may
 be particularly good at improving an existing sub-optimal local solution.
 
@@ -40,7 +40,9 @@ results of optimization of the test corpus, for 2-dimensional functions it is
 reasonable to expect convergence in 2000 iterations (in a successful attempt),
 for 10-dimensional functions it is reasonable to expect convergence in 10000
 iterations (harder functions may require more iterations to converge). Most
-classic 2-dimensional problems converge in 300 iterations.
+classic 2-dimensional problems converge in 300 iterations or less, at 1e-6
+precision. Generally speaking, with every tripling of the number of
+dimensions, the required number of iterations increases 9 times.
 
 The required number of optimization attempts is usually proportional to the
 number of strongly competing minima in a function. Rogue optimums may not be
