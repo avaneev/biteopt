@@ -1094,8 +1094,8 @@ static double calcChenBird( const double* const p, const int N )
 		b/(sqr(b)+sqr(sqr(p[0])+sqr(p[1]))) );
 }
 
-static const CTestFn TestFnChenBird = { "ChenBird", 2, -500.0, 500.0, -2000.0,
-	&calcChenBird };
+static const CTestFn TestFnChenBird = { "ChenBird", 2, -500.0, 500.0,
+	-1000.0079, &calcChenBird };
 
 static double calcChenV( const double* const p, const int N )
 {
@@ -1688,7 +1688,7 @@ static double calcKearfott( const double* const p, const int N )
 	return( sqr(x*x+y*y-2.0)+sqr(x*x-y*y-1.0) );
 }
 
-static const CTestFn TestFnKearfott = { "Kearfott", 2, -3.0, 4.0, 0,
+static const CTestFn TestFnKearfott = { "Kearfott", 2, -3.0, 4.0, 0.0,
 	&calcKearfott };
 
 static double calcJennrichSampson( const double* const p, const int N )
@@ -1972,6 +1972,68 @@ static double calcDixonPrice( const double* const p, const int N )
 static const CTestFn TestFnDixonPrice = { "DixonPrice", 0, -10.0, 10.0, 0.0,
 	&calcDixonPrice };
 
+static double calcHartman3( const double* const p, const int N )
+{
+	static const double a[ 4 ][ 3 ] =
+		{
+			{ 3, 10, 30 },
+			{ 0.1, 10, 35 },
+			{ 3, 10, 30 },
+			{ 0.1, 10, 35 }
+		};
+
+	static const double c[ 4 ] = { 1, 1.2, 3, 3.2 };
+	static const double pp[ 4 ][ 3 ] =
+		{
+			{ 0.3689, 0.1170, 0.2673 },
+			{ 0.4699, 0.4387, 0.7470 },
+			{ 0.1091, 0.8732, 0.5547 },
+			{ 0.0381, 0.5743, 0.8828 }
+		};
+
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 4; i++ )
+	{
+		double s2 = 0.0;
+		int j;
+
+		for( j = 0; j < N; j++ )
+		{
+			s2 += a[i][j]*sqr(p[j]-pp[i][j]);
+		}
+
+		s += c[i]*exp(-s2);
+	}
+
+	return( -s );
+}
+
+static const CTestFn TestFnHartman3 = { "Hartman3", 3, 0.0, 1.0,
+	-3.86278, &calcHartman3 };
+
+static double calcDeVilliersGlasser02( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i <= 24; i++ )
+	{
+		const double ti = 0.1*(i-1);
+		const double yi = 53.81*pow(1.27,ti)*tanh(3.012*ti+sin(2.13*ti))*
+			cos(exp(0.507)*ti);
+
+		s += sqr(p[0]*pow(p[1],ti)*tanh(p[2]*ti+sin(p[3]*ti))*
+			cos(ti*exp(p[4]))-yi);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnDeVilliersGlasser02 = { "DeVilliersGlasser02", 5,
+	1.0, 60.0, 0.0, &calcDeVilliersGlasser02 };
+
 // Strategy optimization corpus based on simple N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -1980,18 +2042,20 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnSumSquares, &TestFnZacharov, &TestFnRotatedHyperEllipsoid,
 	&TestFnWavy, &TestFnBrown, &TestFnAlpine1, &TestFnChungReynolds,
 	&TestFnBentCigar, &TestFnHolzman, &TestFnHyperGrid, &TestFnVincent,
-	&TestFnStep01, &TestFnStep02, &TestFnStep03, NULL };
+	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnGriewank,
+	&TestFnTrigonometric02, &TestFnZeroSum, &TestFnSchwefel,
+	&TestFnStyblinskiTank, &TestFnYaoLiu04, NULL };
 
 // Failing functions.
 
 const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnChenBird,
-	&TestFnBukin6, &TestFnCrossLegTable, &TestFnCrownedCross, NULL };
+	&TestFnBukin6, &TestFnCrossLegTable, &TestFnCrownedCross,
+	&TestFnDeVilliersGlasser02, NULL };
 
 // Failing functions requiring more than 2000 iterations to converge.
 
-const CTestFn* TestCorpusFailTime[] = {
-	&TestFnTrid10, &TestFnChenV, &TestFnMishra04, &TestFnPowerSum,
-	&TestFnZeroSum, NULL };
+const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnChenV,
+	&TestFnMishra04, &TestFnPowerSum, &TestFnZeroSum, NULL };
 
 // Hard functions.
 
@@ -2038,4 +2102,4 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnUrsemWaves, &TestFnYaoLiu04, &TestFnBentCigar,
 	&TestFnDeflCorrSpring, &TestFnHyperGrid, &TestFnQuintic, &TestFnVincent,
 	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnHelicalValley,
-	&TestFnDixonPrice, NULL };
+	&TestFnDixonPrice, &TestFnHartman3, NULL };
