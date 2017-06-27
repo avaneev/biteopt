@@ -3,18 +3,17 @@
 
 ### CBiteOpt (biteopt.h) ###
 
-BiteOpt stochastic function optimization class. This optimization strategy
-is based on now outdated CBEOOptimizer and CBEOOptimizer2, CBEOOptimizerFan
-stochastic derivative-less strategies. It uses an ordered list of several
-current parameter vectors (called "fan elements") that are evolved towards
-a lower cost. Highest-cost "fan element" in the list can be replaced with a
-new solution if "fan element's" cost (plus some margin) is higher than that
-of the new solution's. Having several "fan elements" allows the strategy
-to space them apart from each other thus making them cover a larger
-parameter search space collectively. Beside that, parameter randomization
-and several "step in the right direction" operations are used that move the
-parameter vector into position with a probabilistically lower objective
-function value.
+BiteOpt stochastic optimization class. Implements a stochastic
+unconstrained derivative-less optimization strategy. It uses an ordered
+list of several current parameter vectors (called "fan elements") that are
+evolved towards a lower cost. On every iteration, a highest-cost "fan
+element" in the list can be replaced with a new solution if "fan element's"
+cost (plus some margin) is higher than that of the new solution's. Having
+several "fan elements" allows the strategy to space solution vectors apart
+from each other thus making them cover a larger parameter search space
+collectively. Beside that, parameter randomization and several "step in the
+right direction" operations are used that move the parameter vector into
+position with a probabilistically lower objective function value.
 
 The benefit of this strategy is a relatively high robustness: it can
 successfully optimize a wide range of test functions. Another benefit is a
@@ -42,7 +41,12 @@ for 10-dimensional functions it is reasonable to expect convergence in 10000
 iterations (harder functions may require more iterations to converge). Most
 classic 2-dimensional problems converge in 300 iterations or less, at 1e-6
 precision. Generally speaking, with every tripling of the number of
-dimensions, the required number of iterations increases 9 times.
+dimensions, the required number of iterations increases 9 times, O(N^2).
+
+This strategy cannot reach 1e-6 optimum in any number of attempts when
+optimizing these functions: Chen's Bird, Bukin N.6, Cross-Leg-Table. These
+functions are solved in more than 30 attempts (equivalent to random search):
+Damavandi, Crowned-Cross, Dixon-Price (over 10 dimensions).
 
 The required number of optimization attempts is usually proportional to the
 number of strongly competing minima in a function. Rogue optimums may not be

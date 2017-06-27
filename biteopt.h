@@ -35,18 +35,17 @@
 #include "biternd.h"
 
 /**
- * BiteOpt stochastic function optimization class. This optimization strategy
- * is based on now outdated CBEOOptimizer and CBEOOptimizer2, CBEOOptimizerFan
- * stochastic derivative-less strategies. It uses an ordered list of several
- * current parameter vectors (called "fan elements") that are evolved towards
- * a lower cost. Highest-cost "fan element" in the list can be replaced with a
- * new solution if "fan element's" cost (plus some margin) is higher than that
- * of the new solution's. Having several "fan elements" allows the strategy
- * to space them apart from each other thus making them cover a larger
- * parameter search space collectively. Beside that, parameter randomization
- * and several "step in the right direction" operations are used that move the
- * parameter vector into position with a probabilistically lower objective
- * function value.
+ * BiteOpt stochastic optimization class. Implements a stochastic
+ * unconstrained derivative-less optimization strategy. It uses an ordered
+ * list of several current parameter vectors (called "fan elements") that are
+ * evolved towards a lower cost. On every iteration, a highest-cost "fan
+ * element" in the list can be replaced with a new solution if "fan element's"
+ * cost (plus some margin) is higher than that of the new solution's. Having
+ * several "fan elements" allows the strategy to space solution vectors apart
+ * from each other thus making them cover a larger parameter search space
+ * collectively. Beside that, parameter randomization and several "step in the
+ * right direction" operations are used that move the parameter vector into
+ * position with a probabilistically lower objective function value.
  *
  * The benefit of this strategy is a relatively high robustness: it can
  * successfully optimize a wide range of test functions. Another benefit is a

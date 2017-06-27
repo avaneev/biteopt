@@ -1956,6 +1956,22 @@ static double calcHelicalValley( const double* const p, const int N )
 static const CTestFn TestFnHelicalValley = { "HelicalValley", 3,
 	-10.0, 10.0, 0.0, &calcHelicalValley };
 
+static double calcDixonPrice( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i < N; i++ )
+	{
+		s += ( i + 1.0 ) * sqr( 2.0 * sqr( p[ i ]) - p[ i - 1 ]);
+	}
+
+	return( sqr( p[ 0 ] - 1.0 ) + s );
+}
+
+static const CTestFn TestFnDixonPrice = { "DixonPrice", 0, -10.0, 10.0, 0.0,
+	&calcDixonPrice };
+
 // Strategy optimization corpus based on simple N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -2021,4 +2037,5 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnMishra05, &TestFnMishra06, &TestFnMishra09, &TestFnTsoulos,
 	&TestFnUrsemWaves, &TestFnYaoLiu04, &TestFnBentCigar,
 	&TestFnDeflCorrSpring, &TestFnHyperGrid, &TestFnQuintic, &TestFnVincent,
-	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnHelicalValley, NULL };
+	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnHelicalValley,
+	&TestFnDixonPrice, NULL };
