@@ -35,7 +35,7 @@
 #include "biternd.h"
 
 /**
- * BiteOpt stochastic optimization class. Implements a stochastic
+ * BiteOpt stochastic optimization class. Implements a stochastic non-linear
  * unconstrained derivative-less optimization strategy. It uses an ordered
  * list of several current parameter vectors (called "fan elements") that are
  * evolved towards a lower cost. On every iteration, a highest-cost "fan

@@ -3,7 +3,7 @@
 
 ### CBiteOpt (biteopt.h) ###
 
-BiteOpt stochastic optimization class. Implements a stochastic
+BiteOpt stochastic optimization class. Implements a stochastic non-linear
 unconstrained derivative-less optimization strategy. It uses an ordered
 list of several current parameter vectors (called "fan elements") that are
 evolved towards a lower cost. On every iteration, a highest-cost "fan
@@ -88,6 +88,8 @@ average convergence time, standard deviation of convergence time, the set of
 functions the algorithm can solve successfully given randomized initial
 conditions, in a given number of attempts. For global optimization robustness
 also includes the lowest achieved cost.
+
+## Examples ##
 
 Use the example.cpp program to see the basic usage example.
 
