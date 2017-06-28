@@ -4,7 +4,7 @@
 ### CBiteOpt (biteopt.h) ###
 
 BiteOpt stochastic optimization class. Implements a stochastic non-linear
-unconstrained derivative-less optimization strategy. It uses an ordered
+bound-constrained derivative-less optimization strategy. It uses an ordered
 list of several current parameter vectors (called "fan elements") that are
 evolved towards a lower cost. On every iteration, a highest-cost "fan
 element" in the list can be replaced with a new solution if "fan element's"
@@ -64,6 +64,9 @@ While this strategy was designed to be applied to continuous functions, it is
 also immune to discontinuities to some degree, and it can solve problems that
 utilize parameter value rounding. This strategy can't acceptably solve
 high-dimensional problems that are implicitly or explicitly combinatorial.
+Another subset of high-dimensional problems which this strategy is having
+difficulties with are strongly non-separable problems that utilize recursion
+elements like sum(exp(x[i]+x[i-1]),i=2..N).
 
 Most hard constraints can be introduced by applying huge penalties to the
 objective function. Even binary penalties like "if(x>1)cost+=x*10000" should

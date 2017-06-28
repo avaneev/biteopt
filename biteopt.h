@@ -36,7 +36,7 @@
 
 /**
  * BiteOpt stochastic optimization class. Implements a stochastic non-linear
- * unconstrained derivative-less optimization strategy. It uses an ordered
+ * bound-constrained derivative-less optimization strategy. It uses an ordered
  * list of several current parameter vectors (called "fan elements") that are
  * evolved towards a lower cost. On every iteration, a highest-cost "fan
  * element" in the list can be replaced with a new solution if "fan element's"
