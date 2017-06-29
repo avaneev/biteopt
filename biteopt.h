@@ -75,7 +75,10 @@
  * 5. With RandProb probability the parameter value randomization operation is
  * performed, which is the main driver of the evolutionary process.
  *
- * 6. After each objective function evaluation, an attempt to replace the
+ * 6. With CrosProb probability a crossing-over operation is performed which
+ * replaces random parameter with a value from a random better solution.
+ *
+ * 7. After each objective function evaluation, an attempt to replace the
  * highest-cost "fan element" is performed using the cost constraint. This
  * approach is based on an assumption that the later solutions tend to be
  * statistically better than the earlier solutions.
@@ -100,6 +103,8 @@ public:
 		///<
 	double RandMult; ///< Parameter value randomization multiplier.
 		///<
+	double CrosProb; ///< Parameter crossing-over probability.
+		///<
 
 	/**
 	 * Constructor.
@@ -122,13 +127,14 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=7.405512 ItAvg=349.584079 ItRtAvg=0.250832
-		CostMult = 1.10872617;
-		MinpMult = 0.67233286;
-		MaxpMult = 0.50546567;
-		CentMult = 1.11878624;
-		CentOffs = 0.55570931;
-		RandMult = 9.68633640;
+		// Cost=6.963400 ItAvg=352.827850 ItRtAvg=0.257894
+		CostMult = 1.70933683;
+		MinpMult = 0.64692566;
+		MaxpMult = 0.50447618;
+		CentMult = 0.77566193;
+		CentOffs = 0.66355763;
+		RandMult = 10.99482228;
+		CrosProb = 0.15467968;
 	}
 
 	~CBiteOpt()
@@ -194,6 +200,7 @@ public:
 		CentCntr = 1.0;
 		RandCntr = 1.0;
 		ParamCntr = 0;
+		CrossCntr = rnd.getRndValue();
 
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
@@ -280,7 +287,8 @@ public:
 	{
 		// Select a random "fan element" from the ordered list.
 
-		const int s = FanOrder[ (int) ( rnd.getRndValue() * FanSize )];
+		const int si = (int) ( rnd.getRndValue() * FanSize );
+		const int s = FanOrder[ si ];
 		int i;
 
 		const double* const OrigParams = CurParams[ s ];
@@ -351,6 +359,22 @@ public:
 		}
 
 		RandCntr += RandProb;
+
+		if( CrossCntr >= 1.0 )
+		{
+			CrossCntr -= 1.0;
+
+			// Perform crossing-over with a random lower-cost "fan element".
+			// A single random parameter is copied.
+
+			const double* const CrossParams =
+				CurParams[ FanOrder[ (int) ( rnd.getRndValue() * si / 2 )]];
+
+			i = (int) ( rnd.getRndValue() * ParamCount );
+			Params[ i ] = CrossParams[ i ];
+		}
+
+		CrossCntr += CrosProb;
 
 		// Wrap parameter values so that they stay in the [0; 1] range.
 
@@ -552,6 +576,8 @@ protected:
 	double RandCntr; ///< Randomization operation probability counter.
 		///<
 	int ParamCntr; ///< Parameter index counter.
+		///<
+	double CrossCntr; ///< Crossing-over probability counter.
 		///<
 	int* FanOrder; ///< The current "fan element" ordering, ascending-sorted
 		///< by cost.

@@ -44,11 +44,13 @@ precision. Generally speaking, with every tripling of the number of
 dimensions, the required number of iterations increases 9 times, O(N^2).
 
 This strategy cannot reach 1e-6 optimum in any number of attempts when
-optimizing these functions: Chen's Bird, Bukin N.6, Cross-Leg-Table,
-DeVilliersGlasser02. These functions are solved in more than 50 attempts
-(equivalent to random search): Damavandi, Crowned-Cross. These N-dimensional
-functions can only be solved for 2-4 dimensions: DropWave, Salomon, Whitley,
-XinSheYang03, XinSheYang04, DeflCorrSpring, Quintic, Dixon-Price.
+optimizing these functions: Chen's Bird, Bukin N.6. These functions are solved
+in more than 50 attempts (equivalent to random search): Damavandi,
+Cross-Leg-Table, Crowned-Cross. The DeVilliersGlasser02 function is solved
+in less than 10 attempts, but requires 15000 iterations to converge. These
+N-dimensional functions can only be solved for 2-4 dimensions: DropWave,
+Salomon, Whitley, XinSheYang03, XinSheYang04, DeflCorrSpring, Quintic,
+Dixon-Price.
 
 The required number of optimization attempts is usually proportional to the
 number of strongly competing minima in a function. Rogue optimums may not be

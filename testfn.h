@@ -2055,7 +2055,8 @@ const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnChenBird,
 // Failing functions requiring more than 2000 iterations to converge.
 
 const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnChenV,
-	&TestFnMishra04, &TestFnPowerSum, &TestFnZeroSum, NULL };
+	&TestFnMishra04, &TestFnPowerSum, &TestFnZeroSum,
+	&TestFnDeVilliersGlasser02, NULL };
 
 // Hard functions.
 
