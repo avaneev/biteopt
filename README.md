@@ -16,18 +16,23 @@ right direction" operations are used that move the parameter vector into
 position with a probabilistically lower objective function value.
 
 The benefit of this strategy is a relatively high robustness: it can
-successfully optimize a wide range of test functions. Another benefit is a
-low convergence time which depends on the complexity of the objective
-function. Like many stochastic optimization strategies with fast
+successfully optimize a wide range of 2-10 dimensional test functions. Another
+benefit is a low convergence time which depends on the complexity of the
+objective function. Like many stochastic optimization strategies with fast
 convergence, this strategy can't solve problems with narrow or rogue
 optimums. Harder problems may require dozens of optimization attempts to
 reach optimum.
 
 ### Notes ###
 
-This strategy was tested on 120+ classic 2-dimensional and 30-dimensional
-optimization problems and performed well. Due to its design this strategy may
-be particularly good at improving an existing sub-optimal local solution.
+This strategy was tested on 300+ classic 2-10 dimensional optimization
+problems and performed well. Due to its design this strategy may be
+particularly good at improving an existing sub-optimal local solution.
+This strategy offers a very fast convergence on 2-3 dimensional problems,
+moderate speed of convergence on 4-10 dimensional problems, and very slow
+convergence speed on >10 dimensional problems, usually 10 times slower than
+the best competing strategies. However, on 2-3 dimensional problems there is
+little competition to this strategy.
 
 This strategy was compared with results of this paper (on 242 published
 non-convex problems): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
@@ -36,7 +41,7 @@ iterations each. For 2 dimensional problems, this strategy's success rate is
 96%. For 3-9 dimensional problems the success rate is 60%. In overall, these
 results place the strategy on 6th place among 23 different strategies.
 On more that 9 dimensions the results of the strategy are currently quite
-poor: this strategy requires much more than 2500 interations to converge on
+poor: this strategy requires much more than 2500 iterations to converge on
 the solution.
 
 It is usually necessary to run the optimization process several times with
@@ -46,20 +51,12 @@ probabilistic and it depends on its initial state, which is selected randomly.
 In most cases it is more efficient to rerun the optimization with a new random
 seed than to wait for the optimization process to converge. Based on the
 results of optimization of the test corpus, for 2-dimensional functions it is
-reasonable to expect convergence in 2000 iterations (in a successful attempt),
-for 10-dimensional functions it is reasonable to expect convergence in 10000
+reasonable to expect convergence in 1000 iterations (in a successful attempt),
+for 10-dimensional functions it is reasonable to expect convergence in 5000
 iterations (harder functions may require more iterations to converge). Most
 classic 2-dimensional problems converge in 300 iterations or less, at 1e-6
 precision. Generally speaking, with every tripling of the number of
 dimensions, the required number of iterations increases 9 times, O(N^2).
-
-This strategy cannot reach 1e-6 optimum in any number of attempts when
-optimizing this function: Bukin N.6. These functions are solved in more than
-50 attempts (equivalent to random search): Damavandi, Cross-Leg-Table,
-Crowned-Cross. The DeVilliersGlasser02 function is solved in less than 10
-attempts, but requires 10000 iterations to converge. These N-dimensional
-functions can only be solved for 2-4 dimensions: DropWave, Salomon, Whitley,
-XinSheYang03, XinSheYang04, DeflCorrSpring, Quintic, Dixon-Price.
 
 The required number of optimization attempts is usually proportional to the
 number of strongly competing minima in a function. Rogue optimums may not be
@@ -88,16 +85,6 @@ to cover a wider value range, in order to reduce boundary effects that may
 greatly reduce convergence. If the target local or global minimum stands
 very close to the parameter value boundaries this strategy may fail to
 converge.
-
-The FanSize parameter can be adjusted to increase quality of solutions,
-especially in high-dimensional problems. FanSize controls robustness of the
-strategy at the cost of convergence time. However, setting FanSize too high
-may increase rejection rate (equivalent to problem's overspecification).
-
-The optimizePlateau() function can be used to optimize functions that have a
-complex landscape. This function works within the bounds of allocated
-iteration limit, and performs re-initializations when the optimization process
-reaches the plateau.
 
 Strategy's "robustness" is a multi-factor non-formal estimation which includes
 average convergence time, standard deviation of convergence time, the set of
