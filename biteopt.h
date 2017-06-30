@@ -36,7 +36,7 @@
 
 /**
  * BiteOpt stochastic optimization class. Implements a stochastic non-linear
- * bound-constrained derivative-less optimization strategy. It uses an ordered
+ * bound-constrained derivative-free optimization strategy. It uses an ordered
  * list of several current parameter vectors (called "fan elements") that are
  * evolved towards a lower cost. On every iteration, a highest-cost "fan
  * element" in the list can be replaced with a new solution if "fan element's"
@@ -72,8 +72,9 @@
  * 4. With CentProb probability the "step in the right direction" operation is
  * performed using the centroid vector.
  *
- * 5. With RandProb probability the parameter value randomization operation is
- * performed, which is the main driver of the evolutionary process.
+ * 5. With RandProb probability (not together with N.4) the parameter value
+ * randomization operation is performed, which is the main driver of the
+ * evolutionary process.
  *
  * 6. With CrosProb probability a crossing-over operation is performed which
  * replaces random parameter with a value from a random better solution.
@@ -111,9 +112,7 @@ public:
 	 */
 
 	CBiteOpt()
-		: CentProb( 0.25 )
-		, RandProb( 0.65 )
-		, ParamCount( 0 )
+		: ParamCount( 0 )
 		, FanSize( 0 )
 		, FanOrder( NULL )
 		, CurParamsBuf( NULL )
@@ -127,14 +126,16 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=6.963400 ItAvg=352.827850 ItRtAvg=0.257894
-		CostMult = 1.70933683;
-		MinpMult = 0.64692566;
-		MaxpMult = 0.50447618;
-		CentMult = 0.77566193;
-		CentOffs = 0.66355763;
-		RandMult = 10.99482228;
-		CrosProb = 0.15467968;
+		// Cost=-63.223140
+		CostMult = 0.94041233;
+		MinpMult = 0.63655352;
+		MaxpMult = 0.57058127;
+		CentMult = 1.67211812;
+		CentOffs = 0.50589200;
+		RandMult = 4.76806000;
+		CrosProb = 0.11217441;
+		CentProb = 0.20735786;
+		RandProb = 0.46089849;
 	}
 
 	~CBiteOpt()
@@ -155,7 +156,7 @@ public:
 	void updateDims( const int aParamCount, const int FanSize0 = 0 )
 	{
 		const int aFanSize = ( FanSize0 > 0 ? FanSize0 :
-			16 + aParamCount * aParamCount / 5 );
+			16 /*+ aParamCount * aParamCount / 5*/ );
 
 		if( aParamCount == ParamCount && aFanSize == FanSize )
 		{
@@ -309,56 +310,58 @@ public:
 			}
 		}
 		else
-		for( i = 0; i < ParamCount; i++ )
 		{
-			// The "step in the right direction" operation towards the best
-			// (minimal) parameter vector.
+			for( i = 0; i < ParamCount; i++ )
+			{
+				// The "step in the right direction" operation towards the
+				// best (minimal) parameter vector.
 
-			Params[ i ] = OrigParams[ i ] -
-				( OrigParams[ i ] - MinParams[ i ]) * MinpMult;
+				Params[ i ] = OrigParams[ i ] -
+					( OrigParams[ i ] - MinParams[ i ]) * MinpMult;
 
-			// The "step in the right direction" operation away from the worst
-			// (maximal) parameter vector.
+				// The "step in the right direction" operation away from the
+				// worst (maximal) parameter vector.
 
-			Params[ i ] -= ( MaxParams[ i ] - Params[ i ]) * MaxpMult;
+				Params[ i ] -= ( MaxParams[ i ] - Params[ i ]) * MaxpMult;
+			}
+
+			if( RandCntr >= 1.0 )
+			{
+				RandCntr -= 1.0;
+
+				// Parameter randomization operation, works as a "driver" of
+				// optimization process, applied to two random parameters (can
+				// be the same parameter). Uses TPDF.
+
+				const double p = Params[ ParamCntr ] +
+					( rnd.getRndValue() + rnd.getRndValue() - 1.0 ) *
+					fabs( OrigParams[ ParamCntr ] - MinParams[ ParamCntr ]) *
+					RandMult;
+
+				const int rp = (int) ( rnd.getRndValue() * ParamCount );
+				Params[ rp ] +=
+					( rnd.getRndValue() + rnd.getRndValue() - 1.0 ) *
+					fabs( OrigParams[ rp ] - MinParams[ rp ]) * RandMult;
+
+				// A very interesting approach: mix two randomized parameters.
+				// Such approach probably works due to possible mutual
+				// correlation between parameters. Mix constant is randomized,
+				// with adjusted probability distribution.
+
+				double rr = rnd.getRndValue();
+				Params[ rp ] -= ( Params[ rp ] - p ) * ( 1.0 - rr * rr );
+
+				rr = rnd.getRndValue();
+				Params[ ParamCntr ] =
+					Params[ rp ] - ( Params[ rp ] - p ) * rr * rr;
+
+				ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
+			}
+
+			RandCntr += RandProb;
 		}
 
 		CentCntr += CentProb;
-
-		if( RandCntr >= 1.0 )
-		{
-			RandCntr -= 1.0;
-
-			// Parameter randomization operation, works as a "driver" of
-			// optimization process, applied to two random parameters (can be
-			// the same parameter). Uses TPDF.
-
-			const double p = Params[ ParamCntr ] +
-				( rnd.getRndValue() + rnd.getRndValue() - 1.0 ) *
-				fabs( CentParams[ ParamCntr ] - MinParams[ ParamCntr ]) *
-				RandMult;
-
-			const int rp = (int) ( rnd.getRndValue() * ParamCount );
-			Params[ rp ] += ( rnd.getRndValue() + rnd.getRndValue() - 1.0 ) *
-				fabs( CentParams[ rp ] - MinParams[ rp ]) * RandMult;
-
-			// A very interesting approach: mix two randomized parameters.
-			// Such approach probably works due to possible mutual correlation
-			// between parameters, especially in multi-dimensional functions.
-			// Mix constant is randomized, with adjusted probability
-			// distribution.
-
-			double rr = rnd.getRndValue();
-			Params[ rp ] -= ( Params[ rp ] - p ) * ( 1.0 - rr * rr );
-
-			rr = rnd.getRndValue();
-			Params[ ParamCntr ] =
-				Params[ rp ] - ( Params[ rp ] - p ) * rr * rr;
-
-			ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
-		}
-
-		RandCntr += RandProb;
 
 		if( CrossCntr >= 1.0 )
 		{

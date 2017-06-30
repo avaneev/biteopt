@@ -4,7 +4,7 @@
 ### CBiteOpt (biteopt.h) ###
 
 BiteOpt stochastic optimization class. Implements a stochastic non-linear
-bound-constrained derivative-less optimization strategy. It uses an ordered
+bound-constrained derivative-free optimization strategy. It uses an ordered
 list of several current parameter vectors (called "fan elements") that are
 evolved towards a lower cost. On every iteration, a highest-cost "fan
 element" in the list can be replaced with a new solution if "fan element's"
@@ -29,6 +29,16 @@ This strategy was tested on 120+ classic 2-dimensional and 30-dimensional
 optimization problems and performed well. Due to its design this strategy may
 be particularly good at improving an existing sub-optimal local solution.
 
+This strategy was compared with results of this paper (on 242 published
+non-convex problems): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
+This strategy was able to solve 63% of problems in 10 attempts, 2500
+iterations each. For 2 dimensional problems, this strategy's success rate is
+96%. For 3-9 dimensional problems the success rate is 60%. In overall, these
+results place the strategy on 6th place among 23 different strategies.
+On more that 9 dimensions the results of the strategy are currently quite
+poor: this strategy requires much more than 2500 interations to converge on
+the solution.
+
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
 Running 10-20 times is a minimal requirement. This strategy is hugely
@@ -44,13 +54,12 @@ precision. Generally speaking, with every tripling of the number of
 dimensions, the required number of iterations increases 9 times, O(N^2).
 
 This strategy cannot reach 1e-6 optimum in any number of attempts when
-optimizing these functions: Chen's Bird, Bukin N.6. These functions are solved
-in more than 50 attempts (equivalent to random search): Damavandi,
-Cross-Leg-Table, Crowned-Cross. The DeVilliersGlasser02 function is solved
-in less than 10 attempts, but requires 15000 iterations to converge. These
-N-dimensional functions can only be solved for 2-4 dimensions: DropWave,
-Salomon, Whitley, XinSheYang03, XinSheYang04, DeflCorrSpring, Quintic,
-Dixon-Price.
+optimizing this function: Bukin N.6. These functions are solved in more than
+50 attempts (equivalent to random search): Damavandi, Cross-Leg-Table,
+Crowned-Cross. The DeVilliersGlasser02 function is solved in less than 10
+attempts, but requires 10000 iterations to converge. These N-dimensional
+functions can only be solved for 2-4 dimensions: DropWave, Salomon, Whitley,
+XinSheYang03, XinSheYang04, DeflCorrSpring, Quintic, Dixon-Price.
 
 The required number of optimization attempts is usually proportional to the
 number of strongly competing minima in a function. Rogue optimums may not be
@@ -117,15 +126,7 @@ were discovered that may need to be addressed in the future:
 1. The formula of dependence of FanSize on the number of dimensions may need
 to be updated to better suit varying dimensionality of the problems.
 
-2. The values of the CentProb and RandProb mutually affect optimization
-rejection rate and convergence time. That is why it is reasonable to select
-these values manually and optimize other parameters with these values fixed.
-
-3. If high optimization attempt rejection rate is not problematic, the
-parameters of the algorithm can be tuned to provide at least 20% lower
-convergence time.
-
-4. Parallelization of this algorithm is technically possible, but is
+2. Parallelization of this algorithm is technically possible, but is
 counter-productive (increases convergence time considerably). It is more
 efficient to run several optimizers in parallel with different random seeds.
 
