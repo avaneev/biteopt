@@ -16,7 +16,7 @@ right direction" operations are used that move the parameter vector into
 position with a probabilistically lower objective function value.
 
 The benefit of this strategy is a relatively high robustness: it can
-successfully optimize a wide range of 2-10 dimensional test functions. Another
+successfully optimize a wide range of 2-30 dimensional test functions. Another
 benefit is a low convergence time which depends on the complexity of the
 objective function. Like many stochastic optimization strategies with fast
 convergence, this strategy can't solve problems with narrow or rogue
@@ -25,23 +25,21 @@ reach optimum.
 
 ### Notes ###
 
-This strategy was tested on 300+ 2-10 dimensional optimization problems and
+This strategy was tested on 300+ 2-30 dimensional optimization problems and
 performed well. Due to its design this strategy may be particularly good at
 improving an existing sub-optimal local solution. This strategy offers a very
-fast convergence on 2-3 dimensional problems, moderate speed of convergence on
-4-10 dimensional problems, and very slow convergence speed on >10 dimensional
-problems, usually 10 times slower than the best competing strategies. However,
-on 2-3 dimensional problems there is little competition to this strategy.
+fast convergence on 2-3 dimensional problems, moderate convergence speed on
+4-10 dimensional problems, and slow convergence speed on >10 dimensional
+problems, usually slower than the best competing strategies. However, on 2-3
+dimensional problems there is little competition to this strategy available.
 
 This strategy was compared with the results of this paper (on 242 published
 non-convex problems): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
-This strategy was able to solve 63% of problems in 10 attempts, 2500
+This strategy was able to solve 74% of problems in 10 attempts, 2500
 iterations each. For 2 dimensional problems, this strategy's success rate is
-96%. For 3-9 dimensional problems the success rate is 60%. In overall, these
-results place the strategy on 6th place among 23 different strategies.
-On more than 9 dimensions the results of the strategy are currently quite
-poor: this strategy requires much more than 2500 iterations to converge on
-a solution.
+97%. For 3-9 dimensional problems the success rate is 68%, for 10-30
+dimensional problems the success rate is 74%. In overall, these results place
+the strategy on the 2nd place among 23 different strategies of year 2013.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
@@ -109,10 +107,7 @@ While the basic algorithm of the strategy is finished, the built-in parameters
 of the algorithm is an area of ongoing research. There are several things that
 were discovered that may need to be addressed in the future:
 
-1. The formula of dependence of FanSize on the number of dimensions may need
-to be updated to better suit varying dimensionality of the problems.
-
-2. Parallelization of this algorithm is technically possible, but is
+1. Parallelization of this algorithm is technically possible, but is
 counter-productive (increases convergence time considerably). It is more
 efficient to run several optimizers in parallel with different random seeds.
 
