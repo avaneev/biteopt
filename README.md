@@ -25,24 +25,23 @@ reach optimum.
 
 ### Notes ###
 
-This strategy was tested on 300+ classic 2-10 dimensional optimization
-problems and performed well. Due to its design this strategy may be
-particularly good at improving an existing sub-optimal local solution.
-This strategy offers a very fast convergence on 2-3 dimensional problems,
-moderate speed of convergence on 4-10 dimensional problems, and very slow
-convergence speed on >10 dimensional problems, usually 10 times slower than
-the best competing strategies. However, on 2-3 dimensional problems there is
-little competition to this strategy.
+This strategy was tested on 300+ 2-10 dimensional optimization problems and
+performed well. Due to its design this strategy may be particularly good at
+improving an existing sub-optimal local solution. This strategy offers a very
+fast convergence on 2-3 dimensional problems, moderate speed of convergence on
+4-10 dimensional problems, and very slow convergence speed on >10 dimensional
+problems, usually 10 times slower than the best competing strategies. However,
+on 2-3 dimensional problems there is little competition to this strategy.
 
-This strategy was compared with results of this paper (on 242 published
+This strategy was compared with the results of this paper (on 242 published
 non-convex problems): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
 This strategy was able to solve 63% of problems in 10 attempts, 2500
 iterations each. For 2 dimensional problems, this strategy's success rate is
 96%. For 3-9 dimensional problems the success rate is 60%. In overall, these
 results place the strategy on 6th place among 23 different strategies.
-On more that 9 dimensions the results of the strategy are currently quite
+On more than 9 dimensions the results of the strategy are currently quite
 poor: this strategy requires much more than 2500 iterations to converge on
-the solution.
+a solution.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.

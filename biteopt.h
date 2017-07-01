@@ -62,27 +62,19 @@
  * Also a cost-ordered list of "fan elements" is maintaned. On every iteration
  * a single random "fan element" is evolved.
  *
- * 2. A centroid vector of all "fan elements" is maintained.
+ * 2. With RandProb probability the parameter value randomization operation is
+ * performed, which is the main driver of the evolutionary process.
  *
- * 3. On every iteration (not together with N.4) the "step in the right
+ * 3. On every iteration (not together with N.2) the "step in the right
  * direction" operation is performed using the current best solution. Also
  * the "step in the right direction" operation is performed using the current
  * worst solution.
  *
- * 4. With CentProb probability the "step in the right direction" operation is
- * performed using the centroid vector.
+ * 4. With CrosProb probability a crossing-over operation is performed which
+ * replaces random parameters with values from two random better solutions.
  *
- * 5. With RandProb probability (not together with N.4) the parameter value
- * randomization operation is performed, which is the main driver of the
- * evolutionary process.
- *
- * 6. With CrosProb probability a crossing-over operation is performed which
- * replaces random parameter with a value from a random better solution.
- *
- * 7. After each objective function evaluation, an attempt to replace the
- * highest-cost "fan element" is performed using the cost constraint. This
- * approach is based on an assumption that the later solutions tend to be
- * statistically better than the earlier solutions.
+ * 5. After each objective function evaluation, an attempt to replace the
+ * highest-cost "fan element" is performed using the cost constraint.
  */
 
 class CBiteOpt
@@ -93,12 +85,6 @@ public:
 	double MinpMult; ///< Best solution's move range multiplier.
 		///<
 	double MaxpMult; ///< Worst solution's move range multiplier.
-		///<
-	double CentMult; ///< Centroid move range multiplier.
-		///<
-	double CentOffs; ///< Centroid move range shift.
-		///<
-	double CentProb; ///< Centroid move probability.
 		///<
 	double RandProb; ///< Parameter value randomization probability.
 		///<
@@ -118,7 +104,6 @@ public:
 		, CurParamsBuf( NULL )
 		, CurParams( NULL )
 		, CurCosts( NULL )
-		, CentParams( NULL )
 		, MinValues( NULL )
 		, MaxValues( NULL )
 		, DiffValues( NULL )
@@ -126,16 +111,13 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=-63.223140
-		CostMult = 0.94041233;
-		MinpMult = 0.63655352;
-		MaxpMult = 0.57058127;
-		CentMult = 1.67211812;
-		CentOffs = 0.50589200;
-		RandMult = 4.76806000;
-		CrosProb = 0.11217441;
-		CentProb = 0.20735786;
-		RandProb = 0.46089849;
+		// Cost=0.177261
+		CostMult = 2.31247095;
+		MinpMult = 0.57913990;
+		MaxpMult = 0.73024202;
+		RandMult = 2.11934552;
+		CrosProb = 0.13135998;
+		RandProb = 0.20931760;
 	}
 
 	~CBiteOpt()
@@ -156,7 +138,7 @@ public:
 	void updateDims( const int aParamCount, const int FanSize0 = 0 )
 	{
 		const int aFanSize = ( FanSize0 > 0 ? FanSize0 :
-			16 /*+ aParamCount * aParamCount / 5*/ );
+			14 + (int) ( sqrt( (double) aParamCount )) * 2 );
 
 		if( aParamCount == ParamCount && aFanSize == FanSize )
 		{
@@ -172,7 +154,6 @@ public:
 		CurParamsBuf = new double[ FanSize * ParamCount ];
 		CurParams = new double*[ FanSize ];
 		CurCosts = new double[ FanSize ];
-		CentParams = new double[ ParamCount ];
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
 		DiffValues = new double[ ParamCount ];
@@ -198,7 +179,6 @@ public:
 
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL )
 	{
-		CentCntr = 1.0;
 		RandCntr = 1.0;
 		ParamCntr = 0;
 		CrossCntr = rnd.getRndValue();
@@ -215,11 +195,6 @@ public:
 
 		// Initialize "fan element" parameter vectors.
 
-		for( i = 0; i < ParamCount; i++ )
-		{
-			CentParams[ i ] = 0.0;
-		}
-
 		if( InitParams != NULL )
 		{
 			for( j = 0; j < FanSize; j++ )
@@ -231,7 +206,6 @@ public:
 						DiffValues[ i ]) : rnd.getRndValue() );
 
 					CurParams[ j ][ i ] = v;
-					CentParams[ i ] += CurParams[ j ][ i ];
 				}
 			}
 		}
@@ -242,14 +216,8 @@ public:
 				for( i = 0; i < ParamCount; i++ )
 				{
 					CurParams[ j ][ i ] = rnd.getRndValue();
-					CentParams[ i ] += CurParams[ j ][ i ];
 				}
 			}
-		}
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			CentParams[ i ] /= FanSize;
 		}
 
 		// Calculate costs of "fan elements" and find the best cost.
@@ -296,81 +264,60 @@ public:
 		const double* const MinParams = CurParams[ FanOrder[ 0 ]];
 		const double* const MaxParams = CurParams[ FanOrder[ FanSize1 ]];
 
-		if( CentCntr >= 1.0 )
+		if( RandCntr >= 1.0 )
 		{
-			CentCntr -= 1.0;
+			RandCntr -= 1.0;
 
-			// Move towards centroid vector or beyond it, randomly.
+			// Parameter randomization operation, works as a "driver" of
+			// optimization process. Uses TPDF.
+
+			const double p = OrigParams[ ParamCntr ] +
+				( rnd.getRndValue() + rnd.getRndValue() - 1.0 ) *
+				fabs( OrigParams[ ParamCntr ] - MinParams[ ParamCntr ]) *
+				RandMult;
+
+			ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
+
+			// A very interesting approach: assign the same parameter value to
+			// all parameters. Such approach probably works due to possible
+			// mutual correlation between parameters.
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const double m = CentOffs + rnd.getRndValue() * CentMult;
-				Params[ i ] = OrigParams[ i ] -
-					( OrigParams[ i ] - CentParams[ i ]) * m;
+				Params[ i ] = p;
 			}
 		}
 		else
+		for( i = 0; i < ParamCount; i++ )
 		{
-			for( i = 0; i < ParamCount; i++ )
-			{
-				// The "step in the right direction" operation towards the
-				// best (minimal) parameter vector.
+			// The "step in the right direction" operation towards the best
+			// (minimal) parameter vector.
 
-				Params[ i ] = OrigParams[ i ] -
-					( OrigParams[ i ] - MinParams[ i ]) * MinpMult;
+			Params[ i ] = OrigParams[ i ] -
+				( OrigParams[ i ] - MinParams[ i ]) * MinpMult;
 
-				// The "step in the right direction" operation away from the
-				// worst (maximal) parameter vector.
+			// The "step in the right direction" operation away from the worst
+			// (maximal) parameter vector.
 
-				Params[ i ] -= ( MaxParams[ i ] - Params[ i ]) * MaxpMult;
-			}
-
-			if( RandCntr >= 1.0 )
-			{
-				RandCntr -= 1.0;
-
-				// Parameter randomization operation, works as a "driver" of
-				// optimization process, applied to two random parameters (can
-				// be the same parameter). Uses TPDF.
-
-				const double p = Params[ ParamCntr ] +
-					( rnd.getRndValue() + rnd.getRndValue() - 1.0 ) *
-					fabs( OrigParams[ ParamCntr ] - MinParams[ ParamCntr ]) *
-					RandMult;
-
-				const int rp = (int) ( rnd.getRndValue() * ParamCount );
-				Params[ rp ] +=
-					( rnd.getRndValue() + rnd.getRndValue() - 1.0 ) *
-					fabs( OrigParams[ rp ] - MinParams[ rp ]) * RandMult;
-
-				// A very interesting approach: mix two randomized parameters.
-				// Such approach probably works due to possible mutual
-				// correlation between parameters. Mix constant is randomized,
-				// with adjusted probability distribution.
-
-				double rr = rnd.getRndValue();
-				Params[ rp ] -= ( Params[ rp ] - p ) * ( 1.0 - rr * rr );
-
-				rr = rnd.getRndValue();
-				Params[ ParamCntr ] =
-					Params[ rp ] - ( Params[ rp ] - p ) * rr * rr;
-
-				ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
-			}
-
-			RandCntr += RandProb;
+			Params[ i ] -= ( MaxParams[ i ] - Params[ i ]) * MaxpMult;
 		}
 
-		CentCntr += CentProb;
+		RandCntr += RandProb;
 
 		if( CrossCntr >= 1.0 )
 		{
 			CrossCntr -= 1.0;
 
-			// Perform crossing-over with a random lower-cost "fan element".
-			// A single random parameter is copied.
+			// Perform crossing-over with two random lower-cost
+			// "fan elements". A single random parameter is copied.
 
-			const double* const CrossParams =
+			const double* CrossParams =
+				CurParams[ FanOrder[ (int) ( rnd.getRndValue() * si / 2 )]];
+
+			i = (int) ( rnd.getRndValue() * ParamCount );
+			Params[ i ] = CrossParams[ i ];
+
+			CrossParams =
 				CurParams[ FanOrder[ (int) ( rnd.getRndValue() * si / 2 )]];
 
 			i = (int) ( rnd.getRndValue() * ParamCount );
@@ -420,7 +367,6 @@ public:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			CentParams[ i ] += ( Params[ i ] - rp[ i ]) / FanSize;
 			rp[ i ] = Params[ i ];
 		}
 
@@ -574,8 +520,6 @@ protected:
 		///<
 	int FanSize1; ///< = FanSize - 1.
 		///<
-	double CentCntr; ///< Centroid move probability counter.
-		///<
 	double RandCntr; ///< Randomization operation probability counter.
 		///<
 	int ParamCntr; ///< Parameter index counter.
@@ -590,8 +534,6 @@ protected:
 	double** CurParams; ///< Current working parameter vectors.
 		///<
 	double* CurCosts; ///< Best costs of current working parameter vectors.
-		///<
-	double* CentParams; ///< Centroid of the current parameter vectors.
 		///<
 	double* MinValues; ///< Minimal parameter values.
 		///<
@@ -619,7 +561,6 @@ protected:
 		delete[] CurParamsBuf;
 		delete[] CurParams;
 		delete[] CurCosts;
-		delete[] CentParams;
 		delete[] MinValues;
 		delete[] MaxValues;
 		delete[] DiffValues;
