@@ -185,48 +185,29 @@ public:
 
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
+
 		int i;
-		int j;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
 		}
 
-		// Initialize "fan element" parameter vectors.
+		// Initialize "fan element" parameter vectors, calculate costs of
+		// "fan elements" and find the best cost.
 
-		if( InitParams != NULL )
-		{
-			for( j = 0; j < FanSize; j++ )
-			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					const double v = ( j == 0 ?
-						wrapParam( rnd, ( InitParams[ i ] - MinValues[ i ]) /
-						DiffValues[ i ]) : rnd.getRndValue() );
-
-					CurParams[ j ][ i ] = v;
-				}
-			}
-		}
-		else
-		{
-			for( j = 0; j < FanSize; j++ )
-			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					CurParams[ j ][ i ] = rnd.getRndValue();
-				}
-			}
-		}
-
-		// Calculate costs of "fan elements" and find the best cost.
+		int j;
 
 		for( j = 0; j < FanSize; j++ )
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				NewParams[ i ] = getRealValue( CurParams[ j ][ i ], i );
+				const double v = ( j == 0 && InitParams != NULL ?
+					wrapParam( rnd, ( InitParams[ i ] - MinValues[ i ]) /
+					DiffValues[ i ]) : rnd.getRndValue() );
+
+				CurParams[ j ][ i ] = v;
+				NewParams[ i ] = getRealValue( v, i );
 			}
 
 			insertFanOrder( optcost( NewParams ), j, j );

@@ -273,8 +273,8 @@ public:
 
 			if( Rej >= IterCount )
 			{
-				Avg = 1000000.0;
-				RMS = 1000000.0;
+				Avg = 1.0;
+				RMS = 1.0;
 			}
 			else
 			{
