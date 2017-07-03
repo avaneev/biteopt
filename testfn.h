@@ -2044,27 +2044,22 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnBentCigar, &TestFnHolzman, &TestFnHyperGrid, &TestFnVincent,
 	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnGriewank,
 	&TestFnTrigonometric02, &TestFnZeroSum, &TestFnSchwefel,
-	&TestFnStyblinskiTank, &TestFnYaoLiu04, NULL };
+	&TestFnStyblinskiTank, &TestFnYaoLiu04, &TestFnDropWave, &TestFnSalomon,
+	&TestFnWhitley, /*&TestFnWeierstrass, */&TestFnXinSheYang02,
+	&TestFnXinSheYang03, &TestFnXinSheYang04, &TestFnPowellSum,
+	&TestFnAlpine2, &TestFnDeflCorrSpring, &TestFnQuintic, &TestFnDixonPrice,
+	NULL };
 
 // Failing functions.
 
-const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnChenBird,
-	&TestFnBukin6, &TestFnCrossLegTable, &TestFnCrownedCross,
-	&TestFnDeVilliersGlasser02, NULL };
+const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
+	&TestFnCrossLegTable, &TestFnCrownedCross, &TestFnDeVilliersGlasser02,
+	NULL };
 
 // Failing functions requiring more than 2000 iterations to converge.
 
-const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnChenV,
-	&TestFnMishra04, &TestFnPowerSum, &TestFnZeroSum,
+const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra04,
 	&TestFnDeVilliersGlasser02, NULL };
-
-// Hard functions.
-
-const CTestFn* TestCorpus2DHard[] = { &TestFnBeale, &TestFnGriewank,
-	&TestFnGoldsteinPrice, &TestFnBranin02, &TestFnTrefethen, &TestFnWhitley,
-	&TestFnPrice02, &TestFnBird, &TestFnEggHolder, &TestFnPrice03,
-	&TestFnNewFunction01, &TestFnNewFunction02, &TestFnAlpine2, &TestFnDolan,
-	&TestFnTestTubeHolder };
 
 // Time-consuming function: &TestFnGulfResearchProblem
 
@@ -2103,4 +2098,5 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnUrsemWaves, &TestFnYaoLiu04, &TestFnBentCigar,
 	&TestFnDeflCorrSpring, &TestFnHyperGrid, &TestFnQuintic, &TestFnVincent,
 	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnHelicalValley,
-	&TestFnDixonPrice, &TestFnHartman3, NULL };
+	&TestFnDixonPrice, &TestFnHartman3, &TestFnChenV, &TestFnChenBird,
+	&TestFnPowerSum, &TestFnZeroSum, NULL };
