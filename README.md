@@ -35,10 +35,10 @@ dimensional problems there is little competition to this strategy available.
 
 This strategy was compared with the results of this paper (on 242 published
 non-convex problems): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
-This strategy was able to solve 74% of problems in 10 attempts, 2500
+This strategy was able to solve 76% of problems in 10 attempts, 2500
 iterations each. For 2 dimensional problems, this strategy's success rate is
-97%. For 3-9 dimensional problems the success rate is 68%, for 10-30
-dimensional problems the success rate is 74%. In overall, these results place
+98%. For 3-9 dimensional problems the success rate is 73%, for 10-30
+dimensional problems the success rate is 77%. In overall, these results place
 the strategy on the 2nd place among 23 different strategies of year 2013.
 
 It is usually necessary to run the optimization process several times with
@@ -52,8 +52,7 @@ reasonable to expect convergence in 1000 iterations (in a successful attempt),
 for 10-dimensional functions it is reasonable to expect convergence in 5000
 iterations (harder functions may require more iterations to converge). Most
 classic 2-dimensional problems converge in 300 iterations or less, at 1e-6
-precision. Generally speaking, with every tripling of the number of
-dimensions, the required number of iterations increases 9 times, O(N^2).
+precision.
 
 The required number of optimization attempts is usually proportional to the
 number of strongly competing minima in a function. Rogue optimums may not be

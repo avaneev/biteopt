@@ -88,8 +88,6 @@ public:
 		///<
 	double RandProb; ///< Parameter value randomization probability.
 		///<
-	double RandMult; ///< Parameter value randomization multiplier.
-		///<
 	double CrosProb; ///< Parameter crossing-over probability.
 		///<
 
@@ -111,13 +109,12 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=0.177261
-		CostMult = 2.31247095;
-		MinpMult = 0.57913990;
-		MaxpMult = 0.73024202;
-		RandMult = 2.11934552;
-		CrosProb = 0.13135998;
-		RandProb = 0.20931760;
+		// Cost=-75.732218
+		CostMult = 4.54665746;
+		MinpMult = 0.64152578;
+		MaxpMult = 0.55839563;
+		CrosProb = 0.18283318;
+		RandProb = 0.14731329;
 	}
 
 	~CBiteOpt()
@@ -138,7 +135,7 @@ public:
 	void updateDims( const int aParamCount, const int FanSize0 = 0 )
 	{
 		const int aFanSize = ( FanSize0 > 0 ? FanSize0 :
-			14 + (int) ( sqrt( (double) aParamCount )) * 2 );
+			(int) ( 16.0 + sqrt( aParamCount * 3.0 )));
 
 		if( aParamCount == ParamCount && aFanSize == FanSize )
 		{
@@ -238,30 +235,19 @@ public:
 		// Select a random "fan element" from the ordered list.
 
 		const int si = (int) ( rnd.getRndValue() * FanSize );
-		const int s = FanOrder[ si ];
+		const double* const OrigParams = CurParams[ FanOrder[ si ]];
 		int i;
-
-		const double* const OrigParams = CurParams[ s ];
-		const double* const MinParams = CurParams[ FanOrder[ 0 ]];
-		const double* const MaxParams = CurParams[ FanOrder[ FanSize1 ]];
 
 		if( RandCntr >= 1.0 )
 		{
 			RandCntr -= 1.0;
 
-			// Parameter randomization operation, works as a "driver" of
-			// optimization process. Uses TPDF.
+			// A very interesting approach: assign the same random parameter
+			// value to all parameters. Such approach probably works due to
+			// possible mutual correlation between parameters.
 
-			const double p = OrigParams[ ParamCntr ] +
-				( rnd.getRndValue() + rnd.getRndValue() - 1.0 ) *
-				fabs( OrigParams[ ParamCntr ] - MinParams[ ParamCntr ]) *
-				RandMult;
-
+			const double p = OrigParams[ ParamCntr ];
 			ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
-
-			// A very interesting approach: assign the same parameter value to
-			// all parameters. Such approach probably works due to possible
-			// mutual correlation between parameters.
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -269,18 +255,23 @@ public:
 			}
 		}
 		else
-		for( i = 0; i < ParamCount; i++ )
 		{
-			// The "step in the right direction" operation towards the best
-			// (minimal) parameter vector.
+			const double* const MinParams = CurParams[ FanOrder[ 0 ]];
+			const double* const MaxParams = CurParams[ FanOrder[ FanSize1 ]];
 
-			Params[ i ] = OrigParams[ i ] -
-				( OrigParams[ i ] - MinParams[ i ]) * MinpMult;
+			for( i = 0; i < ParamCount; i++ )
+			{
+				// The "step in the right direction" operation towards the
+				// best (minimal) parameter vector.
 
-			// The "step in the right direction" operation away from the worst
-			// (maximal) parameter vector.
+				Params[ i ] = OrigParams[ i ] -
+					( OrigParams[ i ] - MinParams[ i ]) * MinpMult;
 
-			Params[ i ] -= ( MaxParams[ i ] - Params[ i ]) * MaxpMult;
+				// The "step in the right direction" operation away from the
+				// worst (maximal) parameter vector.
+
+				Params[ i ] -= ( MaxParams[ i ] - Params[ i ]) * MaxpMult;
+			}
 		}
 
 		RandCntr += RandProb;
@@ -342,7 +333,7 @@ public:
 			BestCost = NewCost;
 		}
 
-		// Replace highest cost "fan element".
+		// Replace the highest-cost "fan element".
 
 		double* const rp = CurParams[ sH ];
 
