@@ -109,12 +109,12 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=-75.732218
-		CostMult = 4.54665746;
-		MinpMult = 0.64152578;
-		MaxpMult = 0.55839563;
-		CrosProb = 0.18283318;
-		RandProb = 0.14731329;
+		// Cost=-76.417704
+		CostMult = 4.53709285;
+		MinpMult = 0.64189856;
+		MaxpMult = 0.55916042;
+		CrosProb = 0.17980858;
+		RandProb = 0.14627082;
 	}
 
 	~CBiteOpt()

@@ -25,15 +25,16 @@ reach optimum.
 
 ### Notes ###
 
-This strategy was tested on 300+ 2-30 dimensional optimization problems and
-performed well. Due to its design this strategy may be particularly good at
-improving an existing sub-optimal local solution. This strategy offers a very
-fast convergence on 2-3 dimensional problems, moderate convergence speed on
-4-10 dimensional problems, and slow convergence speed on >10 dimensional
-problems, usually slower than the best competing strategies. However, on 2-3
-dimensional problems there is little competition to this strategy available.
+This "black-box" strategy was tested on 300+ 2-30 dimensional optimization
+problems and performed well. Due to its design this strategy may be
+particularly good at improving an existing sub-optimal local solution. This
+strategy offers a very fast convergence on 2-3 dimensional problems, moderate
+convergence speed on 4-10 dimensional problems, and slow convergence speed
+on >10 dimensional problems, usually slower than the best competing
+strategies. However, on 2-3 dimensional problems there is little competition
+to this strategy available.
 
-This strategy was compared with the results of this paper (on 242 published
+This strategy was compared with the results of this paper (on 241 published
 non-convex problems): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
 This strategy was able to solve 76% of problems in 10 attempts, 2500
 iterations each. For 2 dimensional problems, this strategy's success rate is
@@ -59,7 +60,8 @@ number of strongly competing minima in a function. Rogue optimums may not be
 found by this strategy. A rogue optimum is an optimum that has a very small
 area of descent and is placed apart from other competing minima. The
 strategy favors minimum with a larger area of descent. The Damavandi test
-function is a perfect example of the limitation of this strategy. In practice,
+function is a perfect example of the limitation of this strategy (this
+function can be solved by this strategy, but in 100+ attempts). In practice,
 however, rogue optimums can be considered as undesired outliers that have an
 unstable real-life performance due to existing parameter value tolerances.
 
