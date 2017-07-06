@@ -31,14 +31,22 @@ public:
 			///<
 		double optv; ///< Optimal value.
 			///<
+		double* rots; ///< Rotation to apply to function parameters.
+			///<
+		double* shifts; ///< Shifts to apply to function parameters.
+			///<
 		double* signs; ///< Signs to apply to function parameters.
 			///<
 		double* tp; ///< Temporary parameter storage.
+			///<
+		bool DoRandomize; ///< Apply value randomization.
 			///<
 
 		CTestOpt()
 			: minv( NULL )
 			, maxv( NULL )
+			, rots( NULL )
+			, shifts( NULL )
 			, signs( NULL )
 			, tp( NULL )
 		{
@@ -48,6 +56,8 @@ public:
 		{
 			delete[] minv;
 			delete[] maxv;
+			delete[] rots;
+			delete[] shifts;
 			delete[] signs;
 			delete[] tp;
 		}
@@ -57,10 +67,14 @@ public:
 			Dims = aDims;
 			delete[] minv;
 			delete[] maxv;
+			delete[] rots;
+			delete[] shifts;
 			delete[] signs;
 			delete[] tp;
 			minv = new double[ Dims ];
 			maxv = new double[ Dims ];
+			rots = new double[ Dims ];
+			shifts = new double[ Dims ];
 			signs = new double[ Dims ];
 			tp = new double[ Dims ];
 			CBiteOpt :: updateDims( Dims, aFanSize );
@@ -88,11 +102,59 @@ public:
 
 		virtual double optcost( const double* const p ) const
 		{
-			int i;
-
-			for( i = 0; i < Dims; i++ )
+			if( !DoRandomize )
 			{
-				tp[ i ] = p[ i ] * signs[ i ];
+				return( (*fn -> CalcFunc)( p, Dims ));
+			}
+
+			if( Dims == 2 )
+			{
+				const double x = p[ 0 ] * signs[ 0 ];
+				const double y = p[ 1 ] * signs[ 1 ];
+				tp[ 0 ] = x * cos( rots[ 0 ]) - y * sin( rots[ 0 ]);
+				tp[ 1 ] = x * sin( rots[ 0 ]) + y * cos( rots[ 0 ]);
+				tp[ 0 ] += shifts[ 0 ];
+
+				if( tp[ 0 ] < minv[ 0 ])
+				{
+					tp[ 0 ] = minv[ 0 ];
+				}
+				else
+				if( tp[ 0 ] > maxv[ 0 ])
+				{
+					tp[ 0 ] = maxv[ 0 ];
+				}
+
+				tp[ 1 ] += shifts[ 1 ];
+
+				if( tp[ 1 ] < minv[ 1 ])
+				{
+					tp[ 1 ] = minv[ 1 ];
+				}
+				else
+				if( tp[ 1 ] > maxv[ 1 ])
+				{
+					tp[ 1 ] = maxv[ 1 ];
+				}
+			}
+			else
+			{
+				int i;
+
+				for( i = 0; i < Dims; i++ )
+				{
+					tp[ i ] = p[ i ] * signs[ i ] + shifts[ i ];
+
+/*					if( tp[ i ] < minv[ i ])
+					{
+						tp[ i ] = minv[ i ];
+					}
+					else
+					if( tp[ i ] > maxv[ i ])
+					{
+						tp[ i ] = maxv[ i ];
+					}*/
+				}
 			}
 
 			return( (*fn -> CalcFunc)( tp, Dims ));
@@ -199,14 +261,7 @@ public:
 				DefDims : opt -> fn -> Dims );
 
 			opt -> updateDims( Dims );
-
-			if( !DoRandomize )
-			{
-				for( i = 0; i < Dims; i++ )
-				{
-					opt -> signs[ i ] = 1.0;
-				}
-			}
+			opt -> DoRandomize = DoRandomize;
 
 			for( j = 0; j < IterCount; j++ )
 			{
@@ -230,8 +285,15 @@ public:
 				{
 					for( i = 0; i < Dims; i++ )
 					{
-						opt -> signs[ i ] =
-							( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
+						opt -> rots[ i ] = 0.0;//M_PI * rnd.getRndValue();
+						opt -> shifts[ i ] =
+							( opt -> maxv[ i ] - opt -> minv[ i ]) *
+							( rnd.getRndValue() - 0.5 ) * 0.5;
+
+//						opt -> minv[ i ] -= opt -> shifts[ i ];
+//						opt -> maxv[ i ] -= opt -> shifts[ i ];
+
+						opt -> signs[ i ] = 1.0;//( 1.0 + rnd.getRndValue() * 0.5 );
 					}
 				}
 
