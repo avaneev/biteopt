@@ -3,7 +3,7 @@
 /**
  * @file biteopt.h
  *
- * @brief The inclusion file for the CBEOOptimizerFan class.
+ * @brief The inclusion file for the CBiteOpt class.
  *
  * @section license License
  *
@@ -36,59 +36,48 @@
 
 /**
  * BiteOpt stochastic optimization class. Implements a stochastic non-linear
- * bound-constrained derivative-free optimization strategy. It uses an ordered
- * list of several current parameter vectors (called "fan elements") that are
- * evolved towards a lower cost. On every iteration, a highest-cost "fan
- * element" in the list can be replaced with a new solution if "fan element's"
- * cost (plus some margin) is higher than that of the new solution's. Having
- * several "fan elements" allows the strategy to space solution vectors apart
- * from each other thus making them cover a larger parameter search space
- * collectively. Beside that, parameter randomization and several "step in the
- * right direction" operations are used that move the parameter vector into
- * position with a probabilistically lower objective function value.
+ * bound-constrained derivative-free optimization strategy. It maintains a
+ * cost-ordered population of previously evaluated solutions that are evolved
+ * towards a lower cost. On every iteration, the highest-cost solution in the
+ * list is unconditionally replaced with a new solution, and the list is
+ * reordered. A population of solutions allows the strategy to space solution
+ * vectors apart from each other thus making them cover a larger parameter
+ * search space collectively. Beside that, parameter randomization and the
+ * "step in the right direction" operation are used that move the solutions
+ * into position with a probabilistically lower objective function value.
  *
  * The benefit of this strategy is a relatively high robustness: it can
- * successfully optimize a wide range of test functions. Another benefit is a
- * low convergence time which depends on the complexity of the objective
- * function. Like many stochastic optimization strategies with fast
- * convergence, this strategy can't solve problems with narrow or rogue
- * optimums. Harder problems may require dozens of optimization attempts to
- * reach optimum.
+ * successfully optimize a wide range of 1-10 dimensional test functions.
+ * Another benefit is a low convergence time which depends on the complexity
+ * of the objective function. Like many stochastic optimization strategies
+ * with fast convergence, this strategy can't solve problems with narrow or
+ * rogue optimums. Harder problems may require dozens of optimization attempts
+ * to reach optimum.
  *
  * The algorithm consists of the following elements:
  *
- * 1. A complex of "fan elements" is maintained. A "fan element" is an
+ * 1. A population of previous solutions is maintained. A solution is an
  * independent parameter vector which is evolved towards a better solution.
- * Also a cost-ordered list of "fan elements" is maintaned. On every iteration
- * a single random "fan element" is evolved.
+ * Also a cost-ordered list of solutions is maintaned. On every iteration
+ * a single randomly-selected previous solution is evolved.
  *
- * 2. With RandProb probability the parameter value randomization operation is
- * performed, which is the main driver of the evolutionary process.
+ * 2. On every iteration the "step in the right direction" operation is
+ * performed using the current best and worst solutions. Depending on the
+ * MinxProb probability, also an individual parameter value randomization is
+ * performed.
  *
- * 3. On every iteration (not together with N.2) the "step in the right
- * direction" operation is performed using the current best solution. Also
- * the "step in the right direction" operation is performed using the current
- * worst solution.
- *
- * 4. With CrosProb probability a crossing-over operation is performed which
- * replaces random parameters with values from two random better solutions.
- *
- * 5. After each objective function evaluation, an attempt to replace the
- * highest-cost "fan element" is performed using the cost constraint.
+ * 3. After each objective function evaluation, the highest-cost previous
+ * solution is replaced unconditionally.
  */
 
 class CBiteOpt
 {
 public:
-	double CostMult; ///< "Fan element" cost threshold multiplier.
+	double MinxProb; ///< Minimal/maximal solution move probability.
 		///<
-	double MinpMult; ///< Best solution's move range multiplier.
+	double MinxMult; ///< Minimal/maximal solution move range multiplier.
 		///<
-	double MaxpMult; ///< Worst solution's move range multiplier.
-		///<
-	double RandProb; ///< Parameter value randomization probability.
-		///<
-	double CrosProb; ///< Parameter crossing-over probability.
+	double RandMult; ///< Randomization multiplier.
 		///<
 
 	/**
@@ -97,8 +86,8 @@ public:
 
 	CBiteOpt()
 		: ParamCount( 0 )
-		, FanSize( 0 )
-		, FanOrder( NULL )
+		, PopSize( 0 )
+		, PopOrder( NULL )
 		, CurParamsBuf( NULL )
 		, CurParams( NULL )
 		, CurCosts( NULL )
@@ -109,12 +98,10 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=-76.417704
-		CostMult = 4.53709285;
-		MinpMult = 0.64189856;
-		MaxpMult = 0.55916042;
-		CrosProb = 0.17980858;
-		RandProb = 0.14627082;
+		// Cost=-65.698479
+		MinxProb = 0.96142812;
+		MinxMult = 0.52307288;
+		RandMult = 15.50216923;
 	}
 
 	~CBiteOpt()
@@ -128,16 +115,16 @@ public:
 	 * should be called at least once before calling the init() function.
 	 *
 	 * @param aParamCount The number of parameters being optimized.
-	 * @param FanSize0 The number of "fan elements" to use. If set to 0, the
-	 * default formula will be used.
+	 * @param PopSize0 The number of elements in population to use. If set to
+	 * 0, the default formula will be used.
 	 */
 
-	void updateDims( const int aParamCount, const int FanSize0 = 0 )
+	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
-		const int aFanSize = ( FanSize0 > 0 ? FanSize0 :
+		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
 			(int) ( 16.0 + sqrt( aParamCount * 3.0 )));
 
-		if( aParamCount == ParamCount && aFanSize == FanSize )
+		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
 			return;
 		}
@@ -145,12 +132,12 @@ public:
 		deleteBuffers();
 
 		ParamCount = aParamCount;
-		FanSize = aFanSize;
-		FanSize1 = aFanSize - 1;
-		FanOrder = new int[ FanSize ];
-		CurParamsBuf = new double[ FanSize * ParamCount ];
-		CurParams = new double*[ FanSize ];
-		CurCosts = new double[ FanSize ];
+		PopSize = aPopSize;
+		PopSize1 = aPopSize - 1;
+		PopOrder = new int[ PopSize ];
+		CurParamsBuf = new double[ PopSize * ParamCount ];
+		CurParams = new double*[ PopSize ];
+		CurCosts = new double[ PopSize ];
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
 		DiffValues = new double[ ParamCount ];
@@ -160,14 +147,14 @@ public:
 
 		int i;
 
-		for( i = 0; i < FanSize; i++ )
+		for( i = 0; i < PopSize; i++ )
 		{
 			CurParams[ i ] = CurParamsBuf + i * ParamCount;
 		}
 	}
 
 	/**
-	 * Function initializes *this optimizer. Performs N=FanSize objective
+	 * Function initializes *this optimizer. Performs N=PopSize objective
 	 * function evaluations.
 	 *
 	 * @param rnd Random number generator.
@@ -176,10 +163,6 @@ public:
 
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL )
 	{
-		RandCntr = 1.0;
-		ParamCntr = 0;
-		CrossCntr = rnd.getRndValue();
-
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
 
@@ -190,12 +173,12 @@ public:
 			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
 		}
 
-		// Initialize "fan element" parameter vectors, calculate costs of
-		// "fan elements" and find the best cost.
+		// Initialize solution vectors randomly, calculate objective function
+		// values of these solutions and find the best cost.
 
 		int j;
 
-		for( j = 0; j < FanSize; j++ )
+		for( j = 0; j < PopSize; j++ )
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -207,7 +190,7 @@ public:
 				NewParams[ i ] = getRealValue( v, i );
 			}
 
-			insertFanOrder( optcost( NewParams ), j, j );
+			insertPopOrder( optcost( NewParams ), j, j );
 
 			if( j == 0 || CurCosts[ j ] < BestCost )
 			{
@@ -232,71 +215,28 @@ public:
 
 	bool optimize( CBiteRnd& rnd )
 	{
-		// Select a random "fan element" from the ordered list.
+		// Select a random previous solution from the ordered list.
 
-		const int si = (int) ( rnd.getRndValue() * FanSize );
-		const double* const OrigParams = CurParams[ FanOrder[ si ]];
+		const int si = (int) ( rnd.getRndValue() * PopSize );
+		const double* const OrigParams = CurParams[ PopOrder[ si ]];
+		const double* const MinParams = CurParams[ PopOrder[ 0 ]];
+		const double* const MaxParams = CurParams[ PopOrder[ PopSize1 ]];
 		int i;
 
-		if( RandCntr >= 1.0 )
+		for( i = 0; i < ParamCount; i++ )
 		{
-			RandCntr -= 1.0;
-
-			// A very interesting approach: assign the same random parameter
-			// value to all parameters. Such approach probably works due to
-			// possible mutual correlation between parameters.
-
-			const double p = OrigParams[ ParamCntr ];
-			ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
-
-			for( i = 0; i < ParamCount; i++ )
+			if( rnd.getRndValue() < MinxProb )
 			{
-				Params[ i ] = p;
+				Params[ i ] = MinParams[ i ] -
+					( MaxParams[ i ] - OrigParams[ i ]) * MinxMult;
+			}
+			else
+			{
+				Params[ i ] = OrigParams[ i ] +
+					fabs( OrigParams[ i ] - MinParams[ i ]) *
+					( rnd.getRndValue() - 0.5 ) * RandMult;
 			}
 		}
-		else
-		{
-			const double* const MinParams = CurParams[ FanOrder[ 0 ]];
-			const double* const MaxParams = CurParams[ FanOrder[ FanSize1 ]];
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				// The "step in the right direction" operation towards the
-				// best (minimal) parameter vector.
-
-				Params[ i ] = OrigParams[ i ] -
-					( OrigParams[ i ] - MinParams[ i ]) * MinpMult;
-
-				// The "step in the right direction" operation away from the
-				// worst (maximal) parameter vector.
-
-				Params[ i ] -= ( MaxParams[ i ] - Params[ i ]) * MaxpMult;
-			}
-		}
-
-		RandCntr += RandProb;
-
-		if( CrossCntr >= 1.0 )
-		{
-			CrossCntr -= 1.0;
-
-			// Perform crossing-over with two random lower-cost
-			// "fan elements". A single random parameter is copied.
-
-			const double* CrossParams =
-				CurParams[ FanOrder[ (int) ( rnd.getRndValue() * si / 2 )]];
-
-			i = (int) ( rnd.getRndValue() * ParamCount );
-			Params[ i ] = CrossParams[ i ];
-
-			CrossParams =
-				CurParams[ FanOrder[ (int) ( rnd.getRndValue() * si / 2 )]];
-
-			i = (int) ( rnd.getRndValue() * ParamCount );
-			Params[ i ] = CrossParams[ i ];
-		}
-
-		CrossCntr += CrosProb;
 
 		// Wrap parameter values so that they stay in the [0; 1] range.
 
@@ -310,17 +250,6 @@ public:
 
 		const double NewCost = optcost( NewParams );
 
-		// Try to replace the highest cost "fan element".
-
-		const int sH = FanOrder[ FanSize1 ];
-		const double cT = CurCosts[ sH ] +
-			( CurCosts[ sH ] - CurCosts[ FanOrder[ 0 ]]) * CostMult;
-
-		if( NewCost > cT )
-		{
-			return( false );
-		}
-
 		if( NewCost < BestCost )
 		{
 			// Record the best solution.
@@ -333,8 +262,9 @@ public:
 			BestCost = NewCost;
 		}
 
-		// Replace the highest-cost "fan element".
+		// Replace the highest-cost previous solution.
 
+		const int sH = PopOrder[ PopSize1 ];
 		double* const rp = CurParams[ sH ];
 
 		for( i = 0; i < ParamCount; i++ )
@@ -342,7 +272,14 @@ public:
 			rp[ i ] = Params[ i ];
 		}
 
-		insertFanOrder( NewCost, sH, FanSize1 );
+		if( NewCost >= CurCosts[ sH ])
+		{
+			CurCosts[ sH ] = NewCost;
+
+			return( false );
+		}
+
+		insertPopOrder( NewCost, sH, PopSize1 );
 
 		return( true );
 	}
@@ -357,7 +294,7 @@ public:
 	 * @param PlateauIters The number of successive iterations which have not
 	 * produced a useful change, to treat as reaching a plateau. When plateau
 	 * is reached, *this object will be reinitialized (if MaxIters>0).
-	 * Effective values depend on the FanSize value, lower FanSize values
+	 * Effective values depend on the PopSize value, lower PopSize values
 	 * require higher PlateauIters values.
 	 * @param MaxIters The maximal number of iterations to perform. Set to 0
 	 * to run any number of iterations until plateau is reached.
@@ -370,7 +307,7 @@ public:
 	{
 		double* TmpBestParams = new double[ ParamCount ];
 		double TmpBestCost;
-		int Iters = FanSize;
+		int Iters = PopSize;
 		int i;
 
 		init( rnd );
@@ -421,7 +358,7 @@ public:
 					}
 
 					init( rnd );
-					Iters += FanSize;
+					Iters += PopSize;
 					PlateauCount = 0;
 				}
 			}
@@ -488,18 +425,12 @@ public:
 protected:
 	int ParamCount; ///< The total number of internal parameter values in use.
 		///<
-	int FanSize; ///< The number of "fan elements" in use.
+	int PopSize; ///< The size of population in use.
 		///<
-	int FanSize1; ///< = FanSize - 1.
+	int PopSize1; ///< = PopSize - 1.
 		///<
-	double RandCntr; ///< Randomization operation probability counter.
-		///<
-	int ParamCntr; ///< Parameter index counter.
-		///<
-	double CrossCntr; ///< Crossing-over probability counter.
-		///<
-	int* FanOrder; ///< The current "fan element" ordering, ascending-sorted
-		///< by cost.
+	int* PopOrder; ///< The current solution vectors ordering,
+		///< ascending-sorted by cost.
 		///<
 	double* CurParamsBuf; ///< CurParams buffer.
 		///<
@@ -529,7 +460,7 @@ protected:
 
 	void deleteBuffers()
 	{
-		delete[] FanOrder;
+		delete[] PopOrder;
 		delete[] CurParamsBuf;
 		delete[] CurParams;
 		delete[] CurCosts;
@@ -590,15 +521,15 @@ protected:
 	}
 
 	/**
-	 * Function inserts the specified "fan element" index into the FanOrder
+	 * Function inserts the specified solution into the PopOrder
 	 * array at the appropriate offset, increasing the number of items by 1.
 	 *
-	 * @param Cost "Fan element's" cost.
-	 * @param f "Fan element's" index.
+	 * @param Cost Solution's cost.
+	 * @param f Solution's index.
 	 * @param ItemCount The current number of items in the array.
 	 */
 
-	void insertFanOrder( const double Cost, const int f, const int ItemCount )
+	void insertPopOrder( const double Cost, const int f, const int ItemCount )
 	{
 		CurCosts[ f ] = Cost;
 
@@ -611,7 +542,7 @@ protected:
 		{
 			int mid = ( z + hi ) >> 1;
 
-			if( CurCosts[ FanOrder[ mid ]] >= Cost )
+			if( CurCosts[ PopOrder[ mid ]] >= Cost )
 			{
 				hi = mid;
 			}
@@ -627,10 +558,10 @@ protected:
 
 		for( i = ItemCount; i > z; i-- )
 		{
-			FanOrder[ i ] = FanOrder[ i - 1 ];
+			PopOrder[ i ] = PopOrder[ i - 1 ];
 		}
 
-		FanOrder[ z ] = f;
+		PopOrder[ z ] = f;
 	}
 };
 

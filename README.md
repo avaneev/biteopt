@@ -4,43 +4,41 @@
 ### CBiteOpt (biteopt.h) ###
 
 BiteOpt stochastic optimization class. Implements a stochastic non-linear
-bound-constrained derivative-free optimization strategy. It uses an ordered
-list of several current parameter vectors (called "fan elements") that are
-evolved towards a lower cost. On every iteration, a highest-cost "fan
-element" in the list can be replaced with a new solution if "fan element's"
-cost (plus some margin) is higher than that of the new solution's. Having
-several "fan elements" allows the strategy to space solution vectors apart
-from each other thus making them cover a larger parameter search space
-collectively. Beside that, parameter randomization and several "step in the
-right direction" operations are used that move the parameter vector into
-position with a probabilistically lower objective function value.
+bound-constrained derivative-free optimization strategy. It maintains a
+cost-ordered population of previously evaluated solutions that are evolved
+towards a lower cost. On every iteration, the highest-cost solution in the
+list is unconditionally replaced with a new solution, and the list is
+reordered. A population of solutions allows the strategy to space solution
+vectors apart from each other thus making them cover a larger parameter
+search space collectively. Beside that, parameter randomization and the
+"step in the right direction" operation are used that move the solutions
+into position with a probabilistically lower objective function value.
 
 The benefit of this strategy is a relatively high robustness: it can
-successfully optimize a wide range of 2-30 dimensional test functions. Another
-benefit is a low convergence time which depends on the complexity of the
-objective function. Like many stochastic optimization strategies with fast
-convergence, this strategy can't solve problems with narrow or rogue
-optimums. Harder problems may require dozens of optimization attempts to
-reach optimum.
+successfully optimize a wide range of 1-10 dimensional test functions.
+Another benefit is a low convergence time which depends on the complexity
+of the objective function. Like many stochastic optimization strategies
+with fast convergence, this strategy can't solve problems with narrow or
+rogue optimums. Harder problems may require dozens of optimization attempts
+to reach optimum.
 
 ### Notes ###
 
-This "black-box" strategy was tested on 300+ 2-30 dimensional optimization
+This "black-box" strategy was tested on 300+ 1-10 dimensional optimization
 problems and performed well. Due to its design this strategy may be
 particularly good at improving an existing sub-optimal local solution. This
-strategy offers a very fast convergence on 2-3 dimensional problems, moderate
+strategy offers a very fast convergence on 1-3 dimensional problems, moderate
 convergence speed on 4-10 dimensional problems, and slow convergence speed
-on >10 dimensional problems, usually slower than the best competing
-strategies. However, on 2-3 dimensional problems there is little competition
+on >10 dimensional problems, usually much slower than the best competing
+strategies. However, on 1-3 dimensional problems there is little competition
 to this strategy available.
 
 This strategy was compared with the results of this paper (on 241 published
 non-convex problems): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
-This strategy was able to solve 76% of problems in 10 attempts, 2500
-iterations each. For 2 dimensional problems, this strategy's success rate is
-98%. For 3-9 dimensional problems the success rate is 73%, for 10-30
-dimensional problems the success rate is 77%. In overall, these results place
-the strategy on the 2nd place among 23 different strategies of year 2013.
+This strategy was able to solve 64% of problems in 10 attempts, 2500
+iterations each. For 2-dimensional problems, this strategy's success rate is
+96%. For 3-9 dimensional problems the success rate is 66%, for 10-30
+dimensional problems the success rate is only 28%.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
@@ -60,8 +58,7 @@ number of strongly competing minima in a function. Rogue optimums may not be
 found by this strategy. A rogue optimum is an optimum that has a very small
 area of descent and is placed apart from other competing minima. The
 strategy favors minimum with a larger area of descent. The Damavandi test
-function is a perfect example of the limitation of this strategy (this
-function can be solved by this strategy, but in 100+ attempts). In practice,
+function is a perfect example of the limitation of this strategy. In practice,
 however, rogue optimums can be considered as undesired outliers that have an
 unstable real-life performance due to existing parameter value tolerances.
 
