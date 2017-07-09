@@ -62,22 +62,32 @@
  * a single randomly-selected previous solution is evolved.
  *
  * 2. On every iteration the "step in the right direction" operation is
- * performed using the current best and worst solutions. Depending on the
- * MinxProb probability, also an individual parameter value randomization is
- * performed.
+ * performed using the current best and worst solutions.
  *
- * 3. After each objective function evaluation, the highest-cost previous
- * solution is replaced unconditionally.
+ * 3. Depending on the RandProb probability, also an individual parameter
+ * value randomization is performed using "bitmask inversion" operation.
+ *
+ * 4. With CentProb probability the "step in the right direction" operation is
+ * performed using the centroid vector.
+ *
+ * 5. After each objective function evaluation, the highest-cost previous
+ * solution is replaced using the cost constraint.
  */
 
 class CBiteOpt
 {
 public:
-	double MinxProb; ///< Minimal/maximal solution move probability.
+	double CostMult; ///< Solution rejection cost threshold multiplier.
 		///<
 	double MinxMult; ///< Minimal/maximal solution move range multiplier.
 		///<
-	double RandMult; ///< Randomization multiplier.
+	double RandProb; ///< Parameter value randomization probability.
+		///<
+	double CentProb; ///< Centroid move probability.
+		///<
+	double CentOffs; ///< Centroid move range multiplier offset.
+		///<
+	double CentSpan; ///< Centroid move range random multiplier.
 		///<
 
 	/**
@@ -85,12 +95,14 @@ public:
 	 */
 
 	CBiteOpt()
-		: ParamCount( 0 )
+		: MantMult( 1 << MantSize )
+		, ParamCount( 0 )
 		, PopSize( 0 )
 		, PopOrder( NULL )
 		, CurParamsBuf( NULL )
 		, CurParams( NULL )
 		, CurCosts( NULL )
+		, CentParams( NULL )
 		, MinValues( NULL )
 		, MaxValues( NULL )
 		, DiffValues( NULL )
@@ -98,10 +110,13 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=-65.698479
-		MinxProb = 0.96142812;
-		MinxMult = 0.52307288;
-		RandMult = 15.50216923;
+		// Cost=14.337680
+		CostMult = 1.38433223;
+		MinxMult = 0.50005377;
+		RandProb = 0.50360804;
+		CentProb = 0.29195602;
+		CentOffs = 0.45708476;
+		CentSpan = 1.78321594;
 	}
 
 	~CBiteOpt()
@@ -122,7 +137,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			(int) ( 16.0 + sqrt( aParamCount * 3.0 )));
+			(int) ( 18.0 + aParamCount * aParamCount / 6.0 ));
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -138,6 +153,7 @@ public:
 		CurParamsBuf = new double[ PopSize * ParamCount ];
 		CurParams = new double*[ PopSize ];
 		CurCosts = new double[ PopSize ];
+		CentParams = new double[ ParamCount ];
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
 		DiffValues = new double[ ParamCount ];
@@ -171,6 +187,7 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
+			CentParams[ i ] = 0.0;
 		}
 
 		// Initialize solution vectors randomly, calculate objective function
@@ -187,6 +204,7 @@ public:
 					DiffValues[ i ]) : rnd.getRndValue() );
 
 				CurParams[ j ][ i ] = v;
+				CentParams[ i ] += v / PopSize;
 				NewParams[ i ] = getRealValue( v, i );
 			}
 
@@ -202,6 +220,10 @@ public:
 				}
 			}
 		}
+
+		CentCntr = rnd.getRndValue();
+		RandCntr = rnd.getRndValue();
+		ParamCntr = (int) ( rnd.getRndValue() * ParamCount );
 	}
 
 	/**
@@ -225,16 +247,43 @@ public:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			if( rnd.getRndValue() < MinxProb )
+			// The "step in the right direction" operation towards the best
+			// (minimal) and away from the worst (maximal) parameter vector.
+
+			Params[ i ] = MinParams[ i ] -
+				( MaxParams[ i ] - OrigParams[ i ]) * MinxMult;
+		}
+
+		RandCntr += RandProb;
+
+		if( RandCntr >= 1.0 )
+		{
+			RandCntr -= 1.0;
+
+			// Bitmask inversion operation, works as a "driver" of
+			// optimization process, applied to 1 random parameter at a time.
+
+			const int imask =
+				( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
+
+			Params[ ParamCntr ] = ( (int) ( Params[ ParamCntr ] * MantMult ) ^
+				imask ) / MantMult;
+
+			ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
+		}
+
+		CentCntr += CentProb;
+
+		if( CentCntr >= 1.0 )
+		{
+			CentCntr -= 1.0;
+
+			// Move towards centroid vector or beyond it, randomly.
+
+			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = MinParams[ i ] -
-					( MaxParams[ i ] - OrigParams[ i ]) * MinxMult;
-			}
-			else
-			{
-				Params[ i ] = OrigParams[ i ] +
-					fabs( OrigParams[ i ] - MinParams[ i ]) *
-					( rnd.getRndValue() - 0.5 ) * RandMult;
+				const double m = CentOffs + rnd.getRndValue() * CentSpan;
+				Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
 			}
 		}
 
@@ -250,6 +299,15 @@ public:
 
 		const double NewCost = optcost( NewParams );
 
+		const int sH = PopOrder[ PopSize1 ];
+		const double cT = CurCosts[ sH ] +
+			( CurCosts[ sH ] - CurCosts[ PopOrder[ 0 ]]) * CostMult;
+
+		if( NewCost > cT )
+		{
+			return( false );
+		}
+
 		if( NewCost < BestCost )
 		{
 			// Record the best solution.
@@ -264,19 +322,12 @@ public:
 
 		// Replace the highest-cost previous solution.
 
-		const int sH = PopOrder[ PopSize1 ];
 		double* const rp = CurParams[ sH ];
 
 		for( i = 0; i < ParamCount; i++ )
 		{
+			CentParams[ i ] += ( Params[ i ] - rp[ i ]) / PopSize;
 			rp[ i ] = Params[ i ];
-		}
-
-		if( NewCost >= CurCosts[ sH ])
-		{
-			CurCosts[ sH ] = NewCost;
-
-			return( false );
 		}
 
 		insertPopOrder( NewCost, sH, PopSize1 );
@@ -423,11 +474,23 @@ public:
 	virtual double optcost( const double* const p ) const = 0;
 
 protected:
+	static const int MantSize = 29; ///< Mantissa size of bitmask inversion
+		///< operation. Must be lower than the random number generator's
+		///< precision.
+		///<
+	double MantMult; ///< Mantissa multiplier (1 << MantSize).
+		///<
 	int ParamCount; ///< The total number of internal parameter values in use.
 		///<
 	int PopSize; ///< The size of population in use.
 		///<
 	int PopSize1; ///< = PopSize - 1.
+		///<
+	double CentCntr; ///< Centroid move probability counter.
+		///<
+	double RandCntr; ///< Parameter randomization probability counter.
+		///<
+	int ParamCntr; ///< Parameter randomization index counter.
 		///<
 	int* PopOrder; ///< The current solution vectors ordering,
 		///< ascending-sorted by cost.
@@ -437,6 +500,8 @@ protected:
 	double** CurParams; ///< Current working parameter vectors.
 		///<
 	double* CurCosts; ///< Best costs of current working parameter vectors.
+		///<
+	double* CentParams; ///< Centroid of the current parameter vectors.
 		///<
 	double* MinValues; ///< Minimal parameter values.
 		///<
@@ -464,6 +529,7 @@ protected:
 		delete[] CurParamsBuf;
 		delete[] CurParams;
 		delete[] CurCosts;
+		delete[] CentParams;
 		delete[] MinValues;
 		delete[] MaxValues;
 		delete[] DiffValues;

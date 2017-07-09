@@ -35,10 +35,10 @@ to this strategy available.
 
 This strategy was compared with the results of this paper (on 241 published
 non-convex problems): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
-This strategy was able to solve 66% of problems in 10 attempts, 2500
+This strategy was able to solve 64% of problems in 10 attempts, 2500
 iterations each. For 1-2 dimensional problems, this strategy's success rate is
-97%. For 3-9 dimensional problems the success rate is 67%, for 10-30
-dimensional problems the success rate is only 30%.
+97%. For 3-9 dimensional problems the success rate is 68%, for 10-30
+dimensional problems the success rate is only 37%.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
