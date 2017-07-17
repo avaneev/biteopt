@@ -30,8 +30,7 @@ particularly good at improving an existing sub-optimal local solution. This
 strategy offers a very fast convergence on 1-3 dimensional problems, moderate
 convergence speed on 4-10 dimensional problems, and slow convergence speed
 on >10 dimensional problems, usually much slower than the best competing
-strategies. However, on 1-3 dimensional problems there is little competition
-to this strategy available.
+strategies.
 
 This strategy was compared with the results of this paper (on 241 published
 non-convex problems): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
@@ -105,13 +104,6 @@ were discovered that may need to be addressed in the future:
 1. Parallelization of this algorithm is technically possible, but may be
 counter-productive (increases convergence time considerably). It is more
 efficient to run several optimizers in parallel with different random seeds.
-
-## Warning ##
-
-When solving problems whose solutions are critical and may be
-health-threatening, always use several optimization strategies (methods) to
-find the optimal solution, do not rely on a single strategy when solving
-multi-modal problems.
 
 ## Users ##
 This library is used by:
