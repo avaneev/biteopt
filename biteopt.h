@@ -62,7 +62,8 @@
  * a single randomly-selected previous solution is evolved.
  *
  * 2. On every iteration the "step in the right direction" operation is
- * performed using the current best and worst solutions.
+ * performed using the current best and worst solutions. This is conceptually
+ * similar to Differential Evolution's "mutation" operation.
  *
  * 3. Depending on the RandProb probability, also an individual parameter
  * value randomization is performed using "bitmask inversion" operation.
@@ -84,8 +85,6 @@ public:
 	double RandProb; ///< Parameter value randomization probability.
 		///<
 	double CentProb; ///< Centroid move probability.
-		///<
-	double CentOffs; ///< Centroid move range multiplier offset.
 		///<
 	double CentSpan; ///< Centroid move range random multiplier.
 		///<
@@ -110,13 +109,12 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=14.337680
-		CostMult = 1.38433223;
-		MinxMult = 0.50005377;
-		RandProb = 0.50360804;
-		CentProb = 0.29195602;
-		CentOffs = 0.45708476;
-		CentSpan = 1.78321594;
+		// Cost=13.313445
+		CostMult = 2.45378619;
+		MinxMult = 0.5;
+		RandProb = 0.61674315;
+		CentProb = 0.27854364;
+		CentSpan = 2.14391164;
 	}
 
 	~CBiteOpt()
@@ -137,7 +135,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			(int) ( 18.0 + aParamCount * aParamCount / 6.0 ));
+			12 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -282,7 +280,7 @@ public:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const double m = CentOffs + rnd.getRndValue() * CentSpan;
+				const double m = rnd.getRndValue() * CentSpan;
 				Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
 			}
 		}
