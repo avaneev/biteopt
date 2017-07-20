@@ -3,9 +3,10 @@
 #include <stdio.h>
 #include <emmintrin.h>
 #include "biteopt.h"
-#include "testfn.h"
 
 CBiteRnd rnd;
+
+#include "testfn.h"
 
 /**
  * Function test corpus class.
@@ -115,7 +116,7 @@ public:
 				tp[ 1 ] = x * sin( rots[ 0 ]) + y * cos( rots[ 0 ]);
 				tp[ 0 ] += shifts[ 0 ];
 
-				if( tp[ 0 ] < minv[ 0 ])
+/*				if( tp[ 0 ] < minv[ 0 ])
 				{
 					tp[ 0 ] = minv[ 0 ];
 				}
@@ -124,10 +125,10 @@ public:
 				{
 					tp[ 0 ] = maxv[ 0 ];
 				}
-
+*/
 				tp[ 1 ] += shifts[ 1 ];
 
-				if( tp[ 1 ] < minv[ 1 ])
+/*				if( tp[ 1 ] < minv[ 1 ])
 				{
 					tp[ 1 ] = minv[ 1 ];
 				}
@@ -135,7 +136,7 @@ public:
 				if( tp[ 1 ] > maxv[ 1 ])
 				{
 					tp[ 1 ] = maxv[ 1 ];
-				}
+				}*/
 			}
 			else
 			{
@@ -177,6 +178,7 @@ public:
 		///<
 	double Score; ///< Optimization score.
 		///<
+	double Success; ///< Success rate.
 
 	CTester()
 		: opt( new CTestOpt() )
@@ -242,6 +244,7 @@ public:
 		AtAvg = 0.0;
 		int RejTotal = 0;
 		int ItTotal = 0;
+		int ComplTotal = 0;
 		tc = 0;
 		int* Iters = new int[ IterCount ];
 		int k;
@@ -312,6 +315,7 @@ public:
 					if( opt -> getBestCost() - opt -> optv < CostThreshold )
 					{
 						AvgCost += opt -> getBestCost();
+						ComplTotal++;
 						Iters[ j ] = i;
 						AvgIter += i;
 						ItTotal += i;
@@ -377,12 +381,17 @@ public:
 		RjAvg /= FnCount;
 //		AtAvg /= FnCount;
 		AtAvg = 1.0 / ( 1.0 - (double) RejTotal / IterCount / FnCount );
+//		Score = ( AtAvg - 1.0 ) * 100.0 +
+//			fabs( ItAvg - 353.0 ) * 0.1 +
+//			fabs( ItRtAvg - 0.260 ) * 50;
 		Score = ( AtAvg - 1.0 ) * 100.0 +
-			fabs( ItAvg - 353.0 ) * 0.1 +
-			fabs( ItRtAvg - 0.260 ) * 50;
+			fabs( ItAvg - 380.0 ) * 0.1;
+		Success = 100.0 * ComplTotal / FnCount / IterCount;
+//		Score = -Success + fabs( ItAvg - 380.0 );
 
 		if( DoPrint )
 		{
+			printf( "Success: %.2f%%\n", Success );
 			printf( "ItAvg: %.1f (avg convergence time)\n", ItAvg );
 			printf( "ItRtAvg: %.6f (avg ratio of std.dev and average)\n",
 				ItRtAvg );

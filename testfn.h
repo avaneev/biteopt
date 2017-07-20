@@ -8,6 +8,7 @@
 // http://www-optima.amp.i.kyoto-u.ac.jp/member/student/hedar/Hedar_files/TestGO_files/Page364.htm
 // http://benchmarkfcns.xyz/fcns
 // http://al-roomi.org/benchmarks/unconstrained/2-dimensions/120-damavandi-s-function
+// https://github.com/numbbo/coco/tree/master/code-experiments/src
 
 #include <math.h>
 
@@ -40,7 +41,9 @@ struct CTestFn
 	double (*CalcFunc)( const double* const p, const int N ); ///< Calculation
 		///< function.
 
-	double (*ParamFunc)( double* const minv, double* const maxv, const int N );
+	double (*ParamFunc)( double* const minv, double* const maxv,
+		const int N ); ///< Range and optimal value function, can be NULL.
+		///<
 };
 
 static double calcThreeHumpCamel( const double* const p, const int N )
@@ -587,6 +590,7 @@ static double calcWeierstrass( const double* const p, const int N )
 	double ak[ kmax + 1 ];
 	double bk[ kmax + 1 ];
 	double s = 0.0;
+	double s2 = 0.0;
 	int i;
 	int k;
 
@@ -594,27 +598,44 @@ static double calcWeierstrass( const double* const p, const int N )
 	{
 		ak[ k ] = pow( a, k );
 		bk[ k ] = pow( b, k );
+		s2 += ak[ k ] * cos( M_PI * bk[ k ]);
 	}
+
+	s2 *= N;
 
 	for( i = 0; i < N; i++ )
 	{
 		double s1 = 0.0;
-		double s2 = 0.0;
 
 		for( k = 0; k <= kmax; k++ )
 		{
 			s1 += ak[k]*cos(2.0*M_PI*bk[k]*(p[i]+0.5));
-			s2 += ak[k]*cos(M_PI*bk[k]);
 		}
 
-		s += s1 - N*s2;
+		s += s1 - s2;
 	}
 
 	return( s );
 }
 
-static const CTestFn TestFnWeierstrass = { "Weierstrass", 0, -0.5, 0.5, 4.0,
-	&calcWeierstrass };
+static double calcWeierstrass_p( double* const minv, double* const maxv,
+	const int N )
+{
+	double p[ N ];
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		minv[ i ] = -0.5;
+		maxv[ i ] = 0.5;
+		p[ i ] = 0.0;
+	}
+
+	return( calcWeierstrass( p, N ));
+}
+
+static const CTestFn TestFnWeierstrass = { "Weierstrass", 0, 0.0, 0.0, 0.0,
+	&calcWeierstrass, &calcWeierstrass_p };
 
 static double calcFreudensteinRoth( const double* const p, const int N )
 {
@@ -1309,11 +1330,11 @@ static double calcSchwefel( const double* const p, const int N )
 		s += p[i]*sin(sqrt(fabs(p[i])));
 	}
 
-	return( 418.9828872724339 * N - s );
+	return( 418.982887272433706 * N - s );
 }
 
 static const CTestFn TestFnSchwefel = { "Schwefel", 0, -500.0, 500.0,
-	0.00002546, &calcSchwefel };
+	0.0, &calcSchwefel };
 
 static double calcAdjiman( const double* const p, const int N )
 {
@@ -1605,7 +1626,7 @@ static double calcDownhillStep( const double* const p, const int N )
 {
 	const double x = p[ 0 ];
 	const double y = p[ 1 ];
-	return( floor(10.0*(10.0-exp(-sqr(x)-3.0*sqr(y))))/10.0 );
+	return( roundf(10.0*(10.0-exp(-sqr(x)-3.0*sqr(y))))/10.0 );
 }
 
 static const CTestFn TestFnDownhillStep = { "DownhillStep", 2, -10.0, 10.0,
@@ -1895,7 +1916,7 @@ static double calcStep01( const double* const p, const int N )
 
 	for( i = 0; i < N; i++ )
 	{
-		s += floor(fabs(p[i]));
+		s += roundf(fabs(p[i]));
 	}
 
 	return( s );
@@ -1911,7 +1932,7 @@ static double calcStep02( const double* const p, const int N )
 
 	for( i = 0; i < N; i++ )
 	{
-		s += sqr(floor(fabs(p[i]+0.5)));
+		s += sqr(roundf(fabs(p[i]+0.5)));
 	}
 
 	return( s );
@@ -1927,7 +1948,7 @@ static double calcStep03( const double* const p, const int N )
 
 	for( i = 0; i < N; i++ )
 	{
-		s += floor(sqr(p[i]));
+		s += roundf(sqr(p[i]));
 	}
 
 	return( s );
@@ -2121,7 +2142,7 @@ static double calcGriewankRosenbrock( const double* const p, const int N )
 }
 
 static const CTestFn TestFnGriewankRosenbrock = { "GriewankRosenbrock", 0,
-	-5.0, 5.0, 0.0, &calcGriewankRosenbrock };
+	-5.0, 5.0, 1.0, &calcGriewankRosenbrock };
 
 static double calcSchaffer07( const double* const p, const int N )
 {
@@ -2140,6 +2161,248 @@ static double calcSchaffer07( const double* const p, const int N )
 static const CTestFn TestFnSchaffer07 = { "Schaffer07", 0, -5.0, 5.0, 0.0,
 	&calcSchaffer07 };
 
+static double calcKatsuura( const double* const p, const int N )
+{
+	double s = 1.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		double tmp = 0.0;
+		int j;
+
+		for( j = 1; j <= 32; j++ )
+		{
+			const double tmp2 = pow(2.0,(double) j);
+			tmp += roundf(tmp2*p[i])/tmp2;
+		}
+
+		s *= 1.0+(i+1)*tmp;
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnKatsuura = { "Katsuura", 0, 0.0, 100.0, 1.0,
+	&calcKatsuura };
+
+static double calcRotatedEllipse01( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( 7.0*x*x-6.0*sqrt(3.0)*x*y+13.0*y*y );
+}
+
+static const CTestFn TestFnRotatedEllipse01 = { "RotatedEllipse01", 2,
+	-500.0, 500.0, 0.0, &calcRotatedEllipse01 };
+
+static double calcRotatedEllipse02( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( x*x-x*y+y*y );
+}
+
+static const CTestFn TestFnRotatedEllipse02 = { "RotatedEllipse02", 2,
+	-500.0, 500.0, 0.0, &calcRotatedEllipse02 };
+
+static double calcTrigonometric01( const double* const p, const int N )
+{
+	double s0 = 0.0;
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s0 += cos(p[i]);
+	}
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sqr(N-s0+(i+1)*(1.0-cos(p[i])-sin(p[i])));
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnTrigonometric01 = { "Trigonometric01", 0,
+	0.0, M_PI, 0.0, &calcTrigonometric01 };
+
+static double calcExponential( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sqr(p[i]);
+	}
+
+	return( -exp(-0.5*s) );
+}
+
+static const CTestFn TestFnExponential = { "Exponential", 0,
+	-1.0, 1.0, -1.0, &calcExponential };
+
+static double calcUrsem01( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( -sin(2.0*x-0.5*M_PI)-3.0*cos(y)-0.5*x );
+}
+
+static double calcUrsem01_p( double* const minv, double* const maxv,
+	const int N )
+{
+	minv[ 0 ] = -2.5;
+	maxv[ 0 ] = 3.0;
+	minv[ 1 ] = -2.0;
+	maxv[ 1 ] = 2.0;
+	return( -4.8168 );
+}
+
+static const CTestFn TestFnUrsem01 = { "Ursem01", 2, 0.0, 0.0, 0.0,
+	&calcUrsem01, &calcUrsem01_p };
+
+static double calcQuadratic( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( -3803.84-138.08*x-232.92*y+128.08*x*x+203.64*y*y+182.25*x*y );
+}
+
+static const CTestFn TestFnQuadratic = { "Quadratic", 2,
+	-10.0, 10.0, -3873.72418, &calcQuadratic };
+
+static double calcSchwefel01( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sqr(p[i]);
+	}
+
+	return( pow(s,sqrt(M_PI)));
+}
+
+static const CTestFn TestFnSchwefel01 = { "Schwefel01", 0, -100.0, 100.0, 0.0,
+	&calcSchwefel01 };
+
+static double calcSchwefel02( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i <= N; i++ )
+	{
+		double s2 = 0.0;
+		int j;
+
+		for( j = 1; j <= i; j++ )
+		{
+			s2 += p[i-1];
+		}
+
+		s += sqr(s2);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnSchwefel02 = { "Schwefel02", 0, -100.0, 100.0, 0.0,
+	&calcSchwefel02 };
+
+static double calcSchwefel04( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sqr(p[i]-1.0)+sqr(p[0]-sqr(p[i]));
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnSchwefel04 = { "Schwefel04", 0, 0.0, 10.0, 0.0,
+	&calcSchwefel04 };
+
+static double calcSchwefel36( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( -x*y*(72.0-2.0*x-2.0*y) );
+}
+
+static const CTestFn TestFnSchwefel36 = { "Schwefel36", 2, 0.0, 500.0,
+	-3456.0, &calcSchwefel36 };
+
+static double calcShekel_inner( const double* const p, const int N,
+	const int m )
+{
+	static const double a[ 10 ][ 4 ] =
+	{
+		{ 4.0, 4.0, 4.0, 4.0 },
+		{ 1.0, 1.0, 1.0, 1.0 },
+		{ 8.0, 8.0, 8.0, 8.0 },
+		{ 6.0, 6.0, 6.0, 6.0 },
+		{ 3.0, 7.0, 3.0, 7.0 },
+		{ 2.0, 9.0, 2.0, 9.0 },
+		{ 5.0, 3.0, 5.0, 3.0 },
+		{ 8.0, 1.0, 8.0, 1.0 },
+		{ 6.0, 2.0, 6.0, 2.0 },
+		{ 7.0, 3.0, 7.0, 3.0 }
+	};
+
+	static const double c[ 10 ] = { 0.1, 0.2, 0.2, 0.4, 0.4, 0.6, 0.3,
+		0.7, 0.5, 0.5 };
+
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < m; i++ )
+	{
+		double s2 = 0.0;
+		int j;
+
+		for( j = 0; j < N; j++ )
+		{
+			s2 += sqr(p[j]-a[i][j]);
+		}
+
+		s += 1.0/(c[i]+s2);
+	}
+
+	return( -s );
+}
+
+static double calcShekel05( const double* const p, const int N )
+{
+	return( calcShekel_inner( p, N, 5 ));
+}
+
+static const CTestFn TestFnShekel05 = { "Shekel05", 4, 0.0, 10.0,
+	-10.15319585, &calcShekel05 };
+
+static double calcShekel07( const double* const p, const int N )
+{
+	return( calcShekel_inner( p, N, 7 ));
+}
+
+static const CTestFn TestFnShekel07 = { "Shekel07", 4, 0.0, 10.0,
+	-10.40281883693, &calcShekel07 };
+
+static double calcShekel10( const double* const p, const int N )
+{
+	return( calcShekel_inner( p, N, 10 ));
+}
+
+static const CTestFn TestFnShekel10 = { "Shekel10", 4, 0.0, 10.0,
+	-10.5319292512, &calcShekel10 };
+
 // Strategy optimization corpus based on simple N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -2151,12 +2414,13 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnGriewank,
 	&TestFnTrigonometric02, &TestFnZeroSum, &TestFnSchwefel,
 	&TestFnStyblinskiTank, &TestFnYaoLiu04, &TestFnDropWave, &TestFnSalomon,
-	&TestFnWhitley, /*&TestFnWeierstrass, */&TestFnXinSheYang02,
+	&TestFnWhitley, &TestFnWeierstrass, &TestFnXinSheYang02,
 	&TestFnXinSheYang03, &TestFnXinSheYang04, &TestFnPowellSum,
 	&TestFnAlpine2, &TestFnDeflCorrSpring, &TestFnQuintic, &TestFnDixonPrice,
 	&TestFnBuecheRastrigin, &TestFnDifferentPowers, &TestFnDiscus,
 	&TestFnEllipsoid, &TestFnGriewankRosenbrock, &TestFnSchaffer07,
-	NULL };
+	&TestFnKatsuura, &TestFnTrigonometric01, &TestFnExponential,
+	&TestFnSchwefel01, &TestFnSchwefel02, &TestFnSchwefel04, NULL };
 
 // Failing functions.
 
@@ -2209,4 +2473,8 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnDixonPrice, &TestFnHartman3, &TestFnChenV, &TestFnChenBird,
 	&TestFnPowerSum, &TestFnZeroSum, &TestFnBuecheRastrigin,
 	&TestFnDifferentPowers, &TestFnDiscus, &TestFnEllipsoid,
-	&TestFnGriewankRosenbrock, &TestFnSchaffer07, NULL };
+	&TestFnGriewankRosenbrock, &TestFnSchaffer07, &TestFnKatsuura,
+	&TestFnRotatedEllipse01, &TestFnRotatedEllipse02, &TestFnTrigonometric01,
+	&TestFnExponential, &TestFnUrsem01, &TestFnQuadratic, &TestFnSchwefel01,
+	&TestFnSchwefel02, &TestFnSchwefel04, &TestFnSchwefel36, &TestFnShekel05,
+	&TestFnShekel07, &TestFnShekel10, NULL };
