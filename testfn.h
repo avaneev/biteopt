@@ -2573,6 +2573,210 @@ static double calcGear( const double* const p, const int N )
 static const CTestFn TestFnGear = { "Gear", 4, 12.0, 60.0,
 	2.7e-12, &calcGear };
 
+static double calcStretchedV( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N - 1; i++ )
+	{
+		const double t = sqr(p[i+1])+sqr(p[i]);
+		s += pow(t,1.0/4.0)*sqr(sin(50.0*pow(t,0.1))+1.0);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnStretchedV = { "StretchedV", 0, -10.0, 10.0, 0.0,
+	&calcStretchedV };
+
+static double calcUrsem04( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( -3.0*sin(0.5*M_PI*x+0.5*M_PI)*(2.0-sqrt(x*x+y*y))/4.0 );
+}
+
+static const CTestFn TestFnUrsem04 = { "Ursem04", 2, -2.0, 2.0,
+	-1.5, &calcUrsem04 };
+
+static double calcJudge( const double* const p, const int N )
+{
+	static const double A[ 20 ] = { 4.284,4.149,3.877,0.533,2.211,2.389,2.145,
+		3.231,1.998,1.379,2.106,1.428,1.011,2.179,2.858,1.388,1.651,1.593,
+		1.046,2.152 };
+
+	static const double B[ 20 ] = { 0.286,0.973,0.384,0.276,0.973,0.543,0.957,
+		0.948,0.543,0.797,0.936,0.889,0.006,0.828,0.399,0.617,0.939,0.784,
+		0.072,0.889 };
+
+	static const double C[ 20 ] = { 0.645,0.585,0.310,0.058,0.455,0.779,0.259,
+		0.202,0.028,0.099,0.142,0.296,0.175,0.180,0.842,0.039,0.103,0.620,
+		0.158,0.704 };
+
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 20; i++ )
+	{
+		s += sqr(p[0]+B[i]*p[1]+C[i]*sqr(p[1])-A[i]);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnJudge = { "Judge", 2, -10.0, 10.0,
+	16.081730132960381, &calcJudge };
+
+static double calcWayburnSeader01( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( sqr(pow(x,6.0)+pow(y,4.0)-17.0)+sqr(2.0*x+y-4.0) );
+}
+
+static const CTestFn TestFnWayburnSeader01 = { "WayburnSeader01", 2,
+	-5.0, 5.0, 0.0, &calcWayburnSeader01 };
+
+static double calcVenterSobiSobieski( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( sqr(x)-100.0*sqr(cos(x))-100.0*cos(sqr(x)/30.0)+sqr(y)-
+		100.0*sqr(cos(y))-100.0*cos(sqr(y)/30.0) );
+}
+
+static const CTestFn TestFnVenterSobiSobieski = { "VenterSobiSobieski", 2,
+	-50.0, 50.0, -400.0, &calcVenterSobiSobieski };
+
+static double calcElAttarVidyasDutta( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( sqr(x*x+y-10.0)+sqr(x+y*y-7.0)+sqr(x*x+y*y*y-1.0) );
+}
+
+static const CTestFn TestFnElAttarVidyasDutta = { "ElAttarVidyasDutta", 2,
+	-100.0, 100.0, 1.712780354, &calcElAttarVidyasDutta };
+
+static double calcModifiedRosenbrock( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( 74.0+100.0*sqr(y-x*x)+sqr(1.0-x)-
+		400.0*exp(-(sqr(x+1.0)+sqr(y+1.0))/0.1) );
+}
+
+static const CTestFn TestFnModifiedRosenbrock = { "ModifiedRosenbrock", 2,
+	-2.0, 2.0, 34.37, &calcModifiedRosenbrock };
+
+static double calcStochastic( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += rnd.getRndValue()*fabs(p[i]-1.0/(i+1));
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnStochastic = { "Stochastic", 0, -5.0, 5.0, 0.0,
+	&calcStochastic };
+
+static double calcXinSheYang01( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += rnd.getRndValue()*pow(fabs(p[i]),i+1);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnXinSheYang01 = { "XinSheYang01", 0, -5.0, 5.0, 0.0,
+	&calcXinSheYang01 };
+
+static double calcKowalik( const double* const p, const int N )
+{
+	static const double a[ 11 ] = { 4.0, 2.0, 1.0, 1.0/2, 1.0/4, 1.0/6,
+		1.0/8, 1.0/10, 1.0/12, 1.0/14, 1.0/16 };
+
+	static const double b[ 11 ] = { 0.1957, 0.1947, 0.1735, 0.1600, 0.0844,
+		0.0627, 0.0456, 0.0342, 0.0323, 0.0235, 0.0246 };
+
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i <= 10; i++ )
+	{
+		s += sqr(b[i]-(p[0]*(sqr(a[i])+a[i]*p[1]))/
+			(sqr(a[i])+a[i]*p[2]+p[3]));
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnKowalik = { "Kowalik", 4, -5.0, 5.0,
+	0.00030748610, &calcKowalik };
+
+static double calcTripod( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	const double px = ( x >= 0.0 ? 1.0 : 0.0 );
+	const double py = ( y >= 0.0 ? 1.0 : 0.0 );
+
+	return( py*(1.0+px)+fabs(x+50.0*py*(1.0-2.0*px))+
+		fabs(y+50.0*(1.0-2.0*py)) );
+}
+
+static const CTestFn TestFnTripod = { "Tripod", 2, -100.0, 100.0, 0.0,
+	&calcTripod };
+
+static double calcPathological( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N - 1; i++ )
+	{
+		s += 0.5 + (sqr(sin(sqrt(100.0*sqr(p[i+1])+sqr(p[i]))))-0.5)/
+			(1.0+0.001*sqr(sqr(p[i])-2.0*p[i]*p[i+1]+sqr(p[i+1])));
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnPathological = { "Pathological", 0, -100.0, 100.0,
+	0.0, &calcPathological };
+
+static double calcYaoLiu09( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sqr(p[i])-10.0*cos(2.0*M_PI*p[i])+10.0;
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnYaoLiu09 = { "YaoLiu09", 0, -5.12, 5.12, 0.0,
+	&calcYaoLiu09 };
+
 // Strategy optimization corpus based on simple N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -2591,7 +2795,7 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnEllipsoid, &TestFnGriewankRosenbrock, &TestFnSchaffer07,
 	&TestFnKatsuura, &TestFnTrigonometric01, &TestFnExponential,
 	&TestFnSchwefel01, &TestFnSchwefel02, &TestFnSchwefel04,
-	&TestFnDeb01, &TestFnDeb02, &TestFnLevy03, NULL };
+	&TestFnDeb01, &TestFnDeb02, &TestFnLevy03, &TestFnYaoLiu09, NULL };
 
 // Failing functions.
 
@@ -2604,7 +2808,7 @@ const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
 const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra04,
 	&TestFnDeVilliersGlasser02, NULL };
 
-// Time-consuming function: &TestFnGulfResearchProblem
+// CPU time-consuming function: &TestFnGulfResearchProblem
 
 // Test corpus including all solvable functions.
 
@@ -2651,4 +2855,8 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnShekel07, &TestFnShekel10, &TestFnMishra01, &TestFnMishra02,
 	&TestFnMishra07, &TestFnZettl, &TestFnMultiModal, &TestFnParsopoulos,
 	&TestFnDeb01, &TestFnDeb02, &TestFnCarromTable, &TestFnNewFunction03,
-	&TestFnLevy03, &TestFnGear, NULL };
+	&TestFnLevy03, &TestFnGear, &TestFnStretchedV, &TestFnUrsem04,
+	&TestFnJudge, &TestFnWayburnSeader01, &TestFnVenterSobiSobieski,
+	&TestFnElAttarVidyasDutta, &TestFnModifiedRosenbrock, &TestFnStochastic,
+	&TestFnXinSheYang01, &TestFnKowalik, &TestFnTripod, &TestFnPathological,
+	&TestFnYaoLiu09, NULL };
