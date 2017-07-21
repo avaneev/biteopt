@@ -39,27 +39,27 @@
  * bound-constrained derivative-free optimization strategy. It maintains a
  * cost-ordered population of previously evaluated solutions that are evolved
  * towards a lower cost. On every iteration, the highest-cost solution in the
- * list is unconditionally replaced with a new solution, and the list is
- * reordered. A population of solutions allows the strategy to space solution
- * vectors apart from each other thus making them cover a larger parameter
- * search space collectively. Beside that, parameter randomization and the
- * "step in the right direction" operation are used that move the solutions
- * into position with a probabilistically lower objective function value.
+ * list can be replaced with a new solution, and the list reordered. A
+ * population of solutions allows the strategy to space solution vectors apart
+ * from each other thus making them cover a larger parameter search space
+ * collectively. Beside that, parameter randomization and the "step in the
+ * right direction" operation are used that move the solutions into position
+ * with a probabilistically lower objective function value.
  *
  * The benefit of this strategy is a relatively high robustness: it can
- * successfully optimize a wide range of 1-10 dimensional test functions.
+ * successfully optimize a wide range of multi-dimensional test functions.
  * Another benefit is a low convergence time which depends on the complexity
  * of the objective function. Like many stochastic optimization strategies
  * with fast convergence, this strategy can't solve problems with narrow or
- * rogue optimums. Harder problems may require dozens of optimization attempts
- * to reach optimum.
+ * rogue optimums. Hard (multi-modal) problems may require many optimization
+ * attempts to reach optimum.
  *
  * The algorithm consists of the following elements:
  *
- * 1. A population of previous solutions is maintained. A solution is an
- * independent parameter vector which is evolved towards a better solution.
- * Also a cost-ordered list of solutions is maintaned. On every iteration
- * a single randomly-selected previous solution is evolved.
+ * 1. A cost-ordered population of previous solutions is maintained. A
+ * solution is an independent parameter vector which is evolved towards a
+ * better solution. On every iteration a single randomly-selected previous
+ * solution is evolved.
  *
  * 2. On every iteration the "step in the right direction" operation is
  * performed using the current best and worst solutions. This is conceptually
@@ -109,12 +109,12 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=13.313445
-		CostMult = 2.45378619;
+		// Cost=12.891381
+		CostMult = 0.55803283;
 		MinxMult = 0.5;
-		RandProb = 0.61674315;
-		CentProb = 0.27854364;
-		CentSpan = 2.14391164;
+		RandProb = 0.58802784;
+		CentProb = 0.38051590;
+		CentSpan = 2.38109636;
 	}
 
 	~CBiteOpt()
@@ -303,6 +303,8 @@ public:
 
 		if( NewCost > cT )
 		{
+			// Cost constraint check failed, reject this solution.
+
 			return( false );
 		}
 
@@ -318,7 +320,7 @@ public:
 			BestCost = NewCost;
 		}
 
-		// Replace the highest-cost previous solution.
+		// Replace the highest-cost previous solution, update centroid.
 
 		double* const rp = CurParams[ sH ];
 
@@ -539,7 +541,7 @@ protected:
 	/**
 	 * Function wraps the specified parameter value so that it stays in the
 	 * [0.0; 1.0] range, by wrapping it over the boundaries using random
-	 * operator. This operation increases convergence in comparison to
+	 * operator. This operation improves convergence in comparison to
 	 * clamping.
 	 *
 	 * @param v Parameter value to wrap.

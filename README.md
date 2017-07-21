@@ -7,20 +7,20 @@ BiteOpt stochastic optimization class. Implements a stochastic non-linear
 bound-constrained derivative-free optimization strategy. It maintains a
 cost-ordered population of previously evaluated solutions that are evolved
 towards a lower cost. On every iteration, the highest-cost solution in the
-list is unconditionally replaced with a new solution, and the list is
-reordered. A population of solutions allows the strategy to space solution
-vectors apart from each other thus making them cover a larger parameter
-search space collectively. Beside that, parameter randomization and the
-"step in the right direction" operation are used that move the solutions
-into position with a probabilistically lower objective function value.
+list can be replaced with a new solution, and the list reordered. A
+population of solutions allows the strategy to space solution vectors apart
+from each other thus making them cover a larger parameter search space
+collectively. Beside that, parameter randomization and the "step in the
+right direction" operation are used that move the solutions into position
+with a probabilistically lower objective function value.
 
 The benefit of this strategy is a relatively high robustness: it can
-successfully optimize a wide range of 1-10 dimensional test functions.
+successfully optimize a wide range of multi-dimensional test functions.
 Another benefit is a low convergence time which depends on the complexity
 of the objective function. Like many stochastic optimization strategies
 with fast convergence, this strategy can't solve problems with narrow or
-rogue optimums. Harder problems may require dozens of optimization attempts
-to reach optimum.
+rogue optimums. Hard (multi-modal) problems may require many optimization
+attempts to reach optimum.
 
 ### Notes ###
 
@@ -29,19 +29,19 @@ problems and performed well. Due to its design this strategy may be
 particularly good at improving an existing sub-optimal local solution. This
 strategy offers a very fast convergence on 1-3 dimensional problems, moderate
 convergence speed on 4-10 dimensional problems, and slow convergence speed
-on >10 dimensional problems, usually much slower than the best competing
+on >10 dimensional problems, usually slower than the best competing
 strategies.
 
 This strategy was compared with the results of this paper (on 241 published
 non-convex problems): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
 This strategy was able to solve 64% of problems in 10 attempts, 2500
 iterations each. For 1-2 dimensional problems, this strategy's success rate is
-97%. For 3-9 dimensional problems the success rate is 68%, for 10-30
+95%. For 3-9 dimensional problems the success rate is 65%, for 10-30
 dimensional problems the success rate is only 37%.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
-Running 10-20 times is a minimal requirement. This strategy is hugely
+Running 10 times is a minimal requirement. This strategy is hugely
 probabilistic and it depends on its initial state, which is selected randomly.
 In most cases it is more efficient to rerun the optimization with a new random
 seed than to wait for the optimization process to converge. Based on the

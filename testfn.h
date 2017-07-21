@@ -1626,7 +1626,7 @@ static double calcDownhillStep( const double* const p, const int N )
 {
 	const double x = p[ 0 ];
 	const double y = p[ 1 ];
-	return( roundf(10.0*(10.0-exp(-sqr(x)-3.0*sqr(y))))/10.0 );
+	return( floor(10.0*(10.0-exp(-sqr(x)-3.0*sqr(y))))/10.0 );
 }
 
 static const CTestFn TestFnDownhillStep = { "DownhillStep", 2, -10.0, 10.0,
@@ -1916,7 +1916,7 @@ static double calcStep01( const double* const p, const int N )
 
 	for( i = 0; i < N; i++ )
 	{
-		s += roundf(fabs(p[i]));
+		s += floor(fabs(p[i]));
 	}
 
 	return( s );
@@ -1932,7 +1932,7 @@ static double calcStep02( const double* const p, const int N )
 
 	for( i = 0; i < N; i++ )
 	{
-		s += sqr(roundf(fabs(p[i]+0.5)));
+		s += sqr(floor(fabs(p[i]+0.5)));
 	}
 
 	return( s );
@@ -1948,7 +1948,7 @@ static double calcStep03( const double* const p, const int N )
 
 	for( i = 0; i < N; i++ )
 	{
-		s += roundf(sqr(p[i]));
+		s += floor(sqr(p[i]));
 	}
 
 	return( s );
@@ -2403,6 +2403,176 @@ static double calcShekel10( const double* const p, const int N )
 static const CTestFn TestFnShekel10 = { "Shekel10", 4, 0.0, 10.0,
 	-10.5319292512, &calcShekel10 };
 
+static double calcMishra01( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N - 1; i++ )
+	{
+		s += p[i];
+	}
+
+	s = N - s;
+
+	return( pow(1.0+s,s) );
+}
+
+static const CTestFn TestFnMishra01 = { "Mishra01", 2, 0.0, 1.0, 2.0,
+	&calcMishra01 };
+
+static double calcMishra02( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N - 1; i++ )
+	{
+		s += (p[i]+p[i+1])/2.0;
+	}
+
+	s = N - s;
+
+	return( pow(1.0+s,s) );
+}
+
+static const CTestFn TestFnMishra02 = { "Mishra02", 2, 0.0, 1.0, 2.0,
+	&calcMishra02 };
+
+static double calcMishra07( const double* const p, const int N )
+{
+	double s = 0.0;
+	int nf = 1;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += p[i];
+		nf *= i + 1;
+	}
+
+	return( sqr(s-nf) );
+}
+
+static const CTestFn TestFnMishra07 = { "Mishra07", 0, -10.0, 10.0, 0.0,
+	&calcMishra07 };
+
+static double calcZettl( const double* const p, const int N )
+{
+	return( 1.0/4.0*p[0]+sqr(sqr(p[0])-2.0*p[0]+sqr(p[1])) );
+}
+
+static const CTestFn TestFnZettl = { "Zettl", 2, -1.0, 5.0,
+	-0.003791237220468656, &calcZettl };
+
+static double calcMultiModal( const double* const p, const int N )
+{
+	double s1 = 0.0;
+	double s2 = 1.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s1 += fabs(p[i]);
+		s2 *= fabs(p[i]);
+	}
+
+	return( s1 * s2 );
+}
+
+static const CTestFn TestFnMultiModal = { "MultiModal", 0, -10.0, 10.0, 0.0,
+	&calcMultiModal };
+
+static double calcParsopoulos( const double* const p, const int N )
+{
+	return( sqr(cos(p[0]))+sqr(sin(p[1])) );
+}
+
+static const CTestFn TestFnParsopoulos = { "Parsopoulos", 2, -5.0, 5.0, 0.0,
+	&calcParsopoulos };
+
+static double calcDeb01( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += pow(sin(5.0*M_PI*p[i]),6.0);
+	}
+
+	return( -s/N );
+}
+
+static const CTestFn TestFnDeb01 = { "Deb01", 0, -1.0, 1.0, -1.0, &calcDeb01 };
+
+static double calcDeb02( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += pow(sin(5.0*M_PI*(pow(p[i],3.0/4.0)-0.05)),6.0);
+	}
+
+	return( -s/N );
+}
+
+static const CTestFn TestFnDeb02 = { "Deb02", 0, 0.0, 1.0, -1.0, &calcDeb02 };
+
+static double calcCarromTable( const double* const p, const int N )
+{
+	return( -1.0/30.0*exp(2.0*fabs(1.0-sqrt(sqr(p[0])+sqr(p[1]))/M_PI))*
+		sqr(cos(p[0]))*sqr(cos(p[1])) );
+}
+
+static const CTestFn TestFnCarromTable = { "CarromTable", 2, -10.0, 10.0,
+	-24.15681551650653, &calcCarromTable };
+
+static double calcNewFunction03( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+
+	return( 0.01*x+0.1*y+sqr(x+sqr(sin(sqr(cos(x)+cos(y))))+
+		sqr(cos(sqr(sin(x)+sin(y))))) );
+}
+
+static const CTestFn TestFnNewFunction03 = { "NewFunction03", 2, -10.0, 10.0,
+	-1.019829, &calcNewFunction03 };
+
+static double calcLevy03( const double* const p, const int N )
+{
+	double y[ N ];
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		y[ i ] = 1.0+(p[i]-1.0)/4.0;
+	}
+
+	double s = 0.0;
+
+	for( i = 0; i < N - 1; i++ )
+	{
+		s += sqr(y[i]-1.0)*(1.0+10.0*sqr(sin(M_PI*y[i+1])))+sqr(y[N-1]-1.0);
+	}
+
+	return( sqr(sin(M_PI*y[0]))+s );
+}
+
+static const CTestFn TestFnLevy03 = { "Levy03", 0, -10.0, 10.0, 0.0,
+	&calcLevy03 };
+
+static double calcGear( const double* const p, const int N )
+{
+	return( sqr(1.0/6.931-floor(p[0])*floor(p[1])/(floor(p[2])*floor(p[3]))) );
+}
+
+static const CTestFn TestFnGear = { "Gear", 4, 12.0, 60.0,
+	2.7e-12, &calcGear };
+
 // Strategy optimization corpus based on simple N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -2420,7 +2590,8 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnBuecheRastrigin, &TestFnDifferentPowers, &TestFnDiscus,
 	&TestFnEllipsoid, &TestFnGriewankRosenbrock, &TestFnSchaffer07,
 	&TestFnKatsuura, &TestFnTrigonometric01, &TestFnExponential,
-	&TestFnSchwefel01, &TestFnSchwefel02, &TestFnSchwefel04, NULL };
+	&TestFnSchwefel01, &TestFnSchwefel02, &TestFnSchwefel04,
+	&TestFnDeb01, &TestFnDeb02, &TestFnLevy03, NULL };
 
 // Failing functions.
 
@@ -2477,4 +2648,7 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnRotatedEllipse01, &TestFnRotatedEllipse02, &TestFnTrigonometric01,
 	&TestFnExponential, &TestFnUrsem01, &TestFnQuadratic, &TestFnSchwefel01,
 	&TestFnSchwefel02, &TestFnSchwefel04, &TestFnSchwefel36, &TestFnShekel05,
-	&TestFnShekel07, &TestFnShekel10, NULL };
+	&TestFnShekel07, &TestFnShekel10, &TestFnMishra01, &TestFnMishra02,
+	&TestFnMishra07, &TestFnZettl, &TestFnMultiModal, &TestFnParsopoulos,
+	&TestFnDeb01, &TestFnDeb02, &TestFnCarromTable, &TestFnNewFunction03,
+	&TestFnLevy03, &TestFnGear, NULL };
