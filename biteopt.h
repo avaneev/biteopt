@@ -68,8 +68,8 @@
  * 3. Depending on the RandProb probability, also an individual parameter
  * value randomization is performed using "bitmask inversion" operation.
  *
- * 4. With CentProb probability the "step in the right direction" operation is
- * performed using the centroid vector.
+ * 4. With CentProb probability (only together with N.3) the "step in the
+ * right direction" operation is performed using the centroid vector.
  *
  * 5. After each objective function evaluation, the highest-cost previous
  * solution is replaced using the cost constraint.
@@ -109,12 +109,12 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=12.891381
-		CostMult = 0.55803283;
+		// Cost=12.544935
+		CostMult = 1.44721437;
 		MinxMult = 0.5;
-		RandProb = 0.58802784;
-		CentProb = 0.38051590;
-		CentSpan = 2.38109636;
+		RandProb = 0.67079959;
+		CentProb = 0.52505497;
+		CentSpan = 2.38506978;
 	}
 
 	~CBiteOpt()
@@ -268,20 +268,20 @@ public:
 				imask ) / MantMult;
 
 			ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
-		}
 
-		CentCntr += CentProb;
+			CentCntr += CentProb;
 
-		if( CentCntr >= 1.0 )
-		{
-			CentCntr -= 1.0;
-
-			// Move towards centroid vector or beyond it, randomly.
-
-			for( i = 0; i < ParamCount; i++ )
+			if( CentCntr >= 1.0 )
 			{
-				const double m = rnd.getRndValue() * CentSpan;
-				Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
+				CentCntr -= 1.0;
+
+				// Move towards centroid vector or beyond it, randomly.
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					const double m = rnd.getRndValue() * CentSpan;
+					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
+				}
 			}
 		}
 

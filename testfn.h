@@ -1377,7 +1377,7 @@ static double calcAlpine2_p( double* const minv, double* const maxv,
 	for( i = 0; i < N; i++ )
 	{
 		minv[ i ] = 0.0;
-		maxv[ i ] = 10.0;
+		maxv[ i ] = 20.0;
 	}
 
 	return( -pow( 2.808, (double) N ));
@@ -1446,8 +1446,8 @@ static double calcStyblinskiTank_p( double* const minv, double* const maxv,
 
 	for( i = 0; i < N; i++ )
 	{
-		minv[ i ] = -5.0;
-		maxv[ i ] = 5.0;
+		minv[ i ] = -10.0;
+		maxv[ i ] = 10.0;
 	}
 
 	return( -39.16599 * N );
@@ -2033,6 +2033,47 @@ static double calcHartman3( const double* const p, const int N )
 
 static const CTestFn TestFnHartman3 = { "Hartman3", 3, 0.0, 1.0,
 	-3.86278, &calcHartman3 };
+
+static double calcHartman6( const double* const p, const int N )
+{
+	static const double a[ 4 ][ 6 ] =
+		{
+			{ 10.0, 3.0, 17.0, 3.5, 1.7, 8.0 },
+			{ 0.05, 10.0, 17.0, 0.1, 8.0, 14.0 },
+			{ 3.0, 3.5, 1.7, 10.0, 17.0, 8.0 },
+			{ 17.0, 8.0, 0.05, 10.0, 0.1 , 14.0 }
+		};
+
+	static const double c[ 4 ] = { 1, 1.2, 3, 3.2 };
+	static const double pp[ 4 ][ 6 ] =
+		{
+			{ 0.1312, 0.1696, 0.5569, 0.0124, 0.8283, 0.5886 },
+			{ 0.2329, 0.4135, 0.8307, 0.3736, 0.1004, 0.9991 },
+			{ 0.2348, 0.1451, 0.3522, 0.2883, 0.3047, 0.6650 },
+			{ 0.4047, 0.8828, 0.8732, 0.5743, 0.1091, 0.0381 }
+		};
+
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 4; i++ )
+	{
+		double s2 = 0.0;
+		int j;
+
+		for( j = 0; j < N; j++ )
+		{
+			s2 += a[i][j]*sqr(p[j]-pp[i][j]);
+		}
+
+		s += c[i]*exp(-s2);
+	}
+
+	return( -s );
+}
+
+static const CTestFn TestFnHartman6 = { "Hartman6", 6, 0.0, 1.0,
+	-3.32236801139, &calcHartman6 };
 
 static double calcDeVilliersGlasser02( const double* const p, const int N )
 {
@@ -2777,25 +2818,192 @@ static double calcYaoLiu09( const double* const p, const int N )
 static const CTestFn TestFnYaoLiu09 = { "YaoLiu09", 0, -5.12, 5.12, 0.0,
 	&calcYaoLiu09 };
 
-// Strategy optimization corpus based on simple N-dimensional functions.
+static double calcUrsem03( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( -sin(2.2*M_PI*x+0.5*M_PI)*(2.0-fabs(x))/2.0*(3.0-fabs(x))/2.0-
+		sin(2.2*M_PI*y+0.5*M_PI)*(2.0-fabs(y))/2.0*(3.0-fabs(y))/2.0 );
+}
+
+static double calcUrsem03_p( double* const minv, double* const maxv,
+	const int N )
+{
+	minv[ 0 ] = -2.0;
+	maxv[ 0 ] = 2.0;
+	minv[ 1 ] = -1.5;
+	maxv[ 1 ] = 1.5;
+	return( -3.0 );
+}
+
+static const CTestFn TestFnUrsem03 = { "Ursem03", 2, 0.0, 0.0, 0.0,
+	&calcUrsem03, &calcUrsem03_p };
+
+static double calcMishra08( const double* const p, const int N )
+{
+	const double x = p[ 0 ];
+	const double y = p[ 1 ];
+	return( 0.001*sqr(fabs(pow(x,10.0)-20.0*pow(x,9.0)+180.0*pow(x,8.0)-
+		960.0*pow(x,7.0)+3360.0*pow(x,6.0)-8064.0*pow(x,5.0)+
+		13340.0*pow(x,4.0)-15360.0*pow(x,3.0)+11520.0*pow(x,2.0)-
+		5120.0*x+2624.0)*fabs(pow(y,4.0)+12.0*pow(y,3.0)+54.0*pow(y,2.0)+
+		108.0*y+81.0)) );
+}
+
+static const CTestFn TestFnMishra08 = { "Mishra08", 2, -10.0, 10.0, 0.0,
+	&calcMishra08 };
+
+static double calcAluffiPentini( const double* const p, const int N )
+{
+	const double x1 = p[ 0 ];
+	const double x2 = p[ 1 ];
+
+	return( 0.25*sqr(sqr(x1))-0.5*sqr(x1)+0.1*x1+0.5*sqr(x2) );
+}
+
+static const CTestFn TestFnAluffiPentini = { "AluffiPentini", 2, -10.0, 10.0,
+	-0.3523, &calcAluffiPentini };
+
+static double calcBeckerLago( const double* const p, const int N )
+{
+	const double x1 = p[ 0 ];
+	const double x2 = p[ 1 ];
+
+	return( sqr(fabs(x1)-5.0)+sqr(fabs(x2)-5.0) );
+}
+
+static const CTestFn TestFnBeckerLago = { "BeckerLago", 2, -10.0, 10.0,
+	0.0, &calcBeckerLago };
+
+static double calcCosineMixture( const double* const p, const int N )
+{
+	double s1 = 0.0;
+	double s2 = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s1 += cos(5.0*M_PI*p[i]);
+		s2 += sqr(p[i]);
+	}
+
+	return( -0.1*s1+s2 );
+}
+
+static double calcCosineMixture_p( double* const minv, double* const maxv,
+	const int N )
+{
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		minv[ i ] = -1.0;
+		maxv[ i ] = 1.0;
+	}
+
+	return( -0.1 * N );
+}
+
+static const CTestFn TestFnCosineMixture = { "CosineMixture", 0, 0.0, 0.0,
+	0.0, &calcCosineMixture, &calcCosineMixture_p };
+
+static double calcMeyerRoth( const double* const p, const int N )
+{
+	static const double t[ 5 ] = { 1.0, 2.0, 1.0, 2.0, 0.1 };
+	static const double v[ 5 ] = { 1.0, 1.0, 2.0, 2.0, 0.0 };
+	static const double y[ 5 ] = { 0.126, 0.219, 0.076, 0.126, 0.186 };
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 5; i++ )
+	{
+		s += sqr(p[0]*p[2]*t[i]/(1.0+p[0]*t[i]+p[1]*v[i])-y[i]);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnMeyerRoth = { "MeyerRoth", 3, -20.0, 20.0,
+	0.00004357968, &calcMeyerRoth };
+
+static double calcMultiGaussian( const double* const p, const int N )
+{
+	static const double a[ 5 ] = { 0.5, 1.2, 1.0, 1.0, 1.2 };
+	static const double b[ 5 ] = { 0.0, 1.0, 0.0, -0.5, 0.0 };
+	static const double c[ 5 ] = { 0.0, 0.0, -0.5, 0.0, 1.0 };
+	static const double d[ 5 ] = { 0.1, 0.5, 0.5, 0.5, 0.5 };
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 5; i++ )
+	{
+		s += a[i]*exp(-(sqr(p[0]-b[i])+sqr(p[1]-c[i]))/sqr(d[i]));
+	}
+
+	return( -s );
+}
+
+static const CTestFn TestFnMultiGaussian = { "MultiGaussian", 2, -2.0, 2.0,
+	-1.296954, &calcMultiGaussian };
+
+static double calcPeriodic( const double* const p, const int N )
+{
+	const double x1 = p[ 0 ];
+	const double x2 = p[ 1 ];
+
+	return( 1.0+sqr(sin(x1))+sqr(sin(x2))-0.1*exp(-sqr(x1)-sqr(x2)) );
+}
+
+static const CTestFn TestFnPeriodic = { "Periodic", 2, -10.0, 10.0,
+	0.9, &calcPeriodic };
+
+static double calcWood( const double* const p, const int N )
+{
+	return( 100.0*sqr(p[1]-sqr(p[0]))+sqr(1.0-p[0])+90.0*sqr(p[3]-sqr(p[2]))+
+		sqr(1.0-p[2])+10.1*(sqr(p[1]-1.0)+sqr(p[3]-1.0))+
+		19.8*(p[1]-1.0)*(p[3]-1.0) );
+}
+
+static const CTestFn TestFnWood = { "Wood", 4, -10.0, 10.0,
+	0.0, &calcWood };
+
+static double calcLevyMontalvo2( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N - 1; i++ )
+	{
+		s += sqr(p[i]-1.0)*(1.0+sqr(sin(3.0*M_PI*p[i+1])));
+	}
+
+	return( 0.1*(sqr(sin(3.0*M_PI*p[0]))+s+sqr(p[N-1]-1.0)*
+		(1.0+sqr(sin(2.0*M_PI*p[N-1])))) );
+}
+
+static const CTestFn TestFnLevyMontalvo2 = { "LevyMontalvo2", 0, -5.0, 5.0,
+	0.0, &calcLevyMontalvo2 };
+
+// Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnSchwefel222, &TestFnQing, &TestFnSphere, &TestFnAckley,
 	&TestFnRosenbrock, &TestFnBohachevsky1, &TestFnEasomN, &TestFnRastrigin,
 	&TestFnSumSquares, &TestFnZacharov, &TestFnRotatedHyperEllipsoid,
 	&TestFnWavy, &TestFnBrown, &TestFnAlpine1, &TestFnChungReynolds,
-	&TestFnBentCigar, &TestFnHolzman, &TestFnHyperGrid, &TestFnVincent,
+	&TestFnBentCigar, &TestFnHolzman, &TestFnHyperGrid, /*&TestFnVincent,*/
 	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnGriewank,
-	&TestFnTrigonometric02, &TestFnZeroSum, &TestFnSchwefel,
-	&TestFnStyblinskiTank, &TestFnYaoLiu04, &TestFnDropWave, &TestFnSalomon,
-	&TestFnWhitley, &TestFnWeierstrass, &TestFnXinSheYang02,
-	&TestFnXinSheYang03, &TestFnXinSheYang04, &TestFnPowellSum,
-	&TestFnAlpine2, &TestFnDeflCorrSpring, &TestFnQuintic, &TestFnDixonPrice,
-	&TestFnBuecheRastrigin, &TestFnDifferentPowers, &TestFnDiscus,
-	&TestFnEllipsoid, &TestFnGriewankRosenbrock, &TestFnSchaffer07,
-	&TestFnKatsuura, &TestFnTrigonometric01, &TestFnExponential,
-	&TestFnSchwefel01, &TestFnSchwefel02, &TestFnSchwefel04,
-	&TestFnDeb01, &TestFnDeb02, &TestFnLevy03, &TestFnYaoLiu09, NULL };
+	&TestFnZeroSum, &TestFnSchwefel, &TestFnStyblinskiTank, &TestFnYaoLiu04,
+	/*&TestFnDropWave, &TestFnSalomon, &TestFnWhitley,*/ &TestFnWeierstrass,
+	&TestFnXinSheYang02, /*&TestFnXinSheYang03, &TestFnXinSheYang04,*/
+	&TestFnPowellSum, &TestFnAlpine2, /*&TestFnDeflCorrSpring, */
+	&TestFnQuintic, /*&TestFnDixonPrice, */&TestFnBuecheRastrigin,
+	&TestFnDifferentPowers, &TestFnDiscus, &TestFnEllipsoid,
+	&TestFnGriewankRosenbrock, &TestFnSchaffer07,
+	/*&TestFnKatsuura, */&TestFnTrigonometric01, &TestFnTrigonometric02,
+	&TestFnExponential, &TestFnSchwefel01, &TestFnSchwefel02,
+	&TestFnSchwefel04, &TestFnDeb01, /*&TestFnDeb02, */&TestFnLevy03,
+	&TestFnYaoLiu09, &TestFnCosineMixture, &TestFnLevyMontalvo2, NULL };
 
 // Failing functions.
 
@@ -2845,8 +3053,8 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnUrsemWaves, &TestFnYaoLiu04, &TestFnBentCigar,
 	&TestFnDeflCorrSpring, &TestFnHyperGrid, &TestFnQuintic, &TestFnVincent,
 	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnHelicalValley,
-	&TestFnDixonPrice, &TestFnHartman3, &TestFnChenV, &TestFnChenBird,
-	&TestFnPowerSum, &TestFnZeroSum, &TestFnBuecheRastrigin,
+	&TestFnDixonPrice, &TestFnHartman3, &TestFnHartman6, &TestFnChenV,
+	&TestFnChenBird, &TestFnPowerSum, &TestFnZeroSum, &TestFnBuecheRastrigin,
 	&TestFnDifferentPowers, &TestFnDiscus, &TestFnEllipsoid,
 	&TestFnGriewankRosenbrock, &TestFnSchaffer07, &TestFnKatsuura,
 	&TestFnRotatedEllipse01, &TestFnRotatedEllipse02, &TestFnTrigonometric01,
@@ -2859,4 +3067,7 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnJudge, &TestFnWayburnSeader01, &TestFnVenterSobiSobieski,
 	&TestFnElAttarVidyasDutta, &TestFnModifiedRosenbrock, &TestFnStochastic,
 	&TestFnXinSheYang01, &TestFnKowalik, &TestFnTripod, &TestFnPathological,
-	&TestFnYaoLiu09, NULL };
+	&TestFnYaoLiu09, &TestFnUrsem03, &TestFnMishra08, &TestFnAluffiPentini,
+	&TestFnBeckerLago, &TestFnCosineMixture, &TestFnMeyerRoth,
+	&TestFnMultiGaussian, &TestFnPeriodic, &TestFnWood, &TestFnLevyMontalvo2,
+	NULL };

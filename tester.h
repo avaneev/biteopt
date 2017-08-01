@@ -289,12 +289,12 @@ public:
 					for( i = 0; i < Dims; i++ )
 					{
 						opt -> rots[ i ] = 0.0;//M_PI * rnd.getRndValue();
-						opt -> shifts[ i ] =
-							( opt -> maxv[ i ] - opt -> minv[ i ]) *
+						double d = ( opt -> maxv[ i ] - opt -> minv[ i ]);
+						opt -> shifts[ i ] = d *
 							( rnd.getRndValue() - 0.5 ) * 0.5;
 
-//						opt -> minv[ i ] -= opt -> shifts[ i ];
-//						opt -> maxv[ i ] -= opt -> shifts[ i ];
+						opt -> minv[ i ] -= d * 0.25;
+						opt -> maxv[ i ] += d * 0.25;
 
 						opt -> signs[ i ] = 1.0;//( 1.0 + rnd.getRndValue() * 0.5 );
 					}
@@ -379,15 +379,11 @@ public:
 		ItAvg /= FnCount;
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
-//		AtAvg /= FnCount;
 		AtAvg = 1.0 / ( 1.0 - (double) RejTotal / IterCount / FnCount );
-//		Score = ( AtAvg - 1.0 ) * 100.0 +
-//			fabs( ItAvg - 353.0 ) * 0.1 +
-//			fabs( ItRtAvg - 0.260 ) * 50;
 		Score = ( AtAvg - 1.0 ) * 100.0 +
 			fabs( ItAvg - 380.0 ) * 0.1;
 		Success = 100.0 * ComplTotal / FnCount / IterCount;
-//		Score = -Success + fabs( ItAvg - 380.0 );
+//		Score = -Success;// + fabs( ItAvg - 380.0 );
 
 		if( DoPrint )
 		{

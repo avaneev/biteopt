@@ -6,7 +6,7 @@ int main()
 	CTester Tester;
 
 	rnd.init( 0 );
-	Tester.init( 10, OptCorpusND, 0.01, 150, 20000, false, true );
+	Tester.init( 10, OptCorpusND, 0.01, 15, 70000, false, true );
 
 	Tester.run();
 }
