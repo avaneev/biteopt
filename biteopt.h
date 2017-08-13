@@ -109,12 +109,12 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=12.544935
-		CostMult = 1.44721437;
+		// Cost=11.940888
+		CostMult = 1.37419727;
 		MinxMult = 0.5;
-		RandProb = 0.67079959;
-		CentProb = 0.52505497;
-		CentSpan = 2.38506978;
+		RandProb = 0.55583971;
+		CentProb = 0.56035300;
+		CentSpan = 1.86561303;
 	}
 
 	~CBiteOpt()
@@ -261,8 +261,9 @@ public:
 			// Bitmask inversion operation, works as a "driver" of
 			// optimization process, applied to 1 random parameter at a time.
 
+			const double r = rnd.getRndValue();
 			const int imask =
-				( 2 << (int) ( rnd.getRndValue() * MantSize )) - 1;
+				( 2 << (int) (( 0.999999999 - r * r ) * MantSize )) - 1;
 
 			Params[ ParamCntr ] = ( (int) ( Params[ ParamCntr ] * MantMult ) ^
 				imask ) / MantMult;

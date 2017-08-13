@@ -2984,6 +2984,108 @@ static double calcLevyMontalvo2( const double* const p, const int N )
 static const CTestFn TestFnLevyMontalvo2 = { "LevyMontalvo2", 0, -5.0, 5.0,
 	0.0, &calcLevyMontalvo2 };
 
+static double calcLangermann( const double* const p, const int N )
+{
+	static const double a[ 5 ] = {3,5,2,1,7};
+	static const double b[ 5 ] = {5,2,1,4,9};
+	static const double c[ 5 ] = {1,2,5,2,3};
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 5; i++ )
+	{
+		s += c[i]*exp(-(1.0/M_PI)*(sqr(p[0]-a[i]) +
+			sqr(p[1]-b[i])))*cos(M_PI*(sqr(p[0]-a[i]) + sqr(p[1]-b[i])));
+	}
+
+	return( -s );
+}
+
+static const CTestFn TestFnLangermann = { "Langermann", 2, 0.0, 10.0,
+	-5.1621259, &calcLangermann };
+
+static double calcMishra10( const double* const p, const int N )
+{
+	const double x1 = p[ 0 ];
+	const double x2 = p[ 1 ];
+
+	return( sqr(x1+x2-x1*x2) );
+}
+
+static const CTestFn TestFnMishra10 = { "Mishra10", 2, -10.0, 10.0,
+	0.0, &calcMishra10 };
+
+static double calcDecanomial( const double* const p, const int N )
+{
+	const double F1 = fabs(pow(p[0],10.0)-20.0*pow(p[0],9.0)+
+		180.0*pow(p[0],8.0)-960.0*pow(p[0],7.0)+3360.0*pow(p[0],6.0)-
+		8064.0*pow(p[0],5.0)+13340.0*pow(p[0],4.0)-15360.0*pow(p[0],3.0)+
+		11520.0*pow(p[0],2.0)-5120.0*p[0]+2624.0);
+	const double F2 = fabs(pow(p[1],4.0)+12.0*pow(p[1],3.0)+
+		54.0*pow(p[1],2.0)+108.0*p[1]+81.0);
+
+	return( 0.001*sqr(F1+F2));
+}
+
+static const CTestFn TestFnDecanomial = { "Decanomial", 2, -10.0, 10.0,
+	0.0, &calcDecanomial };
+
+static double calcXor( const double* const p, const int N )
+{
+	const double F11 = p[6]/(1.0+exp(-p[0]-p[1]-p[4]));
+	const double F12 = p[7]/(1.0+exp(-p[2]-p[3]-p[5]));
+	const double F1 = 1.0/sqr(1.0+exp(-F11-F12-p[8]));
+	const double F21 = p[6]/(1.0+exp(-p[4]));
+	const double F22 = p[7]/(1.0+exp(-p[5]));
+	const double F2 = 1.0/sqr(1.0+exp(-F21-F22-p[8]));
+	const double F31 = p[6]/(1.0+exp(-p[0]-p[4]));
+	const double F32 = p[7]/(1.0+exp(-p[2]-p[5]));
+	const double F3 = sqr(1.0-1.0/(1.0+exp(-F31-F32-p[8])));
+	const double F41 = p[6]/(1.0+exp(-p[1]-p[4]));
+	const double F42 = p[7]/(1.0+exp(-p[3]-p[5]));
+	const double F4 = sqr(1.0-1.0/(1.0+exp(-F41-F42-p[8])));
+
+	return( F1+F2+F3+F4 );
+}
+
+static const CTestFn TestFnXor = { "Xor", 9, -1.0, 1.0, 0.9597588, &calcXor };
+
+static double calcRana( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		const double E = p[i]+1.0;
+		const double x = p[i];
+
+		s += E*cos(sqrt(fabs(E-x)))*sin(sqrt(fabs(E+x)))+
+			x*cos(sqrt(fabs(E+x)))*sin(sqrt(fabs(E-x)));
+	}
+
+	return( s );
+}
+
+static double calcRana_p( double* const minv, double* const maxv,
+	const int N )
+{
+	double p[ N ];
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		minv[ i ] = -500.000001;
+		maxv[ i ] = 500.000001;
+		p[ i ] = -500.0;
+	}
+
+	return( calcRana( p, N ));
+}
+
+static const CTestFn TestFnRana = { "Rana", 0, 0.0, 0.0, 0.0, &calcRana,
+	&calcRana_p };
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -2991,19 +3093,20 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnRosenbrock, &TestFnBohachevsky1, &TestFnEasomN, &TestFnRastrigin,
 	&TestFnSumSquares, &TestFnZacharov, &TestFnRotatedHyperEllipsoid,
 	&TestFnWavy, &TestFnBrown, &TestFnAlpine1, &TestFnChungReynolds,
-	&TestFnBentCigar, &TestFnHolzman, &TestFnHyperGrid, /*&TestFnVincent,*/
-	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnGriewank,
-	&TestFnZeroSum, &TestFnSchwefel, &TestFnStyblinskiTank, &TestFnYaoLiu04,
-	/*&TestFnDropWave, &TestFnSalomon, &TestFnWhitley,*/ &TestFnWeierstrass,
-	&TestFnXinSheYang02, /*&TestFnXinSheYang03, &TestFnXinSheYang04,*/
-	&TestFnPowellSum, &TestFnAlpine2, /*&TestFnDeflCorrSpring, */
-	&TestFnQuintic, /*&TestFnDixonPrice, */&TestFnBuecheRastrigin,
-	&TestFnDifferentPowers, &TestFnDiscus, &TestFnEllipsoid,
-	&TestFnGriewankRosenbrock, &TestFnSchaffer07,
-	/*&TestFnKatsuura, */&TestFnTrigonometric01, &TestFnTrigonometric02,
+	&TestFnBentCigar, &TestFnHolzman, &TestFnHyperGrid, &TestFnStep01,
+	&TestFnStep02, &TestFnStep03, &TestFnGriewank, &TestFnZeroSum,
+	&TestFnSchwefel, &TestFnStyblinskiTank, &TestFnYaoLiu04,
+	&TestFnWeierstrass, &TestFnXinSheYang04, &TestFnPowellSum, &TestFnAlpine2,
+	&TestFnQuintic, &TestFnBuecheRastrigin, &TestFnDifferentPowers,
+	&TestFnDiscus, &TestFnEllipsoid, &TestFnGriewankRosenbrock,
+	&TestFnSchaffer07, &TestFnTrigonometric01, &TestFnTrigonometric02,
 	&TestFnExponential, &TestFnSchwefel01, &TestFnSchwefel02,
-	&TestFnSchwefel04, &TestFnDeb01, /*&TestFnDeb02, */&TestFnLevy03,
-	&TestFnYaoLiu09, &TestFnCosineMixture, &TestFnLevyMontalvo2, NULL };
+	&TestFnSchwefel04, &TestFnDeb01, &TestFnLevy03, &TestFnYaoLiu09,
+	&TestFnCosineMixture, &TestFnLevyMontalvo2,
+	/*&TestFnVincent, &TestFnKatsuura, &TestFnDeb02, */
+	/*&TestFnDropWave, &TestFnSalomon, &TestFnWhitley, &TestFnXinSheYang02,
+	&TestFnXinSheYang03, &TestFnDeflCorrSpring, &TestFnDixonPrice,*/
+	NULL };
 
 // Failing functions.
 
@@ -3070,4 +3173,5 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnYaoLiu09, &TestFnUrsem03, &TestFnMishra08, &TestFnAluffiPentini,
 	&TestFnBeckerLago, &TestFnCosineMixture, &TestFnMeyerRoth,
 	&TestFnMultiGaussian, &TestFnPeriodic, &TestFnWood, &TestFnLevyMontalvo2,
-	NULL };
+	&TestFnLangermann, &TestFnMishra10, &TestFnDecanomial, &TestFnXor,
+	&TestFnRana, NULL };
