@@ -58,18 +58,17 @@
  *
  * 1. A cost-ordered population of previous solutions is maintained. A
  * solution is an independent parameter vector which is evolved towards a
- * better solution. On every iteration a single randomly-selected previous
- * solution is evolved.
+ * better solution. On every iteration the best solution is evolved.
  *
- * 2. On every iteration the "step in the right direction" operation is
- * performed using the current best and worst solutions. This is conceptually
- * similar to Differential Evolution's "mutation" operation.
- *
- * 3. Depending on the RandProb probability, also an individual parameter
+ * 2. Depending on the RandProb probability, also an individual parameter
  * value randomization is performed using "bitmask inversion" operation.
  *
- * 4. With CentProb probability (only together with N.3) the "step in the
+ * 3. With CentProb probability (only together with N.2) the "step in the
  * right direction" operation is performed using the centroid vector.
+ *
+ * 4. (Not together with N.2) the "step in the right direction" operation is
+ * performed using the current best and worst solutions. This is conceptually
+ * similar to Differential Evolution's "mutation" operation.
  *
  * 5. After each objective function evaluation, the highest-cost previous
  * solution is replaced using the cost constraint.
@@ -78,15 +77,13 @@
 class CBiteOpt
 {
 public:
-	double CostMult; ///< Solution rejection cost threshold multiplier.
-		///<
 	double MinxMult; ///< Minimal/maximal solution move range multiplier.
 		///<
 	double RandProb; ///< Parameter value randomization probability.
 		///<
 	double CentProb; ///< Centroid move probability.
 		///<
-	double CentSpan; ///< Centroid move range random multiplier.
+	double CentSpan; ///< Centroid move range multiplier.
 		///<
 
 	/**
@@ -105,16 +102,14 @@ public:
 		, MinValues( NULL )
 		, MaxValues( NULL )
 		, DiffValues( NULL )
-		, BestParams( NULL )
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=11.940888
-		CostMult = 1.37419727;
+		// Cost=10.298051
 		MinxMult = 0.5;
-		RandProb = 0.55583971;
-		CentProb = 0.56035300;
-		CentSpan = 1.86561303;
+		RandProb = 0.50180312;
+		CentProb = 0.86253246;
+		CentSpan = 2.91495968;
 	}
 
 	~CBiteOpt()
@@ -155,7 +150,6 @@ public:
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
 		DiffValues = new double[ ParamCount ];
-		BestParams = new double[ ParamCount ];
 		Params = new double[ ParamCount ];
 		NewParams = new double[ ParamCount ];
 
@@ -189,7 +183,7 @@ public:
 		}
 
 		// Initialize solution vectors randomly, calculate objective function
-		// values of these solutions and find the best cost.
+		// values of these solutions.
 
 		int j;
 
@@ -207,21 +201,12 @@ public:
 			}
 
 			insertPopOrder( optcost( NewParams ), j, j );
-
-			if( j == 0 || CurCosts[ j ] < BestCost )
-			{
-				BestCost = CurCosts[ j ];
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					BestParams[ i ] = NewParams[ i ];
-				}
-			}
 		}
 
 		CentCntr = rnd.getRndValue();
 		RandCntr = rnd.getRndValue();
 		ParamCntr = (int) ( rnd.getRndValue() * ParamCount );
+		StallCount = 0;
 	}
 
 	/**
@@ -229,28 +214,14 @@ public:
 	 * objective function evaluation.
 	 *
 	 * @param rnd Random number generator.
-	 * @return "True" if optimizer's state was improved on this iteration.
-	 * Many successive "false" results means optimizer has reached a plateau.
+	 * @return The number of non-improving iterations so far. A high value
+	 * means optimizer has reached a optimization plateau.
 	 */
 
-	bool optimize( CBiteRnd& rnd )
+	int optimize( CBiteRnd& rnd )
 	{
-		// Select a random previous solution from the ordered list.
-
-		const int si = (int) ( rnd.getRndValue() * PopSize );
-		const double* const OrigParams = CurParams[ PopOrder[ si ]];
 		const double* const MinParams = CurParams[ PopOrder[ 0 ]];
-		const double* const MaxParams = CurParams[ PopOrder[ PopSize1 ]];
 		int i;
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			// The "step in the right direction" operation towards the best
-			// (minimal) and away from the worst (maximal) parameter vector.
-
-			Params[ i ] = MinParams[ i ] -
-				( MaxParams[ i ] - OrigParams[ i ]) * MinxMult;
-		}
 
 		RandCntr += RandProb;
 
@@ -258,12 +229,17 @@ public:
 		{
 			RandCntr -= 1.0;
 
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = MinParams[ i ];
+			}
+
 			// Bitmask inversion operation, works as a "driver" of
 			// optimization process, applied to 1 random parameter at a time.
 
 			const double r = rnd.getRndValue();
-			const int imask =
-				( 2 << (int) (( 0.999999999 - r * r ) * MantSize )) - 1;
+			const int imask = ( 2 <<
+				(int) (( 0.999999997 - r * r * r * r ) * MantSize )) - 1;
 
 			Params[ ParamCntr ] = ( (int) ( Params[ ParamCntr ] * MantMult ) ^
 				imask ) / MantMult;
@@ -285,6 +261,24 @@ public:
 				}
 			}
 		}
+		else
+		{
+			// Select a random previous solution from the ordered list.
+
+			const int si = (int) ( rnd.getRndValue() * PopSize );
+			const double* const OrigParams = CurParams[ PopOrder[ si ]];
+			const double* const MaxParams = CurParams[ PopOrder[ PopSize1 ]];
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				// The "step in the right direction" operation towards the
+				// best (minimal) and away from the worst (maximal) parameter
+				// vector.
+
+				Params[ i ] = MinParams[ i ] -
+					( MaxParams[ i ] - OrigParams[ i ]) * MinxMult;
+			}
+		}
 
 		// Wrap parameter values so that they stay in the [0; 1] range.
 
@@ -299,26 +293,14 @@ public:
 		const double NewCost = optcost( NewParams );
 
 		const int sH = PopOrder[ PopSize1 ];
-		const double cT = CurCosts[ sH ] +
-			( CurCosts[ sH ] - CurCosts[ PopOrder[ 0 ]]) * CostMult;
 
-		if( NewCost > cT )
+		if( NewCost > CurCosts[ sH ])
 		{
 			// Cost constraint check failed, reject this solution.
 
-			return( false );
-		}
+			StallCount++;
 
-		if( NewCost < BestCost )
-		{
-			// Record the best solution.
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				BestParams[ i ] = NewParams[ i ];
-			}
-
-			BestCost = NewCost;
+			return( StallCount );
 		}
 
 		// Replace the highest-cost previous solution, update centroid.
@@ -332,102 +314,9 @@ public:
 		}
 
 		insertPopOrder( NewCost, sH, PopSize1 );
+		StallCount = 0;
 
-		return( true );
-	}
-
-	/**
-	 * Function performs iterative optimization function until the required
-	 * minimum cost is reached or the maximum number of iterations is
-	 * exceeded.
-	 *
-	 * @param rnd Random number generator.
-	 * @param MinCost Target minimum cost.
-	 * @param PlateauIters The number of successive iterations which have not
-	 * produced a useful change, to treat as reaching a plateau. When plateau
-	 * is reached, *this object will be reinitialized (if MaxIters>0).
-	 * Effective values depend on the PopSize value, lower PopSize values
-	 * require higher PlateauIters values.
-	 * @param MaxIters The maximal number of iterations to perform. Set to 0
-	 * to run any number of iterations until plateau is reached.
-	 * @return The number of iterations performed, including reinitialization
-	 * calls. May be greater than MaxIters.
-	 */
-
-	int optimizePlateau( CBiteRnd& rnd, const double MinCost,
-		const int PlateauIters, const int MaxIters )
-	{
-		double* TmpBestParams = new double[ ParamCount ];
-		double TmpBestCost;
-		int Iters = PopSize;
-		int i;
-
-		init( rnd );
-		bool IsFirstInit = true;
-		int PlateauCount = 0;
-
-		while( true )
-		{
-			if( BestCost <= MinCost )
-			{
-				delete[] TmpBestParams;
-				return( Iters );
-			}
-
-			if( Iters >= MaxIters && MaxIters > 0 )
-			{
-				break;
-			}
-
-			const bool WasImproved = optimize( rnd );
-			Iters++;
-
-			if( WasImproved )
-			{
-				PlateauCount = 0;
-			}
-			else
-			{
-				PlateauCount++;
-
-				if( PlateauCount >= PlateauIters )
-				{
-					if( IsFirstInit || BestCost < TmpBestCost )
-					{
-						TmpBestCost = BestCost;
-
-						for( i = 0; i < ParamCount; i++ )
-						{
-							TmpBestParams[ i ] = BestParams[ i ];
-						}
-					}
-
-					IsFirstInit = false;
-
-					if( MaxIters <= 0 )
-					{
-						break;
-					}
-
-					init( rnd );
-					Iters += PopSize;
-					PlateauCount = 0;
-				}
-			}
-		}
-
-		if( !IsFirstInit && TmpBestCost < BestCost )
-		{
-			BestCost = TmpBestCost;
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				BestParams[ i ] = TmpBestParams[ i ];
-			}
-		}
-
-		delete[] TmpBestParams;
-		return( Iters );
+		return( StallCount );
 	}
 
 	/**
@@ -436,7 +325,7 @@ public:
 
 	const double* getBestParams() const
 	{
-		return( BestParams );
+		return( CurParams[ PopOrder[ 0 ]]);
 	}
 
 	/**
@@ -445,7 +334,7 @@ public:
 
 	double getBestCost() const
 	{
-		return( BestCost );
+		return( CurCosts[ PopOrder[ 0 ]]);
 	}
 
 	/**
@@ -493,6 +382,8 @@ protected:
 		///<
 	int ParamCntr; ///< Parameter randomization index counter.
 		///<
+	int StallCount; ///< The number of iterations without improvement.
+		///<
 	int* PopOrder; ///< The current solution vectors ordering,
 		///< ascending-sorted by cost.
 		///<
@@ -510,10 +401,6 @@ protected:
 		///<
 	double* DiffValues; ///< Difference between maximal and minimal parameter
 		///< values.
-		///<
-	double* BestParams; ///< Best parameter vector.
-		///<
-	double BestCost; ///< Cost of the best parameter vector.
 		///<
 	double* Params; ///< Temporary parameter buffer.
 		///<
@@ -534,7 +421,6 @@ protected:
 		delete[] MinValues;
 		delete[] MaxValues;
 		delete[] DiffValues;
-		delete[] BestParams;
 		delete[] Params;
 		delete[] NewParams;
 	}

@@ -3103,9 +3103,9 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnExponential, &TestFnSchwefel01, &TestFnSchwefel02,
 	&TestFnSchwefel04, &TestFnDeb01, &TestFnLevy03, &TestFnYaoLiu09,
 	&TestFnCosineMixture, &TestFnLevyMontalvo2,
-	/*&TestFnVincent, &TestFnKatsuura, &TestFnDeb02, */
-	/*&TestFnDropWave, &TestFnSalomon, &TestFnWhitley, &TestFnXinSheYang02,
-	&TestFnXinSheYang03, &TestFnDeflCorrSpring, &TestFnDixonPrice,*/
+	/*&TestFnVincent, &TestFnKatsuura, &TestFnDeb02,*/
+	&TestFnDropWave, &TestFnSalomon, &TestFnWhitley, &TestFnXinSheYang02,
+	&TestFnXinSheYang03, &TestFnDeflCorrSpring, &TestFnDixonPrice,
 	NULL };
 
 // Failing functions.

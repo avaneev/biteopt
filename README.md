@@ -24,7 +24,7 @@ attempts to reach optimum.
 
 ### Notes ###
 
-This "black-box" strategy was tested on 300+ 1-10 dimensional optimization
+This "black-box" strategy was tested on 400+ 1-10 dimensional optimization
 problems and performed well. Due to its design this strategy may be
 particularly good at improving an existing sub-optimal local solution. This
 strategy offers a very fast convergence on 1-3 dimensional problems, moderate
@@ -36,8 +36,8 @@ This strategy was compared with the results of this paper (on 241 published
 non-convex problems): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
 This strategy was able to solve 64% of problems in 10 attempts, 2500
 iterations each. For 1-2 dimensional problems, this strategy's success rate is
-95%. For 3-9 dimensional problems the success rate is 65%, for 10-30
-dimensional problems the success rate is only 37%.
+98%. For 3-9 dimensional problems the success rate is 63%, for 10-30
+dimensional problems the success rate is only 36%.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
@@ -73,15 +73,7 @@ work acceptably in most cases.
 
 The minimal and maximal allowed parameter values should be specified in a way
 to cover a wider value range, in order to reduce boundary effects that may
-greatly reduce convergence. If the target local or global minimum stands
-very close to the parameter value boundaries this strategy may fail to
-converge.
-
-Strategy's "robustness" is a multi-factor non-formal estimation which includes
-average convergence time, standard deviation of convergence time, the set of
-functions the algorithm can solve successfully given randomized initial
-conditions, in a given number of attempts. For global optimization robustness
-also includes the lowest achieved cost.
+reduce convergence.
 
 ## Examples ##
 
@@ -90,8 +82,6 @@ Use the example.cpp program to see the basic usage example.
 test2.cpp is a convergence test for all available functions. Performs many
 optimization attempts on all functions. Prints various performance
 information, including percentage of rejected attempts (rejection rate).
-
-test3.cpp demonstrates the usage of the optimizePlateau() function.
 
 test4.cpp is a convergence test for multi-dimensional functions.
 
