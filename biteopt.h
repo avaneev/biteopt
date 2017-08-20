@@ -449,6 +449,7 @@ protected:
 		delete[] MinValues;
 		delete[] MaxValues;
 		delete[] DiffValues;
+		delete[] BestParams;
 		delete[] Params;
 		delete[] NewParams;
 	}
