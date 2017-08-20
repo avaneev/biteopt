@@ -102,6 +102,7 @@ public:
 		, MinValues( NULL )
 		, MaxValues( NULL )
 		, DiffValues( NULL )
+		, BestParams( NULL )
 		, Params( NULL )
 		, NewParams( NULL )
 	{
@@ -150,6 +151,7 @@ public:
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
 		DiffValues = new double[ ParamCount ];
+		BestParams = new double[ ParamCount ];
 		Params = new double[ ParamCount ];
 		NewParams = new double[ ParamCount ];
 
@@ -201,6 +203,16 @@ public:
 			}
 
 			insertPopOrder( optcost( NewParams ), j, j );
+
+			if( j == 0 || CurCosts[ j ] < BestCost )
+			{
+				BestCost = CurCosts[ j ];
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					BestParams[ i ] = NewParams[ i ];
+				}
+			}
 		}
 
 		CentCntr = rnd.getRndValue();
@@ -303,6 +315,18 @@ public:
 			return( StallCount );
 		}
 
+		if( NewCost < BestCost )
+		{
+			// Record the best solution.
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				BestParams[ i ] = NewParams[ i ];
+			}
+
+			BestCost = NewCost;
+		}
+
 		// Replace the highest-cost previous solution, update centroid.
 
 		double* const rp = CurParams[ sH ];
@@ -325,7 +349,7 @@ public:
 
 	const double* getBestParams() const
 	{
-		return( CurParams[ PopOrder[ 0 ]]);
+		return( BestParams );
 	}
 
 	/**
@@ -334,7 +358,7 @@ public:
 
 	double getBestCost() const
 	{
-		return( CurCosts[ PopOrder[ 0 ]]);
+		return( BestCost );
 	}
 
 	/**
@@ -401,6 +425,10 @@ protected:
 		///<
 	double* DiffValues; ///< Difference between maximal and minimal parameter
 		///< values.
+		///<
+	double* BestParams; ///< Best parameter vector.
+		///<
+	double BestCost; ///< Cost of the best parameter vector.
 		///<
 	double* Params; ///< Temporary parameter buffer.
 		///<
