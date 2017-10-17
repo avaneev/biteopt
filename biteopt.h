@@ -103,6 +103,8 @@ public:
 		, MaxValues( NULL )
 		, DiffValues( NULL )
 		, BestParams( NULL )
+		, BestAuxData( NULL )
+		, CurAuxData( NULL )
 		, Params( NULL )
 		, NewParams( NULL )
 	{
@@ -115,6 +117,8 @@ public:
 
 	~CBiteOpt()
 	{
+		deleteAuxData( CurAuxData );
+		deleteAuxData( BestAuxData );
 		deleteBuffers();
 	}
 
@@ -212,6 +216,14 @@ public:
 				{
 					BestParams[ i ] = NewParams[ i ];
 				}
+
+				if( BestAuxData != NULL )
+				{
+					deleteAuxData( BestAuxData );
+				}
+
+				BestAuxData = CurAuxData;
+				CurAuxData = NULL;
 			}
 		}
 
@@ -325,6 +337,14 @@ public:
 			}
 
 			BestCost = NewCost;
+
+			if( BestAuxData != NULL )
+			{
+				deleteAuxData( BestAuxData );
+			}
+
+			BestAuxData = CurAuxData;
+			CurAuxData = NULL;
 		}
 
 		// Replace the highest-cost previous solution, update centroid.
@@ -362,6 +382,16 @@ public:
 	}
 
 	/**
+	 * Function returns pointer to aux data provided with the best solution.
+	 * This pointer should not be deleted.
+	 */
+
+	void* getBestAuxData() const
+	{
+		return( BestAuxData );
+	}
+
+	/**
 	 * Virtual function that should fill minimal parameter value vector.
 	 *
 	 * @param[out] p Minimal value vector.
@@ -385,7 +415,18 @@ public:
 	 * @return Optimized cost.
 	 */
 
-	virtual double optcost( const double* const p ) const = 0;
+	virtual double optcost( const double* const p ) = 0;
+
+	/**
+	 * Function deletes auxiliary data previously provided with the solution.
+	 *
+	 * @param p Pointer to aux data, can be NULL. Should be type-casted to the
+	 * actual data type.
+	 */
+
+	virtual void deleteAuxData( void* const p )
+	{
+	}
 
 protected:
 	static const int MantSize = 29; ///< Mantissa size of bitmask inversion
@@ -430,10 +471,29 @@ protected:
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
 		///<
+	void* BestAuxData; ///< Auxiliary data of the best parameter vector.
+		///<
+	void* CurAuxData; ///< Aux data provided with the latest solution, will be
+		///< deleted if new solution is not the best solution.
+		///<
 	double* Params; ///< Temporary parameter buffer.
 		///<
 	double* NewParams; ///< Temporary new parameter buffer.
 		///<
+
+	/**
+	 * Function provides auxiliary data, this function should be called in the
+	 * optcost() function. The deleteAuxData() should be implemented to delete
+	 * unused aux data.
+	 *
+	 * @param AuxData Pointer to aux data. Can be NULL.
+	 */
+
+	void provideAuxData( void* const AuxData )
+	{
+		deleteAuxData( CurAuxData );
+		CurAuxData = AuxData;
+	}
 
 	/**
 	 * Function deletes previously allocated buffers.

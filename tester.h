@@ -101,7 +101,7 @@ public:
 			}
 		}
 
-		virtual double optcost( const double* const p ) const
+		virtual double optcost( const double* const p )
 		{
 			if( !DoRandomize )
 			{
