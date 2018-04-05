@@ -282,6 +282,8 @@ public:
 				{
 					const double m = rnd.getRndValue() * CentSpan;
 					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
+					const double m2 = rnd.getRndValue() * CentSpan;
+					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m2;
 				}
 			}
 		}

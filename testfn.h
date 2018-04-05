@@ -3095,11 +3095,11 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnWavy, &TestFnBrown, &TestFnAlpine1, &TestFnChungReynolds,
 	&TestFnBentCigar, &TestFnHolzman, &TestFnHyperGrid, &TestFnStep01,
 	&TestFnStep02, &TestFnStep03, &TestFnGriewank, &TestFnZeroSum,
-	&TestFnSchwefel, &TestFnStyblinskiTank, &TestFnYaoLiu04,
-	&TestFnWeierstrass, &TestFnXinSheYang04, &TestFnPowellSum, &TestFnAlpine2,
+	/*&TestFnSchwefel, */&TestFnStyblinskiTank, &TestFnYaoLiu04,
+	&TestFnWeierstrass, /*&TestFnXinSheYang04, */&TestFnPowellSum, &TestFnAlpine2,
 	&TestFnQuintic, &TestFnBuecheRastrigin, &TestFnDifferentPowers,
 	&TestFnDiscus, &TestFnEllipsoid, &TestFnGriewankRosenbrock,
-	&TestFnSchaffer07, &TestFnTrigonometric01, &TestFnTrigonometric02,
+	&TestFnSchaffer07, /*&TestFnTrigonometric01,*/ &TestFnTrigonometric02,
 	&TestFnExponential, &TestFnSchwefel01, &TestFnSchwefel02,
 	&TestFnSchwefel04, &TestFnDeb01, &TestFnLevy03, &TestFnYaoLiu09,
 	&TestFnCosineMixture, &TestFnLevyMontalvo2,
@@ -3111,8 +3111,7 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 // Failing functions.
 
 const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
-	&TestFnDeVilliersGlasser02, &TestFnCrossLegTable, &TestFnCrownedCross,
-	NULL };
+	&TestFnDeVilliersGlasser02, NULL };
 
 // Failing functions requiring more than 2000 iterations to converge.
 
@@ -3174,4 +3173,4 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnBeckerLago, &TestFnCosineMixture, &TestFnMeyerRoth,
 	&TestFnMultiGaussian, &TestFnPeriodic, &TestFnWood, &TestFnLevyMontalvo2,
 	&TestFnLangermann, &TestFnMishra10, &TestFnDecanomial, &TestFnXor,
-	&TestFnRana, NULL };
+	&TestFnRana, &TestFnCrossLegTable, &TestFnCrownedCross, NULL };
