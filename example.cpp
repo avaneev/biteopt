@@ -25,7 +25,7 @@ public:
 		p[ 1 ] = 10.0;
 	}
 
-	virtual double optcost( const double* const p ) const
+	virtual double optcost( const double* const p )
 	{
 		const double x = p[ 0 ];
 		const double y = p[ 1 ];
