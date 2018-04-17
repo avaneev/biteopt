@@ -7,7 +7,7 @@
  *
  * @section license License
  *
- * Copyright (c) 2016-2017 Aleksey Vaneev
+ * Copyright (c) 2016-2018 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -37,9 +37,9 @@
 /**
  * BiteOpt stochastic optimization class. Implements a stochastic non-linear
  * bound-constrained derivative-free optimization strategy. It maintains a
- * cost-ordered population of previously evaluated solutions that are evolved
- * towards a lower cost. On every iteration, the highest-cost solution in the
- * list can be replaced with a new solution, and the list reordered. A
+ * cost-ordered population list of previously evaluated solutions that are
+ * evolved towards a lower cost. On every iteration, the highest-cost solution
+ * in the list can be replaced with a new solution, and the list reordered. A
  * population of solutions allows the strategy to space solution vectors apart
  * from each other thus making them cover a larger parameter search space
  * collectively. Beside that, parameter randomization and the "step in the
@@ -52,7 +52,8 @@
  * of the objective function. Like many stochastic optimization strategies
  * with fast convergence, this strategy can't solve problems with narrow or
  * rogue optimums. Hard (multi-modal) problems may require many optimization
- * attempts to reach optimum.
+ * attempts to reach optimum. The name "BiteOpt" is an acronym for "BITmask
+ * Evolution OPTimization".
  *
  * The algorithm consists of the following elements:
  *
@@ -60,17 +61,16 @@
  * solution is an independent parameter vector which is evolved towards a
  * better solution. On every iteration the best solution is evolved.
  *
- * 2. Depending on the RandProb probability, also an individual parameter
- * value randomization is performed using "bitmask inversion" operation.
+ * 2. Depending on the RandProb probability, 1 or all parameter value
+ * randomization is performed using "bitmask inversion" operation. Plus, with
+ * CentProb probability the "step in the right direction" operation is
+ * performed using the centroid vector.
  *
- * 3. With CentProb probability (only together with N.2) the "step in the
- * right direction" operation is performed using the centroid vector.
- *
- * 4. (Not together with N.2) the "step in the right direction" operation is
+ * 3. (Not together with N.2) the "step in the right direction" operation is
  * performed using the current best and worst solutions. This is conceptually
  * similar to Differential Evolution's "mutation" operation.
  *
- * 5. After each objective function evaluation, the highest-cost previous
+ * 4. After each objective function evaluation, the highest-cost previous
  * solution is replaced using the cost constraint.
  */
 
@@ -84,6 +84,8 @@ public:
 	double CentProb; ///< Centroid move probability.
 		///<
 	double CentSpan; ///< Centroid move range multiplier.
+		///<
+	double AllpProb; ///< All parameters randomization probability.
 		///<
 
 	/**
@@ -108,11 +110,11 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=10.298051
 		MinxMult = 0.5;
-		RandProb = 0.50180312;
-		CentProb = 0.86253246;
-		CentSpan = 2.91495968;
+		RandProb = 0.51412873;
+		CentProb = 0.92320463;
+		CentSpan = 2.96453520;
+		AllpProb = 0.2;
 	}
 
 	~CBiteOpt()
@@ -258,6 +260,23 @@ public:
 				Params[ i ] = MinParams[ i ];
 			}
 
+			// Select a single random parameter or all parameters.
+
+			int a;
+			int b;
+
+			if( rnd.getRndValue() < AllpProb )
+			{
+				a = 0;
+				b = ParamCount - 1;
+			}
+			else
+			{
+				a = ParamCntr;
+				b = a;
+				ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
+			}
+
 			// Bitmask inversion operation, works as a "driver" of
 			// optimization process, applied to 1 random parameter at a time.
 
@@ -265,10 +284,11 @@ public:
 			const int imask = ( 2 <<
 				(int) (( 0.999999997 - r * r * r * r ) * MantSize )) - 1;
 
-			Params[ ParamCntr ] = ( (int) ( Params[ ParamCntr ] * MantMult ) ^
-				imask ) / MantMult;
-
-			ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
+			for( i = a; i <= b; i++ )
+			{
+				Params[ i ] = ( (int) ( Params[ i ] * MantMult ) ^
+					imask ) / MantMult;
+			}
 
 			CentCntr += CentProb;
 
@@ -278,7 +298,7 @@ public:
 
 				// Move towards centroid vector or beyond it, randomly.
 
-				for( i = 0; i < ParamCount; i++ )
+				for( i = a; i <= b; i++ )
 				{
 					const double m = rnd.getRndValue() * CentSpan;
 					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;

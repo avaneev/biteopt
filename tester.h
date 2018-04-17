@@ -381,7 +381,7 @@ public:
 		RjAvg /= FnCount;
 		AtAvg = 1.0 / ( 1.0 - (double) RejTotal / IterCount / FnCount );
 		Score = ( AtAvg - 1.0 ) * 100.0 +
-			fabs( ItAvg - 357.0 ) * 0.1;
+			fabs( ItAvg - 340.0 ) * 0.1;
 		Success = 100.0 * ComplTotal / FnCount / IterCount;
 //		Score = -Success;// + fabs( ItAvg - 380.0 );
 
