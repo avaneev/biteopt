@@ -92,6 +92,8 @@ information, including percentage of rejected attempts (rejection rate).
 
 test4.cpp is a convergence test for multi-dimensional functions.
 
+constr.cpp program demonstrates use of constraint penalties.
+
 ## Development ##
 
 While the basic algorithm of the strategy is finished, the built-in parameters
