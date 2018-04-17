@@ -69,8 +69,13 @@ acceptably solve high-dimensional problems that are implicitly or explicitly
 combinatorial.
 
 Most hard constraints can be introduced by applying huge penalties to the
-objective function. Even binary penalties like "if(x>1)cost+=x*10000" should
-work acceptably in most cases.
+objective function. Even binary penalties like "if(x>1)cost+=x*10000"
+should work acceptably in most cases. Mixed integer programming can be
+achieved by using rounded parameter values in the objective function while
+value constraints can be implemented as multipliers, in this way: constraint
+c1:x1+2.0*x2-3.0*x3<=0 can be used to adjust objective function value:
+cost+=abs(cost)*(c1<=0?0:c1)*10000, with 10000 multiplier depending on the
+parameter value scaling.
 
 The minimal and maximal allowed parameter values (bounds) should be specified
 in a way to cover a wider value range, in order to reduce boundary effects

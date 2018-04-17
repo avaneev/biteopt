@@ -3086,6 +3086,71 @@ static double calcRana_p( double* const minv, double* const maxv,
 static const CTestFn TestFnRana = { "Rana", 0, 0.0, 0.0, 0.0, &calcRana,
 	&calcRana_p };
 
+static double calcPenaltyU( const double xi, const double a,
+	const double k, const double m )
+{
+	if( xi > a )
+	{
+		return( k * pow( xi - a, m ));
+	}
+
+	if( xi < -a )
+	{
+		return( k * pow( -xi - a, m ));
+	}
+
+	return( 0.0 );
+}
+
+static double calcPenalty01( const double* const p, const int N )
+{
+	double y[ N ];
+	double penn = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		y[ i ] = 1.0+(p[i]+1.0)/4.0;
+		penn += calcPenaltyU( p[ i ], 10, 100, 4 );
+	}
+
+	double s = 0.0;
+
+	for( i = 0; i < N - 1; i++ )
+	{
+		s += sqr(y[i]-1.0)*(1.0+10.0*sqr(sin(M_PI*y[i+1])));
+	}
+
+	return( M_PI/30.0*(10.0*sqr(sin(M_PI*y[0]))+s+sqr(y[N-1]-1.0)) + penn );
+}
+
+static const CTestFn TestFnPenalty01 = { "Penalty01", 0, -50.0, 50.0,
+	0.0, &calcPenalty01 };
+
+static double calcPenalty02( const double* const p, const int N )
+{
+	double penn = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		penn += calcPenaltyU( p[ i ], 5, 100, 4 );
+	}
+
+	double s = 0.0;
+
+	for( i = 0; i < N - 1; i++ )
+	{
+		s += sqr(p[i]-1.0)*(1.0+sqr(sin(3.0*M_PI*p[i+1])));
+	}
+
+	return( 0.1*(sqr(sin(3.0*M_PI*p[0]))+s+
+		sqr(p[N-1]-1.0)*(1.0+sqr(sin(2.0*M_PI*p[N-1])))) + penn );
+}
+
+static const CTestFn TestFnPenalty02 = { "Penalty02", 0, -50.0, 50.0,
+	0.0, &calcPenalty02 };
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -3106,7 +3171,7 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	/*&TestFnVincent, &TestFnKatsuura, &TestFnDeb02,*/
 	&TestFnDropWave, &TestFnSalomon, &TestFnWhitley, &TestFnXinSheYang02,
 	&TestFnXinSheYang03, &TestFnDeflCorrSpring, &TestFnDixonPrice,
-	NULL };
+	&TestFnPenalty01, &TestFnPenalty02,	NULL };
 
 // Failing functions.
 
@@ -3141,36 +3206,38 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnBrown, &TestFnBrent, &TestFnNewFunction01, &TestFnNewFunction02,
 	&TestFnLevy05, &TestFnPowell, &TestFnPaviani, &TestFnTrid6,
 	&TestFnMieleCantrell, &TestFnColville, &TestFnWolfe, &TestFnAlpine1,
-	&TestFnAlpine2, &TestFnBukin4, &TestFnBartelsConn, &TestFnSixHumpCamel,
-	&TestFnChungReynolds, &TestFnCube, &TestFnDeckkersAarts, &TestFnEggCrate,
-	&TestFnKeane, &TestFnLeon, &TestFnQing, &TestFnSchwefel220,
-	&TestFnSchwefel221, &TestFnSchwefel222, &TestFnDolan,
-	&TestFnTestTubeHolder, &TestFnWayburnSeader02, &TestFnSawtoothxy,
-	&TestFnSchwefel, &TestFnAdjiman, &TestFnStyblinskiTank, &TestFnMcCormick,
-	&TestFnHimmelblau, &TestFnMichalewicz, &TestFnBoxBettsExpQuadSum,
-	&TestFnPowellQuartic, &TestFnZirilli, &TestFnCamel, &TestFnComplex,
-	&TestFnDavis, &TestFnDownhillStep, &TestFnEngvall, &TestFnGramacyLee02,
-	&TestFnGiunta, &TestFnHosaki, &TestFnKearfott, &TestFnJennrichSampson,
-	&TestFnMishra05, &TestFnMishra06, &TestFnMishra09, &TestFnTsoulos,
-	&TestFnUrsemWaves, &TestFnYaoLiu04, &TestFnBentCigar,
-	&TestFnDeflCorrSpring, &TestFnHyperGrid, &TestFnQuintic, &TestFnVincent,
-	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnHelicalValley,
-	&TestFnDixonPrice, &TestFnHartman3, &TestFnHartman6, &TestFnChenV,
-	&TestFnChenBird, &TestFnPowerSum, &TestFnZeroSum, &TestFnBuecheRastrigin,
-	&TestFnDifferentPowers, &TestFnDiscus, &TestFnEllipsoid,
-	&TestFnGriewankRosenbrock, &TestFnSchaffer07, &TestFnKatsuura,
-	&TestFnRotatedEllipse01, &TestFnRotatedEllipse02, &TestFnTrigonometric01,
-	&TestFnExponential, &TestFnUrsem01, &TestFnQuadratic, &TestFnSchwefel01,
-	&TestFnSchwefel02, &TestFnSchwefel04, &TestFnSchwefel36, &TestFnShekel05,
-	&TestFnShekel07, &TestFnShekel10, &TestFnMishra01, &TestFnMishra02,
-	&TestFnMishra07, &TestFnZettl, &TestFnMultiModal, &TestFnParsopoulos,
-	&TestFnDeb01, &TestFnDeb02, &TestFnCarromTable, &TestFnNewFunction03,
-	&TestFnLevy03, &TestFnGear, &TestFnStretchedV, &TestFnUrsem04,
-	&TestFnJudge, &TestFnWayburnSeader01, &TestFnVenterSobiSobieski,
-	&TestFnElAttarVidyasDutta, &TestFnModifiedRosenbrock, &TestFnStochastic,
-	&TestFnXinSheYang01, &TestFnKowalik, &TestFnTripod, &TestFnPathological,
-	&TestFnYaoLiu09, &TestFnUrsem03, &TestFnMishra08, &TestFnAluffiPentini,
-	&TestFnBeckerLago, &TestFnCosineMixture, &TestFnMeyerRoth,
-	&TestFnMultiGaussian, &TestFnPeriodic, &TestFnWood, &TestFnLevyMontalvo2,
-	&TestFnLangermann, &TestFnMishra10, &TestFnDecanomial, &TestFnXor,
-	&TestFnRana, &TestFnCrossLegTable, &TestFnCrownedCross, NULL };
+	&TestFnAlpine2, &TestFnBukin4, &TestFnBartelsConn,
+	&TestFnSixHumpCamel, &TestFnChungReynolds, &TestFnCube,
+	&TestFnDeckkersAarts, &TestFnEggCrate, &TestFnKeane, &TestFnLeon,
+	&TestFnQing, &TestFnSchwefel220, &TestFnSchwefel221, &TestFnSchwefel222,
+	&TestFnDolan, &TestFnTestTubeHolder, &TestFnWayburnSeader02,
+	&TestFnSawtoothxy, &TestFnSchwefel, &TestFnAdjiman, &TestFnStyblinskiTank,
+	&TestFnMcCormick, &TestFnHimmelblau, &TestFnMichalewicz,
+	&TestFnBoxBettsExpQuadSum, &TestFnPowellQuartic, &TestFnZirilli,
+	&TestFnCamel, &TestFnComplex, &TestFnDavis, &TestFnDownhillStep,
+	&TestFnEngvall, &TestFnGramacyLee02, &TestFnGiunta, &TestFnHosaki,
+	&TestFnKearfott, &TestFnJennrichSampson, &TestFnMishra05, &TestFnMishra06,
+	&TestFnMishra09, &TestFnTsoulos, &TestFnUrsemWaves, &TestFnYaoLiu04,
+	&TestFnBentCigar, &TestFnDeflCorrSpring, &TestFnHyperGrid, &TestFnQuintic,
+	&TestFnVincent, &TestFnStep01, &TestFnStep02, &TestFnStep03,
+	&TestFnHelicalValley, &TestFnDixonPrice, &TestFnHartman3, &TestFnHartman6,
+	&TestFnChenV, &TestFnChenBird, &TestFnPowerSum, &TestFnZeroSum,
+	&TestFnBuecheRastrigin, &TestFnDifferentPowers, &TestFnDiscus,
+	&TestFnEllipsoid, &TestFnGriewankRosenbrock, &TestFnSchaffer07,
+	&TestFnKatsuura, &TestFnRotatedEllipse01, &TestFnRotatedEllipse02,
+	&TestFnTrigonometric01, &TestFnExponential, &TestFnUrsem01,
+	&TestFnQuadratic, &TestFnSchwefel01, &TestFnSchwefel02, &TestFnSchwefel04,
+	&TestFnSchwefel36, &TestFnShekel05, &TestFnShekel07, &TestFnShekel10,
+	&TestFnMishra01, &TestFnMishra02, &TestFnMishra07, &TestFnZettl,
+	&TestFnMultiModal, &TestFnParsopoulos, &TestFnDeb01, &TestFnDeb02,
+	&TestFnCarromTable, &TestFnNewFunction03, &TestFnLevy03, &TestFnGear,
+	&TestFnStretchedV, &TestFnUrsem04, &TestFnJudge, &TestFnWayburnSeader01,
+	&TestFnVenterSobiSobieski, &TestFnElAttarVidyasDutta,
+	&TestFnModifiedRosenbrock, &TestFnStochastic, &TestFnXinSheYang01,
+	&TestFnKowalik, &TestFnTripod, &TestFnPathological, &TestFnYaoLiu09,
+	&TestFnUrsem03, &TestFnMishra08, &TestFnAluffiPentini, &TestFnBeckerLago,
+	&TestFnCosineMixture, &TestFnMeyerRoth, &TestFnMultiGaussian,
+	&TestFnPeriodic, &TestFnWood, &TestFnLevyMontalvo2, &TestFnLangermann,
+	&TestFnMishra10, &TestFnDecanomial, &TestFnXor, &TestFnRana,
+	&TestFnCrossLegTable, &TestFnCrownedCross, &TestFnPenalty01,
+	&TestFnPenalty02, NULL };
