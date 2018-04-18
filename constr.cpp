@@ -52,7 +52,7 @@ public:
 
 	static double penn( const double v, const double cost )
 	{
-		return( v <= 0.0 ? 0.0 : fabs(cost)*v*10000 );
+		return( v <= 0.0 ? 0.0 : fabs(cost)*sqr(sqr(v))*10000 );
 	}
 
 	virtual double optcost( const double* const p )
