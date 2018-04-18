@@ -976,6 +976,14 @@ static double calcPowell( const double* const p, const int N )
 static const CTestFn TestFnPowell = { "Powell", 4, -4.0, 5.0, 0.0,
 	&calcPowell };
 
+static double calcPowellBadlyScaled( const double* const p, const int N )
+{
+	return( sqr(10000.0*p[0]*p[1]-1.0)+sqr(exp(-p[0])+exp(-p[1])-1.0001) );
+}
+
+static const CTestFn TestFnPowellBadlyScaled = { "PowellBadlyScaled", 2,
+	-10.0, 10.0, 0.0, &calcPowellBadlyScaled };
+
 static double calcPaviani( const double* const p, const int N )
 {
 	double s1 = 0.0;
@@ -2681,6 +2689,15 @@ static double calcWayburnSeader01( const double* const p, const int N )
 static const CTestFn TestFnWayburnSeader01 = { "WayburnSeader01", 2,
 	-5.0, 5.0, 0.0, &calcWayburnSeader01 };
 
+static double calcWayburnSeader03( const double* const p, const int N )
+{
+	return( 2.0/3.0*sqr(p[0])*p[0]-8.0*sqr(p[0])+33.0*p[0]-p[0]*p[1]+5.0+
+		sqr(sqr(p[0]-4.0)+sqr(p[1]-5.0)-4.0) );
+}
+
+static const CTestFn TestFnWayburnSeader03 = { "WayburnSeader03", 2,
+	-500.0, 500.0, 19.105879794567979, &calcWayburnSeader03 };
+
 static double calcVenterSobiSobieski( const double* const p, const int N )
 {
 	const double x = p[ 0 ];
@@ -2841,13 +2858,14 @@ static const CTestFn TestFnUrsem03 = { "Ursem03", 2, 0.0, 0.0, 0.0,
 
 static double calcMishra08( const double* const p, const int N )
 {
-	const double x = p[ 0 ];
-	const double y = p[ 1 ];
-	return( 0.001*sqr(fabs(pow(x,10.0)-20.0*pow(x,9.0)+180.0*pow(x,8.0)-
-		960.0*pow(x,7.0)+3360.0*pow(x,6.0)-8064.0*pow(x,5.0)+
-		13340.0*pow(x,4.0)-15360.0*pow(x,3.0)+11520.0*pow(x,2.0)-
-		5120.0*x+2624.0)*fabs(pow(y,4.0)+12.0*pow(y,3.0)+54.0*pow(y,2.0)+
-		108.0*y+81.0)) );
+	const double F1 = fabs(pow(p[0],10.0)-20.0*pow(p[0],9.0)+
+		180.0*pow(p[0],8.0)-960.0*pow(p[0],7.0)+3360.0*pow(p[0],6.0)-
+		8064.0*pow(p[0],5.0)+13340.0*pow(p[0],4.0)-15360.0*pow(p[0],3.0)+
+		11520.0*pow(p[0],2.0)-5120.0*p[0]+2624.0);
+	const double F2 = fabs(pow(p[1],4.0)+12.0*pow(p[1],3.0)+
+		54.0*pow(p[1],2.0)+108.0*p[1]+81.0);
+
+	return( 0.001*sqr(F1+F2));
 }
 
 static const CTestFn TestFnMishra08 = { "Mishra08", 2, -10.0, 10.0, 0.0,
@@ -2957,16 +2975,6 @@ static double calcPeriodic( const double* const p, const int N )
 static const CTestFn TestFnPeriodic = { "Periodic", 2, -10.0, 10.0,
 	0.9, &calcPeriodic };
 
-static double calcWood( const double* const p, const int N )
-{
-	return( 100.0*sqr(p[1]-sqr(p[0]))+sqr(1.0-p[0])+90.0*sqr(p[3]-sqr(p[2]))+
-		sqr(1.0-p[2])+10.1*(sqr(p[1]-1.0)+sqr(p[3]-1.0))+
-		19.8*(p[1]-1.0)*(p[3]-1.0) );
-}
-
-static const CTestFn TestFnWood = { "Wood", 4, -10.0, 10.0,
-	0.0, &calcWood };
-
 static double calcLevyMontalvo2( const double* const p, const int N )
 {
 	double s = 0.0;
@@ -3015,20 +3023,16 @@ static double calcMishra10( const double* const p, const int N )
 static const CTestFn TestFnMishra10 = { "Mishra10", 2, -10.0, 10.0,
 	0.0, &calcMishra10 };
 
-static double calcDecanomial( const double* const p, const int N )
+static double calcMishra10b( const double* const p, const int N )
 {
-	const double F1 = fabs(pow(p[0],10.0)-20.0*pow(p[0],9.0)+
-		180.0*pow(p[0],8.0)-960.0*pow(p[0],7.0)+3360.0*pow(p[0],6.0)-
-		8064.0*pow(p[0],5.0)+13340.0*pow(p[0],4.0)-15360.0*pow(p[0],3.0)+
-		11520.0*pow(p[0],2.0)-5120.0*p[0]+2624.0);
-	const double F2 = fabs(pow(p[1],4.0)+12.0*pow(p[1],3.0)+
-		54.0*pow(p[1],2.0)+108.0*p[1]+81.0);
+	const double x1 = p[ 0 ];
+	const double x2 = p[ 1 ];
 
-	return( 0.001*sqr(F1+F2));
+	return( fabs(x1+x2-x1*x2) );
 }
 
-static const CTestFn TestFnDecanomial = { "Decanomial", 2, -10.0, 10.0,
-	0.0, &calcDecanomial };
+static const CTestFn TestFnMishra10b = { "Mishra10b", 2, -10.0, 10.0,
+	0.0, &calcMishra10b };
 
 static double calcXor( const double* const p, const int N )
 {
@@ -3151,6 +3155,80 @@ static double calcPenalty02( const double* const p, const int N )
 static const CTestFn TestFnPenalty02 = { "Penalty02", 0, -50.0, 50.0,
 	0.0, &calcPenalty02 };
 
+static double calcPeaks( const double* const p, const int N )
+{
+	const double F1 = 3.0*sqr(1.0-p[0])*exp(-sqr(p[0])-sqr(p[1]+1.0));
+	const double F2 = 10.0*(p[0]/5.0-pow(p[0],3.0)-pow(p[1],5.0))*
+		exp(-sqr(p[0])-sqr(p[1]));
+
+	const double F3 = 1.0/3.0*exp(-sqr(p[0]+1.0)-sqr(p[1]));
+
+	return( F1 - F2 - F3 );
+}
+
+static const CTestFn TestFnPeaks = { "Peaks", 2, -4.0, 4.0,
+	-6.551133332622496, &calcPeaks };
+
+static double calcMullerBrown( const double* const p, const int N )
+{
+	const double A[ 4 ] = { -200, -100, -170, 15 };
+	const double a[ 4 ] = { -1, -1, -6.5, 0.7 };
+	const double b[ 4 ] = { 0, 0, 11, 0.6 };
+	const double c[ 4 ] = { -10, -10, -6.5, 0.7 };
+	const double x1[ 4 ] = { 1, 0, -0.5, -1.0 };
+	const double x2[ 4 ] = { 0, 0.5, 1.5, 1.0 };
+	int j;
+	double s = 0.0;
+
+	for( j = 0; j < 4; j++ )
+	{
+		s += A[j]*exp(a[j]*sqr(p[0]-x1[j])+b[j]*(p[0]-x1[j])*(p[1]-x2[j])+
+			c[j]*sqr(p[1]-x2[j]));
+	}
+
+	return( s );
+}
+
+static double calcMullerBrown_p( double* const minv, double* const maxv,
+	const int N )
+{
+	minv[ 0 ] = -1.5;
+	maxv[ 0 ] = 1.0;
+	minv[ 1 ] = -0.5;
+	maxv[ 1 ] = 2.5;
+	return( -146.6995172099539 );
+}
+
+static const CTestFn TestFnMullerBrown = { "MullerBrown", 2, 0.0, 0.0,
+	0.0, &calcMullerBrown, &calcMullerBrown_p };
+
+static double calcCorana( const double* const p, const int N )
+{
+	const double si = 0.2;
+	const double d[ 4 ] = { 1, 1000, 10, 100 };
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 4; i++ )
+	{
+		const double zi = 0.2*floor(fabs(p[i]/si)+0.49999)*(p[i]<0.0?-1.0:1.0);
+
+		if( fabs( p[i] - zi ) > 0.05 )
+		{
+			s += 0.15*d[i]*sqr(zi-0.05*(zi<0.0?-1.0:1.0));
+		}
+		else
+		{
+			s += d[i]*sqr(p[i]);
+		}
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnCorana = { "Corana", 4, -100.0, 100.0,
+	0.0, &calcCorana };
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -3237,7 +3315,8 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnKowalik, &TestFnTripod, &TestFnPathological, &TestFnYaoLiu09,
 	&TestFnUrsem03, &TestFnMishra08, &TestFnAluffiPentini, &TestFnBeckerLago,
 	&TestFnCosineMixture, &TestFnMeyerRoth, &TestFnMultiGaussian,
-	&TestFnPeriodic, &TestFnWood, &TestFnLevyMontalvo2, &TestFnLangermann,
-	&TestFnMishra10, &TestFnDecanomial, &TestFnXor, &TestFnRana,
-	&TestFnCrossLegTable, &TestFnCrownedCross, &TestFnPenalty01,
-	&TestFnPenalty02, NULL };
+	&TestFnPeriodic, &TestFnLevyMontalvo2, &TestFnLangermann, &TestFnMishra10,
+	&TestFnMishra10b, &TestFnXor, &TestFnRana, &TestFnCrossLegTable,
+	&TestFnCrownedCross, &TestFnPenalty01, &TestFnPenalty02,
+	&TestFnWayburnSeader03, &TestFnPowellBadlyScaled, &TestFnPeaks,
+	&TestFnMullerBrown, &TestFnCorana, NULL };
