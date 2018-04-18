@@ -66,15 +66,17 @@ While this strategy was designed to be applied to continuous functions, it is
 also immune to discontinuities to some degree, and it can solve problems that
 utilize parameter value rounding (integer parameters). This strategy can't
 acceptably solve high-dimensional problems that are implicitly or explicitly
-combinatorial.
+combinatorial. Also problems with many competing minima without a pronounced
+global gradient (e.g. Bukin N.6) may not be solved acceptably as in most cases
+they require exhaustive search.
 
 Most hard constraints can be introduced by applying huge penalties to the
-objective function. Even binary penalties like "if(x>1)cost+=x**10000"
+objective function. Even binary penalties like "if(x>1)cost+=x\*10000"
 should work acceptably in most cases. Mixed integer programming can be
 achieved by using rounded parameter values in the objective function while
 value constraints can be implemented as multipliers, in this way: constraint
-c1:x1+2.0**x2-3.0**x3<=0 can be used to adjust objective function value:
-cost+=(c1<=0?0:abs(cost)**sqr(sqr(c1))**1000), with 1000 multiplier
+c1:x1+2.0\*x2-3.0\*x3<=0 can be used to adjust objective function value:
+cost+=(c1<=0?0:abs(cost)\*sqr(sqr(c1))\*1000), with 1000 multiplier
 depending on the parameter value scaling.
 
 The minimal and maximal allowed parameter values (bounds) should be specified

@@ -104,7 +104,7 @@ int main()
 	{
 		opt.optimize( rnd );
 
-		if( opt.getBestCost() < -14.99999 )
+		if( opt.getBestCost() < -14.999999 )
 		{
 			break;
 		}
