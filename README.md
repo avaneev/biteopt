@@ -35,7 +35,11 @@ non-convex problems, convex problems were not evaluated): [Comparison of derivat
 This strategy was able to solve 67% of problems in 10 attempts, 2500
 iterations each. For 1-2 dimensional problems, this strategy's success rate is
 96%. For 3-9 dimensional problems the success rate is 66%, for 10-30
-dimensional problems the success rate is 48%.
+dimensional problems the success rate is 48%. On a comparable test function
+suite (excluding several ill-defined and overly simple functions) and
+conditions outlined on this page: [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
+this strategy's success rate is 91% while average number of objective function
+evaluations is 355.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
