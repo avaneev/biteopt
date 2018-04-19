@@ -70,7 +70,10 @@
  * performed using the current best and worst solutions. This is conceptually
  * similar to Differential Evolution's "mutation" operation.
  *
- * 4. After each objective function evaluation, the highest-cost previous
+ * 4. With ScutProb probability a "short-cut" parameter vector change
+ * operation is performed.
+ *
+ * 5. After each objective function evaluation, the highest-cost previous
  * solution is replaced using the cost constraint.
  */
 
@@ -86,6 +89,8 @@ public:
 	double CentSpan; ///< Centroid move range multiplier.
 		///<
 	double AllpProb; ///< All parameters randomization probability.
+		///<
+	double ScutProb; ///< Short-cut probability.
 		///<
 
 	/**
@@ -110,11 +115,12 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		MinxMult = 0.5;
-		RandProb = 0.51412873;
-		CentProb = 0.92320463;
-		CentSpan = 2.96453520;
-		AllpProb = 0.2;
+		MinxMult = 0.50000000;
+		RandProb = 0.50565054;
+		CentProb = 0.84392202;
+		CentSpan = 2.95225455;
+		AllpProb = 0.20000000;
+		ScutProb = 0.15000000;
 	}
 
 	~CBiteOpt()
@@ -330,6 +336,35 @@ public:
 
 				Params[ i ] = MinParams[ i ] -
 					( MaxParams[ i ] - OrigParams[ i ]) * MinxMult;
+			}
+		}
+
+		if( rnd.getRndValue() < ScutProb )
+		{
+			// Low-probability parameter value short-cuts, they considerably
+			// reduce convergence time for some functions while not severely
+			// impacting performance for other functions.
+
+			i = (int) ( rnd.getRndValue() * ParamCount );
+
+			if( rnd.getRndValue() < 0.75 )
+			{
+				const double v = Params[ i ];
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = v;
+				}
+			}
+			else
+			{
+				const double v = ( Params[ i ] - CentParams[ i ]) *
+					( rnd.getRndValue() < 0.5 ? -1.0 : 1.0 );
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] += v;
+				}
 			}
 		}
 
