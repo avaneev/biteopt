@@ -243,7 +243,6 @@ public:
 		RjAvg = 0.0;
 		AtAvg = 0.0;
 		int RejTotal = 0;
-		int ItTotal = 0;
 		int ComplTotal = 0;
 		tc = 0;
 		int* Iters = new int[ IterCount ];
@@ -253,8 +252,8 @@ public:
 		{
 			_mm_empty();
 			double AvgIter = 0;
-			double AvgCost = 0.0;
-			double AvgRjCost = 0.0;
+			double MinCost = 1e300;
+			double MinRjCost = 1e300;
 			int Rej = 0;
 			int j;
 			int i;
@@ -314,17 +313,24 @@ public:
 
 					if( opt -> getBestCost() - opt -> optv < CostThreshold )
 					{
-						AvgCost += opt -> getBestCost();
+						if( opt -> getBestCost() < MinCost )
+						{
+							MinCost = opt -> getBestCost();
+						}
+
 						ComplTotal++;
 						Iters[ j ] = i;
 						AvgIter += i;
-						ItTotal += i;
 						break;
 					}
 
 					if( i == InnerIterCount )
 					{
-						AvgRjCost += opt -> getBestCost();
+						if( opt -> getBestCost() < MinRjCost )
+						{
+							MinRjCost = opt -> getBestCost();
+						}
+
 						Rej++;
 						Iters[ j ] = -1;
 						break;
@@ -332,8 +338,10 @@ public:
 				}
 			}
 
-			AvgCost /= ( IterCount - Rej );
-			AvgRjCost /= Rej;
+			MinCost = ( Rej >= IterCount ?
+				1.0 / ( Rej - IterCount) : MinCost );
+
+			MinRjCost = ( Rej == 0 ? 1.0 / Rej : MinRjCost );
 			double Avg;
 			double RMS;
 
@@ -369,9 +377,9 @@ public:
 
 			if( DoPrint )
 			{
-				printf( "AIt:%6.0f RIt:%6.0f At:%5.2f C:%11.8f RjC:%7.4f "
-					"%s_%i\n", Avg, RMS, At, AvgCost,
-					AvgRjCost, opt -> fn -> Name, Dims );
+				printf( "AI:%6.0f RI:%5.0f At:%5.2f C:%13.10f RjC:%7.4f "
+					"%s_%i\n", Avg, RMS, At, MinCost,
+					MinRjCost, opt -> fn -> Name, Dims );
 			}
 		}
 

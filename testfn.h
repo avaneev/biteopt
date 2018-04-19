@@ -132,7 +132,7 @@ static double calcSchaffer03( const double* const p, const int N )
 }
 
 static const CTestFn TestFnSchaffer03 = { "Schaffer03", 2, -100.0, 100.0,
-	0.002456991, &calcSchaffer03 };
+	0.0024558581695, &calcSchaffer03 };
 
 static double calcSchaffer04( const double* const p, const int N )
 {
@@ -143,7 +143,7 @@ static double calcSchaffer04( const double* const p, const int N )
 }
 
 static const CTestFn TestFnSchaffer04 = { "Schaffer04", 2, -100.0, 100.0,
-	0.292949, &calcSchaffer04 };
+	0.2929486652748, &calcSchaffer04 };
 
 static double calcSchaffer06( const double* const p, const int N )
 {
@@ -192,7 +192,7 @@ static double calcAckley3( const double* const p, const int N )
 }
 
 static const CTestFn TestFnAckley3 = { "Ackley3", 2, -32.0, 32.0,
-	-195.629028238, &calcAckley3 };
+	-195.6290282622794, &calcAckley3 };
 
 static double calcRosenbrock( const double* const p, const int N )
 {
@@ -441,7 +441,7 @@ static double calcBranin01( const double* const p, const int N )
 }
 
 static const CTestFn TestFnBranin01 = { "Branin01", 2, -5.0, 10.0,
-	0.39788735772973, &calcBranin01 };
+	0.3978873577297, &calcBranin01 };
 
 static double calcBranin02( const double* const p, const int N )
 {
@@ -451,8 +451,8 @@ static double calcBranin02( const double* const p, const int N )
 		cos(x)*cos(y)+log(x*x+y*y+1.0)+10.0 );
 }
 
-static const CTestFn TestFnBranin02 = { "Branin02", 2, -5.0, 15.0, 5.559037,
-	&calcBranin02 };
+static const CTestFn TestFnBranin02 = { "Branin02", 2, -5.0, 15.0,
+	5.5589144038938, &calcBranin02 };
 
 static double calcTrefethen( const double* const p, const int N )
 {
@@ -463,7 +463,7 @@ static double calcTrefethen( const double* const p, const int N )
 }
 
 static const CTestFn TestFnTrefethen = { "Trefethen", 2, -10.0, 10.0,
-	-3.3068686474, &calcTrefethen };
+	-3.3068686474752, &calcTrefethen };
 
 static double calcWhitley( const double* const p, const int N )
 {
@@ -530,7 +530,7 @@ static double calcShubert01( const double* const p, const int N )
 }
 
 static const CTestFn TestFnShubert01 = { "Shubert01", 2, -10.0, 10.0,
-	-186.7309, &calcShubert01 };
+	-186.7309088310240, &calcShubert01 };
 
 static double calcShubert03( const double* const p, const int N )
 {
@@ -555,7 +555,7 @@ static double calcShubert03( const double* const p, const int N )
 }
 
 static const CTestFn TestFnShubert03 = { "Shubert03", 2, -10.0, 10.0,
-	-29.6733337, &calcShubert03 };
+	-29.6759000514212, &calcShubert03 };
 
 static double calcShubert04( const double* const p, const int N )
 {
@@ -580,7 +580,7 @@ static double calcShubert04( const double* const p, const int N )
 }
 
 static const CTestFn TestFnShubert04 = { "Shubert04", 2, -10.0, 10.0,
-	-25.740858, &calcShubert04 };
+	-25.7417709954514, &calcShubert04 };
 
 static double calcWeierstrass( const double* const p, const int N )
 {
@@ -673,7 +673,7 @@ static double calcBird( const double* const p, const int N )
 }
 
 static const CTestFn TestFnBird = { "Bird", 2, -2.0 * M_PI, 2.0 * M_PI,
-	-106.7645367198034, &calcBird };
+	-106.7645367492648, &calcBird };
 
 static double calcTreccani( const double* const p, const int N )
 {
@@ -787,7 +787,7 @@ static double calcChichinadze( const double* const p, const int N )
 }
 
 static const CTestFn TestFnChichinadze = { "Chichinadze", 2, -30.0, 30.0,
-	-42.944387018991, &calcChichinadze };
+	-42.9443870189910, &calcChichinadze };
 
 static double calcEggHolder( const double* const p, const int N )
 {
@@ -799,7 +799,7 @@ static double calcEggHolder( const double* const p, const int N )
 }
 
 static const CTestFn TestFnEggHolder = { "EggHolder", 2, -512.0, 512.0,
-	-959.640662711, &calcEggHolder };
+	-959.6406627208510, &calcEggHolder };
 
 static double calcHolderTable( const double* const p, const int N )
 {
@@ -810,7 +810,7 @@ static double calcHolderTable( const double* const p, const int N )
 }
 
 static const CTestFn TestFnHolderTable = { "HolderTable", 2, -10.0, 10.0,
-	-19.20850256789, &calcHolderTable };
+	-19.2085025678868, &calcHolderTable };
 
 static double calcPowellSum( const double* const p, const int N )
 {
@@ -897,7 +897,7 @@ static double calcNewFunction01( const double* const p, const int N )
 }
 
 static const CTestFn TestFnNewFunction01 = { "NewFunction01", 2, -10.0, 10.0,
-	-0.178945093, &calcNewFunction01 };
+	-0.17894509347721144, &calcNewFunction01 };
 
 static double calcNewFunction02( const double* const p, const int N )
 {
@@ -908,7 +908,7 @@ static double calcNewFunction02( const double* const p, const int N )
 }
 
 static const CTestFn TestFnNewFunction02 = { "NewFunction02", 2, -10.0, 10.0,
-	-0.197188106, &calcNewFunction02 };
+	-0.1971881059905, &calcNewFunction02 };
 
 static double calcLevy05( const double* const p, const int N )
 {
@@ -927,8 +927,8 @@ static double calcLevy05( const double* const p, const int N )
 	return( s1*s2+sqr(x+1.42513)+sqr(y+0.80032) );
 }
 
-static const CTestFn TestFnLevy05 = { "Levy05", 2, -10.0, 10.0, -176.1375,
-	&calcLevy05 };
+static const CTestFn TestFnLevy05 = { "Levy05", 2, -10.0, 10.0,
+	-176.1375780016295, &calcLevy05 };
 
 static double calcDamavandi( const double* const p, const int N )
 {
@@ -1000,7 +1000,7 @@ static double calcPaviani( const double* const p, const int N )
 }
 
 static const CTestFn TestFnPaviani = { "Paviani", 10, 2.001, 9.999,
-	-45.7784684040686, &calcPaviani };
+	-45.7784697074463, &calcPaviani };
 
 static double calcDolan( const double* const p, const int N )
 {
@@ -1009,7 +1009,7 @@ static double calcDolan( const double* const p, const int N )
 }
 
 static const CTestFn TestFnDolan = { "Dolan", 5, -100.0, 100.0,
-	-529.871438732, &calcDolan };
+	-529.8714387324576, &calcDolan };
 
 static double calcTrid6( const double* const p, const int N )
 {
@@ -1113,7 +1113,7 @@ static double calcSixHumpCamel( const double* const p, const int N )
 }
 
 static const CTestFn TestFnSixHumpCamel = { "SixHumpCamel", 2, -5.0, 5.0,
-	-1.0316, &calcSixHumpCamel };
+	-1.0316284534899, &calcSixHumpCamel };
 
 static double calcChenBird( const double* const p, const int N )
 {
@@ -1124,7 +1124,7 @@ static double calcChenBird( const double* const p, const int N )
 }
 
 static const CTestFn TestFnChenBird = { "ChenBird", 2, -500.0, 500.0,
-	-1000.0079, &calcChenBird };
+	-1000.0079999680003, &calcChenBird };
 
 static double calcChenV( const double* const p, const int N )
 {
@@ -1166,7 +1166,7 @@ static double calcDeckkersAarts( const double* const p, const int N )
 }
 
 static const CTestFn TestFnDeckkersAarts = { "DeckkersAarts", 2, -20.0, 20.0,
-	-24771.09375, &calcDeckkersAarts };
+	-24776.5183423176930, &calcDeckkersAarts };
 
 static double calcEggCrate( const double* const p, const int N )
 {
@@ -1186,7 +1186,7 @@ static double calcKeane( const double* const p, const int N )
 }
 
 static const CTestFn TestFnKeane = { "Keane", 2, 0.00001, 10.0,
-	-0.673667521147, &calcKeane };
+	-0.6736675209904, &calcKeane };
 
 static double calcLeon( const double* const p, const int N )
 {
@@ -1274,7 +1274,7 @@ static double calcTestTubeHolder( const double* const p, const int N )
 }
 
 static const CTestFn TestFnTestTubeHolder = { "TestTubeHolder", 2,
-	-10.0, 10.0, -10.872299901558, &calcTestTubeHolder };
+	-10.0, 10.0, -10.8723001056227, &calcTestTubeHolder };
 
 static double calcWayburnSeader02( const double* const p, const int N )
 {
@@ -1358,7 +1358,7 @@ static double calcAdjiman_p( double* const minv, double* const maxv,
 	maxv[ 0 ] = 2.0;
 	minv[ 1 ] = -1.0;
 	maxv[ 1 ] = 1.0;
-	return( -2.0218 );
+	return( -2.0218067833598 );
 }
 
 static const CTestFn TestFnAdjiman = { "Adjiman", 2, 0.0, 0.0, 0.0,
@@ -1458,7 +1458,7 @@ static double calcStyblinskiTank_p( double* const minv, double* const maxv,
 		maxv[ i ] = 10.0;
 	}
 
-	return( -39.16599 * N );
+	return( -39.1661657037714 * N );
 }
 
 static const CTestFn TestFnStyblinskiTank = { "StyblinskiTank", 0, 0.0, 0.0,
@@ -1478,7 +1478,7 @@ static double calcMcCormick_p( double* const minv, double* const maxv,
 	maxv[ 0 ] = 4.0;
 	minv[ 1 ] = -3.0;
 	maxv[ 1 ] = 3.0;
-	return( -1.913222887 );
+	return( -1.9132229549810 );
 }
 
 static const CTestFn TestFnMcCormick = { "McCormick", 2, 0.0, 0.0, 0.0,
@@ -1509,7 +1509,7 @@ static double calcMichalewicz( const double* const p, const int N )
 }
 
 static const CTestFn TestFnMichalewicz = { "Michalewicz", 2, 0.0, M_PI,
-	-1.8013, &calcMichalewicz };
+	-1.8013034100986, &calcMichalewicz };
 
 static double calcBoxBettsExpQuadSum( const double* const p, const int N )
 {
@@ -1560,7 +1560,7 @@ static double calcMishra05( const double* const p, const int N )
 }
 
 static const CTestFn TestFnMishra05 = { "Mishra05", 2, -10.0, 10.0,
-	-1.01982951993, &calcMishra05 };
+	-1.0198295199309, &calcMishra05 };
 
 static double calcMishra06( const double* const p, const int N )
 {
@@ -1572,7 +1572,7 @@ static double calcMishra06( const double* const p, const int N )
 }
 
 static const CTestFn TestFnMishra06 = { "Mishra06", 2, -10.0, 10.0,
-	-2.28394983847, &calcMishra06 };
+	-2.2839498384748, &calcMishra06 };
 
 static double calcMishra09( const double* const p, const int N )
 {
@@ -1597,7 +1597,7 @@ static double calcZirilli( const double* const p, const int N )
 }
 
 static const CTestFn TestFnZirilli = { "Zirilli", 2, -10.0, 10.0,
-	-0.3523860738, &calcZirilli };
+	-0.3523860738000, &calcZirilli };
 
 static double calcCamel( const double* const p, const int N )
 {
@@ -1606,7 +1606,7 @@ static double calcCamel( const double* const p, const int N )
 	return( -(-sqr(sqr(x))+4.5*sqr(x)+2.0)/exp(2.0*sqr(y)) );
 }
 
-static const CTestFn TestFnCamel = { "Camel", 2, -2.0, 2.0, -7.0625,
+static const CTestFn TestFnCamel = { "Camel", 2, -2.0, 2.0, -7.0625000000000,
 	&calcCamel };
 
 static double calcComplex( const double* const p, const int N )
@@ -1680,7 +1680,21 @@ static double calcGramacyLee02( const double* const p, const int N )
 }
 
 static const CTestFn TestFnGramacyLee02 = { "GramacyLee02", 2, -1.5, 1.5,
-	-0.42888194248, &calcGramacyLee02 };
+	-0.4288819424804, &calcGramacyLee02 };
+
+static double calcGramacyLee03( const double* const p, const int N )
+{
+	const double f1 = exp(-sqr(p[0]-1.0))+exp(-0.8 * sqr(p[0]+1.0))-
+		0.05*sin(8.0*p[0]+0.8);
+
+	const double f2 = exp(-sqr(p[1]-1.0))+exp(-0.8 * sqr(p[1]+1.0))-
+		0.05*sin(8.0*p[1]+0.8);
+
+	return( -f1 * f2 );
+}
+
+static const CTestFn TestFnGramacyLee03 = { "GramacyLee03", 2, -1.5, 1.5,
+	-1.1268717457863, &calcGramacyLee03 };
 
 static double calcGiunta( const double* const p, const int N )
 {
@@ -1707,8 +1721,8 @@ static double calcHosaki( const double* const p, const int N )
 		sqr(y)*exp(-y) );
 }
 
-static const CTestFn TestFnHosaki = { "Hosaki", 2, 0.0, 10.0, -2.3458115761,
-	&calcHosaki };
+static const CTestFn TestFnHosaki = { "Hosaki", 2, 0.0, 10.0,
+	-2.3458115761013, &calcHosaki };
 
 static double calcKearfott( const double* const p, const int N )
 {
@@ -1736,7 +1750,7 @@ static double calcJennrichSampson( const double* const p, const int N )
 }
 
 static const CTestFn TestFnJennrichSampson = { "JennrichSampson", 2,
-	-1.0, 1.0, 124.3621823556, &calcJennrichSampson };
+	-1.0, 1.0, 124.3621823556148, &calcJennrichSampson };
 
 static double calcTsoulos( const double* const p, const int N )
 {
@@ -1763,7 +1777,7 @@ static double calcUrsemWaves_p( double* const minv, double* const maxv,
 	maxv[ 0 ] = 1.2;
 	minv[ 1 ] = -1.2;
 	maxv[ 1 ] = 1.2;
-	return( -7.30699873132 );
+	return( -7.3069987313245 );
 }
 
 static const CTestFn TestFnUrsemWaves = { "UrsemWaves", 2, 0.0, 0.0, 0.0,
@@ -2040,7 +2054,7 @@ static double calcHartman3( const double* const p, const int N )
 }
 
 static const CTestFn TestFnHartman3 = { "Hartman3", 3, 0.0, 1.0,
-	-3.86278, &calcHartman3 };
+	-3.8627797873327, &calcHartman3 };
 
 static double calcHartman6( const double* const p, const int N )
 {
@@ -2081,7 +2095,7 @@ static double calcHartman6( const double* const p, const int N )
 }
 
 static const CTestFn TestFnHartman6 = { "Hartman6", 6, 0.0, 1.0,
-	-3.32236801139, &calcHartman6 };
+	-3.3223680114155, &calcHartman6 };
 
 static double calcDeVilliersGlasser02( const double* const p, const int N )
 {
@@ -2307,7 +2321,7 @@ static double calcUrsem01_p( double* const minv, double* const maxv,
 	maxv[ 0 ] = 3.0;
 	minv[ 1 ] = -2.0;
 	maxv[ 1 ] = 2.0;
-	return( -4.8168 );
+	return( -4.8168140637348 );
 }
 
 static const CTestFn TestFnUrsem01 = { "Ursem01", 2, 0.0, 0.0, 0.0,
@@ -2321,7 +2335,7 @@ static double calcQuadratic( const double* const p, const int N )
 }
 
 static const CTestFn TestFnQuadratic = { "Quadratic", 2,
-	-10.0, 10.0, -3873.72418, &calcQuadratic };
+	-10.0, 10.0, -3873.7241821862713, &calcQuadratic };
 
 static double calcSchwefel01( const double* const p, const int N )
 {
@@ -2434,7 +2448,7 @@ static double calcShekel05( const double* const p, const int N )
 }
 
 static const CTestFn TestFnShekel05 = { "Shekel05", 4, 0.0, 10.0,
-	-10.15319585, &calcShekel05 };
+	-10.1531996790582, &calcShekel05 };
 
 static double calcShekel07( const double* const p, const int N )
 {
@@ -2442,7 +2456,7 @@ static double calcShekel07( const double* const p, const int N )
 }
 
 static const CTestFn TestFnShekel07 = { "Shekel07", 4, 0.0, 10.0,
-	-10.40281883693, &calcShekel07 };
+	-10.4029153367777, &calcShekel07 };
 
 static double calcShekel10( const double* const p, const int N )
 {
@@ -2450,7 +2464,7 @@ static double calcShekel10( const double* const p, const int N )
 }
 
 static const CTestFn TestFnShekel10 = { "Shekel10", 4, 0.0, 10.0,
-	-10.5319292512, &calcShekel10 };
+	-10.5320872211865, &calcShekel10 };
 
 static double calcMishra01( const double* const p, const int N )
 {
@@ -2577,7 +2591,7 @@ static double calcCarromTable( const double* const p, const int N )
 }
 
 static const CTestFn TestFnCarromTable = { "CarromTable", 2, -10.0, 10.0,
-	-24.15681551650653, &calcCarromTable };
+	-24.1568155473913, &calcCarromTable };
 
 static double calcNewFunction03( const double* const p, const int N )
 {
@@ -2589,7 +2603,7 @@ static double calcNewFunction03( const double* const p, const int N )
 }
 
 static const CTestFn TestFnNewFunction03 = { "NewFunction03", 2, -10.0, 10.0,
-	-1.019829, &calcNewFunction03 };
+	-1.0198295199309, &calcNewFunction03 };
 
 static double calcLevy03( const double* const p, const int N )
 {
@@ -2676,7 +2690,7 @@ static double calcJudge( const double* const p, const int N )
 }
 
 static const CTestFn TestFnJudge = { "Judge", 2, -10.0, 10.0,
-	16.081730132960381, &calcJudge };
+	16.0817301329604, &calcJudge };
 
 static double calcWayburnSeader01( const double* const p, const int N )
 {
@@ -2696,7 +2710,7 @@ static double calcWayburnSeader03( const double* const p, const int N )
 }
 
 static const CTestFn TestFnWayburnSeader03 = { "WayburnSeader03", 2,
-	-500.0, 500.0, 19.105879794567979, &calcWayburnSeader03 };
+	-500.0, 500.0, 19.1058797945680, &calcWayburnSeader03 };
 
 static double calcVenterSobiSobieski( const double* const p, const int N )
 {
@@ -2719,7 +2733,7 @@ static double calcElAttarVidyasDutta( const double* const p, const int N )
 }
 
 static const CTestFn TestFnElAttarVidyasDutta = { "ElAttarVidyasDutta", 2,
-	-100.0, 100.0, 1.712780354, &calcElAttarVidyasDutta };
+	-100.0, 100.0, 1.7127803548622, &calcElAttarVidyasDutta };
 
 static double calcModifiedRosenbrock( const double* const p, const int N )
 {
@@ -2731,7 +2745,7 @@ static double calcModifiedRosenbrock( const double* const p, const int N )
 }
 
 static const CTestFn TestFnModifiedRosenbrock = { "ModifiedRosenbrock", 2,
-	-2.0, 2.0, 34.37, &calcModifiedRosenbrock };
+	-2.0, 2.0, 34.0402431066405, &calcModifiedRosenbrock };
 
 static double calcStochastic( const double* const p, const int N )
 {
@@ -2786,7 +2800,7 @@ static double calcKowalik( const double* const p, const int N )
 }
 
 static const CTestFn TestFnKowalik = { "Kowalik", 4, -5.0, 5.0,
-	0.00030748610, &calcKowalik };
+	0.0003074859878, &calcKowalik };
 
 static double calcTripod( const double* const p, const int N )
 {
@@ -2880,7 +2894,7 @@ static double calcAluffiPentini( const double* const p, const int N )
 }
 
 static const CTestFn TestFnAluffiPentini = { "AluffiPentini", 2, -10.0, 10.0,
-	-0.3523, &calcAluffiPentini };
+	-0.3523860738000, &calcAluffiPentini };
 
 static double calcBeckerLago( const double* const p, const int N )
 {
@@ -2942,7 +2956,7 @@ static double calcMeyerRoth( const double* const p, const int N )
 }
 
 static const CTestFn TestFnMeyerRoth = { "MeyerRoth", 3, -20.0, 20.0,
-	0.00004357968, &calcMeyerRoth };
+	0.0000435526619, &calcMeyerRoth };
 
 static double calcMultiGaussian( const double* const p, const int N )
 {
@@ -2962,7 +2976,7 @@ static double calcMultiGaussian( const double* const p, const int N )
 }
 
 static const CTestFn TestFnMultiGaussian = { "MultiGaussian", 2, -2.0, 2.0,
-	-1.296954, &calcMultiGaussian };
+	-1.2969540459538, &calcMultiGaussian };
 
 static double calcPeriodic( const double* const p, const int N )
 {
@@ -3010,7 +3024,7 @@ static double calcLangermann( const double* const p, const int N )
 }
 
 static const CTestFn TestFnLangermann = { "Langermann", 2, 0.0, 10.0,
-	-5.1621259, &calcLangermann };
+	-5.1621261599640, &calcLangermann };
 
 static double calcMishra10( const double* const p, const int N )
 {
@@ -3052,7 +3066,8 @@ static double calcXor( const double* const p, const int N )
 	return( F1+F2+F3+F4 );
 }
 
-static const CTestFn TestFnXor = { "Xor", 9, -1.0, 1.0, 0.9597588, &calcXor };
+static const CTestFn TestFnXor = { "Xor", 9, -1.0, 1.0,
+	0.9597587570120, &calcXor };
 
 static double calcRana( const double* const p, const int N )
 {
@@ -3167,7 +3182,7 @@ static double calcPeaks( const double* const p, const int N )
 }
 
 static const CTestFn TestFnPeaks = { "Peaks", 2, -4.0, 4.0,
-	-6.551133332622496, &calcPeaks };
+	-6.5511333328358, &calcPeaks };
 
 static double calcMullerBrown( const double* const p, const int N )
 {
@@ -3196,7 +3211,7 @@ static double calcMullerBrown_p( double* const minv, double* const maxv,
 	maxv[ 0 ] = 1.0;
 	minv[ 1 ] = -0.5;
 	maxv[ 1 ] = 2.5;
-	return( -146.6995172099539 );
+	return( -146.6995172099541 );
 }
 
 static const CTestFn TestFnMullerBrown = { "MullerBrown", 2, 0.0, 0.0,
@@ -3228,6 +3243,41 @@ static double calcCorana( const double* const p, const int N )
 
 static const CTestFn TestFnCorana = { "Corana", 4, -100.0, 100.0,
 	0.0, &calcCorana };
+
+static double calcBrad( const double* const p, const int N )
+{
+	const double v[] = { 0.14, 0.18, 0.22, 0.25, 0.29, 0.32, 0.35, 0.39, 0.37,
+		0.58, 0.73, 0.96, 1.34, 2.10, 4.39 };
+
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 15; i++ )
+	{
+		const int I = i + 1;
+		const int J = 16 - I;
+		const double a = v[ i ] - p[ 0 ] - I;
+		const double b = J * p[ 1 ] + ( I < J ? I : J ) * p[ 2 ];
+		s += sqr( a / b );
+	}
+
+	return( s );
+}
+
+static double calcBrad_p( double* const minv, double* const maxv,
+	const int N )
+{
+	minv[ 0 ] = -0.25;
+	maxv[ 0 ] = 0.25;
+	minv[ 1 ] = 0.01;
+	maxv[ 1 ] = 2.5;
+	minv[ 2 ] = 0.01;
+	maxv[ 2 ] = 2.5;
+	return( 6.9352280697052 );
+}
+
+static const CTestFn TestFnBrad = { "Brad", 3, 0.0, 0.0,
+	0.0, &calcBrad, &calcBrad_p };
 
 // Strategy optimization corpus based on N-dimensional functions.
 
@@ -3319,4 +3369,5 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnMishra10b, &TestFnXor, &TestFnRana, &TestFnCrossLegTable,
 	&TestFnCrownedCross, &TestFnPenalty01, &TestFnPenalty02,
 	&TestFnWayburnSeader03, &TestFnPowellBadlyScaled, &TestFnPeaks,
-	&TestFnMullerBrown, &TestFnCorana, NULL };
+	&TestFnMullerBrown, &TestFnCorana, &TestFnBrad, &TestFnGramacyLee03,
+	NULL };

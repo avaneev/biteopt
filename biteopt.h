@@ -241,7 +241,14 @@ public:
 	 *
 	 * @param rnd Random number generator.
 	 * @return The number of non-improving iterations so far. A high value
-	 * means optimizer has reached a optimization plateau.
+	 * means optimizer has reached an optimization plateau. The suggested
+	 * threshold value is PopSize * 5, when this value was reached the
+	 * probability of plateau is high. This value however should not be solely
+	 * relied upon when considering a stopping criteria: a hard iteration
+	 * limit should be always used as in some cases convergence time may be
+	 * very high with small but frequent improving steps. This value is best
+	 * used to allocate iteration budget between optimization attempts more
+	 * efficiently.
 	 */
 
 	int optimize( CBiteRnd& rnd )
