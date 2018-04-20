@@ -359,12 +359,13 @@ public:
 			}
 			else
 			{
-				const double v = ( Params[ i ] - CentParams[ i ]) *
+				const double v = getRealValue(
+					Params[ i ] - CentParams[ i ], i ) *
 					( rnd.getRndValue() < 0.5 ? -1.0 : 1.0 );
 
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] += v;
+					Params[ i ] += ( v - MinValues[ i ]) / DiffValues[ i ];
 				}
 			}
 		}
