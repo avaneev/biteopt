@@ -119,6 +119,11 @@ however some functions converge faster if a higher population size is used.
 On the other hand, using an overly large population size may also increase
 convergence time.
 
+3. The method currently uses "short-cuts" which can be considered as "tricks"
+which are non-universal. However, optimization of some functions benefits from
+them greatly, they increase optimization success of test suites by several
+percent.
+
 ## Users ##
 This library is used by:
 
