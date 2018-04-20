@@ -311,11 +311,12 @@ public:
 
 				// Move towards centroid vector or beyond it, randomly.
 
+				const double m = rnd.getRndValue() * CentSpan;
+				const double m2 = rnd.getRndValue() * CentSpan;
+
 				for( i = a; i <= b; i++ )
 				{
-					const double m = rnd.getRndValue() * CentSpan;
 					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
-					const double m2 = rnd.getRndValue() * CentSpan;
 					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m2;
 				}
 			}
@@ -349,11 +350,11 @@ public:
 
 			if( rnd.getRndValue() < 0.75 )
 			{
-				const double v = Params[ i ];
+				const double v = getRealValue( Params[ i ], i );
 
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] = v;
+					Params[ i ] = ( v - MinValues[ i ]) / DiffValues[ i ];
 				}
 			}
 			else

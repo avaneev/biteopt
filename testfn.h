@@ -812,6 +812,30 @@ static double calcHolderTable( const double* const p, const int N )
 static const CTestFn TestFnHolderTable = { "HolderTable", 2, -10.0, 10.0,
 	-19.2085025678868, &calcHolderTable };
 
+static double calcComplexHolderTable( const double* const p, const int N )
+{
+	double x0 = p[ 0 ];
+	double x1 = p[ 1 ];
+	double sign = 1;
+	double j;
+
+	for( j = -4; j < 9; j += 0.5 )
+	{
+		if( j < x0 && x0 < j+0.5 )
+		{
+			x0 += sign * 0.25;
+		}
+
+		sign *= -1;
+	}
+
+	return( -(fabs(sin(x0)*cos(x1)*exp(fabs(1-sqrt(x0*x0+x1*x1)/M_PI)))-
+		(x0+x1)/10 - sin(x0*10)*cos(x1*10)) );
+}
+
+static const CTestFn TestFnComplexHolderTable = { "ComplexHolderTable", 2,
+	-10.0, 10.0, -21.9210396635469, &calcComplexHolderTable };
+
 static double calcPowellSum( const double* const p, const int N )
 {
 	double s = 0.0;
@@ -3370,4 +3394,4 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnCrownedCross, &TestFnPenalty01, &TestFnPenalty02,
 	&TestFnWayburnSeader03, &TestFnPowellBadlyScaled, &TestFnPeaks,
 	&TestFnMullerBrown, &TestFnCorana, &TestFnBrad, &TestFnGramacyLee03,
-	NULL };
+	&TestFnComplexHolderTable, NULL };

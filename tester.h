@@ -168,6 +168,8 @@ public:
 		///<
 	double ItAvg; ///< Average convergence time after run().
 		///<
+	double RMSAvg; ///< Average convergence time after run().
+		///<
 	double ItRtAvg; ///< Average ratio of std.dev and average after run().
 		///<
 	double RjAvg; ///< Average number of rejects.
@@ -239,6 +241,7 @@ public:
 	void run()
 	{
 		ItAvg = 0.0;
+		RMSAvg = 0.0;
 		ItRtAvg = 0.0;
 		RjAvg = 0.0;
 		AtAvg = 0.0;
@@ -368,6 +371,7 @@ public:
 			}
 
 			ItAvg += Avg;
+			RMSAvg += RMS;
 			ItRtAvg += RMS / Avg;
 			const double Rj = (double) Rej / IterCount;
 			RjAvg += Rj;
@@ -385,6 +389,7 @@ public:
 
 		_mm_empty();
 		ItAvg /= FnCount;
+		RMSAvg /= FnCount;
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
 		AtAvg = 1.0 / ( 1.0 - (double) RejTotal / IterCount / FnCount );
@@ -397,6 +402,7 @@ public:
 		{
 			printf( "Success: %.2f%%\n", Success );
 			printf( "ItAvg: %.1f (avg convergence time)\n", ItAvg );
+			printf( "RMSAvg: %.1f (std.dev of convergence time)\n", RMSAvg );
 			printf( "ItRtAvg: %.6f (avg ratio of std.dev and average)\n",
 				ItRtAvg );
 
