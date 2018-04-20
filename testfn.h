@@ -1334,7 +1334,7 @@ static double calcMishra04( const double* const p, const int N )
 }
 
 static const CTestFn TestFnMishra04 = { "Mishra04", 2, -10.00, 10.0,
-	-0.19940697, &calcMishra04 };
+	-0.1994114689025, &calcMishra04 };
 
 static double calcZeroSum( const double* const p, const int N )
 {
@@ -3303,6 +3303,180 @@ static double calcBrad_p( double* const minv, double* const maxv,
 static const CTestFn TestFnBrad = { "Brad", 3, 0.0, 0.0,
 	0.0, &calcBrad, &calcBrad_p };
 
+static double calcLennardJones( const double* const p, const int N )
+{
+	int k = N / 3;
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < k - 1; i++ )
+	{
+		int j;
+
+		for( j = i + 1; j < k; j++ )
+		{
+			const double rij = sqrt(sqr(p[3*i]-p[3*j])+
+				sqr(p[3*i+1]-p[3*j+1])+sqr(p[3*i+2]-p[3*j+2]));
+
+			s += 4.0/pow(rij,12.0) - 4.0/pow(rij,6.0);
+		}
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnLennardJones = { "LennardJones", 6, -4.0, 4.0,
+	-1.0, &calcLennardJones };
+
+static double calcOddSquare( const double* const p, const int N )
+{
+	const double b[] = { 1.0, 1.3, 0.8, -0.4, -1.3, 1.6, -0.2, -0.6, 0.5, 1.4,
+		1.0, 1.3, 0.8, -0.4, -1.3, 1.6, -0.2, -0.6, 0.5, 1.4 };
+
+	int i;
+	double d = sqr(p[0]-b[0]);
+	double h = d;
+
+	for( i = 1; i < N; i++ )
+	{
+		const double nd = sqr(p[i]-b[i]);
+		d = ( nd > d ? nd : d );
+		h += nd;
+	}
+
+	d *= N;
+
+	return( -exp(-d/(2.0*M_PI))*cos(M_PI*d)*(1.0+0.02*h/(d+0.01)) );
+}
+
+static const CTestFn TestFnOddSquare = { "OddSquare", 2, -5.0 * M_PI,
+	5.0 * M_PI, -1.0084672811395, &calcOddSquare };
+
+static double calcMishra03( const double* const p, const int N )
+{
+	const double a = fabs(sqr(p[0])+p[1]);
+	const double b = sqrt(a);
+	const double c = sqrt(fabs(cos(b)));
+
+	return( c+0.01*(p[0]+p[1]) );
+}
+
+static const CTestFn TestFnMishra03 = { "Mishra03", 2, -10.00, 10.0,
+	-0.1846669920032, &calcMishra03 };
+
+static double calcPermFunction01( const double* const p, const int N )
+{
+	const double Beta = 1000.0;
+	double s1 = 0.0;
+	int k;
+
+	for( k = 1; k <= N; k++ )
+	{
+		double s2 = 0.0;
+		int i;
+
+		for( i = 1; i <= N; i++ )
+		{
+			s2 += ( pow( (double) i, (double) k ) + Beta ) *
+				( pow( p[ i - 1 ] / i, (double) k ) - 1.0 );
+		}
+
+		s1 += s2 * s2;
+	}
+
+	return( s1 );
+}
+
+static double calcPermFunction01_p( double* const minv, double* const maxv,
+	const int N )
+{
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		minv[ i ] = -N;
+		maxv[ i ] = N + 1;
+	}
+
+	return( 0.0 );
+}
+
+static const CTestFn TestFnPermFunction01 = { "PermFunction01", 2, 0.0, 0.0,
+	0.0, &calcPermFunction01, &calcPermFunction01_p };
+
+static double calcPermFunction02( const double* const p, const int N )
+{
+	const double Beta = 1000.0;
+	double s1 = 0.0;
+	int k;
+
+	for( k = 1; k <= N; k++ )
+	{
+		double s2 = 0.0;
+		int i;
+
+		for( i = 1; i <= N; i++ )
+		{
+			s2 += ( pow( (double) i, (double) k ) + Beta ) *
+				( pow( p[ i - 1 ], (double) k ) - 1.0 / i );
+		}
+
+		s1 += s2 * s2;
+	}
+
+	return( s1 );
+}
+
+static double calcPermFunction02_p( double* const minv, double* const maxv,
+	const int N )
+{
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		minv[ i ] = -N;
+		maxv[ i ] = N + 1;
+	}
+
+	return( 0.0 );
+}
+
+static const CTestFn TestFnPermFunction02 = { "PermFunction02", 2, 0.0, 0.0,
+	0.0, &calcPermFunction02, &calcPermFunction02_p };
+
+/*static double calcWatson( const double* const p, const int N )
+{
+	double s1 = 0.0;
+	int i;
+
+	for( i = 0; i <= 29; i++ )
+	{
+		const double a = i / 29.0;
+		double s2 = 0.0;
+		int j;
+
+		for( j = 0; j <= 4; j++ )
+		{
+			s2 += (j-1)*pow(a,j)*p[j];
+		}
+
+		double s3 = 0.0;
+		int k;
+
+		for( k = 0; k <= 5; k++ )
+		{
+			s3 += pow(a,k)*p[k];
+		}
+
+		s1 += sqr( s2 - sqr(s3) - 1.0 );
+	}
+
+	return( s1 + sqr(p[0]) );
+}
+
+static const CTestFn TestFnWatson = { "Watson", 6, -5.00, 5.0,
+	0.002288, &calcWatson };*/
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -3332,8 +3506,8 @@ const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
 
 // Failing functions requiring more than 2000 iterations to converge.
 
-const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra04,
-	&TestFnDeVilliersGlasser02, NULL };
+const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra03,
+	&TestFnMishra04, &TestFnDeVilliersGlasser02, NULL };
 
 // CPU time-consuming function: &TestFnGulfResearchProblem
 
@@ -3394,4 +3568,5 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnCrownedCross, &TestFnPenalty01, &TestFnPenalty02,
 	&TestFnWayburnSeader03, &TestFnPowellBadlyScaled, &TestFnPeaks,
 	&TestFnMullerBrown, &TestFnCorana, &TestFnBrad, &TestFnGramacyLee03,
-	&TestFnComplexHolderTable, NULL };
+	&TestFnComplexHolderTable, &TestFnLennardJones, &TestFnOddSquare,
+	&TestFnPermFunction01, &TestFnPermFunction02, NULL };

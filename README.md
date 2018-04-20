@@ -41,8 +41,8 @@ solves 93% of problems. On a comparable test function suite and conditions
 outlined at this page: [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use test2.cpp to run the test) this strategy's
-success rate is 93% while the average number of objective function evaluations
-is 321.
+success rate is >91% while the average number of objective function
+evaluations is ~330.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
@@ -73,9 +73,10 @@ While this strategy was designed to be applied to continuous functions, it is
 also immune to discontinuities to some degree, and it can solve problems that
 utilize parameter value rounding (integer parameters). This strategy can't
 acceptably solve high-dimensional problems that are implicitly or explicitly
-combinatorial. Also problems with many competing minima without a pronounced
-global gradient (e.g. Bukin N.6) may not be solved acceptably as in most cases
-they require exhaustive search.
+combinatorial (e.g. Perm and Lennard-Jones atom clustering problems). Also
+problems with many competing minima without a pronounced global gradient
+(e.g. Bukin N.6) may not be solved acceptably as in most cases they require
+exhaustive search.
 
 Most hard constraints can be introduced by applying huge penalties to the
 objective function. Even binary penalties like "if(x>1)cost+=x\*10000"
