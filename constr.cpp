@@ -50,9 +50,9 @@ public:
 		p[ 12 ] = 1.0;
 	}
 
-	static double penn( const double v, const double cost )
+	static double penalty( const double v )
 	{
-		return( v <= 0.0 ? 0.0 : fabs(cost)*sqr(sqr(v))*10000 );
+		return( v <= 0.0 ? 0.0 : 100000 + v * 9999 );
 	}
 
 	virtual double optcost( const double* const p )
@@ -74,19 +74,18 @@ public:
 		}
 
 		double cost = 5.0*s1-5.0*s2-s3;
-		double z = 0;
 
-		z += penn( 2.0*p[0]+2.0*p[1]+p[9]+p[10]-10.0, cost );
-		z += penn( 2.0*p[0]+2.0*p[2]+p[9]+p[11]-10.0, cost );
-		z += penn( 2.0*p[1]+2.0*p[2]+p[10]+p[11]-10.0, cost );
-		z += penn( -8.0*p[0]+p[9], cost );
-		z += penn( -8.0*p[1]+p[10], cost );
-		z += penn( -8.0*p[2]+p[11], cost );
-		z += penn( -2.0*p[3]-p[4]+p[9], cost );
-		z += penn( -2.0*p[5]-p[6]+p[10], cost );
-		z += penn( -2.0*p[7]-p[8]+p[11], cost );
+		cost += penalty( 2.0*p[0]+2.0*p[1]+p[9]+p[10]-10.0 );
+		cost += penalty( 2.0*p[0]+2.0*p[2]+p[9]+p[11]-10.0 );
+		cost += penalty( 2.0*p[1]+2.0*p[2]+p[10]+p[11]-10.0 );
+		cost += penalty( -8.0*p[0]+p[9] );
+		cost += penalty( -8.0*p[1]+p[10] );
+		cost += penalty( -8.0*p[2]+p[11] );
+		cost += penalty( -2.0*p[3]-p[4]+p[9] );
+		cost += penalty( -2.0*p[5]-p[6]+p[10] );
+		cost += penalty( -2.0*p[7]-p[8]+p[11] );
 
-		return( cost + z );
+		return( cost );
 	}
 };
 
@@ -115,7 +114,7 @@ int main()
 
 	for( i = 0; i < 13; i++ )
 	{
-		printf( "%f\n", opt.getBestParams()[ i ]);
+		printf( "x[%i] = %f\n", i, opt.getBestParams()[ i ]);
 	}
 
 	return( 0 );

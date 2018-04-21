@@ -1139,7 +1139,7 @@ static double calcSixHumpCamel( const double* const p, const int N )
 static const CTestFn TestFnSixHumpCamel = { "SixHumpCamel", 2, -5.0, 5.0,
 	-1.0316284534899, &calcSixHumpCamel };
 
-static double calcChenBird( const double* const p, const int N )
+static double calcChenV( const double* const p, const int N )
 {
 	const double b = 0.001;
 	return( -b/(sqr(b)+sqr(sqr(p[0])+sqr(p[1])-1.0))-
@@ -1147,18 +1147,18 @@ static double calcChenBird( const double* const p, const int N )
 		b/(sqr(b)+sqr(sqr(p[0])+sqr(p[1]))) );
 }
 
-static const CTestFn TestFnChenBird = { "ChenBird", 2, -500.0, 500.0,
-	-1000.0079999680003, &calcChenBird };
+static const CTestFn TestFnChenV = { "ChenV", 2, -500.0, 500.0,
+	-1000.0079999680003, &calcChenV };
 
-static double calcChenV( const double* const p, const int N )
+static double calcChenBird( const double* const p, const int N )
 {
 	const double b = 0.001;
 	return( -b/(sqr(b)+sqr(p[0]-0.4*p[1]-0.1))-
 		b/(sqr(b)+sqr(2.0*p[0]+p[1]-1.5)) );
 }
 
-static const CTestFn TestFnChenV = { "ChenV", 2, -500.0, 500.0, -2000.0,
-	&calcChenV };
+static const CTestFn TestFnChenBird = { "ChenBird", 2, -500.0, 500.0, -2000.0,
+	&calcChenBird };
 
 static double calcChungReynolds( const double* const p, const int N )
 {
@@ -1409,7 +1409,7 @@ static double calcAlpine2_p( double* const minv, double* const maxv,
 	for( i = 0; i < N; i++ )
 	{
 		minv[ i ] = 0.0;
-		maxv[ i ] = 20.0;
+		maxv[ i ] = 10.0;
 	}
 
 	return( -pow( 2.808, (double) N ));
@@ -2528,13 +2528,13 @@ static const CTestFn TestFnMishra02 = { "Mishra02", 2, 0.0, 1.0, 2.0,
 
 static double calcMishra07( const double* const p, const int N )
 {
-	double s = 0.0;
+	double s = 1.0;
 	int nf = 1;
 	int i;
 
 	for( i = 0; i < N; i++ )
 	{
-		s += p[i];
+		s *= p[i];
 		nf *= i + 1;
 	}
 
@@ -3477,6 +3477,68 @@ static const CTestFn TestFnPermFunction02 = { "PermFunction02", 2, 0.0, 0.0,
 static const CTestFn TestFnWatson = { "Watson", 6, -5.00, 5.0,
 	0.002288, &calcWatson };*/
 
+static double calcDeVilliersGlasser01( const double* const p, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i <= 24; i++ )
+	{
+		const double ti = 0.1*(i-1);
+		const double yi = 60.137*pow(1.371,ti)*sin(3.112*ti+1.761);
+
+		s += sqr(p[0]*pow(p[1],ti)*sin(p[2]*ti+p[3])-yi);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnDeVilliersGlasser01 = { "DeVilliersGlasser01", 4,
+	1.0, 100.0, 0.0, &calcDeVilliersGlasser01 };
+
+static double calcPinter( const double* const p, const int N )
+{
+	double s1 = 0.0;
+	double s2 = 0.0;
+	double s3 = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		double x0;
+		double x1;
+
+		if( i == 0 )
+		{
+			x0 = p[ N - 1 ];
+			x1 = p[ i + 1 ];
+		}
+		else
+		if( i == N - 1 )
+		{
+			x0 = p[ i - 1 ];
+			x1 = p[ 0 ];
+		}
+		else
+		{
+			x0 = p[ i - 1 ];
+			x1 = p[ i + 1 ];
+		}
+
+		const double A = x0*sin(p[i])+sin(x1);
+		const double B = sqr(x0)-2.0*p[i]+3.0*x1-cos(p[i])+1.0;
+
+		s1 += (i+1)*sqr(p[i]);
+		s2 += 20.0*(i+1)*sqr(sin(A));
+		s3 += (i+1)*log(1.0+(i+1)*sqr(B))/log(10.0);
+	}
+
+	return( s1+s2+s3 );
+}
+
+static const CTestFn TestFnPinter = { "Pinter", 0, -10.0, 10.0, 0.0,
+	&calcPinter };
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -3497,7 +3559,7 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	/*&TestFnVincent, &TestFnKatsuura, &TestFnDeb02,*/
 	&TestFnDropWave, &TestFnSalomon, &TestFnWhitley, &TestFnXinSheYang02,
 	&TestFnXinSheYang03, &TestFnDeflCorrSpring, &TestFnDixonPrice,
-	&TestFnPenalty01, &TestFnPenalty02,	NULL };
+	&TestFnPenalty01, &TestFnPenalty02,	&TestFnPinter, NULL };
 
 // Failing functions.
 
@@ -3509,7 +3571,8 @@ const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
 const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra03,
 	&TestFnMishra04, &TestFnDeVilliersGlasser02, NULL };
 
-// CPU time-consuming function: &TestFnGulfResearchProblem
+// CPU time-consuming functions, but solving correctly:
+// &TestFnDeVilliersGlasser01, &TestFnGulfResearchProblem
 
 // Test corpus including all solvable functions.
 
@@ -3569,4 +3632,4 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnWayburnSeader03, &TestFnPowellBadlyScaled, &TestFnPeaks,
 	&TestFnMullerBrown, &TestFnCorana, &TestFnBrad, &TestFnGramacyLee03,
 	&TestFnComplexHolderTable, &TestFnLennardJones, &TestFnOddSquare,
-	&TestFnPermFunction01, &TestFnPermFunction02, NULL };
+	&TestFnPermFunction01, &TestFnPermFunction02, &TestFnPinter, NULL };

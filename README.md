@@ -78,14 +78,17 @@ problems with many competing minima without a pronounced global gradient
 (e.g. Bukin N.6) may not be solved acceptably as in most cases they require
 exhaustive search.
 
-Most hard constraints can be introduced by applying huge penalties to the
-objective function. Even binary penalties like "if(x>1)cost+=x\*10000"
-should work acceptably in most cases. Mixed integer programming can be
-achieved by using rounded parameter values in the objective function while
-value constraints can be implemented as multipliers, in this way: constraint
-c1:x1+2.0\*x2-3.0\*x3<=0 can be used to adjust objective function value:
-cost+=(c1<=0?0:abs(cost)\*sqr(sqr(c1))\*1000), with 1000 multiplier
-depending on the parameter value scaling.
+Mixed integer programming can be achieved by using rounded parameter values in
+the objective function while value constraints can be implemented as
+penalties, in this way: constraint c1:x1+2.0\*x2-3.0\*x3<=0 can be used to
+adjust objective function value: cost+=(c1<=0?0:100000+c1*9999), with 100000
+penalty base and 9999 constraint scale chosen to assure no interaction with the
+expected "normal" objective function values while providing a useful gradient.
+Note that if the solution's value is equal or higher than the penalty base
+it means either a feasible solution was not found or the chosen constraint
+scale does not generate a useful gradient. See constr.cpp for an example of
+constraint programming. constr2.cpp is an example of non-linear constraint
+programming with both non-equalities and equalities.
 
 The minimal and maximal allowed parameter values (bounds) should be specified
 in a way to cover a wider value range, in order to reduce boundary effects
@@ -102,7 +105,7 @@ information, including percentage of rejected attempts (rejection rate).
 
 test4.cpp is a convergence test for multi-dimensional functions.
 
-constr.cpp program demonstrates use of constraint penalties.
+constr.cpp and constr2.cpp programs demonstrate use of constraint penalties.
 
 ## Development ##
 
