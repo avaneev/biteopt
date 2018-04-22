@@ -23,7 +23,7 @@ rogue optimums. Hard (multi-modal) problems may require many optimization
 attempts to reach optimum. The name "BiteOpt" is an acronym for "BITmask
 Evolution OPTimization".
 
-### CBiteOptDeep (biteoptd.h) ###
+### CBiteOptDeep (biteopt.h) ###
 
 Deep stochastic optimization class. Based on an array of M CBiteOpt
 objects. This "deep" strategy pushes the newly-obtained solution to the
