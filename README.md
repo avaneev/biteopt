@@ -55,8 +55,9 @@ iterations each. For 1-2 dimensional problems, this strategy's success rate is
 99%. For 3-9 dimensional problems the success rate is 70%, for 10-30
 dimensional problems the success rate is 86%, for >30 dimensional problems the
 success rate is 38%. With a huge iteration budget (1 million) this strategy
-solves 93% of problems. On a comparable test function suite and conditions
-outlined at this page: [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
+solves 93% of problems (CBiteOptDeep solves 95% with M=25). On a comparable
+test function suite and conditions outlined at this page:
+[global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use test2.cpp to run the test) this strategy's
 success rate is >91% while the average number of objective function
