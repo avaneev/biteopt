@@ -138,9 +138,10 @@ were discovered that may need to be addressed in the future:
 counter-productive (increases convergence time considerably). It is more
 efficient to run several optimizers in parallel with different random seeds.
 
-2. The default population size formula 12+Dim*2 works well for most functions,
-however some functions converge faster if a higher population size is used.
-On the other hand, using an overly large population size may also increase
+2. The default population size formula 12+Dim*2 works well for most non-convex
+functions, however some functions converge better if a higher population size
+is used. Tests have revealed that convex problems converge better with a
+population as large as 12+Dim*6, but possibly at the expense of a longer
 convergence time.
 
 3. The method currently uses "short-cuts" which can be considered as "tricks"
