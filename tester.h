@@ -322,8 +322,9 @@ public:
 						}
 
 						ComplTotal++;
-						Iters[ j ] = i;
-						AvgIter += i;
+						const int ii = 12 + Dims * 3;
+						Iters[ j ] = i + ii;
+						AvgIter += i + ii;
 						break;
 					}
 
