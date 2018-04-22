@@ -23,7 +23,25 @@ rogue optimums. Hard (multi-modal) problems may require many optimization
 attempts to reach optimum. The name "BiteOpt" is an acronym for "BITmask
 Evolution OPTimization".
 
+### CBiteOptDeep (biteoptd.h) ###
+
+Deep stochastic optimization class. Based on an array of M CBiteOpt
+objects. This "deep" strategy pushes the newly-obtained solution to the
+next random CBiteOpt object which is then optimized. This strategy while
+increasing the convergence time by a factor of M is able to solve even the
+most noisy non-linear functions.
+
+This strategy is most effective on stochastic functions or functions with
+huge fluctuations near the global solution that are not very expensive to
+calculate and that have a large iteration budget. Tests have shown that on
+smooth functions that have many strongly competing minima this strategy
+does not considerably increase the chance to find a global solution
+relative to the CBiteOpt class, and still requires several runs at
+different random seeds.
+
 ### Notes ###
+
+The text below mainly addresses the CBiteOpt class.
 
 This "black-box" strategy was tested on 400+ 1-10 dimensional optimization
 problems and performed well, and it successfully solves even 600-dimensional
@@ -42,7 +60,7 @@ outlined at this page: [global_optimization](http://infinity77.net/global_optimi
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use test2.cpp to run the test) this strategy's
 success rate is >91% while the average number of objective function
-evaluations is ~350.
+evaluations is ~340.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
@@ -107,6 +125,8 @@ test4.cpp is a convergence test for multi-dimensional functions.
 
 constr.cpp and constr2.cpp programs demonstrate use of constraint penalties.
 
+constr3.cpp demonstrates use of the "deep" optimization strategy.
+
 ## Development ##
 
 While the basic algorithm of the strategy is finished, the built-in parameters
@@ -117,7 +137,7 @@ were discovered that may need to be addressed in the future:
 counter-productive (increases convergence time considerably). It is more
 efficient to run several optimizers in parallel with different random seeds.
 
-2. The default population size formula 12+Dim*3 works well for most functions,
+2. The default population size formula 12+Dim*2 works well for most functions,
 however some functions converge faster if a higher population size is used.
 On the other hand, using an overly large population size may also increase
 convergence time.
@@ -128,6 +148,7 @@ them greatly, they increase optimization success of test suites by several
 percent.
 
 ## Users ##
+
 This library is used by:
 
 Please drop me a note at aleksey.vaneev@gmail.com and I will include a link to

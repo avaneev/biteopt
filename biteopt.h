@@ -143,7 +143,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			12 + aParamCount * 3 );
+			12 + aParamCount * 2 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -246,6 +246,8 @@ public:
 	 * objective function evaluation.
 	 *
 	 * @param rnd Random number generator.
+	 * @param PushOpt Optimizer where the recently obtained solution should be
+	 * "pushed", used for deep optimization algorithm.
 	 * @return The number of non-improving iterations so far. A high value
 	 * means optimizer has reached an optimization plateau. The suggested
 	 * threshold value is PopSize * 5, when this value was reached the
@@ -257,7 +259,7 @@ public:
 	 * efficiently.
 	 */
 
-	int optimize( CBiteRnd& rnd )
+	int optimize( CBiteRnd& rnd, CBiteOpt* const PushOpt = NULL )
 	{
 		const double* const MinParams = CurParams[ PopOrder[ 0 ]];
 		int i;
@@ -325,7 +327,7 @@ public:
 		{
 			// Select a random previous solution from the ordered list.
 
-			const int si = (int) ( rnd.getRndValue() * PopSize );
+			const int si = (int) ( rnd.getRndValue() * PopSize1 );
 			const double* const OrigParams = CurParams[ PopOrder[ si ]];
 			const double* const MaxParams = CurParams[ PopOrder[ PopSize1 ]];
 
@@ -381,6 +383,27 @@ public:
 		// Evaluate objective function with new parameters.
 
 		const double NewCost = optcost( NewParams );
+
+		if( PushOpt != NULL && PushOpt != this &&
+			PushOpt -> ParamCount == ParamCount )
+		{
+			const int sH = PushOpt -> PopOrder[ PushOpt -> PopSize1 ];
+
+			if( NewCost <= PushOpt -> CurCosts[ sH ])
+			{
+				double* const rp = PushOpt -> CurParams[ sH ];
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					PushOpt -> CentParams[ i ] +=
+						( Params[ i ] - rp[ i ]) / PushOpt -> PopSize;
+
+					rp[ i ] = Params[ i ];
+				}
+
+				PushOpt -> insertPopOrder( NewCost, sH, PushOpt -> PopSize1 );
+			}
+		}
 
 		const int sH = PopOrder[ PopSize1 ];
 
@@ -670,6 +693,245 @@ protected:
 		}
 
 		PopOrder[ z ] = f;
+	}
+};
+
+/**
+ * Deep stochastic optimization class. Based on an array of M CBiteOpt
+ * objects. This "deep" strategy pushes the newly-obtained solution to the
+ * next random CBiteOpt object which is then optimized. This strategy while
+ * increasing the convergence time by a factor of M is able to solve even the
+ * most noisy non-linear functions.
+ *
+ * This strategy is most effective on stochastic functions or functions with
+ * huge fluctuations near the global solution that are not very expensive to
+ * calculate and that have a large iteration budget. Tests have shown that on
+ * smooth functions that have many strongly competing minima this strategy
+ * does not considerably increase the chance to find a global solution
+ * relative to the CBiteOpt class, and still requires several runs at
+ * different random seeds.
+ */
+
+class CBiteOptDeep
+{
+public:
+	CBiteOptDeep()
+		: ParamCount( 0 )
+		, BiteCount( 0 )
+		, Opts( NULL )
+		, BestParams( NULL )
+	{
+	}
+
+	~CBiteOptDeep()
+	{
+		deleteBuffers();
+	}
+
+	/**
+	 * Function updates dimensionality of *this object. Function does nothing
+	 * if dimensionality has not changed since the last call. This function
+	 * should be called at least once before calling the init() function.
+	 *
+	 * @param aParamCount The number of parameters being optimized.
+	 * @param aBiteCount The number of CBiteOpt objects. This number depends
+	 * on the complexity of the problem, if the default value does not produce
+	 * a good solution, it should be increased together with the iteration
+	 * count.
+	 */
+
+	void updateDims( const int aParamCount, const int aBiteCount = 25 )
+	{
+		if( aParamCount == ParamCount && aBiteCount == BiteCount )
+		{
+			return;
+		}
+
+		deleteBuffers();
+
+		ParamCount = aParamCount;
+		BiteCount = aBiteCount;
+		BestParams = new double[ ParamCount ];
+		Opts = new CBiteOptWrap*[ BiteCount ];
+
+		int i;
+
+		for( i = 0; i < BiteCount; i++ )
+		{
+			Opts[ i ] = new CBiteOptWrap( this );
+			Opts[ i ] -> updateDims( aParamCount, 12 + aParamCount );
+		}
+	}
+
+	/**
+	 * Function initializes *this optimizer. Performs N=PopSize objective
+	 * function evaluations.
+	 *
+	 * @param rnd Random number generator.
+	 * @param InitParams Initial parameter values.
+	 */
+
+	void init( CBiteRnd& rnd, const double* const InitParams = NULL )
+	{
+		int i;
+
+		for( i = 0; i < BiteCount; i++ )
+		{
+			Opts[ i ] -> init( rnd, InitParams );
+
+			if( i == 0 || Opts[ i ] -> getBestCost() < BestCost )
+			{
+				BestCost = Opts[ i ] -> getBestCost();
+
+				int j;
+
+				for( j = 0; j < ParamCount; j++ )
+				{
+					BestParams[ j ] = Opts[ i ] -> getBestParams()[ j ];
+				}
+			}
+		}
+
+		CurOpt = 0;
+	}
+
+	/**
+	 * Function performs the parameter optimization iteration that involves 1
+	 * objective function evaluation.
+	 *
+	 * @param rnd Random number generator.
+	 */
+
+	void optimize( CBiteRnd& rnd )
+	{
+		const int NextOpt = (int) ( rnd.getRndValue() * BiteCount );
+
+		Opts[ CurOpt ] -> optimize( rnd, Opts[ NextOpt ]);
+
+		if( Opts[ CurOpt ] -> getBestCost() < BestCost )
+		{
+			BestCost = Opts[ CurOpt ] -> getBestCost();
+
+			int i;
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				BestParams[ i ] = Opts[ CurOpt ] -> getBestParams()[ i ];
+			}
+		}
+
+		CurOpt = NextOpt;
+	}
+
+	/**
+	 * @return Best parameter vector.
+	 */
+
+	const double* getBestParams() const
+	{
+		return( BestParams );
+	}
+
+	/**
+	 * @return Cost of the best parameter vector.
+	 */
+
+	double getBestCost() const
+	{
+		return( BestCost );
+	}
+
+	/**
+	 * Virtual function that should fill minimal parameter value vector.
+	 *
+	 * @param[out] p Minimal value vector.
+	 */
+
+	virtual void getMinValues( double* const p ) const = 0;
+
+	/**
+	 * Virtual function that should fill maximal parameter value vector.
+	 *
+	 * @param[out] p Maximal value vector.
+	 */
+
+	virtual void getMaxValues( double* const p ) const = 0;
+
+	/**
+	 * Virtual function (objective function) that should calculate parameter
+	 * vector's optimization cost.
+	 *
+	 * @param p Parameter vector to evaluate.
+	 * @return Optimized cost.
+	 */
+
+	virtual double optcost( const double* const p ) = 0;
+
+protected:
+	/**
+	 * Wrapper class for CBiteOpt class.
+	 */
+
+	class CBiteOptWrap : public CBiteOpt
+	{
+	public:
+		CBiteOptDeep* Owner; ///< Owning object.
+			///<
+
+		CBiteOptWrap( CBiteOptDeep* const aOwner = NULL )
+			: Owner( aOwner )
+		{
+		}
+
+		virtual void getMinValues( double* const p ) const
+		{
+			Owner -> getMinValues( p );
+		}
+
+		virtual void getMaxValues( double* const p ) const
+		{
+			Owner -> getMaxValues( p );
+		}
+
+		virtual double optcost( const double* const p )
+		{
+			return( Owner -> optcost( p ));
+		}
+	};
+
+	int ParamCount; ///< The total number of internal parameter values in use.
+		///<
+	int BiteCount; ///< The total number of optimization objects in use.
+		///<
+	CBiteOptWrap** Opts; ///< Optimization objects.
+		///<
+	double* BestParams; ///< Best parameter vector.
+		///<
+	double BestCost; ///< Cost of the best parameter vector.
+		///<
+	int CurOpt; ///< Current optimization object index.
+		///<
+
+	/**
+	 * Function deletes previously allocated buffers.
+	 */
+
+	void deleteBuffers()
+	{
+		if( Opts != NULL )
+		{
+			int i;
+
+			for( i = 0; i < BiteCount; i++ )
+			{
+				delete Opts[ i ];
+			}
+
+			delete[] Opts;
+			Opts = NULL;
+		}
+
+		delete[] BestParams;
 	}
 };
 

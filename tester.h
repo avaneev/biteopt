@@ -63,7 +63,7 @@ public:
 			delete[] tp;
 		}
 
-		void updateDims( const int aDims, const int aFanSize = 0 )
+		void updateDims( const int aDims, const int aPopSize = 0 )
 		{
 			Dims = aDims;
 			delete[] minv;
@@ -78,7 +78,7 @@ public:
 			shifts = new double[ Dims ];
 			signs = new double[ Dims ];
 			tp = new double[ Dims ];
-			CBiteOpt :: updateDims( Dims, aFanSize );
+			CBiteOpt :: updateDims( Dims, aPopSize );
 		}
 
 		virtual void getMinValues( double* const p ) const
@@ -322,7 +322,7 @@ public:
 						}
 
 						ComplTotal++;
-						const int ii = 12 + Dims * 3;
+						const int ii = 12 + Dims * 2;
 						Iters[ j ] = i + ii;
 						AvgIter += i + ii;
 						break;
