@@ -734,15 +734,16 @@ public:
 	 * should be called at least once before calling the init() function.
 	 *
 	 * @param aParamCount The number of parameters being optimized.
-	 * @param aBiteCount The number of CBiteOpt objects. This number depends
-	 * on the complexity of the problem, if the default value does not produce
-	 * a good solution, it should be increased together with the iteration
-	 * count.
+	 * @param M The number of CBiteOpt objects. This number depends on the
+	 * complexity of the problem, if the default value does not produce a good
+	 * solution, it should be increased together with the iteration count.
+	 * Minimal value is 1, in this case a plain CBiteOpt optimization will be
+	 * performed.
 	 */
 
-	void updateDims( const int aParamCount, const int aBiteCount = 25 )
+	void updateDims( const int aParamCount, const int M = 25 )
 	{
-		if( aParamCount == ParamCount && aBiteCount == BiteCount )
+		if( aParamCount == ParamCount && M == BiteCount )
 		{
 			return;
 		}
@@ -750,7 +751,7 @@ public:
 		deleteBuffers();
 
 		ParamCount = aParamCount;
-		BiteCount = aBiteCount;
+		BiteCount = M;
 		BestParams = new double[ ParamCount ];
 		Opts = new CBiteOptWrap*[ BiteCount ];
 
@@ -759,7 +760,8 @@ public:
 		for( i = 0; i < BiteCount; i++ )
 		{
 			Opts[ i ] = new CBiteOptWrap( this );
-			Opts[ i ] -> updateDims( aParamCount, 12 + aParamCount );
+			Opts[ i ] -> updateDims( aParamCount, (int) ( 12 +
+				aParamCount * ( 1 + 1.0 / M )));
 		}
 	}
 
@@ -804,7 +806,8 @@ public:
 
 	void optimize( CBiteRnd& rnd )
 	{
-		const int NextOpt = (int) ( rnd.getRndValue() * BiteCount );
+		const int NextOpt = ( BiteCount == 1 ? 0 :
+			(int) ( rnd.getRndValue() * BiteCount ));
 
 		Opts[ CurOpt ] -> optimize( rnd, Opts[ NextOpt ]);
 
