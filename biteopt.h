@@ -700,8 +700,8 @@ protected:
  * Deep stochastic optimization class. Based on an array of M CBiteOpt
  * objects. This "deep" strategy pushes the newly-obtained solution to the
  * next random CBiteOpt object which is then optimized. This strategy while
- * increasing the convergence time by a factor of M is able to solve even the
- * most noisy non-linear functions.
+ * increasing the convergence time by a factor of sqrt(M) to M is able to
+ * solve even the most noisy non-linear functions.
  *
  * This strategy is most effective on stochastic functions or functions with
  * huge fluctuations near the global solution that are not very expensive to
