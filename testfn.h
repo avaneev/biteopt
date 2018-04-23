@@ -1,6 +1,6 @@
 //$ nocpp
 
-// Test functions.
+// Global optimization test functions.
 //
 // Sources:
 // http://infinity77.net/global_optimization/test_functions.html
@@ -3512,6 +3512,84 @@ static double calcSchmidtVetters( const double* const x, const int N )
 static const CTestFn TestFnSchmidtVetters = { "SchmidtVetters", 3, 0.1, 10.0,
 	0.194018, &calcSchmidtVetters };
 
+static double penaltyLE( const double x )
+{
+	return( x <= 0.0 ? 0.0 : 100000 + x * 9999 );
+}
+
+static double calcRosenbrockDisk( const double* const x, const int N )
+{
+	return( sqr(1.0-x[0])+100.0*sqr(x[1]-sqr(x[0])) +
+		penaltyLE( sqr(x[0])+sqr(x[1])-2.0 ));
+}
+
+static const CTestFn TestFnRosenbrockDisk = { "RosenbrockDisk", 2, -1.5, 1.5,
+	0.0, &calcRosenbrockDisk };
+
+static double calcHougen( const double* const x, const int N )
+{
+	const double x1[ 13 ] =
+		{ 470, 285, 470, 470, 470, 100, 100, 470, 100, 100, 100, 285, 285 };
+
+	const double x2[ 13 ] =
+		{ 300, 80, 300, 80, 80, 190, 80, 190, 300, 300, 80, 300, 190 };
+
+	const double x3[ 13 ] =
+		{ 10, 10, 120, 120, 10, 10, 65, 65, 54, 120, 120, 10, 120 };
+
+	const double rate[ 13 ] =
+		{ 8.55,3.79,4.82,0.02,2.75,14.39,2.54,4.35,13,8.5,0.05,11.32,3.13 };
+
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 13; i++ )
+	{
+		double v = (x[0]*x2[i]-x3[i]/x[4])/
+			(1.0+x[1]*x1[i]+x[2]*x2[i]+x[3]*x3[i]);
+
+		double d = rate[i]-v;
+		s += d * d;
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnHougen = { "Hougen", 5, 0.01, 2.0,
+	0.2989009807534, &calcHougen };
+
+static double calcSineEnvelope( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N - 1; i++ )
+	{
+		const double ss = sqr(x[i+1])+sqr(x[i]);
+		s += (sqr(sin(sqrt(ss)))-0.5)/(0.001*(ss)+1.0)+0.5;
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnSineEnvelope = { "SineEnvelope", 0, -100.0, 100.0,
+	0.0, &calcSineEnvelope };
+
+static double calcZagros( const double* const x, const int N )
+{
+	const double a = 2.0;
+	const double b = 1.0;
+	const double c = 2.0;
+	const double d = -1.0;
+	const double m = 0.2;
+	const double k = 1.0;
+	return( -cos(a*x[0]+b*x[1])/(pow(sqr(a*x[0]+b*x[1]),m)+k)-
+		cos(c*x[0]+d*x[1])/(pow(sqr(c*x[0]+d*x[1]),m)+k) );
+}
+
+static const CTestFn TestFnZagros = { "Zagros", 2, -10.0, 10.0, -2.0,
+	&calcZagros };
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -3543,7 +3621,7 @@ const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
 // Failing functions requiring more than 2000 iterations to converge.
 
 const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra03,
-	&TestFnMishra04, &TestFnDeVilliersGlasser02, NULL };
+	&TestFnMishra04, &TestFnDeVilliersGlasser02, &TestFnHougen, NULL };
 
 // CPU time-consuming functions, but solving correctly:
 // &TestFnDeVilliersGlasser01, &TestFnGulfResearchProblem
@@ -3608,4 +3686,5 @@ const CTestFn* TestCorpusAll[] = { &TestFnThreeHumpCamel, &TestFnBooth,
 	&TestFnComplexHolderTable, &TestFnLennardJones, &TestFnOddSquare,
 	&TestFnPermFunction01, &TestFnPermFunction02, &TestFnPinter,
 	&TestFnHansen, &TestFnSchmidtVetters, &TestFnHolderTable1, &TestFnAckley4,
-	&TestFnLangerman5, &TestFnSchwefel225, NULL };
+	&TestFnLangerman5, &TestFnSchwefel225, &TestFnRosenbrockDisk,
+	&TestFnSineEnvelope, &TestFnZagros, NULL };

@@ -92,6 +92,8 @@ public:
 		///<
 	double ScutProb; ///< Short-cut probability.
 		///<
+	double RandProb2; ///< Alt parameter value randomization probability.
+		///<
 
 	/**
 	 * Constructor.
@@ -116,11 +118,12 @@ public:
 		, NewParams( NULL )
 	{
 		MinxMult = 0.50000000;
-		RandProb = 0.50565054;
-		CentProb = 0.84392202;
-		CentSpan = 2.95225455;
+		RandProb = 0.60981671;
+		CentProb = 0.87995568;
+		CentSpan = 2.94153018;
 		AllpProb = 0.20000000;
-		ScutProb = 0.15000000;
+		ScutProb = 0.11000000;
+		RandProb2 = 0.25000000;
 	}
 
 	~CBiteOpt()
@@ -238,6 +241,7 @@ public:
 		CentCntr = rnd.getRndValue();
 		RandCntr = rnd.getRndValue();
 		ParamCntr = (int) ( rnd.getRndValue() * ParamCount );
+		RandCntr2 = rnd.getRndValue();
 		StallCount = 0;
 	}
 
@@ -269,57 +273,77 @@ public:
 		if( RandCntr >= 1.0 )
 		{
 			RandCntr -= 1.0;
+			RandCntr2 += RandProb2;
 
-			for( i = 0; i < ParamCount; i++ )
+			if( RandCntr2 >= 1.0 )
 			{
-				Params[ i ] = MinParams[ i ];
-			}
+				RandCntr2 -= 1.0;
 
-			// Select a single random parameter or all parameters.
+				// Alternative randomization method, works well for convex
+				// functions.
 
-			int a;
-			int b;
-
-			if( rnd.getRndValue() < AllpProb )
-			{
-				a = 0;
-				b = ParamCount - 1;
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = MinParams[ i ] +
+						( CentParams[ i ] - MinParams[ i ]) *
+						( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
+				}
 			}
 			else
 			{
-				a = ParamCntr;
-				b = a;
-				ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
-			}
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = MinParams[ i ];
+				}
 
-			// Bitmask inversion operation, works as a "driver" of
-			// optimization process, applied to 1 random parameter at a time.
+				// Select a single random parameter or all parameters.
 
-			const double r = rnd.getRndValue();
-			const int imask = ( 2 <<
-				(int) (( 0.999999997 - r * r * r * r ) * MantSize )) - 1;
+				int a;
+				int b;
 
-			for( i = a; i <= b; i++ )
-			{
-				Params[ i ] = ( (int) ( Params[ i ] * MantMult ) ^
-					imask ) / MantMult;
-			}
+				if( rnd.getRndValue() < AllpProb )
+				{
+					a = 0;
+					b = ParamCount - 1;
+				}
+				else
+				{
+					a = ParamCntr;
+					b = a;
+					ParamCntr = ( ParamCntr == 0 ?
+						ParamCount : ParamCntr ) - 1;
+				}
 
-			CentCntr += CentProb;
+				// Bitmask inversion operation, works as a "driver" of
+				// optimization process, applied to 1 random parameter at a
+				// time.
 
-			if( CentCntr >= 1.0 )
-			{
-				CentCntr -= 1.0;
-
-				// Move towards centroid vector or beyond it, randomly.
-
-				const double m = rnd.getRndValue() * CentSpan;
-				const double m2 = rnd.getRndValue() * CentSpan;
+				const double r = rnd.getRndValue();
+				const int imask = ( 2 <<
+					(int) (( 0.999999997 - r * r * r * r ) * MantSize )) - 1;
 
 				for( i = a; i <= b; i++ )
 				{
-					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
-					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m2;
+					Params[ i ] = ( (int) ( Params[ i ] * MantMult ) ^
+						imask ) / MantMult;
+				}
+
+				CentCntr += CentProb;
+
+				if( CentCntr >= 1.0 )
+				{
+					CentCntr -= 1.0;
+
+					// Move towards centroid vector or beyond it, randomly.
+
+					const double m = rnd.getRndValue() * CentSpan;
+					const double m2 = rnd.getRndValue() * CentSpan;
+
+					for( i = a; i <= b; i++ )
+					{
+						Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
+						Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m2;
+					}
 				}
 			}
 		}
@@ -349,26 +373,11 @@ public:
 			// impacting performance for other functions.
 
 			i = (int) ( rnd.getRndValue() * ParamCount );
+			const double v = getRealValue( Params[ i ], i );
 
-			if( rnd.getRndValue() < 0.75 )
+			for( i = 0; i < ParamCount; i++ )
 			{
-				const double v = getRealValue( Params[ i ], i );
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] = ( v - MinValues[ i ]) / DiffValues[ i ];
-				}
-			}
-			else
-			{
-				const double v = getRealValue(
-					Params[ i ] - CentParams[ i ], i ) *
-					( rnd.getRndValue() < 0.5 ? -1.0 : 1.0 );
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] += ( v - MinValues[ i ]) / DiffValues[ i ];
-				}
+				Params[ i ] = ( v - MinValues[ i ]) / DiffValues[ i ];
 			}
 		}
 
@@ -533,6 +542,8 @@ protected:
 	double CentCntr; ///< Centroid move probability counter.
 		///<
 	double RandCntr; ///< Parameter randomization probability counter.
+		///<
+	double RandCntr2; ///< Alt parameter randomization probability counter.
 		///<
 	int ParamCntr; ///< Parameter randomization index counter.
 		///<
