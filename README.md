@@ -114,6 +114,16 @@ in a way to cover a wider value range, in order to reduce boundary effects
 that may reduce convergence. It maybe beneficial to specify bounds in a way so
 that the expected optimum is located at the center of the search space.
 
+## Tested uses ##
+
+This optimization strategy was tested for the following applications beside
+synthetic benchmarking:
+
+1. Hyperparameter optimization of complex non-linear systems.
+
+2. Non-linear least-squares problems, see calcHougen function in testfn.h
+for an example problem.
+
 ## Examples ##
 
 Use the example.cpp program to see the basic usage example.
@@ -138,11 +148,11 @@ were discovered that may need to be addressed in the future:
 counter-productive (increases convergence time considerably). It is more
 efficient to run several optimizers in parallel with different random seeds.
 
-2. The default population size formula 12+Dim*2 works well for most non-convex
-functions, however some functions converge better if a higher population size
-is used. Tests have revealed that convex problems converge better with a
-population as large as 12+Dim*6, but possibly at the expense of a longer
-convergence time.
+2. The default population size formula 12+Dim\*2 works well for most
+non-convex functions, however some functions converge better if a higher
+population size is used. Tests have revealed that convex problems converge
+better with a population as large as 12+Dim\*6, but possibly at the expense of
+a longer convergence time.
 
 3. The method currently uses "short-cuts" which can be considered as "tricks"
 which are non-universal. However, optimization of some functions benefits from
