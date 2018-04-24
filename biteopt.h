@@ -179,6 +179,15 @@ public:
 	}
 
 	/**
+	 * @return The number of initial objective function evaluations.
+	 */
+
+	int getInitEvals() const
+	{
+		return( PopSize );
+	}
+
+	/**
 	 * Function initializes *this optimizer. Performs N=PopSize objective
 	 * function evaluations.
 	 *
@@ -710,17 +719,21 @@ protected:
 /**
  * Deep stochastic optimization class. Based on an array of M CBiteOpt
  * objects. This "deep" strategy pushes the newly-obtained solution to the
- * next random CBiteOpt object which is then optimized. This strategy while
- * increasing the convergence time by a factor of sqrt(M) to M is able to
+ * next CBiteOpt object which is then optimized. This strategy while
+ * increasing the convergence time by a factor of about sqrt(M) is able to
  * solve even the most noisy non-linear functions.
  *
  * This strategy is most effective on stochastic functions or functions with
  * huge fluctuations near the global solution that are not very expensive to
  * calculate and that have a large iteration budget. Tests have shown that on
  * smooth functions that have many strongly competing minima this strategy
- * does not considerably increase the chance to find a global solution
- * relative to the CBiteOpt class, and still requires several runs at
- * different random seeds.
+ * increases the chance to find a global solution by a factor of sqrt(M)
+ * relative to the CBiteOpt class, but still requires several runs at
+ * different random seeds. However, the number of required runs in most cases
+ * is lower by about sqrt(M). So, in many cases it's more efficient to
+ * increase the iteration budget by a factor of sqrt(M) which will in turn
+ * increase the chance to find a global optimum by a factor of sqrt(M) and
+ * also reduce the number of optimization attempts by the same number.
  */
 
 class CBiteOptDeep
@@ -751,7 +764,7 @@ public:
 	 * performed.
 	 */
 
-	void updateDims( const int aParamCount, const int M = 25 )
+	void updateDims( const int aParamCount, const int M = 16 )
 	{
 		if( aParamCount == ParamCount && M == BiteCount )
 		{
@@ -772,6 +785,23 @@ public:
 			Opts[ i ] -> updateDims( aParamCount, (int) ( 12 +
 				aParamCount * ( 1 + 1.0 / M )));
 		}
+	}
+
+	/**
+	 * @return The number of initial objective function evaluations.
+	 */
+
+	int getInitEvals() const
+	{
+		int ec = 0;
+		int i;
+
+		for( i = 0; i < BiteCount; i++ )
+		{
+			ec += Opts[ i ] -> getInitEvals();
+		}
+
+		return( ec );
 	}
 
 	/**
@@ -809,8 +839,7 @@ public:
 
 	void optimize( CBiteRnd& rnd )
 	{
-		const int NextOpt = ( BiteCount == 1 ? 0 :
-			(int) ( rnd.getRndValue() * BiteCount ));
+		const int NextOpt = ( CurOpt == BiteCount - 1 ? 0 : CurOpt + 1 );
 
 		Opts[ CurOpt ] -> optimize( rnd, Opts[ NextOpt ]);
 

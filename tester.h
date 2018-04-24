@@ -322,9 +322,8 @@ public:
 						}
 
 						ComplTotal++;
-						const int ii = 12 + Dims * 2;
-						Iters[ j ] = i + ii;
-						AvgIter += i + ii;
+						Iters[ j ] = i + opt -> getInitEvals();
+						AvgIter += i + opt -> getInitEvals();
 						break;
 					}
 
