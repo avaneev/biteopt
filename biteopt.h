@@ -730,7 +730,6 @@ public:
 		: ParamCount( 0 )
 		, BiteCount( 0 )
 		, Opts( NULL )
-		, BestParams( NULL )
 	{
 	}
 
@@ -763,7 +762,6 @@ public:
 
 		ParamCount = aParamCount;
 		BiteCount = M;
-		BestParams = new double[ ParamCount ];
 		Opts = new CBiteOptWrap*[ BiteCount ];
 
 		int i;
@@ -792,16 +790,10 @@ public:
 		{
 			Opts[ i ] -> init( rnd, InitParams );
 
-			if( i == 0 || Opts[ i ] -> getBestCost() < BestCost )
+			if( i == 0 || Opts[ i ] -> getBestCost() <
+				Opts[ BestOpt ] -> getBestCost() )
 			{
-				BestCost = Opts[ i ] -> getBestCost();
-
-				int j;
-
-				for( j = 0; j < ParamCount; j++ )
-				{
-					BestParams[ j ] = Opts[ i ] -> getBestParams()[ j ];
-				}
+				BestOpt = i;
 			}
 		}
 
@@ -822,16 +814,10 @@ public:
 
 		Opts[ CurOpt ] -> optimize( rnd, Opts[ NextOpt ]);
 
-		if( Opts[ CurOpt ] -> getBestCost() < BestCost )
+		if( Opts[ CurOpt ] -> getBestCost() <
+			Opts[ BestOpt ] -> getBestCost() )
 		{
-			BestCost = Opts[ CurOpt ] -> getBestCost();
-
-			int i;
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				BestParams[ i ] = Opts[ CurOpt ] -> getBestParams()[ i ];
-			}
+			BestOpt = CurOpt;
 		}
 
 		CurOpt = NextOpt;
@@ -843,7 +829,7 @@ public:
 
 	const double* getBestParams() const
 	{
-		return( BestParams );
+		return( Opts[ BestOpt ] -> getBestParams() );
 	}
 
 	/**
@@ -852,7 +838,7 @@ public:
 
 	double getBestCost() const
 	{
-		return( BestCost );
+		return( Opts[ BestOpt ] -> getBestCost() );
 	}
 
 	/**
@@ -919,9 +905,7 @@ protected:
 		///<
 	CBiteOptWrap** Opts; ///< Optimization objects.
 		///<
-	double* BestParams; ///< Best parameter vector.
-		///<
-	double BestCost; ///< Cost of the best parameter vector.
+	int BestOpt; ///< Optimizer that contains the best solution.
 		///<
 	int CurOpt; ///< Current optimization object index.
 		///<
@@ -944,8 +928,6 @@ protected:
 			delete[] Opts;
 			Opts = NULL;
 		}
-
-		delete[] BestParams;
 	}
 };
 

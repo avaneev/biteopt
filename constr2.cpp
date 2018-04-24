@@ -39,7 +39,7 @@ public:
 
 	static double penalty0( const double v )
 	{
-		return( fabs( v ) <= 0.000001 ? 0.0 : 100000 + fabs( v ) * 9999 );
+		return( fabs( v ) <= 0.0001 ? 0.0 : 100000 + fabs( v ) * 9999 );
 	}
 
 	virtual double optcost( const double* const p )

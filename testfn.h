@@ -3643,7 +3643,7 @@ const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
 	&TestFnPowellBadlyScaled, &TestFnHelicalValley, &TestFnAckley4,
 	&TestFnHartman3, &TestFnTrid6, &TestFnZagros, &TestFnMishra09,
 	&TestFnJudge, &TestFnMultiGaussian, &TestFnBranin01, &TestFnGear,
-	&TestFnLangermann, &TestFnColville,
+	&TestFnLangermann, &TestFnColville, &TestFnLennardJones,
 
 	&TestFnChenV, &TestFnThreeHumpCamel, &TestFnBooth, &TestFnMatyas,
 	&TestFnSphere, &TestFnLevy13, &TestFnSchaffer01, &TestFnSchaffer02,
@@ -3686,6 +3686,6 @@ const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
 	&TestFnBeckerLago, &TestFnCosineMixture, &TestFnPeriodic,
 	&TestFnLevyMontalvo2, &TestFnMishra10, &TestFnMishra10b, &TestFnPenalty01,
 	&TestFnPenalty02, &TestFnWayburnSeader03, &TestFnCorana, &TestFnBrad,
-	&TestFnGramacyLee03, &TestFnLennardJones, &TestFnPermFunction01,
-	&TestFnPermFunction02, &TestFnPinter, &TestFnHolderTable1,
-	&TestFnSchwefel225, &TestFnRosenbrockDisk, &TestFnSineEnvelope, NULL };
+	&TestFnGramacyLee03, &TestFnPermFunction01, &TestFnPermFunction02,
+	&TestFnPinter, &TestFnHolderTable1, &TestFnSchwefel225,
+	&TestFnRosenbrockDisk, &TestFnSineEnvelope, NULL };
