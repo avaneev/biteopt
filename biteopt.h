@@ -64,7 +64,8 @@
  * code were replaced with simple resetting counters for more efficiency.
  * Parameter values are internally normalized to [0; 1] range and, to stay in
  * this range, are wrapped in a special manner before each function
- * evaluation.
+ * evaluation. Algorithm's hyper-parameters (probabilities) were pre-selected
+ * and should not be changed.
  *
  * 2. Depending on the RandProb probability, a single (or all) parameter value
  * randomization is performed using "bitmask inversion" operation. Plus, with

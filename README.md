@@ -31,6 +31,9 @@ are no competing minima in a function (or the true/global minimum is rogue and
 cannot be detected), this strategy in absolute majority of runs will return
 the same optimum.
 
+Strategy's hyper-parameters (probabilities) were pre-selected and should not
+be changed.
+
 ### CBiteOptDeep (biteopt.h) ###
 
 Deep stochastic optimization class. Based on an array of M CBiteOpt
