@@ -93,6 +93,8 @@ iterations (harder functions may require more iterations to converge). Most
 classic 2-dimensional problems converge in 400 iterations or less, at 1e-6
 precision.
 
+## Limitations ##
+
 The required number of optimization attempts is usually proportional to the
 number of strongly competing minima in a function. Rogue optimums may not be
 found by this strategy. A rogue optimum is an optimum that has a very small
@@ -113,6 +115,8 @@ combinatorial (e.g. Perm and Lennard-Jones atom clustering problems). Also
 problems with many competing minima without a pronounced global gradient
 (e.g. Bukin N.6) may not be solved acceptably as in most cases they require
 exhaustive search.
+
+## Constraint programming ##
 
 Mixed integer programming can be achieved by using rounded parameter values in
 the objective function while value constraints can be implemented as
