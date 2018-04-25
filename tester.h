@@ -63,7 +63,7 @@ public:
 			delete[] tp;
 		}
 
-		void updateDims( const int aDims, const int aPopSize = 0 )
+		void updateDims( const int aDims )
 		{
 			Dims = aDims;
 			delete[] minv;
@@ -78,7 +78,7 @@ public:
 			shifts = new double[ Dims ];
 			signs = new double[ Dims ];
 			tp = new double[ Dims ];
-			CBiteOpt :: updateDims( Dims, aPopSize );
+			CBiteOpt :: updateDims( Dims );
 		}
 
 		virtual void getMinValues( double* const p ) const

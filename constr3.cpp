@@ -78,23 +78,24 @@ int main()
 
 	for( i = 0; i < N; i++ )
 	{
-		printf( "x[%i] = %f\n", i, opt.getBestParams()[ i ]);
+		printf( "x[%i] = %0.10g\n", i, opt.getBestParams()[ i ]);
 	}
 
 	// Optimum provided by function's source.
 
-	double p[ 10 ];
-	p[ 0 ] = 2.171996;
-	p[ 1 ] = 2.363683;
-	p[ 2 ] = 8.773926;
-	p[ 3 ] = 5.095984;
-	p[ 4 ] = 0.9906548;
-	p[ 5 ] = 1.430574;
-	p[ 6 ] = 1.321644;
-	p[ 7 ] = 9.828726;
-	p[ 8 ] = 8.280092;
-	p[ 9 ] = 8.375927;
-	printf( "Source opt: %f\n",opt.optcost(p));
+	double x[ 10 ];
+	x[ 0 ] = 2.171996;
+	x[ 1 ] = 2.363683;
+	x[ 2 ] = 8.773926;
+	x[ 3 ] = 5.095984;
+	x[ 4 ] = 0.9906548;
+	x[ 5 ] = 1.430574;
+	x[ 6 ] = 1.321644;
+	x[ 7 ] = 9.828726;
+	x[ 8 ] = 8.280092;
+	x[ 9 ] = 8.375927;
+
+	printf( "Source opt: %f\n", opt.optcost( x ));
 
 	return( 0 );
 }
