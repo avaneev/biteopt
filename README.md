@@ -27,8 +27,9 @@ Instead of iterating through different "starting guesses" to find optimum
 like in deterministic strategies, this strategy requires optimization attempts
 with different random seeds. The stochastic nature of the method allows it to
 automatically "fall" into different competing minima with each run. If there
-are no competing minima in a function, this strategy in absolute majority of
-runs will return the same optimum.
+are no competing minima in a function (or the true/global minimum is rogue and
+cannot be detected), this strategy in absolute majority of runs will return
+the same optimum.
 
 ### CBiteOptDeep (biteopt.h) ###
 
@@ -48,7 +49,9 @@ different random seeds. However, the number of required runs in most cases
 is lower by about sqrt(M). So, in many cases it's more efficient to
 increase the iteration budget by a factor of sqrt(M) which will in turn
 increase the chance to find a global optimum by a factor of sqrt(M) and
-also reduce the number of optimization attempts by the same number.
+also reduce the number of optimization attempts by the same number.  In
+practice, the chance to find a global optimum is increased even more
+considerably with this "deep" strategy.
 
 ### Notes ###
 
@@ -130,7 +133,7 @@ that the expected optimum is located at the center of the search space.
 This optimization strategy was tested for the following applications beside
 synthetic benchmarking:
 
-1. Hyperparameter optimization of complex non-linear systems.
+1. Hyperparameter optimization of complex non-linear black-box systems.
 
 2. Non-linear least-squares problems, see calcHougen function in testfn.h
 for an example problem.

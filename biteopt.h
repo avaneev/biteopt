@@ -64,7 +64,8 @@
  * 2. Depending on the RandProb probability, 1 or all parameter value
  * randomization is performed using "bitmask inversion" operation. Plus, with
  * CentProb probability the "step in the right direction" operation is
- * performed using the centroid vector.
+ * performed using the centroid vector. With RandProb2 probability an
+ * alternative randomization method is used.
  *
  * 3. (Not together with N.2) the "step in the right direction" operation is
  * performed using the current best and worst solutions. This is conceptually
@@ -733,7 +734,9 @@ protected:
  * is lower by about sqrt(M). So, in many cases it's more efficient to
  * increase the iteration budget by a factor of sqrt(M) which will in turn
  * increase the chance to find a global optimum by a factor of sqrt(M) and
- * also reduce the number of optimization attempts by the same number.
+ * also reduce the number of optimization attempts by the same number. In
+ * practice, the chance to find a global optimum is increased even more
+ * considerably with this "deep" strategy.
  */
 
 class CBiteOptDeep
@@ -782,8 +785,7 @@ public:
 		for( i = 0; i < BiteCount; i++ )
 		{
 			Opts[ i ] = new CBiteOptWrap( this );
-			Opts[ i ] -> updateDims( aParamCount, (int) ( 12 +
-				aParamCount * ( 1 + 1.0 / M )));
+			Opts[ i ] -> updateDims( aParamCount );
 		}
 	}
 
