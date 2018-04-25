@@ -60,16 +60,22 @@
  * 1. A cost-ordered population of previous solutions is maintained. A
  * solution is an independent parameter vector which is evolved towards a
  * better solution. On every iteration the best solution is evolved.
+ * Probabilities are defined in the range [0; 1] and in many instances in the
+ * code were replaced with simple resetting counters for more efficiency.
+ * Parameter values are internally normalized to [0; 1] range and, to stay in
+ * this range, are wrapped in a special manner before each function
+ * evaluation.
  *
- * 2. Depending on the RandProb probability, 1 or all parameter value
+ * 2. Depending on the RandProb probability, a single (or all) parameter value
  * randomization is performed using "bitmask inversion" operation. Plus, with
- * CentProb probability the "step in the right direction" operation is
- * performed using the centroid vector. With RandProb2 probability an
+ * CentProb probability the random "step in the right direction" operation is
+ * performed using the centroid vector, twice. With RandProb2 probability an
  * alternative randomization method is used.
  *
  * 3. (Not together with N.2) the "step in the right direction" operation is
- * performed using the current best and worst solutions. This is conceptually
- * similar to Differential Evolution's "mutation" operation.
+ * performed using the random previous solution, current best and worst
+ * solutions. This is conceptually similar to Differential Evolution's
+ * "mutation" operation.
  *
  * 4. With ScutProb probability a "short-cut" parameter vector change
  * operation is performed.
@@ -283,6 +289,60 @@ public:
 		if( RandCntr >= 1.0 )
 		{
 			RandCntr -= 1.0;
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = MinParams[ i ];
+			}
+
+			// Select a single random parameter or all parameters.
+
+			int a;
+			int b;
+
+			if( rnd.getRndValue() < AllpProb )
+			{
+				a = 0;
+				b = ParamCount - 1;
+			}
+			else
+			{
+				a = ParamCntr;
+				b = a;
+				ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
+			}
+
+			// Bitmask inversion operation, works as a "driver" of
+			// optimization process, applied to 1 random parameter at a time.
+
+			const double r = rnd.getRndValue();
+			const int imask = ( 2 <<
+				(int) (( 0.999999997 - r * r * r * r ) * MantSize )) - 1;
+
+			for( i = a; i <= b; i++ )
+			{
+				Params[ i ] = ( (int) ( Params[ i ] * MantMult ) ^
+					imask ) / MantMult;
+			}
+
+			CentCntr += CentProb;
+
+			if( CentCntr >= 1.0 )
+			{
+				CentCntr -= 1.0;
+
+				// Move towards centroid vector or beyond it, randomly.
+
+				const double m = rnd.getRndValue() * CentSpan;
+				const double m2 = rnd.getRndValue() * CentSpan;
+
+				for( i = a; i <= b; i++ )
+				{
+					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
+					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m2;
+				}
+			}
+
 			RandCntr2 += RandProb2;
 
 			if( RandCntr2 >= 1.0 )
@@ -294,66 +354,8 @@ public:
 
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] = MinParams[ i ] +
-						( CentParams[ i ] - MinParams[ i ]) *
+					Params[ i ] += ( CentParams[ i ] - Params[ i ]) *
 						( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
-				}
-			}
-			else
-			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] = MinParams[ i ];
-				}
-
-				// Select a single random parameter or all parameters.
-
-				int a;
-				int b;
-
-				if( rnd.getRndValue() < AllpProb )
-				{
-					a = 0;
-					b = ParamCount - 1;
-				}
-				else
-				{
-					a = ParamCntr;
-					b = a;
-					ParamCntr = ( ParamCntr == 0 ?
-						ParamCount : ParamCntr ) - 1;
-				}
-
-				// Bitmask inversion operation, works as a "driver" of
-				// optimization process, applied to 1 random parameter at a
-				// time.
-
-				const double r = rnd.getRndValue();
-				const int imask = ( 2 <<
-					(int) (( 0.999999997 - r * r * r * r ) * MantSize )) - 1;
-
-				for( i = a; i <= b; i++ )
-				{
-					Params[ i ] = ( (int) ( Params[ i ] * MantMult ) ^
-						imask ) / MantMult;
-				}
-
-				CentCntr += CentProb;
-
-				if( CentCntr >= 1.0 )
-				{
-					CentCntr -= 1.0;
-
-					// Move towards centroid vector or beyond it, randomly.
-
-					const double m = rnd.getRndValue() * CentSpan;
-					const double m2 = rnd.getRndValue() * CentSpan;
-
-					for( i = a; i <= b; i++ )
-					{
-						Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
-						Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m2;
-					}
 				}
 			}
 		}
@@ -553,9 +555,9 @@ protected:
 		///<
 	double RandCntr; ///< Parameter randomization probability counter.
 		///<
-	double RandCntr2; ///< Alt parameter randomization probability counter.
-		///<
 	int ParamCntr; ///< Parameter randomization index counter.
+		///<
+	double RandCntr2; ///< Alt parameter randomization probability counter.
 		///<
 	int StallCount; ///< The number of iterations without improvement.
 		///<

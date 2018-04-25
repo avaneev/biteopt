@@ -19,7 +19,7 @@ public:
 	 * Function optimizer class.
 	 */
 
-	class CTestOpt : public CBiteOpt
+	class CTestOpt : public CBiteOptDeep
 	{
 	public:
 		const CTestFn* fn; ///< Test function.
@@ -78,7 +78,7 @@ public:
 			shifts = new double[ Dims ];
 			signs = new double[ Dims ];
 			tp = new double[ Dims ];
-			CBiteOpt :: updateDims( Dims );
+			CBiteOptDeep :: updateDims( Dims, 1 );
 		}
 
 		virtual void getMinValues( double* const p ) const

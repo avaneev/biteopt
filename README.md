@@ -75,7 +75,7 @@ test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use test2.cpp to run the test) this strategy's
 success rate is >91% while the average number of objective function
-evaluations is ~330.
+evaluations is ~340.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.

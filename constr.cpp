@@ -99,7 +99,7 @@ int main()
 
 	int i;
 
-	for( i = 0; i < 10000; i++ )
+	for( i = 0; i < 15000; i++ )
 	{
 		opt.optimize( rnd );
 
