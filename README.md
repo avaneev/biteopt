@@ -1,18 +1,19 @@
 # BiteOpt - Stochastic Function Optimizer #
+
+## Contents ##
+
+* [Introduction]()
+* [Comparison]()
+* [CBiteOpt (biteopt.h)]()
+* [CBiteOptDeep (biteopt.h)]()
+* [Limitations]()
+* [Constraint programming]()
+* [Convergence proof]()
+* [Tested uses]()
+* [Examples]()
+* [Users]()
+
 ## Introduction ##
-
-### CBiteOpt (biteopt.h) ###
-
-BiteOpt stochastic optimization class. Implements a stochastic non-linear
-bound-constrained derivative-free optimization strategy. It maintains a
-cost-ordered population list of previously evaluated solutions that are
-evolved towards a lower cost. On every iteration, the highest-cost solution in
-the list can be replaced with a new solution, and the list reordered. A
-population of solutions allows the strategy to space solution vectors apart
-from each other thus making them cover a larger parameter search space
-collectively. Beside that, parameter randomization and the "step in the
-right direction" operation are used that move the solutions into position
-with a probabilistically lower objective function value.
 
 The benefit of this strategy is a relatively high robustness: it can
 successfully optimize a wide range of multi-dimensional test functions.
@@ -31,34 +32,7 @@ are no competing minima in a function (or the true/global minimum is rogue and
 cannot be detected), this strategy in absolute majority of runs will return
 the same optimum.
 
-Strategy's hyper-parameters (probabilities) were pre-selected and should not
-be changed.
-
-### CBiteOptDeep (biteopt.h) ###
-
-Deep stochastic optimization class. Based on an array of M CBiteOpt
-objects. This "deep" strategy pushes the newly-obtained solution to the
-next CBiteOpt object which is then optimized. This strategy while
-increasing the convergence time by a factor of about sqrt(M) is able to
-solve even the most noisy non-linear functions.
-
-This strategy is most effective on stochastic functions or functions with
-huge fluctuations near the global solution that are not very expensive to
-calculate and that have a large iteration budget. Tests have shown that on
-smooth functions that have many strongly competing minima this strategy
-increases the chance to find a global solution by a factor of sqrt(M)
-relative to the CBiteOpt class, but still requires several runs at
-different random seeds. However, the number of required runs in most cases
-is lower by about sqrt(M). So, in many cases it's more efficient to
-increase the iteration budget by a factor of sqrt(M) which will in turn
-increase the chance to find a global optimum by a factor of sqrt(M) and
-also reduce the number of optimization attempts by the same number.  In
-practice, the chance to find a global optimum is increased even more
-considerably with this "deep" strategy.
-
-### Notes ###
-
-The text below mainly addresses the CBiteOpt class.
+## Comparison ##
 
 This "black-box" strategy was tested on 400+ 1-10 dimensional optimization
 problems and performed well, and it successfully solves even 600-dimensional
@@ -80,6 +54,11 @@ several complex functions, use test2.cpp to run the test) this strategy's
 success rate is >91% while the average number of objective function
 evaluations is ~340.
 
+## Notes ##
+
+Strategy's hyper-parameters (probabilities) were pre-selected and should not
+be changed.
+
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
 Running 10 times is a minimal general requirement. This strategy is hugely
@@ -92,6 +71,41 @@ for 10-dimensional functions it is reasonable to expect convergence in 5000
 iterations (harder functions may require more iterations to converge). Most
 classic 2-dimensional problems converge in 400 iterations or less, at 1e-6
 precision.
+
+## CBiteOpt (biteopt.h) ##
+
+BiteOpt stochastic optimization class. Implements a stochastic non-linear
+bound-constrained derivative-free optimization strategy. It maintains a
+cost-ordered population list of previously evaluated solutions that are
+evolved towards a lower cost. On every iteration, the highest-cost solution in
+the list can be replaced with a new solution, and the list reordered. A
+population of solutions allows the strategy to space solution vectors apart
+from each other thus making them cover a larger parameter search space
+collectively. Beside that, parameter randomization and the "step in the
+right direction" operation are used that move the solutions into position
+with a probabilistically lower objective function value.
+
+## CBiteOptDeep (biteopt.h) ##
+
+Deep stochastic optimization class. Based on an array of M CBiteOpt
+objects. This "deep" strategy pushes the newly-obtained solution to the
+next CBiteOpt object which is then optimized. This strategy while
+increasing the convergence time by a factor of about sqrt(M) is able to
+solve even the most noisy non-linear functions.
+
+This strategy is most effective on stochastic functions or functions with
+huge fluctuations near the global solution that are not very expensive to
+calculate and that have a large iteration budget. Tests have shown that on
+smooth functions that have many strongly competing minima this strategy
+increases the chance to find a global solution by a factor of sqrt(M)
+relative to the CBiteOpt class, but still requires several runs at
+different random seeds. However, the number of required runs in most cases
+is lower by about sqrt(M). So, in many cases it's more efficient to
+increase the iteration budget by a factor of sqrt(M) which will in turn
+increase the chance to find a global optimum by a factor of sqrt(M) and
+also reduce the number of optimization attempts by the same number.  In
+practice, the chance to find a global optimum is increased even more
+considerably with this "deep" strategy.
 
 ## Limitations ##
 
