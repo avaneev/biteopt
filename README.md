@@ -192,7 +192,7 @@ reaction kinetics. Non-linear least squares problem.
     iter  The number of iterations to perform in a single attempt.
           Corresponds to the number of obj function evaluations that are performed.
     M     Depth to use, 1 for plain CBiteOpt algorithm, >1 for CBiteOptDeep
-          algorithm. Automatically increases "iter" by sqrt(M).
+          algorithm. Internally multiplies "iter" by sqrt(M).
     attc  The number of optimization attempts to perform.
 
 test2.cpp is a convergence test for all available functions. Performs many
@@ -289,4 +289,4 @@ is performed.
 ![equation12](http://quicklatex.com/cache3/67/ql_b434d4517882743a2528d2e10b7ff767_l3.png)
 
 5. After each objective function evaluation, the highest-cost previous
-solution is replaced using the cost constraint.
+solution is replaced using the upper bound cost constraint.

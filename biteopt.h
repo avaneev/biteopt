@@ -82,7 +82,7 @@
  * operation is performed.
  *
  * 5. After each objective function evaluation, the highest-cost previous
- * solution is replaced using the cost constraint.
+ * solution is replaced using the upper bound cost constraint.
  */
 
 class CBiteOpt
@@ -1025,7 +1025,7 @@ public:
  * @param iter The number of iterations to perform in a single attempt.
  * Corresponds to the number of obj function evaluations that are performed.
  * @param M Depth to use, 1 for plain CBiteOpt algorithm, >1 for CBiteOptDeep
- * algorithm. Automatically increases "iter" by sqrt(M).
+ * algorithm. Internally multiplies "iter" by sqrt(M).
  * @param attc The number of optimization attempts to perform.
  */
 
