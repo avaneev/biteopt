@@ -94,7 +94,7 @@ Deep stochastic optimization class. Based on an array of M CBiteOpt
 objects. This "deep" strategy pushes the newly-obtained solution to the
 next CBiteOpt object which is then optimized. This strategy while
 increasing the convergence time by a factor of about sqrt(M) is able to
-solve even the most noisy non-linear functions.
+solve even a very noisy non-linear functions.
 
 This strategy is most effective on stochastic functions or functions with
 huge fluctuations near the global solution that are not very expensive to
@@ -121,7 +121,7 @@ Damavandi test function is a perfect example of the limitation of this
 strategy (this test function is solved by this strategy, but requires a lot
 of iterations). In practice, however, rogue optimums can be considered as
 undesired outliers that rely on unstable parameter values (if such parameters
-are used in real-world system that has a certain parameter value precison, a
+are used in real-world system that has a certain parameter value precision, a
 system may leave the "rogue" optimal regime easily).
 
 To some degree this strategy is immune to noise in the objective function.
@@ -142,7 +142,7 @@ penalties, in this way: constraint c1:x1+2.0\*x2-3.0\*x3<=0 can be used to
 adjust objective function value: cost+=(c1<=0?0:100000+c1*9999), with 100000
 penalty base and 9999 constraint scale chosen to assure no interaction with the
 expected "normal" objective function values while providing a useful gradient.
-Note that if the solution's value is equal or higher than the penalty base
+Note that if the solution's value is equal to or higher than the penalty base
 it means either a feasible solution was not found or the chosen constraint
 scale does not generate a useful gradient. See constr.cpp for an example of
 constraint programming. constr2.cpp is an example of non-linear constraint
@@ -150,8 +150,8 @@ programming with both non-equalities and equalities.
 
 The minimal and maximal allowed parameter values (bounds) should be specified
 in a way to cover a wider value range, in order to reduce boundary effects
-that may reduce convergence. It maybe beneficial to specify bounds in a way so
-that the expected optimum is located at the center of the search space.
+that may reduce convergence. It may be beneficial to specify bounds in a way
+so that the expected optimum is located at the center of the search space.
 
 ## Convergence proof ##
 
