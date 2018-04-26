@@ -2,16 +2,17 @@
 
 ## Contents ##
 
-* [Introduction]()
-* [Comparison]()
-* [CBiteOpt (biteopt.h)]()
-* [CBiteOptDeep (biteopt.h)]()
-* [Limitations]()
-* [Constraint programming]()
-* [Convergence proof]()
-* [Tested uses]()
-* [Examples]()
-* [Users]()
+* [Introduction](#introduction)
+* [Comparison](#comparison)
+* [Notes](#notes)
+* [CBiteOpt (biteopt.h)](#cbiteopt-biteopth)
+* [CBiteOptDeep (biteopt.h)](#cbiteoptdeep-biteopth)
+* [Limitations](#limitations)
+* [Constraint programming](#constraint-programming)
+* [Convergence proof](#convergence-proof)
+* [Tested uses](#tested-uses)
+* [Examples](#examples)
+* [Users](#users)
 
 ## Introduction ##
 
