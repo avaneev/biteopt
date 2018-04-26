@@ -135,6 +135,13 @@ in a way to cover a wider value range, in order to reduce boundary effects
 that may reduce convergence. It maybe beneficial to specify bounds in a way so
 that the expected optimum is located at the center of the search space.
 
+## Convergence proof ##
+
+Considering the structure of the strategy and the fact that on every
+iteration only improving solutions are accepted into the population, with ever
+decreasing upper bound on the objective function value, it is logically
+impossible for the strategy to be divergent.
+
 ## Tested uses ##
 
 This optimization strategy was tested for the following applications beside
