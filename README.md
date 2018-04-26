@@ -16,14 +16,15 @@
 
 ## Introduction ##
 
+BITEOPT is a free open-source stochastic non-linear bound-constrained
+derivative-free optimization strategy. The name "BiteOpt" is an acronym for
+"BITmask Evolution OPTimization".
+
 The benefit of this strategy is a relatively high robustness: it can
 successfully optimize a wide range of multi-dimensional test functions.
 Another benefit is a low convergence time which depends on the complexity
-of the objective function. Like many stochastic optimization strategies
-with fast convergence, this strategy can't solve problems with narrow or
-rogue optimums. Hard (multi-modal) problems may require many optimization
-attempts to reach optimum. The name "BiteOpt" is an acronym for "BITmask
-Evolution OPTimization".
+of the objective function. Hard (multi-modal) problems may require many
+optimization attempts to reach optimum.
 
 Instead of iterating through different "starting guesses" to find optimum
 like in deterministic strategies, this strategy requires optimization attempts
@@ -112,14 +113,15 @@ considerably with this "deep" strategy.
 
 The required number of optimization attempts is usually proportional to the
 number of strongly competing minima in a function. Rogue optimums may not be
-found by this strategy. A rogue optimum is an optimum that has a very small
-area of descent and is placed apart from other competing minima. The
-strategy favors minimum with a larger area of descent. The Damavandi test
-function is a perfect example of the limitation of this strategy. In practice,
-however, rogue optimums can be considered as undesired outliers that rely on
-unstable parameter values (if such parameters are used in real-world system
-that has a certain parameter value precison, a system may leave the "rogue"
-optimal regime easily).
+found by this strategy. A rogue optimum is an optimum that has a very small,
+almost undetectable area of descent and is placed apart from other competing
+minima. The strategy favors minimum with a larger area of descent. The
+Damavandi test function is a perfect example of the limitation of this
+strategy (this test function is solved by this strategy, but requires a lot
+of iterations). In practice, however, rogue optimums can be considered as
+undesired outliers that rely on unstable parameter values (if such parameters
+are used in real-world system that has a certain parameter value precison, a
+system may leave the "rogue" optimal regime easily).
 
 To some degree this strategy is immune to noise in the objective function.
 While this strategy was designed to be applied to continuous functions, it is
@@ -127,9 +129,9 @@ also immune to discontinuities to some degree, and it can solve problems that
 utilize parameter value rounding (integer parameters). This strategy can't
 acceptably solve high-dimensional problems that are implicitly or explicitly
 combinatorial (e.g. Perm and Lennard-Jones atom clustering problems). Also
-problems with many competing minima without a pronounced global gradient
-(e.g. Bukin N.6) may not be solved acceptably as in most cases they require
-exhaustive search.
+problems with many competing minima without a pronounced global descent
+towards global minimum (e.g. Bukin N.6 problem) may not be solved acceptably
+as in most cases they require exhaustive search.
 
 ## Constraint programming ##
 
