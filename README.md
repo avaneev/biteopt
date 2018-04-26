@@ -253,7 +253,7 @@ pre-selected and should not be changed.
 2. Depending on the `RandProb` probability, a single (or all) parameter value
 randomization is performed using "bitmask inversion" operation.
 
-![equation2](http://quicklatex.com/cache3/ac/ql_9b7e2f15c84be67799ae835d3eb9f0ac_l3.png)
+![equation2](http://quicklatex.com/cache3/9a/ql_7b3a093f986f77dfc4e00690a22ecc9a_l3.png)
 
 ![equation3](http://quicklatex.com/cache3/70/ql_fe4d99ed011962956503c80053908b70_l3.png)
 
