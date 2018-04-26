@@ -172,7 +172,11 @@ for an example problem.
 
 ## Examples ##
 
-Use the example.cpp program to see the basic usage example.
+Use the example.cpp program to see the basic usage example of C++ interface.
+
+example2.cpp program is an example of a simple C-like function
+biteopt_minimize(). This is a minimization test for Hougen-Watson model for
+reaction kinetics. Non-linear least squares problem.
 
 test2.cpp is a convergence test for all available functions. Performs many
 optimization attempts on all functions. Prints various performance

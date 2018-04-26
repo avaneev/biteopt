@@ -965,4 +965,107 @@ protected:
 	}
 };
 
+/**
+ * Objective function.
+ */
+
+typedef double (*biteopt_func)( int N, const double* x,
+	void* func_data );
+
+/**
+ * Wrapper class for the biteopt_minimize() function.
+ */
+
+class CBiteOptMinimize : public CBiteOptDeep
+{
+public:
+	int N; ///< The number of dimensions in objective function.
+	biteopt_func f; ///< Objective function.
+	void* data; ///< Objective function's data.
+	const double* lb; ///< Parameter's lower bounds.
+	const double* ub; ///< Parameter's lower bounds.
+
+	virtual void getMinValues( double* const p ) const
+	{
+		int i;
+
+		for( i = 0; i < N; i++ )
+		{
+			p[ i ] = lb[ i ];
+		}
+	}
+
+	virtual void getMaxValues( double* const p ) const
+	{
+		int i;
+
+		for( i = 0; i < N; i++ )
+		{
+			p[ i ] = ub[ i ];
+		}
+	}
+
+	virtual double optcost( const double* const p )
+	{
+		return( (*f)( N, p, data ));
+	}
+};
+
+/**
+ * Function performs minimization using the CBiteOpt or CBiteOptDeep
+ * algorithm.
+ *
+ * @param N The number of parameters in a function.
+ * @param f Objective function.
+ * @param data Objective function's data.
+ * @param lb Lower bounds of obj function parameters, should not be infinite.
+ * @param ub Upper bounds of obj function parameters, should not be infinite.
+ * @param[out] x Minimizer.
+ * @param[out] minf Minimizer's value.
+ * @param iter The number of iterations to perform in a single attempt.
+ * @param M Depth to use, 1 for plain CBiteOpt algorithm, >1 for CBiteOptDeep
+ * algorithm. Increases convergence time by approximately sqrt(M), so when
+ * increasing "M" the "iter" should be also increased accordingly.
+ * @param randcount The number of optimization attempts to perform.
+ */
+
+inline void biteopt_minimize( const int N, biteopt_func f, void* data,
+	const double* lb, const double* ub, double* x, double* minf,
+	const int iter, const int M = 1, const int randcount = 10 )
+{
+	CBiteOptMinimize opt;
+	opt.N = N;
+	opt.f = f;
+	opt.data = data;
+	opt.lb = lb;
+	opt.ub = ub;
+	opt.updateDims( N, M );
+
+	CBiteRnd rnd;
+	rnd.init( 1 );
+
+	int k;
+
+	for( k = 0; k < randcount; k++ )
+	{
+		opt.init( rnd );
+		int i;
+
+		for( i = 0; i < iter; i++ )
+		{
+			opt.optimize( rnd );
+		}
+
+		if( k == 0 || opt.getBestCost() < *minf )
+		{
+			for( i = 0; i < N; i++ )
+			{
+				x[ i ] = opt.getBestParams()[ i ];
+			}
+
+			*minf = opt.getBestCost();
+		}
+	}
+}
+
 #endif // BITEOPT_INCLUDED
