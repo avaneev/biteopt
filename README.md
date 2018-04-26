@@ -267,7 +267,5 @@ is performed.
 
 ![equation12](http://quicklatex.com/cache3/67/ql_b434d4517882743a2528d2e10b7ff767_l3.png)
 
-$$x_\text{new}[i]=z, \quad i=1,\ldots,N$$
-
 5. After each objective function evaluation, the highest-cost previous
 solution is replaced using the cost constraint.
