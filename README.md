@@ -13,6 +13,7 @@
 * [Tested uses](#tested-uses)
 * [Examples](#examples)
 * [Users](#users)
+* [Method description](#method-description)
 
 ## Introduction ##
 
@@ -210,3 +211,63 @@ This library is used by:
 
 Please drop me a note at aleksey.vaneev@gmail.com and I will include a link to
 your project to the list of users.
+
+## Method description ##
+
+The algorithm consists of the following elements:
+
+1. A cost-ordered population of previous solutions is maintained. A solution
+is an independent parameter vector which is evolved towards a better solution.
+On every iteration, the best solution is evolved.
+
+![equation1](http://quicklatex.com/cache3/8b/ql_66f6b6e1379996e5dceb22a4238fb08b_l3.png)
+
+Below, _i_ is either equal to rand(1, N) or in the range [1; N], depending on
+the `AllpProb` probability. Probabilities are defined in the range [0; 1] and
+in many instances in the code were replaced with simple resetting counters for
+more efficiency. Parameter values are internally normalized to [0; 1] range
+and, to stay in this range, are wrapped in a special manner before each
+function evaluation. Algorithm's hyper-parameters (probabilities) were
+pre-selected and should not be changed.
+
+2. Depending on the `RandProb` probability, a single (or all) parameter value
+randomization is performed using "bitmask inversion" operation.
+
+![equation2](http://quicklatex.com/cache3/ac/ql_9b7e2f15c84be67799ae835d3eb9f0ac_l3.png)
+
+![equation3](http://quicklatex.com/cache3/71/ql_29d562fce091d4f76babd208fc058d71_l3.png)
+
+![equation4](http://quicklatex.com/cache3/51/ql_c1f36edbe9027044ef6d120b4a2b8451_l3.png)
+
+Plus, with `CentProb` probability the random "step in the right direction" operation is performed using the centroid vector, twice.
+
+![equation5](http://quicklatex.com/cache3/3d/ql_faa3b8c6fd883fb228f68b258fb3b33d_l3.png)
+
+![equation6](http://quicklatex.com/cache3/0f/ql_c9ea3d70b8eb29a1c0e112f9d15a5b0f_l3.png)
+
+![equation7](http://quicklatex.com/cache3/24/ql_ccfec27c2b5a32348a59a84caa552924_l3.png)
+
+![equation8](http://quicklatex.com/cache3/cf/ql_40565ca7f1625f7e0f28d06f3f6a8acf_l3.png)
+
+With `RandProb2` probability an alternative randomization method is used.
+
+![equation9](http://quicklatex.com/cache3/f7/ql_b2e88e9d9710ddf91a1561a021ee66f7_l3.png)
+
+3. (Not together with N.2) the "step in the right direction" operation is
+performed using the random previous solution, current best and worst
+solutions. This is conceptually similar to Differential Evolution's "mutation"
+operation.
+
+![equation10](http://quicklatex.com/cache3/58/ql_a15224c3709fd3fda67760646e7b7e58_l3.png)
+
+4. With `ScutProb` probability a "short-cut" parameter vector change operation
+is performed.
+
+![equation11](http://quicklatex.com/cache3/da/ql_3c8871a6c42a602b2bfac8c1c89affda_l3.png)
+
+![equation12](http://quicklatex.com/cache3/67/ql_b434d4517882743a2528d2e10b7ff767_l3.png)
+
+$$x_\text{new}[i]=z, \quad i=1,\ldots,N$$
+
+5. After each objective function evaluation, the highest-cost previous
+solution is replaced using the cost constraint.
