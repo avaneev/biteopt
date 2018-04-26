@@ -1024,14 +1024,13 @@ public:
  * @param[out] minf Minimizer's value.
  * @param iter The number of iterations to perform in a single attempt.
  * @param M Depth to use, 1 for plain CBiteOpt algorithm, >1 for CBiteOptDeep
- * algorithm. Increases convergence time by approximately sqrt(M), so when
- * increasing "M" the "iter" should be also increased accordingly.
- * @param randcount The number of optimization attempts to perform.
+ * algorithm. Automatically increases "iter" by sqrt(M).
+ * @param attc The number of optimization attempts to perform.
  */
 
 inline void biteopt_minimize( const int N, biteopt_func f, void* data,
 	const double* lb, const double* ub, double* x, double* minf,
-	const int iter, const int M = 1, const int randcount = 10 )
+	const int iter, const int M = 1, const int attc = 10 )
 {
 	CBiteOptMinimize opt;
 	opt.N = N;
@@ -1044,14 +1043,15 @@ inline void biteopt_minimize( const int N, biteopt_func f, void* data,
 	CBiteRnd rnd;
 	rnd.init( 1 );
 
+	const int useiter = (int) ( iter * sqrt( (double) M ));
 	int k;
 
-	for( k = 0; k < randcount; k++ )
+	for( k = 0; k < attc; k++ )
 	{
 		opt.init( rnd );
 		int i;
 
-		for( i = 0; i < iter; i++ )
+		for( i = 0; i < useiter; i++ )
 		{
 			opt.optimize( rnd );
 		}

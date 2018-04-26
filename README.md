@@ -178,6 +178,22 @@ example2.cpp program is an example of a simple C-like function
 biteopt_minimize(). This is a minimization test for Hougen-Watson model for
 reaction kinetics. Non-linear least squares problem.
 
+    void biteopt_minimize( const int N, biteopt_func f, void* data,
+        const double* lb, const double* ub, double* x, double* minf,
+        const int iter, const int M = 1, const int attc = 10 )
+
+    N     The number of parameters in a function.
+    f     Objective function.
+    data  Objective function's data.
+    lb    Lower bounds of obj function parameters, should not be infinite.
+    ub    Upper bounds of obj function parameters, should not be infinite.
+    x     Minimizer.
+    minf  Minimizer's value.
+    iter  The number of iterations to perform in a single attempt.
+    M     Depth to use, 1 for plain CBiteOpt algorithm, >1 for CBiteOptDeep
+          algorithm. Automatically increases "iter" by sqrt(M).
+    attc  The number of optimization attempts to perform.
+
 test2.cpp is a convergence test for all available functions. Performs many
 optimization attempts on all functions. Prints various performance
 information, including percentage of rejected attempts (rejection rate).

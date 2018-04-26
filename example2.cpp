@@ -43,7 +43,7 @@ int main()
 	double minf;
 	biteopt_minimize( N, fn, NULL, lb, ub, x, &minf, 10000 );
 
-	printf( "minf: %.10g\n", minf );
+	printf( "minf = %.10g\n", minf );
 
 	int i;
 
@@ -51,6 +51,4 @@ int main()
 	{
 		printf( "x[%i] = %.8g\n", i, x[ i ]);
 	}
-
-	return( 0 );
 }
