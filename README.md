@@ -255,7 +255,7 @@ randomization is performed using "bitmask inversion" operation.
 
 ![equation2](http://quicklatex.com/cache3/ac/ql_9b7e2f15c84be67799ae835d3eb9f0ac_l3.png)
 
-![equation3](http://quicklatex.com/cache3/71/ql_29d562fce091d4f76babd208fc058d71_l3.png)
+![equation3](http://quicklatex.com/cache3/70/ql_fe4d99ed011962956503c80053908b70_l3.png)
 
 ![equation4](http://quicklatex.com/cache3/51/ql_c1f36edbe9027044ef6d120b4a2b8451_l3.png)
 
