@@ -1015,7 +1015,7 @@ public:
  * Function performs minimization using the CBiteOpt or CBiteOptDeep
  * algorithm.
  *
- * @param N The number of parameters in a function.
+ * @param N The number of parameters in an objective function.
  * @param f Objective function.
  * @param data Objective function's data.
  * @param lb Lower bounds of obj function parameters, should not be infinite.
@@ -1023,6 +1023,7 @@ public:
  * @param[out] x Minimizer.
  * @param[out] minf Minimizer's value.
  * @param iter The number of iterations to perform in a single attempt.
+ * Corresponds to the number of obj function evaluations that are performed.
  * @param M Depth to use, 1 for plain CBiteOpt algorithm, >1 for CBiteOptDeep
  * algorithm. Automatically increases "iter" by sqrt(M).
  * @param attc The number of optimization attempts to perform.
@@ -1043,12 +1044,15 @@ inline void biteopt_minimize( const int N, biteopt_func f, void* data,
 	CBiteRnd rnd;
 	rnd.init( 1 );
 
-	const int useiter = (int) ( iter * sqrt( (double) M ));
+	const int useiter = (int) ( iter * sqrt( (double) M )) -
+		opt.getInitEvals();
+
 	int k;
 
 	for( k = 0; k < attc; k++ )
 	{
 		opt.init( rnd );
+
 		int i;
 
 		for( i = 0; i < useiter; i++ )

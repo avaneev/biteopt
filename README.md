@@ -182,7 +182,7 @@ reaction kinetics. Non-linear least squares problem.
         const double* lb, const double* ub, double* x, double* minf,
         const int iter, const int M = 1, const int attc = 10 )
 
-    N     The number of parameters in a function.
+    N     The number of parameters in an objective function.
     f     Objective function.
     data  Objective function's data.
     lb    Lower bounds of obj function parameters, should not be infinite.
@@ -190,6 +190,7 @@ reaction kinetics. Non-linear least squares problem.
     x     Minimizer.
     minf  Minimizer's value.
     iter  The number of iterations to perform in a single attempt.
+          Corresponds to the number of obj function evaluations that are performed.
     M     Depth to use, 1 for plain CBiteOpt algorithm, >1 for CBiteOptDeep
           algorithm. Automatically increases "iter" by sqrt(M).
     attc  The number of optimization attempts to perform.
