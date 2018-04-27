@@ -45,15 +45,15 @@ particularly good at improving an existing sub-optimal local solution.
 This strategy was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
 evaluated): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
-This strategy was able to solve 77% of non-convex problems in 10 attempts, 2500
-iterations each. It comes 2nd in the comparison on non-convex problems (see
-Fig.9 in the paper). With a huge iteration budget (1 million) this strategy
-solves 95% of problems.
+This strategy was able to solve 77% of non-convex smooth problems in 10
+attempts, 2500 iterations each. It comes 2nd in the comparison on non-convex
+smooth problems (see Fig.9 in the paper). With a huge iteration budget (1
+million) this strategy solves 95% of problems.
 
 On a comparable test function suite and conditions outlined at this page:
 [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
 (excluding several ill-defined and overly simple functions, and including
-several complex functions, use test2.cpp to run the test) this strategy's
+several complex functions, use `test2.cpp` to run the test) this strategy's
 success rate is >90% while the average number of objective function
 evaluations is ~330.
 
@@ -156,8 +156,8 @@ penalty base and 9999 constraint scale chosen to assure no interaction with the
 expected "normal" objective function values while providing a useful gradient.
 Note that if the solution's value is equal to or higher than the penalty base
 it means either a feasible solution was not found or the chosen constraint
-scale does not generate a useful gradient. See constr.cpp for an example of
-constraint programming. constr2.cpp is an example of non-linear constraint
+scale does not generate a useful gradient. See `constr.cpp` for an example of
+constraint programming. `constr2.cpp` is an example of non-linear constraint
 programming with both non-equalities and equalities.
 
 The minimal and maximal allowed parameter values (bounds) should be specified
@@ -179,14 +179,14 @@ synthetic benchmarking:
 
 1. Hyperparameter optimization of complex non-linear black-box systems.
 
-2. Non-linear least-squares problems, see calcHougen function in testfn.h
+2. Non-linear least-squares problems, see calcHougen function in `testfn.h`
 for an example problem.
 
 ## Examples ##
 
-Use the example.cpp program to see the basic usage example of C++ interface.
+Use the `example.cpp` program to see the basic usage example of C++ interface.
 
-example2.cpp program is an example of a simple C-like function
+`example2.cpp` program is an example of a simple C-like function
 biteopt_minimize(). This is a minimization test for Hougen-Watson model for
 reaction kinetics. Non-linear least squares problem.
 
@@ -207,15 +207,16 @@ reaction kinetics. Non-linear least squares problem.
           algorithm. Internally multiplies "iter" by sqrt(M).
     attc  The number of optimization attempts to perform.
 
-test2.cpp is a convergence test for all available functions. Performs many
+`test2.cpp` is a convergence test for all available functions. Performs many
 optimization attempts on all functions. Prints various performance
 information, including percentage of rejected attempts (rejection rate).
 
-test4.cpp is a convergence test for multi-dimensional functions.
+`test4.cpp` is a convergence test for multi-dimensional functions.
 
-constr.cpp and constr2.cpp programs demonstrate use of constraint penalties.
+`constr.cpp` and `constr2.cpp` programs demonstrate use of constraint
+penalties.
 
-constr3.cpp demonstrates use of the "deep" optimization strategy.
+`constr3.cpp` demonstrates use of the "deep" optimization strategy.
 
 ## Development ##
 
