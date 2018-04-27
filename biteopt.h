@@ -271,7 +271,7 @@ public:
 	 * "pushed", used for deep optimization algorithm.
 	 * @return The number of non-improving iterations so far. A high value
 	 * means optimizer has reached an optimization plateau. The suggested
-	 * threshold value is PopSize * 5, when this value was reached the
+	 * threshold value is getInitEvals() * 5. When this value was reached the
 	 * probability of plateau is high. This value however should not be solely
 	 * relied upon when considering a stopping criteria: a hard iteration
 	 * limit should be always used as in some cases convergence time may be
@@ -436,7 +436,7 @@ public:
 
 		if( NewCost > CurCosts[ sH ])
 		{
-			// Cost constraint check failed, reject this solution.
+			// Upper bound cost constraint check failed, reject this solution.
 
 			StallCount++;
 
@@ -838,6 +838,7 @@ public:
 		}
 
 		CurOpt = 0;
+		StallCount = 0;
 	}
 
 	/**
@@ -845,13 +846,21 @@ public:
 	 * objective function evaluation.
 	 *
 	 * @param rnd Random number generator.
+	 * @return The number of non-improving iterations so far.
 	 */
 
-	void optimize( CBiteRnd& rnd )
+	int optimize( CBiteRnd& rnd )
 	{
 		const int NextOpt = ( CurOpt == BiteCount - 1 ? 0 : CurOpt + 1 );
 
-		Opts[ CurOpt ] -> optimize( rnd, Opts[ NextOpt ]);
+		if( Opts[ CurOpt ] -> optimize( rnd, Opts[ NextOpt ]) == 0 )
+		{
+			StallCount = 0;
+		}
+		else
+		{
+			StallCount++;
+		}
 
 		if( Opts[ CurOpt ] -> getBestCost() <
 			Opts[ BestOpt ] -> getBestCost() )
@@ -860,6 +869,8 @@ public:
 		}
 
 		CurOpt = NextOpt;
+
+		return( StallCount );
 	}
 
 	/**
@@ -947,6 +958,8 @@ protected:
 	int BestOpt; ///< Optimizer that contains the best solution.
 		///<
 	int CurOpt; ///< Current optimization object index.
+		///<
+	int StallCount; ///< The number of iterations without improvement.
 		///<
 
 	/**

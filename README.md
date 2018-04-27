@@ -57,8 +57,8 @@ several complex functions, use test2.cpp to run the test) this strategy's
 success rate is >90% while the average number of objective function
 evaluations is ~330.
 
-At least in these comparisons, this strategy performs far better than plain
-CMA-ES which is also a well-performing stochastic solver strategy.
+At least in these comparisons, this strategy performs better than plain
+CMA-ES which is also a well-performing stochastic strategy.
 
 ## CBiteOpt (biteopt.h) ##
 
@@ -79,10 +79,10 @@ Deep stochastic optimization class. Based on an array of M CBiteOpt
 objects. This "deep" strategy pushes the newly-obtained solution to the
 next CBiteOpt object which is then optimized. This strategy while
 increasing the convergence time by a factor of about sqrt(M) is able to
-solve even a very noisy non-linear functions.
+solve even somewhat noisy non-linear functions.
 
 This strategy is most effective on stochastic functions or functions with
-huge fluctuations near the global solution that are not very expensive to
+noisy fluctuations near the global solution that are not very expensive to
 calculate and that have a large iteration budget. Tests have shown that on
 smooth functions that have many strongly competing minima this strategy
 increases the chance to find a global solution by a factor of sqrt(M)
@@ -124,7 +124,7 @@ undesired outliers that rely on unstable parameter values (if such parameters
 are used in real-world system that has a certain parameter value precision, a
 system may leave the "rogue" optimal regime easily).
 
-To some degree this strategy is immune to noise in the objective function.
+To a small degree this strategy is immune to noise in the objective function.
 While this strategy was designed to be applied to continuous functions, it is
 also immune to discontinuities to some degree, and it can solve problems that
 utilize parameter value rounding (integer parameters). This strategy can't
@@ -136,6 +136,15 @@ problems with many competing minima without a pronounced global descent
 towards global minimum (e.g. Bukin N.6 problem) may not be solved acceptably
 as in most cases they require exhaustive search or a search involving
 knowledge of the structure of the problem.
+
+Tests have shown, that in comparison to stochastic strategy like CMA-ES,
+BiteOpt's convergence time varies more from attempt to attempt. For example,
+on some problem CMA-ES's average convergence time may be 7000 iterations +/-
+1400 while BiteOpt's may be 7000 +/- 3000. This is mostly a negative property
+if only a single optimization attempt is performed since it makes required
+budget unpredictable. But if several attempts are performed, it is a positive
+property: it means that in some optimization attempts BiteOpt converges faster
+and may find a better optimum with the same iteration budget per attempt.
 
 ## Constraint programming ##
 
