@@ -4,9 +4,9 @@
 
 * [Introduction](#introduction)
 * [Comparison](#comparison)
-* [Notes](#notes)
 * [CBiteOpt (biteopt.h)](#cbiteopt-biteopth)
 * [CBiteOptDeep (biteopt.h)](#cbiteoptdeep-biteopth)
+* [Notes](#notes)
 * [Limitations](#limitations)
 * [Constraint programming](#constraint-programming)
 * [Convergence proof](#convergence-proof)
@@ -54,8 +54,11 @@ On a comparable test function suite and conditions outlined at this page:
 [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use test2.cpp to run the test) this strategy's
-success rate is >91% while the average number of objective function
+success rate is >90% while the average number of objective function
 evaluations is ~340.
+
+At least in these comparisons, this strategy performs far better than plain
+CMA-ES which is also a well-performing stochastic solver strategy.
 
 ## CBiteOpt (biteopt.h) ##
 
@@ -84,13 +87,10 @@ calculate and that have a large iteration budget. Tests have shown that on
 smooth functions that have many strongly competing minima this strategy
 increases the chance to find a global solution by a factor of sqrt(M)
 relative to the CBiteOpt class, but still requires several runs at
-different random seeds. However, the number of required runs in most cases
-is lower by about sqrt(M). So, in many cases it's more efficient to
-increase the iteration budget by a factor of sqrt(M) which will in turn
-increase the chance to find a global optimum by a factor of sqrt(M) and
-also reduce the number of optimization attempts by the same number.  In
-practice, the chance to find a global optimum is increased even more
-considerably with this "deep" strategy.
+different random seeds. When using this strategy the iteration budget
+increases by a factor of sqrt(M), but the number of optimization attempts is
+reduced by the same number. In practice, the chance to find a global optimum
+is increased even more than by sqrt(M) with this "deep" strategy.
 
 ## Notes ##
 
