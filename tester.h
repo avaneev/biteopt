@@ -214,7 +214,6 @@ public:
 		AtAvg = 0.0;
 		int RejTotal = 0;
 		int ComplTotal = 0;
-		tc = 0;
 		int* Iters = new int[ IterCount ];
 		int k;
 
