@@ -291,59 +291,6 @@ public:
 		{
 			RandCntr -= 1.0;
 
-			for( i = 0; i < ParamCount; i++ )
-			{
-				Params[ i ] = MinParams[ i ];
-			}
-
-			// Select a single random parameter or all parameters.
-
-			int a;
-			int b;
-
-			if( rnd.getRndValue() < AllpProb )
-			{
-				a = 0;
-				b = ParamCount - 1;
-			}
-			else
-			{
-				a = ParamCntr;
-				b = a;
-				ParamCntr = ( ParamCntr == 0 ? ParamCount : ParamCntr ) - 1;
-			}
-
-			// Bitmask inversion operation, works as a "driver" of
-			// optimization process, applied to 1 random parameter at a time.
-
-			const double r = rnd.getRndValue();
-			const int imask = ( 2 <<
-				(int) (( 0.999999997 - r * r * r * r ) * MantSize )) - 1;
-
-			for( i = a; i <= b; i++ )
-			{
-				Params[ i ] = ( (int) ( Params[ i ] * MantMult ) ^
-					imask ) / MantMult;
-			}
-
-			CentCntr += CentProb;
-
-			if( CentCntr >= 1.0 )
-			{
-				CentCntr -= 1.0;
-
-				// Move towards centroid vector or beyond it, randomly.
-
-				const double m = rnd.getRndValue() * CentSpan;
-				const double m2 = rnd.getRndValue() * CentSpan;
-
-				for( i = a; i <= b; i++ )
-				{
-					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
-					Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m2;
-				}
-			}
-
 			RandCntr2 += RandProb2;
 
 			if( RandCntr2 >= 1.0 )
@@ -355,8 +302,66 @@ public:
 
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] += ( CentParams[ i ] - Params[ i ]) *
+					Params[ i ] = MinParams[ i ] +
+						( CentParams[ i ] - MinParams[ i ]) *
 						( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
+				}
+			}
+			else
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = MinParams[ i ];
+				}
+
+				// Select a single random parameter or all parameters.
+
+				int a;
+				int b;
+
+				if( rnd.getRndValue() < AllpProb )
+				{
+					a = 0;
+					b = ParamCount - 1;
+				}
+				else
+				{
+					a = ParamCntr;
+					b = a;
+					ParamCntr = ( ParamCntr == 0 ?
+						ParamCount : ParamCntr ) - 1;
+				}
+
+				// Bitmask inversion operation, works as a "driver" of
+				// optimization process, applied to 1 random parameter at a
+				// time.
+
+				const double r = rnd.getRndValue();
+				const int imask = ( 2 <<
+					(int) (( 0.999999997 - r * r * r * r ) * MantSize )) - 1;
+
+				for( i = a; i <= b; i++ )
+				{
+					Params[ i ] = ( (int) ( Params[ i ] * MantMult ) ^
+						imask ) / MantMult;
+				}
+
+				CentCntr += CentProb;
+
+				if( CentCntr >= 1.0 )
+				{
+					CentCntr -= 1.0;
+
+					// Move towards centroid vector or beyond it, randomly.
+
+					const double m = rnd.getRndValue() * CentSpan;
+					const double m2 = rnd.getRndValue() * CentSpan;
+
+					for( i = a; i <= b; i++ )
+					{
+						Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
+						Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m2;
+					}
 				}
 			}
 		}

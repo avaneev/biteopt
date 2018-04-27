@@ -42,20 +42,20 @@ problems and performed well, and it successfully solves even 600-dimensional
 test problems found in some books. Due to its design this strategy may be
 particularly good at improving an existing sub-optimal local solution.
 
-This strategy was compared with the results of this paper (on 241 published C
+This strategy was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
 evaluated): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
-This strategy was able to solve 78% of non-convex problems in 10 attempts, 2500
+This strategy was able to solve 77% of non-convex problems in 10 attempts, 2500
 iterations each. It comes 2nd in the comparison on non-convex problems (see
 Fig.9 in the paper). With a huge iteration budget (1 million) this strategy
-solves 93% of problems (CBiteOptDeep solves 95% with M=25).
+solves 95% of problems.
 
 On a comparable test function suite and conditions outlined at this page:
 [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use test2.cpp to run the test) this strategy's
 success rate is >90% while the average number of objective function
-evaluations is ~340.
+evaluations is ~330.
 
 At least in these comparisons, this strategy performs far better than plain
 CMA-ES which is also a well-performing stochastic solver strategy.
@@ -90,7 +90,7 @@ relative to the CBiteOpt class, but still requires several runs at
 different random seeds. When using this strategy the iteration budget
 increases by a factor of sqrt(M), but the number of optimization attempts is
 reduced by the same number. In practice, the chance to find a global optimum
-is increased even more than by sqrt(M) with this "deep" strategy.
+is sometimes increased more than by sqrt(M) with this "deep" strategy.
 
 ## Notes ##
 
