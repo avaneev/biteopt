@@ -29,11 +29,11 @@ optimization attempts to reach optimum.
 
 Instead of iterating through different "starting guesses" to find optimum
 like in deterministic strategies, this strategy requires optimization attempts
-with different random seeds. The stochastic nature of the method allows it to
-automatically "fall" into different competing minima with each run. If there
-are no competing minima in a function (or the true/global minimum is rogue and
-cannot be detected), this strategy in absolute majority of runs will return
-the same optimum.
+(runs) with different random seeds. The stochastic nature of the method allows
+it to automatically "fall" into different competing minima with each run. If
+there are no competing minima in a function (or the true/global minimum is
+rogue and cannot be detected), this strategy in absolute majority of runs will
+return the same optimum.
 
 ## Comparison ##
 
@@ -43,37 +43,19 @@ test problems found in some books. Due to its design this strategy may be
 particularly good at improving an existing sub-optimal local solution.
 
 This strategy was compared with the results of this paper (on 241 published C
-non-convex problems, convex problems were not evaluated): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
+non-convex smooth problems, convex and non-convex non-smooth problems were not
+evaluated): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
 This strategy was able to solve 78% of non-convex problems in 10 attempts, 2500
-iterations each. For 1-2 dimensional problems, this strategy's success rate is
-99%. For 3-9 dimensional problems the success rate is 70%, for 10-30
-dimensional problems the success rate is 86%, for >30 dimensional problems the
-success rate is 38%. With a huge iteration budget (1 million) this strategy
-solves 93% of problems (CBiteOptDeep solves 95% with M=25). On a comparable
-test function suite and conditions outlined at this page:
+iterations each. It comes 2nd in the comparison on non-convex problems (see
+Fig.9 in the paper). With a huge iteration budget (1 million) this strategy
+solves 93% of problems (CBiteOptDeep solves 95% with M=25).
+
+On a comparable test function suite and conditions outlined at this page:
 [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use test2.cpp to run the test) this strategy's
 success rate is >91% while the average number of objective function
 evaluations is ~340.
-
-## Notes ##
-
-Strategy's hyper-parameters (probabilities) were pre-selected and should not
-be changed.
-
-It is usually necessary to run the optimization process several times with
-different random seeds since the process may get stuck in a local minimum.
-Running 10 times is a minimal general requirement. This strategy is hugely
-probabilistic and it depends on its initial state, which is selected randomly.
-In most cases it is more efficient to rerun the optimization with a new random
-seed than to wait for the optimization process to converge. Based on the
-results of optimization of the test corpus, for 2-dimensional functions it is
-reasonable to expect convergence in 1000 iterations (in a successful attempt),
-for 10-dimensional functions it is reasonable to expect convergence in 5000
-iterations (harder functions may require more iterations to converge). Most
-classic 2-dimensional problems converge in 400 iterations or less, at 1e-6
-precision.
 
 ## CBiteOpt (biteopt.h) ##
 
@@ -109,6 +91,24 @@ increase the chance to find a global optimum by a factor of sqrt(M) and
 also reduce the number of optimization attempts by the same number.  In
 practice, the chance to find a global optimum is increased even more
 considerably with this "deep" strategy.
+
+## Notes ##
+
+Strategy's hyper-parameters (probabilities) were pre-selected and should not
+be changed.
+
+It is usually necessary to run the optimization process several times with
+different random seeds since the process may get stuck in a local minimum.
+Running 10 times is a minimal general requirement. This strategy is hugely
+probabilistic and it depends on its initial state, which is selected randomly.
+In most cases it is more efficient to rerun the optimization with a new random
+seed than to wait for the optimization process to converge. Based on the
+results of optimization of the test corpus, for 2-dimensional functions it is
+reasonable to expect convergence in 1000 iterations (in a successful attempt),
+for 10-dimensional functions it is reasonable to expect convergence in 5000
+iterations (harder functions may require more iterations to converge). Most
+classic 2-dimensional problems converge in 400 iterations or less, at 1e-6
+precision.
 
 ## Limitations ##
 
