@@ -115,28 +115,7 @@ public:
 				tp[ 0 ] = x * cos( rots[ 0 ]) - y * sin( rots[ 0 ]);
 				tp[ 1 ] = x * sin( rots[ 0 ]) + y * cos( rots[ 0 ]);
 				tp[ 0 ] += shifts[ 0 ];
-
-/*				if( tp[ 0 ] < minv[ 0 ])
-				{
-					tp[ 0 ] = minv[ 0 ];
-				}
-				else
-				if( tp[ 0 ] > maxv[ 0 ])
-				{
-					tp[ 0 ] = maxv[ 0 ];
-				}
-*/
 				tp[ 1 ] += shifts[ 1 ];
-
-/*				if( tp[ 1 ] < minv[ 1 ])
-				{
-					tp[ 1 ] = minv[ 1 ];
-				}
-				else
-				if( tp[ 1 ] > maxv[ 1 ])
-				{
-					tp[ 1 ] = maxv[ 1 ];
-				}*/
 			}
 			else
 			{
@@ -145,16 +124,6 @@ public:
 				for( i = 0; i < Dims; i++ )
 				{
 					tp[ i ] = p[ i ] * signs[ i ] + shifts[ i ];
-
-/*					if( tp[ i ] < minv[ i ])
-					{
-						tp[ i ] = minv[ i ];
-					}
-					else
-					if( tp[ i ] > maxv[ i ])
-					{
-						tp[ i ] = maxv[ i ];
-					}*/
 				}
 			}
 
@@ -166,17 +135,15 @@ public:
 		///<
 	CTestOpt* opt; ///< Optimizer.
 		///<
-	double ItAvg; ///< Average convergence time after run().
+	double ItAvg; ///< Average of convergence time after run().
 		///<
-	double RMSAvg; ///< Average convergence time after run().
+	double RMSAvg; ///< Std.dev of convergence time after run().
 		///<
 	double ItRtAvg; ///< Average ratio of std.dev and average after run().
 		///<
 	double RjAvg; ///< Average number of rejects.
 		///<
 	double AtAvg; ///< Average number of attempts.
-		///<
-	uint64_t tc; ///< Processor clock ticks used in evaluation.
 		///<
 	double Score; ///< Optimization score.
 		///<
@@ -202,8 +169,8 @@ public:
 	 * @param IterCount The number of attempts to solve a function to perform.
 	 * @param InnerIterCount The maximal number of solver iterations to
 	 * perform.
-	 * @param DoRandomize "True" if randomization of value range and value
-	 * sign should be performed.
+	 * @param DoRandomize "True" if randomization of value shifts should be
+	 * performed.
 	 * @param DoPrint "True" if results should be printed to "stdout".
 	 */
 
@@ -234,8 +201,8 @@ public:
 	}
 
 	/**
-	 * Function runs the test. On return, the ItAvg, ItRtAvg and tc variables
-	 * will be updated.
+	 * Function runs the test. On return, the ItAvg, RMSAvg, ItRtAvg, RjAvg,
+	 * AtAvg class variables will be updated.
 	 */
 
 	void run()
@@ -255,9 +222,9 @@ public:
 		{
 			_mm_empty();
 			double AvgIter = 0;
-			double MinCost = 1e300;
-			double MinRjCost = 1e300;
-			int Rej = 0;
+			double MinCost = 1e300; // Minimal cost detected in successes.
+			double MinRjCost = 1e300; // Minimal cost detected in rejects.
+			int Rej = 0; // The number of rejected attempts.
 			int j;
 			int i;
 
@@ -298,7 +265,7 @@ public:
 						opt -> minv[ i ] -= d * 0.25;
 						opt -> maxv[ i ] += d * 0.25;
 
-						opt -> signs[ i ] = 1.0;//( 1.0 + rnd.getRndValue() * 0.5 );
+						opt -> signs[ i ] = 1.0;
 					}
 				}
 
@@ -308,10 +275,7 @@ public:
 
 				while( true )
 				{
-					const uint64_t t1 = __rdtsc();
 					opt -> optimize( rnd );
-					tc += __rdtsc() - t1;
-
 					i++;
 
 					if( opt -> getBestCost() - opt -> optv < CostThreshold )
@@ -394,15 +358,16 @@ public:
 		RjAvg /= FnCount;
 		AtAvg = 1.0 / ( 1.0 - (double) RejTotal / IterCount / FnCount );
 		Score = ( AtAvg - 1.0 ) * 100.0 +
-			fabs( ItAvg - 330.0 ) * 0.1;
+			fabs( ItAvg - 340.0 ) * 0.1;
 		Success = 100.0 * ComplTotal / FnCount / IterCount;
-//		Score = -Success;// + fabs( ItAvg - 380.0 );
 
 		if( DoPrint )
 		{
 			printf( "Success: %.2f%%\n", Success );
 			printf( "ItAvg: %.1f (avg convergence time)\n", ItAvg );
-			printf( "RMSAvg: %.1f (std.dev of convergence time)\n", RMSAvg );
+			printf( "RMSAvg: %.1f (avg std.dev of convergence time)\n",
+				RMSAvg );
+
 			printf( "ItRtAvg: %.6f (avg ratio of std.dev and average)\n",
 				ItRtAvg );
 
@@ -411,7 +376,6 @@ public:
 
 			printf( "AtAvg: %.3f (avg number of attempts)\n", AtAvg );
 			printf( "Score: %f\n", Score );
-			printf( "Ticks: %llu\n", tc );
 		}
 
 		delete[] Iters;
