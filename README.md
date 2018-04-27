@@ -18,8 +18,8 @@
 ## Introduction ##
 
 BITEOPT is a free open-source stochastic non-linear bound-constrained
-derivative-free optimization strategy. The name "BiteOpt" is an acronym for
-"BITmask Evolution OPTimization".
+derivative-free optimization strategy (heuristic). The name "BiteOpt" is an
+acronym for "BITmask Evolution OPTimization".
 
 The benefit of this strategy is a relatively high robustness: it can
 successfully optimize a wide range of multi-dimensional test functions.
@@ -129,10 +129,13 @@ While this strategy was designed to be applied to continuous functions, it is
 also immune to discontinuities to some degree, and it can solve problems that
 utilize parameter value rounding (integer parameters). This strategy can't
 acceptably solve high-dimensional problems that are implicitly or explicitly
-combinatorial (e.g. Perm and Lennard-Jones atom clustering problems). Also
+combinatorial (e.g. Perm and Lennard-Jones atom clustering problems) as in
+such problems the global descent vanishes at some point and the strategy is
+left with an exponentially increasing number of local minima. Similarly,
 problems with many competing minima without a pronounced global descent
 towards global minimum (e.g. Bukin N.6 problem) may not be solved acceptably
-as in most cases they require exhaustive search.
+as in most cases they require exhaustive search or a search involving
+knowledge of the structure of the problem.
 
 ## Constraint programming ##
 
