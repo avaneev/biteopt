@@ -188,6 +188,7 @@ public:
 
 	/**
 	 * @return The number of initial objective function evaluations.
+	 * Corresponds to the population size.
 	 */
 
 	int getInitEvals() const
@@ -271,7 +272,7 @@ public:
 	 * "pushed", used for deep optimization algorithm.
 	 * @return The number of non-improving iterations so far. A high value
 	 * means optimizer has reached an optimization plateau. The suggested
-	 * threshold value is getInitEvals() * 5. When this value was reached the
+	 * threshold value is getInitEvals() * 8. When this value was reached the
 	 * probability of plateau is high. This value however should not be solely
 	 * relied upon when considering a stopping criteria: a hard iteration
 	 * limit should be always used as in some cases convergence time may be
@@ -434,7 +435,7 @@ public:
 
 		const int sH = PopOrder[ PopSize1 ];
 
-		if( NewCost > CurCosts[ sH ])
+		if( NewCost >= CurCosts[ sH ])
 		{
 			// Upper bound cost constraint check failed, reject this solution.
 
@@ -846,7 +847,8 @@ public:
 	 * objective function evaluation.
 	 *
 	 * @param rnd Random number generator.
-	 * @return The number of non-improving iterations so far.
+	 * @return The number of non-improving iterations so far. The plateau
+	 * threshold value is getInitEvals() * 8.
 	 */
 
 	int optimize( CBiteRnd& rnd )
@@ -1043,7 +1045,8 @@ public:
  * @param iter The number of iterations to perform in a single attempt.
  * Corresponds to the number of obj function evaluations that are performed.
  * @param M Depth to use, 1 for plain CBiteOpt algorithm, >1 for CBiteOptDeep
- * algorithm. Internally multiplies "iter" by sqrt(M).
+ * algorithm. Expected range is [1; 36]. Internally multiplies "iter" by
+ * sqrt(M). 
  * @param attc The number of optimization attempts to perform.
  */
 

@@ -218,7 +218,8 @@ reaction kinetics. Non-linear least squares problem.
     iter  The number of iterations to perform in a single attempt.
           Corresponds to the number of obj function evaluations that are performed.
     M     Depth to use, 1 for plain CBiteOpt algorithm, >1 for CBiteOptDeep
-          algorithm. Internally multiplies "iter" by sqrt(M).
+          algorithm. Expected range is [1; 36]. Internally multiplies "iter"
+          by sqrt(M).
     attc  The number of optimization attempts to perform.
 
 `test2.cpp` is a convergence test for all available functions. Performs many
