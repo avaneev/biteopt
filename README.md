@@ -178,7 +178,10 @@ so that the expected optimum is located at the center of the search space.
 Considering the structure of the strategy and the fact that on every
 iteration only improving solutions are accepted into the population, with ever
 decreasing upper bound on the objective function value, it is logically
-impossible for the strategy to be divergent.
+impossible for the strategy to be divergent. While it is strictly
+non-divergent, the formal proof of ability of the strategy to converge is
+complicated, and should be at least as good as partly random search and partly
+Differential Evolution.
 
 ## Tested uses ##
 
