@@ -149,7 +149,8 @@ with the same iteration budget per attempt. Based on `test2.cpp`
 (2-dimensional) and `test4.cpp` (10-dimensional) test corpuses, only about
 1% of attempts require more than 3\*sigma iterations, 58% of attempts require
 less than 0\*sigma. A typical probability distribution of percent of
-attempts/sigma is as follows:
+attempts/sigma is as follows (discretized, not centered around 0 because it
+deviates from standard distribution, average value corresponds to 0\*sigma):
 
 ![PDF plot](https://github.com/avaneev/biteopt/blob/master/attempt_pdf_plot.png)
 
