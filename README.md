@@ -147,9 +147,10 @@ attempts are performed, it is a positive property: it means that in some
 optimization attempts BiteOpt converges faster and may find a better optimum
 with the same iteration budget per attempt. Based on `test2.cpp`
 (2-dimensional) and `test4.cpp` (10-dimensional) test corpuses, only about
-1% of attempts require more than 3*sigma iterations, 58% of attempts require
-less than 0*sigma. A typical probability distribution of percent of
+1% of attempts require more than 3\*sigma iterations, 58% of attempts require
+less than 0\*sigma. A typical probability distribution of percent of
 attempts/sigma is as follows:
+
 ![PDF plot](https://github.com/avaneev/biteopt/blob/master/attempt_pdf_plot.png)
 
 ## Constraint programming ##
