@@ -140,11 +140,17 @@ knowledge of the structure of the problem.
 Tests have shown, that in comparison to stochastic strategy like CMA-ES,
 BiteOpt's convergence time varies more from attempt to attempt. For example,
 on some problem CMA-ES's average convergence time may be 7000 iterations +/-
-1400 while BiteOpt's may be 7000 +/- 3000. This is mostly a negative property
-if only a single optimization attempt is performed since it makes required
-budget unpredictable. But if several attempts are performed, it is a positive
-property: it means that in some optimization attempts BiteOpt converges faster
-and may find a better optimum with the same iteration budget per attempt.
+1400 while BiteOpt's may be 7000 +/- 3000. Such higher standard deviation
+is mostly a negative property if only a single optimization attempt is
+performed since it makes required budget unpredictable. But if several
+attempts are performed, it is a positive property: it means that in some
+optimization attempts BiteOpt converges faster and may find a better optimum
+with the same iteration budget per attempt. Based on `test2.cpp`
+(2-dimensional) and `test4.cpp` (10-dimensional) test corpuses, only about
+1% of attempts require more than 3*sigma iterations, 58% of attempts require
+less than 0*sigma. A typical probability distribution of percent of
+attempts/sigma is as follows:
+![PDF plot](https://github.com/avaneev/biteopt/blob/master/attempt_pdf_plot.png)
 
 ## Constraint programming ##
 
@@ -178,6 +184,9 @@ This optimization strategy was tested for the following applications beside
 synthetic benchmarking:
 
 1. Hyperparameter optimization of complex non-linear black-box systems.
+Namely, [AVIR](https://github.com/avaneev/avir) image resizing algorithm's
+hyper-parameters, BiteOpt's own hyper-parameters, digital audio limiter
+algorithm's parameters.
 
 2. Non-linear least-squares problems, see calcHougen function in `testfn.h`
 for an example problem.
@@ -220,9 +229,10 @@ penalties.
 
 ## Development ##
 
-While the basic algorithm of the strategy is finished, the built-in parameters
-of the algorithm is an area of ongoing research. There are several things that
-were discovered that may need to be addressed in the future:
+While the basic algorithm of the strategy is finished, the built-in
+hyper-parameters of the algorithm is an area of ongoing research. There are
+several things that were discovered that may need to be addressed in the
+future:
 
 1. Parallelization of this algorithm is technically possible, but may be
 counter-productive (increases convergence time considerably). It is more

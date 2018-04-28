@@ -47,7 +47,7 @@ public:
 		Tester.opt -> RandProb2 = 0.25;
 
 		rnd.init( 0 );
-		Tester.init( 2, TestCorpusAll, 0.000001, 40, 2000, false, false );
+		Tester.init( 2, TestCorpusAll, 0.000001, 60, 2000, false, false );
 
 		Tester.run();
 

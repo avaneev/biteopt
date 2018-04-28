@@ -19,7 +19,7 @@ public:
 	 * Function optimizer class.
 	 */
 
-	class CTestOpt : public CBiteOptDeep
+	class CTestOpt : public CBiteOpt
 	{
 	public:
 		const CTestFn* fn; ///< Test function.
@@ -78,7 +78,7 @@ public:
 			shifts = new double[ Dims ];
 			signs = new double[ Dims ];
 			tp = new double[ Dims ];
-			CBiteOptDeep :: updateDims( Dims, 1 );
+			CBiteOpt :: updateDims( Dims );
 		}
 
 		virtual void getMinValues( double* const p ) const
@@ -217,6 +217,16 @@ public:
 		int* Iters = new int[ IterCount ];
 		int k;
 
+		const int binspan = 50;
+		const int binc = 1 + binspan * 2;
+		double bins[ binc ];
+		const double RMSSpan = 3.0;
+
+		for( k = 0; k < binc; k++ )
+		{
+			bins[ k ] = 0.0;
+		}
+
 		for( k = 0; k < FnCount; k++ )
 		{
 			_mm_empty();
@@ -331,6 +341,27 @@ public:
 				}
 
 				RMS = sqrt( RMS / ( IterCount - Rej ));
+
+				for( j = 0; j < IterCount; j++ )
+				{
+					if( Iters[ j ] >= 0 )
+					{
+						const double v = ( Iters[ j ] - Avg ) / RMS / RMSSpan;
+						int z = (int) (( v + 1 ) * binspan + 0.5 );
+
+						if( z < 0 )
+						{
+							z = 0;
+						}
+						else
+						if( z >= binc )
+						{
+							z = binc - 1;
+						}
+
+						bins[ z ]++;
+					}
+				}
 			}
 
 			ItAvg += Avg;
@@ -350,6 +381,20 @@ public:
 			}
 		}
 
+/*		for( k = 0; k < binc; k++ )
+		{
+			printf( "%2.2f\t", bins[ k ] / ComplTotal * 100.0 );
+		}
+
+		printf( "\n" );
+
+		for( k = 0; k < binc; k++ )
+		{
+			printf( "%2.2f\t", RMSSpan * ( k - binspan ) / binspan );
+		}
+
+		printf( "\n" );
+*/
 		_mm_empty();
 		ItAvg /= FnCount;
 		RMSAvg /= FnCount;
