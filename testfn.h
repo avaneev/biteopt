@@ -3590,6 +3590,113 @@ static double calcZagros( const double* const x, const int N )
 static const CTestFn TestFnZagros = { "Zagros", 2, -10.0, 10.0, -2.0,
 	&calcZagros };
 
+static double calcPowellSingular2( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i <= N / 4; i++ )
+	{
+		s += sqr(x[4*i-4]+10.0*x[4*i-3])+5.0*sqr(x[4*i-2]-x[4*i-1])+
+			pow(x[4*i-3]-x[4*i-2],4.0)+10.0*pow(x[4*i-4]-x[4*i-1],4.0);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnPowellSingular2 = { "PowellSingular2", 4, -4.0,
+	5.0, 0.0, &calcPowellSingular2 };
+
+static double calcBiggsExp2( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i <= 10; i++ )
+	{
+		const double t = 0.1*i;
+		const double y = exp(-t)-5.0*exp(-10.0*t);
+		s += sqr(exp(-t*x[0])-5.0*exp(-t*x[1])-y);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnBiggsExp2 = { "BiggsExp2", 2, 0.0, 20.0, 0.0,
+	&calcBiggsExp2 };
+
+static double calcBiggsExp3( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i <= 10; i++ )
+	{
+		const double t = 0.1*i;
+		const double y = exp(-t)-5.0*exp(-10.0*t);
+		s += sqr(exp(-t*x[0])-x[2]*exp(-t*x[1])-y);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnBiggsExp3 = { "BiggsExp3", 3, 0.0, 20.0, 0.0,
+	&calcBiggsExp3 };
+
+static double calcBiggsExp4( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i <= 10; i++ )
+	{
+		const double t = 0.1*i;
+		const double y = exp(-t)-5.0*exp(-10.0*t);
+		s += sqr(x[2]*exp(-t*x[0])-x[3]*exp(-t*x[1])-y);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnBiggsExp4 = { "BiggsExp4", 4, 0.0, 20.0, 0.0,
+	&calcBiggsExp4 };
+
+static double calcBiggsExp5( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i <= 11; i++ )
+	{
+		const double t = 0.1*i;
+		const double y = exp(-t)-5.0*exp(-10.0*t)+3.0*exp(-4.0*t);
+		s += sqr(x[2]*exp(-t*x[0])-x[3]*exp(-t*x[1])+3.0*exp(-t*x[4])-y);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnBiggsExp5 = { "BiggsExp5", 5, 0.0, 20.0, 0.0,
+	&calcBiggsExp5 };
+
+static double calcBiggsExp6( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i <= 13; i++ )
+	{
+		const double t = 0.1*i;
+		const double y = exp(-t)-5.0*exp(-10.0*t)+3.0*exp(-4.0*t);
+		s += sqr(x[2]*exp(-t*x[0])-x[3]*exp(-t*x[1])+x[5]*exp(-t*x[4])-y);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnBiggsExp6 = { "BiggsExp6", 6, 0.0, 20.0, 0.0,
+	&calcBiggsExp6 };
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -3621,7 +3728,8 @@ const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
 // Failing functions requiring more than 2000 iterations to converge.
 
 const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra03,
-	&TestFnMishra04, &TestFnDeVilliersGlasser02, &TestFnHougen, NULL };
+	&TestFnMishra04, &TestFnDeVilliersGlasser02, &TestFnHougen,
+	&TestFnBiggsExp5, &TestFnBiggsExp6, NULL };
 
 // CPU time-consuming functions, but solving correctly:
 // &TestFnDeVilliersGlasser01, &TestFnGulfResearchProblem
@@ -3688,4 +3796,5 @@ const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
 	&TestFnPenalty02, &TestFnWayburnSeader03, &TestFnCorana, &TestFnBrad,
 	&TestFnGramacyLee03, &TestFnPermFunction01, &TestFnPermFunction02,
 	&TestFnPinter, &TestFnHolderTable1, &TestFnSchwefel225,
-	&TestFnRosenbrockDisk, &TestFnSineEnvelope, NULL };
+	&TestFnRosenbrockDisk, &TestFnSineEnvelope, &TestFnPowellSingular2,
+	&TestFnBiggsExp2, &TestFnBiggsExp3, &TestFnBiggsExp4, NULL };

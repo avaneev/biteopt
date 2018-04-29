@@ -137,6 +137,11 @@ towards global minimum (e.g. Bukin N.6 problem) may not be solved acceptably
 as in most cases they require exhaustive search or a search involving
 knowledge of the structure of the problem.
 
+Difference between upper and lower parameter bound values affects precision of
+the strategy. To increase precision, this difference should be kept as low as
+possible: for example, [-100; 100] bounds should be used instead of
+[-1000; 1000], if possible.
+
 Tests have shown, that in comparison to stochastic strategy like CMA-ES,
 BiteOpt's convergence time varies more from attempt to attempt. For example,
 on some problem CMA-ES's average convergence time may be 7000 iterations +/-
@@ -157,16 +162,19 @@ deviates from standard distribution, average value corresponds to 0\*sigma):
 ## Constraint programming ##
 
 Mixed integer programming can be achieved by using rounded parameter values in
-the objective function while value constraints can be implemented as
-penalties, in this way: constraint c1:x1+2.0\*x2-3.0\*x3<=0 can be used to
-adjust objective function value: cost+=(c1<=0?0:100000+c1*9999), with 100000
-penalty base and 9999 constraint scale chosen to assure no interaction with the
-expected "normal" objective function values while providing a useful gradient.
-Note that if the solution's value is equal to or higher than the penalty base
-it means either a feasible solution was not found or the chosen constraint
-scale does not generate a useful gradient. See `constr.cpp` for an example of
-constraint programming. `constr2.cpp` is an example of non-linear constraint
-programming with both non-equalities and equalities.
+the objective function. Note that using categorical variables may not be
+effective, because they require an exhaustive search, but binary variables
+may be used. Value constraints can be implemented as penalties, in
+this way: constraint c1:x1+2.0\*x2-3.0\*x3<=0 can be used to adjust objective
+function value: cost+=(c1<=0?0:100000+c1*9999), with 100000
+penalty base (barrier) and 9999 constraint scale chosen to assure no
+interaction with the expected "normal" objective function values while
+providing a useful gradient. Note that if the solution's value is equal to or
+higher than the penalty base it means either a feasible solution was not found
+or the chosen constraint scale does not generate a useful gradient. See
+`constr.cpp` for an example of constraint programming. `constr2.cpp` is an
+example of non-linear constraint programming with both non-equalities and
+equalities.
 
 The minimal and maximal allowed parameter values (bounds) should be specified
 in a way to cover a wider value range, in order to reduce boundary effects

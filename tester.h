@@ -216,6 +216,8 @@ public:
 		int ComplTotal = 0;
 		int* Iters = new int[ IterCount ];
 		int k;
+		double GoodIters = 0.0;
+		int GoodItersCount = 0;
 
 		const int binspan = 50;
 		const int binc = 1 + binspan * 2;
@@ -281,10 +283,15 @@ public:
 				_mm_empty();
 				opt -> init( rnd );
 				i = 0;
+				int impriters = 0;
 
 				while( true )
 				{
-					opt -> optimize( rnd );
+					if( opt -> optimize( rnd ) == 0 )
+					{
+						impriters++;
+					}
+
 					i++;
 
 					if( opt -> getBestCost() - opt -> optv < CostThreshold )
@@ -294,6 +301,8 @@ public:
 							MinCost = opt -> getBestCost();
 						}
 
+						GoodIters += (double) impriters / i;
+						GoodItersCount++;
 						ComplTotal++;
 						Iters[ j ] = i + opt -> getInitEvals();
 						AvgIter += i + opt -> getInitEvals();
@@ -307,6 +316,8 @@ public:
 							MinRjCost = opt -> getBestCost();
 						}
 
+						GoodIters += (double) impriters / i;
+						GoodItersCount++;
 						Rej++;
 						Iters[ j ] = -1;
 						break;
@@ -347,7 +358,7 @@ public:
 					if( Iters[ j ] >= 0 )
 					{
 						const double v = ( Iters[ j ] - Avg ) / RMS / RMSSpan;
-						int z = (int) (( v + 1 ) * binspan + 0.5 );
+						int z = (int) (( v + 1.0 ) * binspan + 0.5 );
 
 						if( z < 0 )
 						{
@@ -405,8 +416,18 @@ public:
 			fabs( ItAvg - 330.0 ) * 0.1;
 		Success = 100.0 * ComplTotal / FnCount / IterCount;
 
+//		Score = -GoodIters / GoodItersCount * 100.0 /
+//			(( AtAvg - 1.0 ) * 100.0 ) / ItAvg;
+
 		if( DoPrint )
 		{
+			printf( ">=%.0f-sigma: %.2f%%\n", RMSSpan,
+				bins[ binc - 1 ] / ComplTotal * 100.0 );
+
+			printf( "GoodItersAvg: %.2f%% (avg percentage of improving "
+				"iterations in all attempts)\n",
+				GoodIters / GoodItersCount * 100.0 );
+
 			printf( "Success: %.2f%%\n", Success );
 			printf( "ItAvg: %.1f (avg convergence time)\n", ItAvg );
 			printf( "RMSAvg: %.1f (avg std.dev of convergence time)\n",
