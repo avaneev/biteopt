@@ -55,34 +55,7 @@
  * attempts to reach optimum. The name "BiteOpt" is an acronym for "BITmask
  * Evolution OPTimization".
  *
- * The algorithm consists of the following elements:
- *
- * 1. A cost-ordered population of previous solutions is maintained. A
- * solution is an independent parameter vector which is evolved towards a
- * better solution. On every iteration the best solution is evolved.
- * Probabilities are defined in the range [0; 1] and in many instances in the
- * code were replaced with simple resetting counters for more efficiency.
- * Parameter values are internally normalized to [0; 1] range and, to stay in
- * this range, are wrapped in a special manner before each function
- * evaluation. Algorithm's hyper-parameters (probabilities) were pre-selected
- * and should not be changed.
- *
- * 2. Depending on the RandProb probability, a single (or all) parameter value
- * randomization is performed using "bitmask inversion" operation. Plus, with
- * CentProb probability the random "step in the right direction" operation is
- * performed using the centroid vector, twice. With RandProb2 probability an
- * alternative randomization method is used.
- *
- * 3. (Not together with N.2) the "step in the right direction" operation is
- * performed using the random previous solution, current best and worst
- * solutions. This is conceptually similar to Differential Evolution's
- * "mutation" operation.
- *
- * 4. With ScutProb probability a "short-cut" parameter vector change
- * operation is performed.
- *
- * 5. After each objective function evaluation, the highest-cost previous
- * solution is replaced using the upper bound cost constraint.
+ * Algorithm's description is available at https://github.com/avaneev/biteopt
  */
 
 class CBiteOpt
@@ -283,7 +256,13 @@ public:
 
 	int optimize( CBiteRnd& rnd, CBiteOpt* const PushOpt = NULL )
 	{
-		const double* const MinParams = CurParams[ PopOrder[ 0 ]];
+		// Random selection between best solutions, reduces sensitivity to
+		// noise.
+
+		const double mp = rnd.getRndValue(); // Also reused later.
+		const double* const MinParams = CurParams[ PopOrder[
+			(int) ( mp * mp * mp * 4 )]];
+
 		int i;
 
 		RandCntr += RandProb;
@@ -337,7 +316,7 @@ public:
 				// optimization process, applied to 1 random parameter at a
 				// time.
 
-				const double r = rnd.getRndValue();
+				const double r = mp;
 				const int imask = ( 2 <<
 					(int) (( 0.999999997 - r * r * r * r ) * MantSize )) - 1;
 
@@ -368,11 +347,15 @@ public:
 		}
 		else
 		{
-			// Select a random previous solution from the ordered list.
+			// Select a random previous solution from the ordered list,
+			// apply offset to reduce sensitivity to noise.
 
-			const int si = (int) ( rnd.getRndValue() * PopSize1 );
+			const double r = mp;
+			const int op = (int) ( r * r * 3 );
+			const int si = (int) ( mp * ( PopSize1 - op ));
 			const double* const OrigParams = CurParams[ PopOrder[ si ]];
-			const double* const MaxParams = CurParams[ PopOrder[ PopSize1 ]];
+			const double* const MaxParams = CurParams[ PopOrder[
+				PopSize1 - op ]];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -385,7 +368,7 @@ public:
 			}
 		}
 
-		if( rnd.getRndValue() < ScutProb )
+		if( mp < ScutProb )
 		{
 			// Low-probability parameter value short-cuts, they considerably
 			// reduce convergence time for some functions while not severely

@@ -39,12 +39,12 @@ return the same optimum.
 
 This "black-box" strategy was tested on 400+ 1-10 dimensional optimization
 problems and performed well, and it successfully solves even 600-dimensional
-test problems found in some books. Due to its design this strategy may be
+test problems found in some textbooks. Due to its design this strategy may be
 particularly good at improving an existing sub-optimal local solution.
 
 This strategy was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
-evaluated): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp)
+evaluated): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp).
 This strategy was able to solve 77% of non-convex smooth problems in 10
 attempts, 2500 iterations each. It comes 2nd in the comparison on non-convex
 smooth problems (see Fig.9 in the paper). With a huge iteration budget (1
@@ -55,7 +55,7 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this strategy's
 success rate is >90% while the average number of objective function
-evaluations is ~330.
+evaluations is ~360.
 
 At least in these comparisons, this strategy performs better than plain
 CMA-ES which is also a well-performing stochastic strategy.
@@ -283,7 +283,8 @@ The algorithm consists of the following elements:
 
 1. A cost-ordered population of previous solutions is maintained. A solution
 is an independent parameter vector which is evolved towards a better solution.
-On every iteration, the best solution is evolved.
+On every iteration, one of the 4 best solutions is evolved (best selection
+allows strategy to be less sensitive to noise).
 
 ![equation1](http://quicklatex.com/cache3/8b/ql_66f6b6e1379996e5dceb22a4238fb08b_l3.png)
 
@@ -321,7 +322,7 @@ With `RandProb2` probability an alternative randomization method is used.
 3. (Not together with N.2) the "step in the right direction" operation is
 performed using the random previous solution, current best and worst
 solutions. This is conceptually similar to Differential Evolution's "mutation"
-operation.
+operation. The used worst solution is chosen from 3 worst solutions.
 
 ![equation10](http://quicklatex.com/cache3/58/ql_a15224c3709fd3fda67760646e7b7e58_l3.png)
 
