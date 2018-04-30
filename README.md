@@ -163,18 +163,25 @@ deviates from standard distribution, average value corresponds to 0\*sigma):
 
 Mixed integer programming can be achieved by using rounded parameter values in
 the objective function. Note that using categorical variables may not be
-effective, because they require an exhaustive search, but binary variables
-may be used. Value constraints can be implemented as penalties, in
-this way: constraint c1:x1+2.0\*x2-3.0\*x3<=0 can be used to adjust objective
-function value: cost+=(c1<=0?0:100000+c1*9999), with 100000
-penalty base (barrier) and 9999 constraint scale chosen to assure no
-interaction with the expected "normal" objective function values while
-providing a useful gradient. Note that if the solution's value is equal to or
-higher than the penalty base it means either a feasible solution was not found
-or the chosen constraint scale does not generate a useful gradient. See
-`constr.cpp` for an example of constraint programming. `constr2.cpp` is an
-example of non-linear constraint programming with both non-equalities and
-equalities.
+effective, because they require an exhaustive search. Binary variables may be
+used, in small quantities (otherwise the problem usually transforms into
+complex combinatorial problem).
+
+Value constraints can be implemented as penalties, in this way: constraint
+c1:x1+2.0\*x2-3.0\*x3<=0 can be used to adjust objective function value:
+cost+=(c1<=0?0:100000+c1*9999), with 100000 penalty base (barrier) and 9999
+constraint scale chosen to assure no interaction with the expected "normal"
+objective function values while providing a useful gradient. Note that if the
+solution's value is equal to or higher than the penalty base it means either a
+feasible solution was not found or the chosen constraint scale does not
+generate a useful gradient. See `constr.cpp` for an example of constraint
+programming. `constr2.cpp` is an example of non-linear constraint programming
+with both non-equalities and equalities.
+
+It is not advisable to use constraints like (x1-round(x1)=0) commonly used
+in model libraries to force integer or binary values, as such constraint
+formulation does not provide a global descent. Instead, direct rounding should
+be used on integer variables.
 
 The minimal and maximal allowed parameter values (bounds) should be specified
 in a way to cover a wider value range, in order to reduce boundary effects
