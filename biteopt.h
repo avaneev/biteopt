@@ -260,8 +260,8 @@ public:
 		// noise.
 
 		const double mp = rnd.getRndValue(); // Also reused later.
-		const double* const MinParams = CurParams[ PopOrder[
-			(int) ( mp * mp * mp * 4 )]];
+		const int mpi = (int) ( mp * mp * mp * 4 );
+		const double* const MinParams = CurParams[ PopOrder[ mpi ]];
 
 		int i;
 
@@ -352,7 +352,7 @@ public:
 
 			const double r = mp;
 			const int op = (int) ( r * r * 3 );
-			const int si = (int) ( mp * ( PopSize1 - op ));
+			const int si = mpi + (int) ( mp * ( PopSize1 - op - mpi ));
 			const double* const OrigParams = CurParams[ PopOrder[ si ]];
 			const double* const MaxParams = CurParams[ PopOrder[
 				PopSize1 - op ]];
