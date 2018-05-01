@@ -261,7 +261,7 @@ int main( int argc, char* argv[])
 	const int hardlim = (int) ( itmult * 2000.0 * pow( (double) n_var, 1.75 ) *
 		sqrt( (double) depth ));
 
-	const int sc_thresh = (int) ( opt.getInitEvals() * 12.0 / depth );
+	const int sc_thresh = (int) (( 12 + n_var * 2 ) * 12.0 );
 
 	int kmet = ( n_con > 0 ? 0 : 1 );
 	int khl = 0;
@@ -282,7 +282,7 @@ int main( int argc, char* argv[])
 
 /*			if( i > (int) thr )
 			{
-				printf( "Attempt %i/%i n_vars=%i n_cosntr=%i iter %i, "
+				printf( "Attempt %i/%i n_vars=%i n_constr=%i iter %i, "
 					"obj.value = %.15g\n", k + 1, attc, n_var, n_con, i,
 					opt.getBestCost() );
 
