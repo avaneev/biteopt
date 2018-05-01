@@ -1,7 +1,8 @@
 // AMPL interface for BiteOpt derivative-free optimization method.
 //
 // AMPL NL parser sources and compiled library "amplsolv" should be put into
-// "solvers" directory.
+// the "solvers" directory. AMPL parser can be acquired at
+// http://www.netlib.org/ampl/
 
 //$ lib "solvers/amplsolv"
 //$ skip_include "z|solvers/getstub.h"
