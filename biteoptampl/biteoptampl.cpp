@@ -129,7 +129,7 @@ static double objfn( int N, const double* x )
 					tmpcon[ i ] < LUrhs[ i ])
 				{
 					double a = LUrhs[ i ] - tmpcon[ i ];
-					fc[ i ] = a + a * a + a * a * a;
+					fc[ i ] = a + a * a + a * a * a + a * a * a * a;
 					tmpcon_notmet++;
 				}
 
@@ -137,7 +137,7 @@ static double objfn( int N, const double* x )
 					tmpcon[ i ] > Urhsx[ i ])
 				{
 					double a = tmpcon[ i ] - Urhsx[ i ];
-					fc[ i ] = a + a * a + a * a * a;
+					fc[ i ] = a + a * a + a * a * a + a * a * a * a;
 					tmpcon_notmet++;
 				}
 			}
@@ -252,7 +252,7 @@ int main( int argc, char* argv[])
 
 	double f;
 	CBiteOptAMPL opt;
-	opt.updateDims( n_var, depth );
+	opt.updateDims( n_var, depth, 12 + n_var * 2 + n_con * 2 );
 
 	CBiteRnd rnd;
 	rnd.init( 1 );

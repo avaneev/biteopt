@@ -748,9 +748,12 @@ public:
 	 * solution, it should be increased together with the iteration count.
 	 * Minimal value is 1, in this case a plain CBiteOpt optimization will be
 	 * performed.
+	 * @param PopSize0 The number of elements in population to use. If set to
+	 * 0, the default formula will be used.
 	 */
 
-	void updateDims( const int aParamCount, const int M = 16 )
+	void updateDims( const int aParamCount, const int M = 16,
+		const int PopSize0 = 0 )
 	{
 		if( aParamCount == ParamCount && M == BiteCount )
 		{
@@ -768,7 +771,7 @@ public:
 		for( i = 0; i < BiteCount; i++ )
 		{
 			Opts[ i ] = new CBiteOptWrap( this );
-			Opts[ i ] -> updateDims( aParamCount );
+			Opts[ i ] -> updateDims( aParamCount, PopSize0 );
 		}
 	}
 
