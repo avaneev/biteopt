@@ -3,6 +3,9 @@
 // AMPL NL parser sources and compiled library "amplsolv" should be put into
 // the "solvers" directory. AMPL parser can be acquired at
 // http://www.netlib.org/ampl/
+//
+// The model `.mod` file should be first converted to the `.nl` format via
+// `ampl -og` command.
 
 //$ lib "solvers/amplsolv"
 //$ skip_include "z|solvers/getstub.h"
@@ -16,6 +19,7 @@ static int nprob = -1;
 static double itmult = 1.0;
 real* tmpx; // Temporary holder for solution and rounding.
 real* tmpcon; // Temprorary holder for constraint bodies.
+real* fc; // Temporary buffer of constraint penalties.
 int tmpcon_notmet; // no. contraints not met.
 int negate;
 ASL *asl;
@@ -33,7 +37,7 @@ static char biteoptvers[] =
 	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 20180501\n";
 
 static Option_Info Oinfo = {
-	"biteoptampl", "BITEOPT", "biteopt_options", keywds, nkeywds, 1.,
+	"biteoptampl", "BITEOPT-20180501", "biteopt_options", keywds, nkeywds, 1.,
 	biteoptvers, 0,0,0,0,0, 20180501
 };
 
@@ -104,13 +108,18 @@ static double objfn( int N, const double* x )
 
 		for( i = 0; i < n_con; i++ )
 		{
+			fc[ i ] = 0.0;
+		}
+
+		for( i = 0; i < n_con; i++ )
+		{
 			if( fabs( LUrhs[ i ] - Urhsx[ i ]) <= 1e-11 )
 			{
 				double a = fabs( tmpcon[ i ] - LUrhs[ i ]);
 
-				if( a > 1e-6 )
+				if( a > 1e-7 )
 				{
-					f += ( a + a * a ) * 10000.0;
+					fc[ i ] = a + a * a;
 					tmpcon_notmet++;
 				}
 			}
@@ -120,7 +129,7 @@ static double objfn( int N, const double* x )
 					tmpcon[ i ] < LUrhs[ i ])
 				{
 					double a = LUrhs[ i ] - tmpcon[ i ];
-					f += ( a + a * a + a * a * a ) * 10000.0;
+					fc[ i ] = a + a * a + a * a * a;
 					tmpcon_notmet++;
 				}
 
@@ -128,10 +137,15 @@ static double objfn( int N, const double* x )
 					tmpcon[ i ] > Urhsx[ i ])
 				{
 					double a = tmpcon[ i ] - Urhsx[ i ];
-					f += ( a + a * a + a * a * a ) * 10000.0;
+					fc[ i ] = a + a * a + a * a * a;
 					tmpcon_notmet++;
 				}
 			}
+		}
+
+		for( i = 0; i < n_con; i++ )
+		{
+			f += fc[ i ] * 10000.0;
 		}
 	}
 
@@ -196,16 +210,17 @@ int main( int argc, char* argv[])
 	if( n_con > 0 )
 	{
 		msgo += sprintf( buf + msgo,
-			"NOTE: model contains %d constraints. Constraint support \n"
-			"of this solver is experimental, constraints are applied as \n"
-			"penalties to the objective function.\n", n_con );
+			"NOTE: model contains %d constraints. Constraint support of this \n"
+			"solver is experimental, constraints are applied as quadratic and \n"
+			"cubic penalties to the objective function.\n", n_con );
 	}
 
-	X0 = (real*) Malloc(( 4 * n_var + 3 * n_con ) * sizeof( real ));
+	X0 = (real*) Malloc(( 4 * n_var + 4 * n_con ) * sizeof( real ));
 	LUv = X0 + n_var;
 	Uvx = LUv + n_var;
 	tmpx = Uvx + n_var;
-	tmpcon = tmpx + n_var;
+	fc = tmpx + n_var;
+	tmpcon = fc + n_con;
 	LUrhs = tmpcon + n_con;
 	Urhsx = LUrhs + n_con;
 	fg_read( nl, 0 );
@@ -249,6 +264,7 @@ int main( int argc, char* argv[])
 	const int sc_thresh = (int) ( opt.getInitEvals() * 10.0 / depth );
 
 	int kmet = ( n_con > 0 ? 0 : 1 );
+	int khl = 0;
 	int k;
 
 	for( k = 0; k < attc; k++ )
@@ -279,6 +295,11 @@ int main( int argc, char* argv[])
 			}
 		}
 
+		if( i >= hardlim )
+		{
+			khl++;
+		}
+
 		objfn( n_var, opt.getBestParams() );
 
 		if( k == 0 || ( kmet == 0 && tmpcon_notmet == 0 ) ||
@@ -296,6 +317,9 @@ int main( int argc, char* argv[])
 
 	msgo += sprintf( buf + msgo, "%s:\n%ld function evaluations "
 		"(%ld attempts, depth=%i)\n", Oinfo.bsname, fnevals, attc, depth );
+
+	msgo += sprintf( buf + msgo, "Hard iteration limit achieved in %i of %i "
+		"attempts.\n", khl, attc );
 
 	solround( X0 );
 	f = objfn( n_var, X0 );
