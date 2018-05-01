@@ -35,7 +35,7 @@
 #include "biternd.h"
 
 /**
- * BiteOpt stochastic optimization class. Implements a stochastic non-linear
+ * BiteOpt optimization class. Implements a stochastic non-linear
  * bound-constrained derivative-free optimization strategy. It maintains a
  * cost-ordered population list of previously evaluated solutions that are
  * evolved towards a lower cost. On every iteration, the highest-cost solution
@@ -45,15 +45,6 @@
  * collectively. Beside that, parameter randomization and the "step in the
  * right direction" operation are used that move the solutions into position
  * with a probabilistically lower objective function value.
- *
- * The benefit of this strategy is a relatively high robustness: it can
- * successfully optimize a wide range of multi-dimensional test functions.
- * Another benefit is a low convergence time which depends on the complexity
- * of the objective function. Like many stochastic optimization strategies
- * with fast convergence, this strategy can't solve problems with narrow or
- * rogue optimums. Hard (multi-modal) problems may require many optimization
- * attempts to reach optimum. The name "BiteOpt" is an acronym for "BITmask
- * Evolution OPTimization".
  *
  * Algorithm's description is available at https://github.com/avaneev/biteopt
  */
@@ -710,13 +701,13 @@ protected:
 };
 
 /**
- * Deep stochastic optimization class. Based on an array of M CBiteOpt
- * objects. This "deep" strategy pushes the newly-obtained solution to the
- * next CBiteOpt object which is then optimized. This strategy while
- * increasing the convergence time by a factor of about sqrt(M) is able to
- * solve even the most noisy non-linear functions.
+ * Deep optimization class. Based on an array of M CBiteOpt objects. This
+ * "deep" strategy pushes the newly-obtained solution to the next CBiteOpt
+ * object which is then optimized. This strategy while increasing the
+ * convergence time by a factor of about sqrt(M) is able to solve even
+ * somewhat noisy non-linear functions.
  *
- * This strategy is most effective on stochastic functions or functions with
+ * This strategy is most effective on noisy functions or functions with
  * huge fluctuations near the global solution that are not very expensive to
  * calculate and that have a large iteration budget. Tests have shown that on
  * smooth functions that have many strongly competing minima this strategy

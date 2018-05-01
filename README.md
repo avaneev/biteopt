@@ -1,4 +1,4 @@
-# BiteOpt - Stochastic Function Optimizer #
+# BITEOPT - Derivative-Free Optimization Method #
 
 ## Contents ##
 
@@ -62,7 +62,7 @@ CMA-ES which is also a well-performing stochastic strategy.
 
 ## CBiteOpt (biteopt.h) ##
 
-BiteOpt stochastic optimization class. Implements a stochastic non-linear
+BiteOpt optimization class. Implements a stochastic non-linear
 bound-constrained derivative-free optimization strategy. It maintains a
 cost-ordered population list of previously evaluated solutions that are
 evolved towards a lower cost. On every iteration, the highest-cost solution in
@@ -75,13 +75,13 @@ with a probabilistically lower objective function value.
 
 ## CBiteOptDeep (biteopt.h) ##
 
-Deep stochastic optimization class. Based on an array of M CBiteOpt
-objects. This "deep" strategy pushes the newly-obtained solution to the
-next CBiteOpt object which is then optimized. This strategy while
-increasing the convergence time by a factor of about sqrt(M) is able to
-solve even somewhat noisy non-linear functions.
+Deep optimization class. Based on an array of M CBiteOpt objects. This "deep"
+strategy pushes the newly-obtained solution to the next CBiteOpt object which
+is then optimized. This strategy while increasing the convergence time by a
+factor of about sqrt(M) is able to solve even somewhat noisy non-linear
+functions.
 
-This strategy is most effective on stochastic functions or functions with
+This strategy is most effective on noisy functions or functions with
 noisy fluctuations near the global solution that are not very expensive to
 calculate and that have a large iteration budget. Tests have shown that on
 smooth functions that have many strongly competing minima this strategy
