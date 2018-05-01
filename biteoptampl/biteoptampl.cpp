@@ -261,7 +261,7 @@ int main( int argc, char* argv[])
 	const int hardlim = (int) ( itmult * 2000.0 * pow( (double) n_var, 1.75 ) *
 		sqrt( (double) depth ));
 
-	const int sc_thresh = (int) ( opt.getInitEvals() * 10.0 / depth );
+	const int sc_thresh = (int) ( opt.getInitEvals() * 12.0 / depth );
 
 	int kmet = ( n_con > 0 ? 0 : 1 );
 	int khl = 0;
@@ -317,6 +317,9 @@ int main( int argc, char* argv[])
 
 	msgo += sprintf( buf + msgo, "%s:\n%ld function evaluations "
 		"(%ld attempts, depth=%i)\n", Oinfo.bsname, fnevals, attc, depth );
+
+	msgo += sprintf( buf + msgo, "Hard iteration limit is %i per attempt.\n",
+		hardlim );
 
 	msgo += sprintf( buf + msgo, "Hard iteration limit achieved in %i of %i "
 		"attempts.\n", khl, attc );
