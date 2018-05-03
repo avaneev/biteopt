@@ -3678,8 +3678,6 @@ static double calcBiggsExp6( const double* const x, const int N )
 static const CTestFn TestFnBiggsExp6 = { "BiggsExp6", 6, 0.0, 20.0, 0.0,
 	&calcBiggsExp6 };
 
-// N-dimensional test corpus of functions that support rotation and offseting.
-
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -3703,7 +3701,9 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnStretchedV, &TestFnPathological, &TestFnXinSheYang01,
 	&TestFnSineEnvelope, NULL };
 
-const CTestFn* OptCorpusNDRot[] = { &TestFnSchwefel220, &TestFnSchwefel221,
+// N-dimensional test corpus of functions that support rotation and offseting.
+
+const CTestFn* OptCorpusNDRotOfs[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnSchwefel222, &TestFnQing, &TestFnSphere, &TestFnAckley,
 	&TestFnAckley2, &TestFnRosenbrock, &TestFnBohachevsky1, &TestFnEasomN,
 	&TestFnRastrigin, &TestFnSumSquares, &TestFnZacharov,

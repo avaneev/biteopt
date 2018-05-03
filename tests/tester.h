@@ -124,11 +124,6 @@ public:
 
 			int i;
 
-/*			for( i = 0; i < Dims; i++ )
-			{
-				tp[ i ] = p[ i ] * signs[ i ] + shifts[ i ];
-			}
-*/
 			for( i = 0; i < Dims; i++ )
 			{
 				tp[ i ] = 0.0;
@@ -137,7 +132,7 @@ public:
 				for( j = 0; j < Dims; j++ )
 				{
 					tp[ i ] += rots[ i ][ j ] *
-						( p[ i ] * signs[ i ] + shifts[ i ]);
+						( p[ j ] * signs[ j ] + shifts[ j ]);
 				}
 			}
 
@@ -280,7 +275,23 @@ public:
 
 				if( DoRandomize )
 				{
-					makeRotationMatrix( opt -> rots, Dims, rnd );
+					if( Dims == 1 )
+					{
+						opt -> rots[ 0 ][ 0 ] = 1.0;
+					}
+					else
+					if( Dims == 2 )
+					{
+						const double th = rnd.getRndValue() * 2.0 * M_PI;
+						opt -> rots[ 0 ][ 0 ] = cos( th );
+						opt -> rots[ 0 ][ 1 ] = -sin( th );
+						opt -> rots[ 1 ][ 0 ] = sin( th );
+						opt -> rots[ 1 ][ 1 ] = cos( th );
+					}
+					else
+					{
+						makeRotationMatrix( opt -> rots, Dims, rnd );
+					}
 
 					for( i = 0; i < Dims; i++ )
 					{
