@@ -341,8 +341,7 @@ public:
 			// Select a random previous solution from the ordered list,
 			// apply offset to reduce sensitivity to noise.
 
-			const double r = mp;
-			const int op = (int) ( r * r * 3 );
+			const int op = (int) ( mp * mp * 3 );
 			const int si = mpi + (int) ( mp * ( PopSize1 - op - mpi ));
 			const double* const OrigParams = CurParams[ PopOrder[ si ]];
 			const double* const MaxParams = CurParams[ PopOrder[

@@ -241,7 +241,11 @@ reaction kinetics. Non-linear least squares problem.
 optimization attempts on all functions. Prints various performance
 information, including percentage of rejected attempts (rejection rate).
 
-`test4.cpp` is a convergence test for multi-dimensional functions.
+`test3.cpp` is a convergence test for multi-dimensional functions with random
+rotations and offsets.
+
+`test4.cpp` is a convergence test for multi-dimensional functions without
+randomization.
 
 `constr.cpp` and `constr2.cpp` programs demonstrate use of constraint
 penalties.

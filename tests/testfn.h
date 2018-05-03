@@ -218,7 +218,7 @@ static double calcRosenbrock( const double* const x, const int N )
 	return( s );
 }
 
-static const CTestFn TestFnRosenbrock = { "Rosenbrock", 0, -5.0, 10.0, 0.0,
+static const CTestFn TestFnRosenbrock = { "Rosenbrock", 0, -10.0, 10.0, 0.0,
 	&calcRosenbrock };
 
 static double calcBeale( const double* const x, const int N )
@@ -365,7 +365,7 @@ static double calcZacharov( const double* const x, const int N )
 	return( s1+sqr(0.5*s2)+sqr(sqr(0.5*s2)));
 }
 
-static const CTestFn TestFnZacharov = { "Zacharov", 0, -5.0, 10.0, 0.0,
+static const CTestFn TestFnZacharov = { "Zacharov", 0, -10.0, 10.0, 0.0,
 	&calcZacharov };
 
 static double calcRotatedHyperEllipsoid( const double* const x, const int N )
@@ -877,7 +877,7 @@ static double calcBrown( const double* const x, const int N )
 	return( s );
 }
 
-static const CTestFn TestFnBrown = { "Brown", 0, -1.0, 4.0, 0.0, &calcBrown };
+static const CTestFn TestFnBrown = { "Brown", 0, -4.0, 4.0, 0.0, &calcBrown };
 
 static double calcBrent( const double* const x, const int N )
 {
@@ -2163,25 +2163,6 @@ static double calcEllipsoid( const double* const x, const int N )
 
 static const CTestFn TestFnEllipsoid = { "Ellipsoid", 0, -5.0, 5.0, 0.0,
 	&calcEllipsoid };
-
-static double calcGriewankRosenbrock( const double* const x, const int N )
-{
-	double s = 0.0;
-	int i;
-
-	for( i = 0; i < N - 1; i++ )
-	{
-		const double c1 = sqr(x[i])-x[i+1];
-		const double c2 = 1.0-x[i];
-		const double tmp = 100.0*c1*c1+c2*c2;
-		s += tmp/4000.0-cos(tmp);
-	}
-
-	return( 10.0+10.0*s/(N-1));
-}
-
-static const CTestFn TestFnGriewankRosenbrock = { "GriewankRosenbrock", 0,
-	-5.0, 5.0, 1.0, &calcGriewankRosenbrock };
 
 static double calcSchaffer07( const double* const x, const int N )
 {
@@ -3697,6 +3678,8 @@ static double calcBiggsExp6( const double* const x, const int N )
 static const CTestFn TestFnBiggsExp6 = { "BiggsExp6", 6, 0.0, 20.0, 0.0,
 	&calcBiggsExp6 };
 
+// N-dimensional test corpus of functions that support rotation and offseting.
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -3706,19 +3689,36 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnRotatedHyperEllipsoid, &TestFnWavy, &TestFnBrown, &TestFnAlpine1,
 	&TestFnChungReynolds, &TestFnBentCigar, &TestFnHolzman, &TestFnHyperGrid,
 	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnGriewank,
-	&TestFnZeroSum, /*&TestFnSchwefel, */&TestFnStyblinskiTank,
-	&TestFnYaoLiu04, &TestFnWeierstrass, /*&TestFnXinSheYang04, */
-	&TestFnPowellSum, &TestFnAlpine2, &TestFnQuintic, &TestFnBuecheRastrigin,
-	&TestFnDifferentPowers, &TestFnDiscus, &TestFnEllipsoid,
-	&TestFnGriewankRosenbrock, &TestFnSchaffer07, /*&TestFnTrigonometric01,*/
-	&TestFnTrigonometric02, &TestFnExponential, &TestFnSchwefel01,
-	&TestFnSchwefel02, &TestFnSchwefel04, &TestFnDeb01, &TestFnLevy03,
-	&TestFnYaoLiu09, &TestFnCosineMixture, &TestFnLevyMontalvo2,
-	/*&TestFnVincent, &TestFnKatsuura, &TestFnDeb02,*/
+	&TestFnZeroSum, &TestFnSchwefel, &TestFnStyblinskiTank, &TestFnYaoLiu04,
+	&TestFnWeierstrass, &TestFnXinSheYang04, &TestFnPowellSum, &TestFnAlpine2,
+	&TestFnQuintic, &TestFnBuecheRastrigin, &TestFnDifferentPowers,
+	&TestFnDiscus, &TestFnEllipsoid, &TestFnSchaffer07,
+	&TestFnTrigonometric01, &TestFnTrigonometric02, &TestFnExponential,
+	&TestFnSchwefel01, &TestFnSchwefel02, &TestFnSchwefel04, &TestFnDeb01,
+	&TestFnLevy03, &TestFnYaoLiu09, &TestFnCosineMixture,
+	&TestFnLevyMontalvo2, &TestFnVincent, &TestFnKatsuura, &TestFnDeb02,
 	&TestFnDropWave, &TestFnSalomon, &TestFnWhitley, &TestFnXinSheYang02,
 	&TestFnXinSheYang03, &TestFnDeflCorrSpring, &TestFnDixonPrice,
-	&TestFnPenalty01, &TestFnPenalty02,	&TestFnPinter, &TestFnSchwefel225,
-	NULL };
+	&TestFnPenalty01, &TestFnPenalty02, &TestFnPinter, &TestFnSchwefel225,
+	&TestFnStretchedV, &TestFnPathological, &TestFnXinSheYang01,
+	&TestFnSineEnvelope, NULL };
+
+const CTestFn* OptCorpusNDRot[] = { &TestFnSchwefel220, &TestFnSchwefel221,
+	&TestFnSchwefel222, &TestFnQing, &TestFnSphere, &TestFnAckley,
+	&TestFnAckley2, &TestFnRosenbrock, &TestFnBohachevsky1, &TestFnEasomN,
+	&TestFnRastrigin, &TestFnSumSquares, &TestFnZacharov,
+	&TestFnRotatedHyperEllipsoid, &TestFnBrown, &TestFnAlpine1,
+	&TestFnChungReynolds, &TestFnBentCigar, &TestFnHolzman,
+	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnGriewank,
+	&TestFnZeroSum, &TestFnStyblinskiTank, &TestFnYaoLiu04,
+	&TestFnWeierstrass, &TestFnPowellSum, &TestFnQuintic,
+	&TestFnBuecheRastrigin, &TestFnDifferentPowers, &TestFnDiscus,
+	&TestFnEllipsoid, &TestFnSchaffer07, &TestFnTrigonometric02,
+	&TestFnExponential, &TestFnSchwefel01, &TestFnSchwefel02, &TestFnLevy03,
+	&TestFnYaoLiu09, &TestFnCosineMixture, &TestFnLevyMontalvo2,
+	&TestFnDropWave, &TestFnSalomon, &TestFnWhitley, &TestFnDixonPrice,
+	&TestFnPenalty01, &TestFnPenalty02, &TestFnPinter, &TestFnStretchedV,
+	&TestFnXinSheYang01, NULL };
 
 // Failing functions.
 
@@ -3781,20 +3781,20 @@ const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
 	&TestFnDeflCorrSpring, &TestFnHyperGrid, &TestFnQuintic, &TestFnVincent,
 	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnDixonPrice,
 	&TestFnZeroSum, &TestFnBuecheRastrigin, &TestFnDifferentPowers,
-	&TestFnDiscus, &TestFnEllipsoid, &TestFnGriewankRosenbrock,
-	&TestFnSchaffer07, &TestFnKatsuura, &TestFnRotatedEllipse01,
-	&TestFnRotatedEllipse02, &TestFnTrigonometric01, &TestFnExponential,
-	&TestFnUrsem01, &TestFnQuadratic, &TestFnSchwefel01, &TestFnSchwefel02,
-	&TestFnSchwefel04, &TestFnSchwefel236, &TestFnMishra01, &TestFnMishra02,
-	&TestFnMishra07, &TestFnZettl, &TestFnMultiModal, &TestFnParsopoulos,
-	&TestFnDeb01, &TestFnDeb02, &TestFnCarromTable, &TestFnNewFunction03,
-	&TestFnLevy03, &TestFnStretchedV, &TestFnUrsem04, &TestFnWayburnSeader01,
-	&TestFnVenterSobiSobieski, &TestFnElAttarVidyasDutta, &TestFnPathological,
-	&TestFnYaoLiu09, &TestFnUrsem03, &TestFnMishra08, &TestFnAluffiPentini,
-	&TestFnBeckerLago, &TestFnCosineMixture, &TestFnPeriodic,
-	&TestFnLevyMontalvo2, &TestFnMishra10, &TestFnMishra10b, &TestFnPenalty01,
-	&TestFnPenalty02, &TestFnWayburnSeader03, &TestFnCorana, &TestFnBrad,
-	&TestFnGramacyLee03, &TestFnPermFunction01, &TestFnPermFunction02,
-	&TestFnPinter, &TestFnHolderTable1, &TestFnSchwefel225,
-	&TestFnRosenbrockDisk, &TestFnSineEnvelope, &TestFnPowellSingular2,
-	&TestFnBiggsExp2, &TestFnBiggsExp3, &TestFnBiggsExp4, NULL };
+	&TestFnDiscus, &TestFnEllipsoid, &TestFnSchaffer07, &TestFnKatsuura,
+	&TestFnRotatedEllipse01, &TestFnRotatedEllipse02, &TestFnTrigonometric01,
+	&TestFnExponential, &TestFnUrsem01, &TestFnQuadratic, &TestFnSchwefel01,
+	&TestFnSchwefel02, &TestFnSchwefel04, &TestFnSchwefel236, &TestFnMishra01,
+	&TestFnMishra02, &TestFnMishra07, &TestFnZettl, &TestFnMultiModal,
+	&TestFnParsopoulos, &TestFnDeb01, &TestFnDeb02, &TestFnCarromTable,
+	&TestFnNewFunction03, &TestFnLevy03, &TestFnStretchedV, &TestFnUrsem04,
+	&TestFnWayburnSeader01, &TestFnVenterSobiSobieski,
+	&TestFnElAttarVidyasDutta, &TestFnPathological, &TestFnYaoLiu09,
+	&TestFnUrsem03, &TestFnMishra08, &TestFnAluffiPentini, &TestFnBeckerLago,
+	&TestFnCosineMixture, &TestFnPeriodic, &TestFnLevyMontalvo2,
+	&TestFnMishra10, &TestFnMishra10b, &TestFnPenalty01, &TestFnPenalty02,
+	&TestFnWayburnSeader03, &TestFnCorana, &TestFnBrad, &TestFnGramacyLee03,
+	&TestFnPermFunction01, &TestFnPermFunction02, &TestFnPinter,
+	&TestFnHolderTable1, &TestFnSchwefel225, &TestFnRosenbrockDisk,
+	&TestFnSineEnvelope, &TestFnPowellSingular2, &TestFnBiggsExp2,
+	&TestFnBiggsExp3, &TestFnBiggsExp4, NULL };

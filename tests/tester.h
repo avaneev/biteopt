@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 #include <emmintrin.h>
-#include "biteopt.h"
+#include "../biteopt.h"
 
 CBiteRnd rnd;
 
@@ -32,11 +32,13 @@ public:
 			///<
 		double optv; ///< Optimal value.
 			///<
-		double* rots; ///< Rotation to apply to function parameters.
+		double* rotsbuf; ///< rots buffer.
+			///<
+		double** rots; ///< Rotation matrix to apply to function parameters.
 			///<
 		double* shifts; ///< Shifts to apply to function parameters.
 			///<
-		double* signs; ///< Signs to apply to function parameters.
+		double* signs; ///< Signs or scales to apply to function parameters.
 			///<
 		double* tp; ///< Temporary parameter storage.
 			///<
@@ -46,6 +48,7 @@ public:
 		CTestOpt()
 			: minv( NULL )
 			, maxv( NULL )
+			, rotsbuf( NULL )
 			, rots( NULL )
 			, shifts( NULL )
 			, signs( NULL )
@@ -57,6 +60,7 @@ public:
 		{
 			delete[] minv;
 			delete[] maxv;
+			delete[] rotsbuf;
 			delete[] rots;
 			delete[] shifts;
 			delete[] signs;
@@ -68,16 +72,26 @@ public:
 			Dims = aDims;
 			delete[] minv;
 			delete[] maxv;
+			delete[] rotsbuf;
 			delete[] rots;
 			delete[] shifts;
 			delete[] signs;
 			delete[] tp;
 			minv = new double[ Dims ];
 			maxv = new double[ Dims ];
-			rots = new double[ Dims ];
+			rotsbuf = new double[ Dims * Dims ];
+			rots = new double*[ Dims ];
 			shifts = new double[ Dims ];
 			signs = new double[ Dims ];
 			tp = new double[ Dims ];
+
+			int i;
+
+			for( i = 0; i < Dims; i++ )
+			{
+				rots[ i ] = rotsbuf + i * Dims;
+			}
+
 			CBiteOpt :: updateDims( Dims );
 		}
 
@@ -108,22 +122,22 @@ public:
 				return( (*fn -> CalcFunc)( p, Dims ));
 			}
 
-			if( Dims == 2 )
-			{
-				const double x = p[ 0 ] * signs[ 0 ];
-				const double y = p[ 1 ] * signs[ 1 ];
-				tp[ 0 ] = x * cos( rots[ 0 ]) - y * sin( rots[ 0 ]);
-				tp[ 1 ] = x * sin( rots[ 0 ]) + y * cos( rots[ 0 ]);
-				tp[ 0 ] += shifts[ 0 ];
-				tp[ 1 ] += shifts[ 1 ];
-			}
-			else
-			{
-				int i;
+			int i;
 
-				for( i = 0; i < Dims; i++ )
+/*			for( i = 0; i < Dims; i++ )
+			{
+				tp[ i ] = p[ i ] * signs[ i ] + shifts[ i ];
+			}
+*/
+			for( i = 0; i < Dims; i++ )
+			{
+				tp[ i ] = 0.0;
+				int j;
+
+				for( j = 0; j < Dims; j++ )
 				{
-					tp[ i ] = p[ i ] * signs[ i ] + shifts[ i ];
+					tp[ i ] += rots[ i ][ j ] *
+						( p[ i ] * signs[ i ] + shifts[ i ]);
 				}
 			}
 
@@ -266,17 +280,20 @@ public:
 
 				if( DoRandomize )
 				{
+					makeRotationMatrix( opt -> rots, Dims, rnd );
+
 					for( i = 0; i < Dims; i++ )
 					{
-						opt -> rots[ i ] = 0.0;//M_PI * rnd.getRndValue();
-						double d = ( opt -> maxv[ i ] - opt -> minv[ i ]);
+						const double d =
+							( opt -> maxv[ i ] - opt -> minv[ i ]) * 0.5;
+
 						opt -> shifts[ i ] = d *
-							( rnd.getRndValue() - 0.5 ) * 0.5;
+							( rnd.getRndValue() - 0.5 ) * 2.0;
 
-						opt -> minv[ i ] -= d * 0.25;
-						opt -> maxv[ i ] += d * 0.25;
+						opt -> minv[ i ] -= d * 2.5;
+						opt -> maxv[ i ] += d * 2.5;
 
-						opt -> signs[ i ] = 1.0;
+						opt -> signs[ i ] = 1.0 + rnd.getRndValue() * 0.5;
 					}
 				}
 
@@ -413,7 +430,7 @@ public:
 		RjAvg /= FnCount;
 		AtAvg = 1.0 / ( 1.0 - (double) RejTotal / IterCount / FnCount );
 		Score = ( AtAvg - 1.0 ) * 100.0 +
-			fabs( ItAvg - 330.0 ) * 0.1;
+			fabs( ItAvg - 334.0 ) * 0.1;
 		Success = 100.0 * ComplTotal / FnCount / IterCount;
 
 //		Score = -GoodIters / GoodItersCount * 100.0 /
@@ -461,4 +478,73 @@ protected:
 		///<
 	bool DoPrint; ///< Print results to stdout.
 		///<
+
+	/**
+	 * Function creates random rotation matrix. Code from BBOB competition.
+	 */
+
+	void makeRotationMatrix( double** B, const int _DIM, CBiteRnd& rrnd )
+	{
+		double prod;
+		int i, j, k;
+
+		for( i = 0; i < _DIM; i++ )
+		{
+			for( j = 0; j < _DIM; j++ )
+			{
+				double unif = rrnd.getRndValue();
+
+				if( unif == 0.0 )
+				{
+					unif = 1e-99;
+				}
+
+				double unif2 = rnd.getRndValue();
+
+				if( unif2 == 0.0 )
+				{
+					unif2 = 1e-99;
+				}
+
+				B[i][j] = sqrt(-2.0*log(unif)) * cos(2.0*M_PI*unif2);
+
+				if( B[i][j] == 0 )
+				{
+					B[i][j] = 1e-99;
+				}
+			}
+		}
+
+		for( i = 0; i < _DIM; i++ )
+		{
+			for( j = 0; j < i; j++ )
+			{
+				prod = 0.0;
+
+				for( k = 0; k < _DIM; k++ )
+				{
+					prod += B[k][i] * B[k][j];
+				}
+
+				for( k = 0; k < _DIM; k++ )
+				{
+					B[k][i] -= prod * B[k][j];
+				}
+			}
+
+			prod = 0.0;
+
+			for( k = 0; k < _DIM; k++ )
+			{
+				prod += B[k][i] * B[k][i];
+			}
+
+			prod = sqrt( prod );
+
+			for( k = 0; k < _DIM; k++ )
+			{
+				B[k][i] /= prod;
+			}
+		}
+	}
 };
