@@ -444,8 +444,8 @@ public:
 			fabs( ItAvg - 334.0 ) * 0.1;
 		Success = 100.0 * ComplTotal / FnCount / IterCount;
 
-//		Score = -GoodIters / GoodItersCount * 100.0 /
-//			(( AtAvg - 1.0 ) * 100.0 ) / ItAvg;
+		Score = -GoodIters / GoodItersCount * 100.0 /
+			(( AtAvg - 1.0 ) * 100.0 ) / ItAvg;
 
 		if( DoPrint )
 		{

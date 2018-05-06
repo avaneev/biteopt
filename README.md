@@ -288,7 +288,8 @@ The algorithm consists of the following elements:
 1. A cost-ordered population of previous solutions is maintained. A solution
 is an independent parameter vector which is evolved towards a better solution.
 On every iteration, one of the 4 best solutions is evolved (best selection
-allows strategy to be less sensitive to noise).
+allows strategy to be less sensitive to noise). At start, solution vectors
+are initialized almost on hyper-box boundaries.
 
 ![equation1](http://quicklatex.com/cache3/8b/ql_66f6b6e1379996e5dceb22a4238fb08b_l3.png)
 
@@ -309,7 +310,8 @@ randomization is performed using "bitmask inversion" operation.
 
 ![equation4](http://quicklatex.com/cache3/51/ql_c1f36edbe9027044ef6d120b4a2b8451_l3.png)
 
-Plus, with `CentProb` probability the random "step in the right direction" operation is performed using the centroid vector, twice.
+Plus, with `CentProb` probability the random "step in the right direction"
+operation is performed using the centroid vector, twice.
 
 ![equation5](http://quicklatex.com/cache3/3d/ql_faa3b8c6fd883fb228f68b258fb3b33d_l3.png)
 

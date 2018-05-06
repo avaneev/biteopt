@@ -10,6 +10,7 @@
 // http://al-roomi.org/benchmarks/unconstrained/2-dimensions/120-damavandi-s-function
 // https://github.com/numbbo/coco/tree/master/code-experiments/src
 // https://github.com/alusov/mathexplib/tree/master/testfuncs
+// https://people.sc.fsu.edu/~jburkardt/m_src/test_opt/test_opt.html
 
 #include <math.h>
 
@@ -3368,38 +3369,40 @@ static double calcPermFunction02_p( double* const minv, double* const maxv,
 static const CTestFn TestFnPermFunction02 = { "PermFunction02", 2, 0.0, 0.0,
 	0.0, &calcPermFunction02, &calcPermFunction02_p };
 
-/*static double calcWatson( const double* const x, const int N )
+static double calcWatson( const double* const x, const int N )
 {
-	double s1 = 0.0;
+	double s = 0.0;
 	int i;
 
-	for( i = 0; i <= 29; i++ )
+	for( i = 1; i <= 29; i++ )
 	{
-		const double a = i/29.0;
-		double s2 = 0.0;
+		double s1 = 0.0;
+		double d = 1.0;
 		int j;
 
-		for( j = 0; j <= 4; j++ )
+		for( j = 2; j <= N; j++ )
 		{
-			s2 += (j-1)*pow(a,j)*x[j];
+			s1 += (j-1)*d*x[j-1];
+			d *= i / 29.0;
 		}
 
-		double s3 = 0.0;
-		int k;
+		double s2 = 0.0;
+		d = 1.0;
 
-		for( k = 0; k <= 5; k++ )
+		for( j = 1; j <= N; j++ )
 		{
-			s3 += pow(a,k)*x[k];
+			s2 += d*x[j-1];
+			d *= i / 29.0;
 		}
 
-		s1 += sqr(s2-sqr(s3)-1.0);
+		s += sqr(s1-sqr(s2)-1.0);
 	}
 
-	return( s1+sqr(x[0]) );
+	return( s+sqr(x[0])+sqr(x[1]-sqr(x[0])-1.0) );
 }
 
 static const CTestFn TestFnWatson = { "Watson", 6, -5.00, 5.0,
-	0.002288, &calcWatson };*/
+	0.0022876700536, &calcWatson };
 
 static double calcDeVilliersGlasser01( const double* const x, const int N )
 {
@@ -3678,6 +3681,137 @@ static double calcBiggsExp6( const double* const x, const int N )
 static const CTestFn TestFnBiggsExp6 = { "BiggsExp6", 6, 0.0, 20.0, 0.0,
 	&calcBiggsExp6 };
 
+static double calcDeJong5( const double* const x, const int N )
+{
+	const double a[ 2 ][ 25 ] = {
+		{-32,-16,0,16,32,-32,-16,0,16,32,-32,-16,0,16,32,-32,-16,0,16,32,-32,-16,0,16,32},
+		{-32,-32,-32,-32,-32,-16,-16,-16,-16,-16,0,0,0,0,0,16,16,16,16,16,32,32,32,32,32}
+	};
+
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 25; i++ )
+	{
+		s += 1.0/((i+1)+pow(x[0]-a[0][i],6.0)+pow(x[1]-a[1][i],6.0));
+	}
+
+	return( 1.0/(0.002+s) );
+}
+
+static const CTestFn TestFnDeJong5 = { "DeJong5", 2, -65.536, 65.536,
+	0.9980038377944, &calcDeJong5 };
+
+static double calcHilbert( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		int j;
+
+		for( j = 0; j < N; j++ )
+		{
+			s += x[i]*x[j]/(i+1+j+1-1);
+		}
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnHilbert = { "Hilbert", 0, -100.0, 100.0,
+	0.0, &calcHilbert };
+
+static double calcTridiagonalMatrix( const double* const x, const int N )
+{
+	double s = sqr(x[0]);
+	int i;
+
+	for( i = 1; i < N; i++ )
+	{
+		s += 2.0*sqr(x[i]);
+	}
+
+	for( i = 1; i < N; i++ )
+	{
+		s -= 2.0*x[i-1]*x[i];
+	}
+
+	return( s - 2.0*x[0] );
+}
+
+static double calcTridiagonalMatrix_p( double* const minv, double* const maxv,
+	const int N )
+{
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		minv[ i ] = -N * 2.0;
+		maxv[ i ] = N * 2.0;
+	}
+
+	return( -N );
+}
+
+static const CTestFn TestTridiagonalMatrix = { "TridiagonalMatrix", 0,
+	0.0, 0.0, 0.0, &calcTridiagonalMatrix, &calcTridiagonalMatrix_p };
+
+/*static double calcCola( const double* const x, const int N )
+{
+	double d[ 9 ][ 9 ] = {
+		{ 1.27 },
+		{ 1.69, 1.43 },
+		{ 2.04, 2.35, 2.43 },
+		{ 3.09, 3.18, 3.26, 2.85 },
+		{ 3.20, 3.22, 3.27, 2.88, 1.55 },
+		{ 2.86, 2.56, 2.58, 2.59, 3.12, 3.06 },
+		{ 3.17, 3.18, 3.18, 3.12, 1.31, 1.64, 3.00 },
+		{ 3.21, 3.18, 3.18, 3.17, 1.70, 1.36, 2.95, 1.32 },
+		{ 2.38, 2.31, 2.42, 1.94, 2.85, 2.81, 2.56, 2.91, 2.97 },
+	};
+
+	double s = 0.0;
+	int i;
+
+	for( i = 1; i <= 9; i++ )
+	{
+		double xi = ( i == 1 ? 0.0 : ( i == 2 ? x[0] : x[2*(i-2)-1]));
+		double yi = ( i <= 2 ? 0.0 : x[2*(i-2)+1-1]);
+		int j;
+
+		for( j = 1; j <= i; j++ )
+		{
+			double xj = ( j == 1 ? 0.0 : ( j == 2 ? x[0] : x[2*(j-2)-1]));
+			double yj = ( j <= 2 ? 0.0 : x[2*(j-2)+1-1]);
+
+			s += sqrt(sqr(xi-xj)+sqr(yi-yj))-d[i-1][j-1];
+		}
+	}
+
+	return( sqr( s ));
+}
+
+static double calcCola_p( double* const minv, double* const maxv,
+	const int N )
+{
+	minv[ 0 ] = 0.0;
+	maxv[ 0 ] = 4.0;
+	int i;
+
+	for( i = 1; i < N; i++ )
+	{
+		minv[ i ] = -4.0;
+		maxv[ i ] = 4.0;
+	}
+
+	return( 11.7464 );
+}
+
+static const CTestFn TestFnCola = { "Cola", 17, 0.0, 0.0, 0.0, &calcCola,
+	&calcCola_p };
+*/
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -3699,7 +3833,7 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnXinSheYang03, &TestFnDeflCorrSpring, &TestFnDixonPrice,
 	&TestFnPenalty01, &TestFnPenalty02, &TestFnPinter, &TestFnSchwefel225,
 	&TestFnStretchedV, &TestFnPathological, &TestFnXinSheYang01,
-	&TestFnSineEnvelope, NULL };
+	&TestFnSineEnvelope, &TestFnHilbert, &TestTridiagonalMatrix, NULL };
 
 // N-dimensional test corpus of functions that support rotation and offseting.
 
@@ -3718,7 +3852,7 @@ const CTestFn* OptCorpusNDRotOfs[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnYaoLiu09, &TestFnCosineMixture, &TestFnLevyMontalvo2,
 	&TestFnDropWave, &TestFnSalomon, &TestFnWhitley, &TestFnDixonPrice,
 	&TestFnPenalty01, &TestFnPenalty02, &TestFnPinter, &TestFnStretchedV,
-	&TestFnXinSheYang01, NULL };
+	&TestFnXinSheYang01, &TestFnHilbert, &TestTridiagonalMatrix, NULL };
 
 // Failing functions.
 
@@ -3729,7 +3863,7 @@ const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
 
 const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra03,
 	&TestFnMishra04, &TestFnDeVilliersGlasser02, &TestFnHougen,
-	&TestFnBiggsExp5, &TestFnBiggsExp6, NULL };
+	&TestFnBiggsExp5, &TestFnBiggsExp6, &TestFnWatson, NULL };
 
 // CPU time-consuming functions, but solving correctly:
 // &TestFnDeVilliersGlasser01, &TestFnGulfResearchProblem
@@ -3752,6 +3886,8 @@ const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
 	&TestFnHartman3, &TestFnTrid6, &TestFnZagros, &TestFnMishra09,
 	&TestFnJudge, &TestFnMultiGaussian, &TestFnBranin01, &TestFnGear,
 	&TestFnLangermann, &TestFnColville, &TestFnLennardJones,
+	&TestFnTestTubeHolder, &TestFnMichalewicz, &TestFnMishra05,
+	&TestFnNewFunction03,
 
 	&TestFnChenV, &TestFnThreeHumpCamel, &TestFnBooth, &TestFnMatyas,
 	&TestFnSphere, &TestFnLevy13, &TestFnSchaffer01, &TestFnSchaffer02,
@@ -3766,35 +3902,34 @@ const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
 	&TestFnXinSheYang04, &TestFnBiggsEXP2, &TestFnSchwefel06,
 	&TestFnChichinadze, &TestFnHolderTable2, &TestFnPowellSum, &TestFnPrice01,
 	&TestFnPrice04, &TestFnBrown, &TestFnBrent, &TestFnPowell, &TestFnPaviani,
-	&TestFnMieleCantrell, &TestFnWolfe, &TestFnAlpine1,
-	&TestFnBukin2, &TestFnBukin4, &TestFnBartelsConn, &TestFnSixHumpCamel,
+	&TestFnMieleCantrell, &TestFnWolfe, &TestFnAlpine1, &TestFnBukin2,
+	&TestFnBukin4, &TestFnBartelsConn, &TestFnSixHumpCamel,
 	&TestFnChungReynolds, &TestFnCube, &TestFnDeckkersAarts, &TestFnEggCrate,
 	&TestFnKeane, &TestFnLeon, &TestFnQing, &TestFnSchwefel220,
-	&TestFnSchwefel221, &TestFnSchwefel222, &TestFnTestTubeHolder,
-	&TestFnWayburnSeader02, &TestFnSawtoothxy, &TestFnSchwefel,
-	&TestFnAdjiman, &TestFnStyblinskiTank, &TestFnMcCormick,
-	&TestFnHimmelblau, &TestFnMichalewicz, &TestFnBoxBettsExpQuadSum,
+	&TestFnSchwefel221, &TestFnSchwefel222,	&TestFnWayburnSeader02,
+	&TestFnSawtoothxy, &TestFnSchwefel, &TestFnAdjiman, &TestFnStyblinskiTank,
+	&TestFnMcCormick, &TestFnHimmelblau, &TestFnBoxBettsExpQuadSum,
 	&TestFnPowellQuartic, &TestFnZirilli, &TestFnCamel, &TestFnComplex,
 	&TestFnDavis, &TestFnDownhillStep, &TestFnEngvall, &TestFnGramacyLee02,
 	&TestFnGiunta, &TestFnHosaki, &TestFnKearfott, &TestFnJennrichSampson,
-	&TestFnMishra05, &TestFnTsoulos, &TestFnYaoLiu04, &TestFnBentCigar,
-	&TestFnDeflCorrSpring, &TestFnHyperGrid, &TestFnQuintic, &TestFnVincent,
-	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnDixonPrice,
-	&TestFnZeroSum, &TestFnBuecheRastrigin, &TestFnDifferentPowers,
-	&TestFnDiscus, &TestFnEllipsoid, &TestFnSchaffer07, &TestFnKatsuura,
+	&TestFnTsoulos, &TestFnYaoLiu04, &TestFnBentCigar, &TestFnDeflCorrSpring,
+	&TestFnHyperGrid, &TestFnQuintic, &TestFnVincent, &TestFnStep01,
+	&TestFnStep02, &TestFnStep03, &TestFnDixonPrice, &TestFnZeroSum,
+	&TestFnBuecheRastrigin, &TestFnDifferentPowers, &TestFnDiscus,
+	&TestFnEllipsoid, &TestFnSchaffer07, &TestFnKatsuura,
 	&TestFnRotatedEllipse01, &TestFnRotatedEllipse02, &TestFnTrigonometric01,
 	&TestFnExponential, &TestFnUrsem01, &TestFnQuadratic, &TestFnSchwefel01,
 	&TestFnSchwefel02, &TestFnSchwefel04, &TestFnSchwefel236, &TestFnMishra01,
 	&TestFnMishra02, &TestFnMishra07, &TestFnZettl, &TestFnMultiModal,
 	&TestFnParsopoulos, &TestFnDeb01, &TestFnDeb02, &TestFnCarromTable,
-	&TestFnNewFunction03, &TestFnLevy03, &TestFnStretchedV, &TestFnUrsem04,
-	&TestFnWayburnSeader01, &TestFnVenterSobiSobieski,
-	&TestFnElAttarVidyasDutta, &TestFnPathological, &TestFnYaoLiu09,
-	&TestFnUrsem03, &TestFnMishra08, &TestFnAluffiPentini, &TestFnBeckerLago,
-	&TestFnCosineMixture, &TestFnPeriodic, &TestFnLevyMontalvo2,
-	&TestFnMishra10, &TestFnMishra10b, &TestFnPenalty01, &TestFnPenalty02,
-	&TestFnWayburnSeader03, &TestFnCorana, &TestFnBrad, &TestFnGramacyLee03,
-	&TestFnPermFunction01, &TestFnPermFunction02, &TestFnPinter,
-	&TestFnHolderTable1, &TestFnSchwefel225, &TestFnRosenbrockDisk,
-	&TestFnSineEnvelope, &TestFnPowellSingular2, &TestFnBiggsExp2,
-	&TestFnBiggsExp3, &TestFnBiggsExp4, NULL };
+	&TestFnLevy03, &TestFnStretchedV, &TestFnUrsem04, &TestFnWayburnSeader01,
+	&TestFnVenterSobiSobieski, &TestFnElAttarVidyasDutta, &TestFnPathological,
+	&TestFnYaoLiu09, &TestFnUrsem03, &TestFnMishra08, &TestFnAluffiPentini,
+	&TestFnBeckerLago, &TestFnCosineMixture, &TestFnPeriodic,
+	&TestFnLevyMontalvo2, &TestFnMishra10, &TestFnMishra10b, &TestFnPenalty01,
+	&TestFnPenalty02, &TestFnWayburnSeader03, &TestFnCorana, &TestFnBrad,
+	&TestFnGramacyLee03, &TestFnPermFunction01, &TestFnPermFunction02,
+	&TestFnPinter, &TestFnHolderTable1, &TestFnSchwefel225,
+	&TestFnRosenbrockDisk, &TestFnSineEnvelope, &TestFnPowellSingular2,
+	&TestFnBiggsExp2, &TestFnBiggsExp3, &TestFnBiggsExp4, &TestFnDeJong5,
+	&TestFnHilbert, &TestTridiagonalMatrix, NULL };

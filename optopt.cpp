@@ -1,10 +1,10 @@
 // BiteOpt's algorithm's hyper-parameter optimization code.
 
 #include <stdio.h>
-#include "tester.h"
+#include "tests/tester.h"
 //#include "tester2.h"
 
-const int FanParamCount = 3;
+const int FanParamCount = 5;
 const int FanIterCount = 4000;
 
 static double roundp( const double x )
@@ -25,6 +25,8 @@ public:
 		p[ 0 ] = 0.0;
 		p[ 1 ] = 0.0;
 		p[ 2 ] = 0.0;
+		p[ 3 ] = 0.0;
+		p[ 4 ] = 0.0;
 	}
 
 	virtual void getMaxValues( double* const p ) const
@@ -32,6 +34,8 @@ public:
 		p[ 0 ] = 1.0;
 		p[ 1 ] = 1.0;
 		p[ 2 ] = 3.0;
+		p[ 3 ] = 1.0;
+		p[ 4 ] = 1.0;
 	}
 
 	virtual double optcost( const double* const p )
@@ -42,9 +46,9 @@ public:
 		Tester.opt -> RandProb = roundp( p[ 0 ]);
 		Tester.opt -> CentProb = roundp( p[ 1 ]);
 		Tester.opt -> CentSpan = roundp( p[ 2 ]);
-		Tester.opt -> AllpProb = 0.2;
+		Tester.opt -> AllpProb = roundp( p[ 3 ]);
 		Tester.opt -> ScutProb = 0.11;
-		Tester.opt -> RandProb2 = 0.25;
+		Tester.opt -> RandProb2 = roundp( p[ 4 ]);
 
 		rnd.init( 0 );
 		Tester.init( 2, TestCorpusAll, 0.000001, 60, 2000, false, false );
@@ -86,9 +90,9 @@ int main()
 		printf( "RandProb = %.8f;\n", Params[ 0 ]);
 		printf( "CentProb = %.8f;\n", Params[ 1 ]);
 		printf( "CentSpan = %.8f;\n", Params[ 2 ]);
-		printf( "AllpProb = %.8f;\n", 0.2 );
+		printf( "AllpProb = %.8f;\n", Params[ 3 ]);
 		printf( "ScutProb = %.8f;\n", 0.11 );
-		printf( "RandProb2 = %.8f;\n", 0.25 );
+		printf( "RandProb2 = %.8f;\n", Params[ 4 ]);
 	}
 
 	return( 0 );

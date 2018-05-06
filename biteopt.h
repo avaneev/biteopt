@@ -89,13 +89,14 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
+		// Cost=-0.037595
 		MinxMult = 0.50000000;
-		RandProb = 0.60981671;
-		CentProb = 0.87995568;
-		CentSpan = 2.94153018;
-		AllpProb = 0.20000000;
+		RandProb = 0.45911829;
+		CentProb = 0.88471822;
+		CentSpan = 2.11750420;
+		AllpProb = 0.48076678;
 		ScutProb = 0.11000000;
-		RandProb2 = 0.25000000;
+		RandProb2 = 0.31799798;
 	}
 
 	~CBiteOpt()
@@ -190,9 +191,13 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
+				double r = ( rnd.getRndValue() - 0.5 ) * 2.0;
+				r = pow( fabs( r ), 0.125 ) *
+					( r < 0.0 ? -1.0 : 1.0 ) * 0.5 + 0.5;
+
 				const double v = ( j == 0 && InitParams != NULL ?
 					wrapParam( rnd, ( InitParams[ i ] - MinValues[ i ]) /
-					DiffValues[ i ]) : rnd.getRndValue() );
+					DiffValues[ i ]) : r );
 
 				CurParams[ j ][ i ] = v;
 				CentParams[ i ] += v / PopSize;
@@ -323,15 +328,17 @@ public:
 				{
 					CentCntr -= 1.0;
 
-					// Move towards centroid vector or beyond it, randomly.
+					// Random move around random previous solution vector.
 
-					const double m = rnd.getRndValue() * CentSpan;
-					const double m2 = rnd.getRndValue() * CentSpan;
+					const double m = ( rnd.getRndValue() +
+						rnd.getRndValue() - 1.0 ) * CentSpan; // TPDF.
+
+					const int si = (int) ( mp * PopSize );
+					const double* const rp1 = CurParams[ PopOrder[ si ]];
 
 					for( i = a; i <= b; i++ )
 					{
-						Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m;
-						Params[ i ] -= ( Params[ i ] - CentParams[ i ]) * m2;
+						Params[ i ] -= ( Params[ i ] - rp1[ i ]) * m;
 					}
 				}
 			}
