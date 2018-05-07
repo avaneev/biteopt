@@ -11,6 +11,7 @@
 // https://github.com/numbbo/coco/tree/master/code-experiments/src
 // https://github.com/alusov/mathexplib/tree/master/testfuncs
 // https://people.sc.fsu.edu/~jburkardt/m_src/test_opt/test_opt.html
+// http://geocities.ws/eadorio/mvf.pdf
 
 #include <math.h>
 
@@ -3371,34 +3372,30 @@ static const CTestFn TestFnPermFunction02 = { "PermFunction02", 2, 0.0, 0.0,
 
 static double calcWatson( const double* const x, const int N )
 {
-	double s = 0.0;
+	double s = sqr(x[0]);
 	int i;
 
-	for( i = 1; i <= 29; i++ )
+	for( i = 0; i < 30; i++ )
 	{
+		const double a = i/29.0;
 		double s1 = 0.0;
-		double d = 1.0;
+		double s2 = 0.0;
 		int j;
 
-		for( j = 2; j <= N; j++ )
+		for( j = 0; j < 5; j++ )
 		{
-			s1 += (j-1)*d*x[j-1];
-			d *= i / 29.0;
+			s1 += (j+1)*pow(a,j)*x[j+1];
 		}
 
-		double s2 = 0.0;
-		d = 1.0;
-
-		for( j = 1; j <= N; j++ )
+		for( j = 0; j < 6; j++ )
 		{
-			s2 += d*x[j-1];
-			d *= i / 29.0;
+			s2 += pow(a,j)*x[j];
 		}
 
 		s += sqr(s1-sqr(s2)-1.0);
 	}
 
-	return( s+sqr(x[0])+sqr(x[1]-sqr(x[0])-1.0) );
+	return( s );
 }
 
 static const CTestFn TestFnWatson = { "Watson", 6, -5.00, 5.0,
@@ -3574,7 +3571,7 @@ static double calcZagros( const double* const x, const int N )
 static const CTestFn TestFnZagros = { "Zagros", 2, -10.0, 10.0, -2.0,
 	&calcZagros };
 
-static double calcPowellSingular2( const double* const x, const int N )
+static double calcPowellSingular( const double* const x, const int N )
 {
 	double s = 0.0;
 	int i;
@@ -3588,8 +3585,8 @@ static double calcPowellSingular2( const double* const x, const int N )
 	return( s );
 }
 
-static const CTestFn TestFnPowellSingular2 = { "PowellSingular2", 4, -4.0,
-	5.0, 0.0, &calcPowellSingular2 };
+static const CTestFn TestFnPowellSingular = { "PowellSingular", 4, -4.0,
+	5.0, 0.0, &calcPowellSingular };
 
 static double calcBiggsExp2( const double* const x, const int N )
 {
@@ -3758,39 +3755,50 @@ static double calcTridiagonalMatrix_p( double* const minv, double* const maxv,
 static const CTestFn TestTridiagonalMatrix = { "TridiagonalMatrix", 0,
 	0.0, 0.0, 0.0, &calcTridiagonalMatrix, &calcTridiagonalMatrix_p };
 
-/*static double calcCola( const double* const x, const int N )
+static double calcCola( const double* const x, const int N )
 {
-	double d[ 9 ][ 9 ] = {
-		{ 1.27 },
-		{ 1.69, 1.43 },
-		{ 2.04, 2.35, 2.43 },
-		{ 3.09, 3.18, 3.26, 2.85 },
-		{ 3.20, 3.22, 3.27, 2.88, 1.55 },
-		{ 2.86, 2.56, 2.58, 2.59, 3.12, 3.06 },
-		{ 3.17, 3.18, 3.18, 3.12, 1.31, 1.64, 3.00 },
-		{ 3.21, 3.18, 3.18, 3.17, 1.70, 1.36, 2.95, 1.32 },
-		{ 2.38, 2.31, 2.42, 1.94, 2.85, 2.81, 2.56, 2.91, 2.97 },
+	const double dis[ 46 ] = {
+		1.27,
+		1.69, 1.43,
+		2.04, 2.35, 2.43,
+		3.09, 3.18, 3.26, 2.85,
+		3.20, 3.22, 3.27, 2.88, 1.55,
+		2.86, 2.56, 2.58, 2.59, 3.12, 3.06,
+		3.17, 3.18, 3.18, 3.12, 1.31, 1.64, 3.00,
+		3.21, 3.18, 3.18, 3.17, 1.70, 1.36, 2.95, 1.32,
+		2.38, 2.31, 2.42, 1.94, 2.85, 2.81, 2.56, 2.91, 2.97
 	};
 
 	double s = 0.0;
+	int k = 1;
+	double mt[ 20 ] = { 0, 0, 0, 0 };
 	int i;
 
-	for( i = 1; i <= 9; i++ )
+	for( i = 3; i < 20; i++)
 	{
-		double xi = ( i == 1 ? 0.0 : ( i == 2 ? x[0] : x[2*(i-2)-1]));
-		double yi = ( i <= 2 ? 0.0 : x[2*(i-2)+1-1]);
+		mt[ i ] = x[ i - 3 ];
+	}
+
+	for( i = 1; i < 10; i++ )
+	{
 		int j;
 
-		for( j = 1; j <= i; j++ )
+		for( j = 0; j < i; j++ )
 		{
-			double xj = ( j == 1 ? 0.0 : ( j == 2 ? x[0] : x[2*(j-2)-1]));
-			double yj = ( j <= 2 ? 0.0 : x[2*(j-2)+1-1]);
+			double temp = 0.0;
+			int t;
 
-			s += sqrt(sqr(xi-xj)+sqr(yi-yj))-d[i-1][j-1];
+			for( t = 0; t < 2; t++ )
+			{
+				temp += sqr(mt[i*2+t]-mt[j*2+t]);
+			}
+
+			s += sqr(dis[k-1]-sqrt(temp));
+			k++;
 		}
 	}
 
-	return( sqr( s ));
+	return( s );
 }
 
 static double calcCola_p( double* const minv, double* const maxv,
@@ -3806,12 +3814,160 @@ static double calcCola_p( double* const minv, double* const maxv,
 		maxv[ i ] = 4.0;
 	}
 
-	return( 11.7464 );
+	return( 11.7463902756603 );
 }
 
 static const CTestFn TestFnCola = { "Cola", 17, 0.0, 0.0, 0.0, &calcCola,
 	&calcCola_p };
-*/
+
+static double calcRipple01( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 2; i++ )
+	{
+		s += -exp(-2.0*log(2.0*sqr((x[i]+0.1)/0.8)))*
+			(pow(sin(5.0*M_PI*x[i]),6.0)+0.1*sqr(cos(500.0*M_PI*x[i])));
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnRipple01 = { "Ripple01", 2, 0.0, 1.0,
+	-204.8, &calcRipple01 };
+
+static double calcRipple25( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < 2; i++ )
+	{
+		s += -exp(-2.0*log(2.0*sqr((x[i]+0.1)/0.8)))*
+			pow(sin(5.0*M_PI*x[i]),6.0);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnRipple25 = { "Ripple25", 2, 0.0, 1.0,
+	-147.8372378155503, &calcRipple25 };
+
+static double _Zh1( const double* const x )
+{
+	return( 9.0 - x[0] - x[1]);
+}
+
+static double _Zh2( const double* const x )
+{
+	return( sqr( x[0] - 3.0 ) + sqr( x[1] - 2.0 ) - 16.0 );
+}
+
+static double _Zh3( const double* const x )
+{
+	return( x[0] * x[1] - 14.0 );
+}
+
+static double _Zp( const double x )
+{
+	return( 100.0 * ( 1.0 + x ));
+}
+
+static double _sgn( const double x )
+{
+	if( x < 0.0 )
+	{
+		return( -1.0 );
+	}
+
+	return( 1.0 );
+}
+
+static double calcZimmerman( const double* const x, const int N )
+{
+	double px[ 5 ] = { _Zh1(x), _Zp(_Zh2(x))*_sgn(_Zh2(x)),
+		_Zp(_Zh3(x))*_sgn(_Zh3(x)),_Zp(-x[0])*_sgn(x[0]),
+		_Zp(-x[1])*_sgn(x[1]) };
+
+	double s = px[ 0 ];
+	int i;
+
+	for( i = 1; i < 5; i++ )
+	{
+		if( px[ i ] > s )
+		{
+			s = px[ i ];
+		}
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnZimmerman = { "Zimmerman", 2, 0.0, 100.0,
+	0.0, &calcZimmerman };
+
+static double calcSargan( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		double s2 = 0.0;
+		int j;
+
+		for( j = 1; j < N; j++ )
+		{
+			s2 += x[i]*x[j];
+		}
+
+		s += N*(sqr(x[i])+0.4*s2);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnSargan = { "Sargan", 2, -100.0, 100.0,
+	0.0, &calcSargan };
+
+static double calcDeceptive( const double* const x, const int N )
+{
+	const double beta = 2.0;
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		double g;
+		double alpha = (double) ( i + 1 ) / ( N + 1 );
+
+		if( x[i] <= 0.0 )
+			g = x[i];
+		else
+		if( x[i] <= 0.8 * alpha )
+			g = 0.8 - x[i] / alpha;
+		else
+		if( x[i] <= alpha )
+			g = 5.0 * x[i] / alpha - 4.0;
+		else
+		if( x[i] <= ( 1.0 + 4.0 * alpha ) / 5.0 )
+			g = 1.0 + 5.0 * ( x[i] - alpha ) / ( alpha - 1.0 );
+		else
+		if( x[i] <= 1.0 )
+			g = 0.8 + ( x[i] - 1.0 ) / ( 1.0 - alpha );
+		else
+			g = x[i] - 1.0;
+
+		s += g;
+	}
+
+	return( -pow(s/N,beta) );
+}
+
+static const CTestFn TestFnDeceptive = { "Deceptive", 0, 0.0, 1.0,
+	-1.0, &calcDeceptive };
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -3863,7 +4019,7 @@ const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
 
 const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra03,
 	&TestFnMishra04, &TestFnDeVilliersGlasser02, &TestFnHougen,
-	&TestFnBiggsExp5, &TestFnBiggsExp6, &TestFnWatson, NULL };
+	&TestFnBiggsExp5, &TestFnBiggsExp6, &TestFnWatson, &TestFnCola, NULL };
 
 // CPU time-consuming functions, but solving correctly:
 // &TestFnDeVilliersGlasser01, &TestFnGulfResearchProblem
@@ -3930,6 +4086,8 @@ const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
 	&TestFnPenalty02, &TestFnWayburnSeader03, &TestFnCorana, &TestFnBrad,
 	&TestFnGramacyLee03, &TestFnPermFunction01, &TestFnPermFunction02,
 	&TestFnPinter, &TestFnHolderTable1, &TestFnSchwefel225,
-	&TestFnRosenbrockDisk, &TestFnSineEnvelope, &TestFnPowellSingular2,
+	&TestFnRosenbrockDisk, &TestFnSineEnvelope, &TestFnPowellSingular,
 	&TestFnBiggsExp2, &TestFnBiggsExp3, &TestFnBiggsExp4, &TestFnDeJong5,
-	&TestFnHilbert, &TestTridiagonalMatrix, NULL };
+	&TestFnHilbert, &TestTridiagonalMatrix, &TestFnRipple01,
+	&TestFnRipple25, &TestFnZimmerman, &TestFnSargan, &TestFnDeceptive,
+	NULL };
