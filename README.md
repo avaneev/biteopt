@@ -208,8 +208,8 @@ Namely, [AVIR](https://github.com/avaneev/avir) image resizing algorithm's
 hyper-parameters, BiteOpt's own hyper-parameters, digital audio limiter
 algorithm's parameters.
 
-2. Non-linear least-squares problems, see calcHougen function in `testfn.h`
-for an example problem.
+2. Non-linear least-squares problems, see calcHougen and calcOsborne functions
+in `testfn.h` for example problems.
 
 ## Examples ##
 

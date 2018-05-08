@@ -3968,6 +3968,218 @@ static double calcDeceptive( const double* const x, const int N )
 static const CTestFn TestFnDeceptive = { "Deceptive", 0, 0.0, 1.0,
 	-1.0, &calcDeceptive };
 
+static double calcFriedman( const double* const x, const int N )
+{
+	return( 10.0*sin(M_PI*x[0]*x[1])+20.0*sqr(x[2]-0.5)+10.0*x[3]+5.0*x[4] );
+}
+
+static const CTestFn TestFnFriedman = { "Friedman", 5, -1.5, 1.5,
+	-32.5, &calcFriedman };
+
+static double calcOsborne( const double* const x, const int N )
+{
+	const double y[] = {
+		0.844, 0.908, 0.932, 0.936, 0.925, 0.908, 0.881, 0.850, 0.818, 0.784, 0.751,
+		0.718, 0.685, 0.658, 0.628, 0.603, 0.580, 0.558, 0.538, 0.522, 0.506, 0.490,
+		0.478, 0.467, 0.457, 0.448, 0.438, 0.431, 0.424, 0.420, 0.414, 0.411, 0.406
+	};
+
+	const int m = 33;
+	double s = 0.0;
+	int j;
+
+	for( j = 0; j < m; j++ )
+	{
+		const int tj = 10.0*j;
+		s += sqr((x[0]+x[1]*exp(-x[3]*tj)+x[2]*exp(-x[4]*tj))-y[j]);
+	}
+
+	return( s );
+}
+
+static double calcOsborne_p( double* const minv, double* const maxv,
+	const int N )
+{
+	minv[ 0 ] = 0.0;
+	maxv[ 0 ] = 3.0;
+	minv[ 1 ] = 0.0;
+	maxv[ 1 ] = 3.0;
+	minv[ 2 ] = -3.0;
+	maxv[ 2 ] = 0.0;
+	minv[ 3 ] = 0.0;
+	maxv[ 3 ] = 3.0;
+	minv[ 4 ] = 0.0;
+	maxv[ 4 ] = 3.0;
+
+	return( 0.0000546489470 );
+}
+
+static const CTestFn TestFnOsborne = { "Osborne", 5, 0.0, 0.0, 0.0,
+	&calcOsborne, &calcOsborne_p };
+
+static double calcSimpleton( const double* const x, const int N )
+{
+	return( -x[0]*x[1]*x[2]*x[3]*x[4]/(x[5]*x[6]*x[7]*x[8]*x[9]) );
+}
+
+static const CTestFn TestFnSimpleton = { "Simpleton", 10, 1.0, 10.0,
+	-100000.0, &calcSimpleton };
+
+static double calcPriceTransistor( const double* const x, const int N )
+{
+	double g[ 5 ][ 4 ] = {
+		{ 0.485000, 0.752000, 0.869000, 0.982000 },
+		{ 0.369000, 1.254000, 0.703000, 1.455000 },
+		{ 5.209500, 10.06770, 22.92740, 20.21530 },
+		{ 23.30370, 101.7790, 111.4610, 191.2670 },
+		{ 28.51320, 111.8467, 134.3884, 211.4823 }
+	};
+
+	double s = sqr(x[0]*x[2]-x[1]*x[3]);
+	int k;
+
+	for( k = 0; k < 4; k++ )
+	{
+		const double alpha = (1.0-x[0]*x[1])*x[2]*
+			(exp(x[4]*(g[0][k]-g[2][k]*x[6]*1e-3-g[4][k]*x[7]*1e-3))-1.0)-
+			g[4][k]+g[3][k]*x[1];
+
+		const double beta = (1.0-x[0]*x[1])*x[3]*
+			(exp(x[5]*(g[0][k]-g[1][k]-g[2][k]*x[6]*1e-3+g[3][k]*x[8]*1e-3))-1.0)-
+			g[4][k]*x[0]+g[3][k];
+
+		s += sqr(alpha)+sqr(beta);
+	}
+
+	return( s );
+}
+
+static const CTestFn TestFnPriceTransistor = { "PriceTransistor", 9,
+	-10.0, 10.0, 0.0, &calcPriceTransistor };
+
+static double calcF2( const double* const x, const int N )
+{
+	const double k = 6.0;
+	const double l1 = 5.1;
+	const double l2 = 0.5;
+	const double l3 = 4.0 * log( 2.0 );
+	const double l4 = 0.066832364099628;
+	const double l5 = 0.64;
+
+	double s = 1.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s *= pow(sin(l1*M_PI*x[i]+l2),k)*exp(-l3*sqr((x[i]-l4)/l5));
+	}
+
+	return( -s );
+}
+
+static const CTestFn TestFnF2 = { "F2", 0, 0.0, 1.0, -1.0, &calcF2 };
+
+static double calcInvertedCosine( const double* const x, const int N )
+{
+	double s = 0.0;
+	int i;
+
+	for( i = 0; i < N - 1; i++ )
+	{
+		s += exp(-(sqr(x[i])+sqr(x[i+1])+0.5*x[i]*x[i+1])/8.0)*
+			cos(4.0*sqrt(sqr(x[i])+sqr(x[i+1])+0.5*x[i]*x[i+1]));
+	}
+
+	return( -s );
+}
+
+static double calcInvertedCosine_p( double* const minv, double* const maxv,
+	const int N )
+{
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		minv[ i ] = -5.0;
+		maxv[ i ] = 5.0;
+	}
+
+	return( -N + 1 );
+}
+
+static const CTestFn TestFnInvertedCosine = { "InvertedCosine", 0, 0.0, 0.0,
+	0.0, &calcInvertedCosine, &calcInvertedCosine_p };
+
+static double calcSinusoidal( const double* const x, const int N )
+{
+	const double A = 2.5;
+	const double B = 5.0;
+	const double Z = 30.0;
+
+	double s1 = 1.0;
+	double s2 = 1.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s1 *= sin((x[i]-Z)/57.2957795130823209);
+		s2 *= sin(B*(x[i]-Z)/57.2957795130823209);
+	}
+
+	return( -(A*s1+s2) );
+}
+
+static const CTestFn TestFnSinusoidal = { "Sinusoidal", 0, -180.0, 180.0,
+	-(2.5+1.0), &calcSinusoidal };
+
+static double calcLunacekBiRastrigin( const double* const x, const int N )
+{
+	const double mu1 = 2.5;
+	const double d = 1.0;
+	const double s = 1.0 - 1.0 / ( 2.0 * sqrt( 2.0 + 20.0 ) - 8.2 );
+	const double mu2 = -sqrt(( sqr( mu1 ) - d ) / s );
+
+	double s1 = 0.0;
+	double s2 = d * N;
+	double s3 = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s1 += sqr(x[i]-mu1);
+		s2 += s*sqr(x[i]-mu2);
+		s3 += 10.0*(1.0-cos(2.0*M_PI*(x[i]-mu1)));
+	}
+
+	return(( s1 < s2 ? s1 : s2 ) + s3 );
+}
+
+static const CTestFn TestFnLunacekBiRastrigin = { "LunacekBiRastrigin", 0,
+	-5.12, 5.12, 0.0, &calcLunacekBiRastrigin };
+
+static double calcLunacekBiSphere( const double* const x, const int N )
+{
+	const double mu1 = 2.5;
+	const double d = 1.0;
+	const double s = 1.0 - 1.0 / ( 2.0 * sqrt( 2.0 + 20.0 ) - 8.2 );
+	const double mu2 = -sqrt(( sqr( mu1 ) - d ) / s );
+
+	double s1 = 0.0;
+	double s2 = d * N;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s1 += sqr(x[i]-mu1);
+		s2 += s*sqr(x[i]-mu2);
+	}
+
+	return( s1 < s2 ? s1 : s2 );
+}
+
+static const CTestFn TestFnLunacekBiSphere = { "LunacekBiSphere", 0,
+	-10.0, 10.0, 0.0, &calcLunacekBiSphere };
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -3989,7 +4201,9 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnXinSheYang03, &TestFnDeflCorrSpring, &TestFnDixonPrice,
 	&TestFnPenalty01, &TestFnPenalty02, &TestFnPinter, &TestFnSchwefel225,
 	&TestFnStretchedV, &TestFnPathological, &TestFnXinSheYang01,
-	&TestFnSineEnvelope, &TestFnHilbert, &TestTridiagonalMatrix, NULL };
+	&TestFnSineEnvelope, &TestFnHilbert, &TestTridiagonalMatrix,
+	&TestFnF2, &TestFnInvertedCosine, &TestFnSinusoidal,
+	&TestFnLunacekBiRastrigin, NULL };
 
 // N-dimensional test corpus of functions that support rotation and offseting.
 
@@ -4008,7 +4222,9 @@ const CTestFn* OptCorpusNDRotOfs[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnYaoLiu09, &TestFnCosineMixture, &TestFnLevyMontalvo2,
 	&TestFnDropWave, &TestFnSalomon, &TestFnWhitley, &TestFnDixonPrice,
 	&TestFnPenalty01, &TestFnPenalty02, &TestFnPinter, &TestFnStretchedV,
-	&TestFnXinSheYang01, &TestFnHilbert, &TestTridiagonalMatrix, NULL };
+	&TestFnXinSheYang01, &TestFnHilbert, &TestTridiagonalMatrix,
+	&TestFnInvertedCosine, &TestFnSinusoidal, &TestFnLunacekBiRastrigin,
+	NULL };
 
 // Failing functions.
 
@@ -4019,7 +4235,8 @@ const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
 
 const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra03,
 	&TestFnMishra04, &TestFnDeVilliersGlasser02, &TestFnHougen,
-	&TestFnBiggsExp5, &TestFnBiggsExp6, &TestFnWatson, &TestFnCola, NULL };
+	&TestFnBiggsExp5, &TestFnBiggsExp6, &TestFnWatson, &TestFnCola,
+	&TestFnOsborne, &TestFnSimpleton, &TestFnPriceTransistor, NULL };
 
 // CPU time-consuming functions, but solving correctly:
 // &TestFnDeVilliersGlasser01, &TestFnGulfResearchProblem
@@ -4028,14 +4245,14 @@ const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra03,
 
 const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
 	&TestFnEggHolder, &TestFnPowerSum, &TestFnStochastic, &TestFnXor,
-	&TestFnTrefethen, &TestFnBranin02, &TestFnNewFunction02, &TestFnDolan,
-	&TestFnTripod, &TestFnUrsemWaves, &TestFnSchmidtVetters, &TestFnHartman6,
-	&TestFnMeyerRoth, &TestFnBeale, &TestFnModifiedRosenbrock,
-	&TestFnMishra06, &TestFnPeaks, &TestFnKowalik, &TestFnChenBird,
-	&TestFnPrice03, &TestFnFreudensteinRoth, &TestFnShekel05, &TestFnShekel07,
-	&TestFnShekel10, &TestFnGoldsteinPrice, &TestFnWhitley,
+	&TestFnTrefethen, &TestFnZimmerman, &TestFnBranin02, &TestFnNewFunction02,
+	&TestFnDolan, &TestFnTripod, &TestFnRipple01, &TestFnUrsemWaves,
+	&TestFnSchmidtVetters, &TestFnHartman6, &TestFnMeyerRoth, &TestFnBeale,
+	&TestFnModifiedRosenbrock, &TestFnMishra06, &TestFnPeaks, &TestFnKowalik,
+	&TestFnChenBird, &TestFnPrice03, &TestFnFreudensteinRoth, &TestFnShekel05,
+	&TestFnShekel07, &TestFnShekel10, &TestFnGoldsteinPrice, &TestFnWhitley,
 	&TestFnCrossLegTable, &TestFnRana, &TestFnHansen,
-	&TestFnComplexHolderTable, &TestFnLevy05, &TestFnAlpine2,
+	&TestFnComplexHolderTable, &TestFnLevy05, &TestFnAlpine2, &TestFnDeceptive, &TestFnLunacekBiRastrigin, 
 	&TestFnSchaffer03, &TestFnSchaffer04, &TestFnXinSheYang01,
 	&TestFnCrownedCross, &TestFnMullerBrown, &TestFnOddSquare,
 	&TestFnPowellBadlyScaled, &TestFnHelicalValley, &TestFnAckley4,
@@ -4088,6 +4305,6 @@ const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
 	&TestFnPinter, &TestFnHolderTable1, &TestFnSchwefel225,
 	&TestFnRosenbrockDisk, &TestFnSineEnvelope, &TestFnPowellSingular,
 	&TestFnBiggsExp2, &TestFnBiggsExp3, &TestFnBiggsExp4, &TestFnDeJong5,
-	&TestFnHilbert, &TestTridiagonalMatrix, &TestFnRipple01,
-	&TestFnRipple25, &TestFnZimmerman, &TestFnSargan, &TestFnDeceptive,
-	NULL };
+	&TestFnHilbert, &TestTridiagonalMatrix, &TestFnRipple25, &TestFnSargan,
+	&TestFnFriedman, &TestFnF2, &TestFnInvertedCosine, &TestFnSinusoidal,
+	&TestFnLunacekBiSphere, NULL };
