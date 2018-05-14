@@ -42,7 +42,6 @@ public:
 	{
 		CTester Tester;
 //		CTester2 Tester;
-		Tester.opt -> MinxMult = 0.5;
 		Tester.opt -> RandProb = roundp( p[ 0 ]);
 		Tester.opt -> CentProb = roundp( p[ 1 ]);
 		Tester.opt -> CentSpan = roundp( p[ 2 ]);

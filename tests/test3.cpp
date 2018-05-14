@@ -16,7 +16,7 @@ int main()
 	CTester Tester;
 
 	rnd.init( 1 );
-	Tester.init( 10, OptCorpusNDRotOfs, 0.01, 15, 70000, true, true );
+	Tester.init( 5, OptCorpusNDRotOfs, 0.01, 15, 50000, true, true );
 
 	Tester.run();
 }

@@ -3990,7 +3990,7 @@ static double calcOsborne( const double* const x, const int N )
 
 	for( j = 0; j < m; j++ )
 	{
-		const int tj = 10.0*j;
+		const double tj = 10.0*j;
 		s += sqr((x[0]+x[1]*exp(-x[3]*tj)+x[2]*exp(-x[4]*tj))-y[j]);
 	}
 
@@ -4180,6 +4180,24 @@ static double calcLunacekBiSphere( const double* const x, const int N )
 static const CTestFn TestFnLunacekBiSphere = { "LunacekBiSphere", 0,
 	-10.0, 10.0, 0.0, &calcLunacekBiSphere };
 
+static double calcSphericalSinc( const double* const x, const int N )
+{
+	double r = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		r += sqr(x[i]);
+	}
+
+	r = sqrt( r );
+
+	return( r == 0.0 ? -1.0 : -sin( r ) / r );
+}
+
+static const CTestFn TestSphericalSinc = { "SphericalSinc", 0,
+	-15.0, 15.0, -1.0, &calcSphericalSinc };
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -4203,7 +4221,7 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnStretchedV, &TestFnPathological, &TestFnXinSheYang01,
 	&TestFnSineEnvelope, &TestFnHilbert, &TestTridiagonalMatrix,
 	&TestFnF2, &TestFnInvertedCosine, &TestFnSinusoidal,
-	&TestFnLunacekBiRastrigin, NULL };
+	&TestFnLunacekBiRastrigin, &TestSphericalSinc, NULL };
 
 // N-dimensional test corpus of functions that support rotation and offseting.
 
@@ -4224,7 +4242,7 @@ const CTestFn* OptCorpusNDRotOfs[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnPenalty01, &TestFnPenalty02, &TestFnPinter, &TestFnStretchedV,
 	&TestFnXinSheYang01, &TestFnHilbert, &TestTridiagonalMatrix,
 	&TestFnInvertedCosine, &TestFnSinusoidal, &TestFnLunacekBiRastrigin,
-	NULL };
+	&TestSphericalSinc, NULL };
 
 // Failing functions.
 
@@ -4307,4 +4325,4 @@ const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
 	&TestFnBiggsExp2, &TestFnBiggsExp3, &TestFnBiggsExp4, &TestFnDeJong5,
 	&TestFnHilbert, &TestTridiagonalMatrix, &TestFnRipple25, &TestFnSargan,
 	&TestFnFriedman, &TestFnF2, &TestFnInvertedCosine, &TestFnSinusoidal,
-	&TestFnLunacekBiSphere, NULL };
+	&TestFnLunacekBiSphere, &TestSphericalSinc, NULL };

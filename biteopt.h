@@ -52,8 +52,6 @@
 class CBiteOpt
 {
 public:
-	double MinxMult; ///< Minimal/maximal solution move range multiplier.
-		///<
 	double RandProb; ///< Parameter value randomization probability.
 		///<
 	double CentProb; ///< Centroid move probability.
@@ -90,7 +88,6 @@ public:
 		, NewParams( NULL )
 	{
 		// Cost=-0.037595
-		MinxMult = 0.50000000;
 		RandProb = 0.45911829;
 		CentProb = 0.88471822;
 		CentSpan = 2.11750420;
@@ -119,7 +116,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			12 + aParamCount * 2 );
+			10 + aParamCount * 2 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -330,10 +327,10 @@ public:
 
 					// Random move around random previous solution vector.
 
-					const double m = ( rnd.getRndValue() +
-						rnd.getRndValue() - 1.0 ) * CentSpan; // TPDF.
+					const double m = ( rnd.getRndValue() -
+						rnd.getRndValue() ) * CentSpan; // TPDF.
 
-					const int si = (int) ( mp * PopSize );
+					const int si = (int) ( mp * mp * PopSize );
 					const double* const rp1 = CurParams[ PopOrder[ si ]];
 
 					for( i = a; i <= b; i++ )
@@ -346,13 +343,19 @@ public:
 		else
 		{
 			// Select a random previous solution from the ordered list,
-			// apply offset to reduce sensitivity to noise.
+			// apply offsets to reduce sensitivity to noise.
 
-			const int op = (int) ( mp * mp * 3 );
+			const int op = (int) ( mp * 3 );
 			const int si = mpi + (int) ( mp * ( PopSize1 - op - mpi ));
 			const double* const OrigParams = CurParams[ PopOrder[ si ]];
 			const double* const MaxParams = CurParams[ PopOrder[
 				PopSize1 - op ]];
+
+			// Select two more previous solutions to be used in the mix.
+
+			const int si2 = (int) ( rnd.getRndValue() * PopSize );
+			const double* const rp1 = CurParams[ PopOrder[ si2 ]];
+			const double* const rp2 = CurParams[ PopOrder[ PopSize1 - si2 ]];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -361,7 +364,8 @@ public:
 				// vector.
 
 				Params[ i ] = MinParams[ i ] -
-					( MaxParams[ i ] - OrigParams[ i ]) * MinxMult;
+					(( MaxParams[ i ] - OrigParams[ i ]) -
+					( rp1[ i ] - rp2[ i ])) * 0.5;
 			}
 		}
 
