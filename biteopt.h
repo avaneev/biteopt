@@ -52,17 +52,17 @@
 class CBiteOpt
 {
 public:
-	double RandProb; ///< Parameter value randomization probability.
+	double RandProb[ 2 ]; ///< Parameter value randomization probability.
 		///<
-	double CentProb; ///< Centroid move probability.
+	double CentProb[ 2 ]; ///< Centroid move probability.
 		///<
 	double CentSpan; ///< Centroid move range multiplier.
 		///<
-	double AllpProb; ///< All parameters randomization probability.
+	double AllpProb[ 2 ]; ///< All parameters randomization probability.
 		///<
 	double ScutProb; ///< Short-cut probability.
 		///<
-	double RandProb2; ///< Alt parameter value randomization probability.
+	double RandProb2[ 2 ]; ///< Alt parameter value randomization probability.
 		///<
 
 	/**
@@ -87,13 +87,17 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=-0.037595
-		RandProb = 0.45911829;
-		CentProb = 0.88471822;
-		CentSpan = 2.11750420;
-		AllpProb = 0.48076678;
+		// Cost=-0.043395
+		RandProb[ 0 ] = 0.46825569;
+		RandProb[ 1 ] = 0.43904185;
+		CentProb[ 0 ] = 1.00000000;
+		CentProb[ 1 ] = 0.17993158;
+		CentSpan = 2.07783493;
+		AllpProb[ 0 ] = 0.58733721;
+		AllpProb[ 1 ] = 1.00000000;
 		ScutProb = 0.11000000;
-		RandProb2 = 0.31799798;
+		RandProb2[ 0 ] = 0.10361101;
+		RandProb2[ 1 ] = 1.00000000;
 	}
 
 	~CBiteOpt()
@@ -227,6 +231,7 @@ public:
 		ParamCntr = (int) ( rnd.getRndValue() * ParamCount );
 		RandCntr2 = rnd.getRndValue();
 		StallCount = 0;
+		RandSwitch = 0;
 	}
 
 	/**
@@ -258,16 +263,20 @@ public:
 
 		int i;
 
-		RandCntr += RandProb;
+		int RaiseFlags = 0; // Which RandSwitch flags to raise on
+			// optimization improvement.
+		RandCntr += RandProb[ RandSwitch & 1 ];
 
 		if( RandCntr >= 1.0 )
 		{
+			RaiseFlags |= 1;
 			RandCntr -= 1.0;
 
-			RandCntr2 += RandProb2;
+			RandCntr2 += RandProb2[( RandSwitch >> 1 ) & 1 ];
 
 			if( RandCntr2 >= 1.0 )
 			{
+				RaiseFlags |= 2;
 				RandCntr2 -= 1.0;
 
 				// Alternative randomization method, works well for convex
@@ -275,9 +284,9 @@ public:
 
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] = MinParams[ i ] +
-						( CentParams[ i ] - MinParams[ i ]) *
-						( rnd.getRndValue() < 0.5 ? 1.0 : -1.0 );
+					Params[ i ] = ( rnd.getRndValue() < 0.5 ?
+						CentParams[ i ] :
+						MinParams[ i ] + ( MinParams[ i ] - CentParams[ i ]));
 				}
 			}
 			else
@@ -292,8 +301,9 @@ public:
 				int a;
 				int b;
 
-				if( rnd.getRndValue() < AllpProb )
+				if( rnd.getRndValue() < AllpProb[( RandSwitch >> 2 ) & 1 ])
 				{
+					RaiseFlags |= 4;
 					a = 0;
 					b = ParamCount - 1;
 				}
@@ -319,10 +329,11 @@ public:
 						imask ) / MantMult;
 				}
 
-				CentCntr += CentProb;
+				CentCntr += CentProb[( RandSwitch >> 3 ) & 1 ];
 
 				if( CentCntr >= 1.0 )
 				{
+					RaiseFlags |= 8;
 					CentCntr -= 1.0;
 
 					// Random move around random previous solution vector.
@@ -346,7 +357,7 @@ public:
 			// apply offsets to reduce sensitivity to noise.
 
 			const int op = (int) ( mp * 3 );
-			const int si = mpi + (int) ( mp * ( PopSize1 - op - mpi ));
+			const int si = mpi + (int) ( mp * ( PopSize1 - mpi ));
 			const double* const OrigParams = CurParams[ PopOrder[ si ]];
 			const double* const MaxParams = CurParams[ PopOrder[
 				PopSize1 - op ]];
@@ -423,10 +434,17 @@ public:
 		{
 			// Upper bound cost constraint check failed, reject this solution.
 
+			if( RaiseFlags != 0 )
+			{
+				RandSwitch = 0;
+			}
+
 			StallCount++;
 
 			return( StallCount );
 		}
+
+		RandSwitch |= RaiseFlags;
 
 		if( NewCost < BestCost )
 		{
@@ -545,6 +563,9 @@ protected:
 	double CentCntr; ///< Centroid move probability counter.
 		///<
 	double RandCntr; ///< Parameter randomization probability counter.
+		///<
+	int RandSwitch; ///< Index flags for probability values switch. Finite
+		///< state automata like.
 		///<
 	int ParamCntr; ///< Parameter randomization index counter.
 		///<

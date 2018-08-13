@@ -55,7 +55,7 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this strategy's
 success rate is >90% while the average number of objective function
-evaluations is ~360.
+evaluations is ~330.
 
 At least in these comparisons, this strategy performs better than plain
 CMA-ES which is also a well-performing stochastic strategy.
@@ -262,6 +262,11 @@ future:
 1. Parallelization of this algorithm is technically possible, but may be
 counter-productive (increases convergence time considerably). It is more
 efficient to run several optimizers in parallel with different random seeds.
+Specifically saying, it is possible (tested to be working on some commits
+before May 15, 2018) to generate a serie of candidate solutions, evaluate them
+in parallel, and then update optimizer's state before generating a new batch
+of candidate solutions. Later commits have changed the algorithm to a from
+less suitable for such parallelization.
 
 2. The default population size formula 10+Dim\*2 works well for most
 non-convex functions, however some functions converge better if a higher
@@ -301,7 +306,9 @@ in many instances in the code were replaced with simple resetting counters for
 more efficiency. Parameter values are internally normalized to [0; 1] range
 and, to stay in this range, are wrapped in a special manner before each
 function evaluation. Algorithm's hyper-parameters (probabilities) were
-pre-selected and should not be changed.
+pre-selected and should not be changed. Algorithm uses an alike of finite
+state automata to switch between different probability values depending on the
+candidate solution acceptance.
 
 2. Depending on the `RandProb` probability, a single (or all) parameter value
 randomization is performed using "bitmask inversion" operation.
