@@ -4,16 +4,14 @@
 #include <stdio.h>
 #include "biteopt.h"
 
-#if !defined( sqr )
-	#define sqr( x ) (( x ) * ( x ))
-#endif // !defined( sqr )
+const int N = 4;
 
-class CTestOpt : public CBiteOpt
+class CTestOpt : public CBiteOptDeep
 {
 public:
 	CTestOpt()
 	{
-		updateDims( 4 );
+		updateDims( N, 7 );
 	}
 
 	virtual void getMinValues( double* const p ) const
@@ -67,16 +65,16 @@ int main()
 
 	int i;
 
-	for( i = 0; i < 10000; i++ )
+	for( i = 0; i < 30000; i++ )
 	{
 		opt.optimize( rnd );
 	}
 
 	printf( "BestCost: %f\n", opt.getBestCost() );
 
-	for( i = 0; i < 4; i++ )
+	for( i = 0; i < N; i++ )
 	{
-		printf( "x[%i] = %f\n", i, opt.getBestParams()[ i ]);
+		printf( "x[%i] = %.10g\n", i, opt.getBestParams()[ i ]);
 	}
 
 	return( 0 );

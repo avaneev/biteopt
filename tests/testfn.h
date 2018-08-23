@@ -889,22 +889,6 @@ static double calcBrent( const double* const x, const int N )
 static const CTestFn TestFnBrent = { "Brent", 2, -10.0, 10.0, 0.0,
 	&calcBrent };
 
-static double calcNewFunction01( const double* const x, const int N )
-{
-	return( sqrt(fabs(cos(sqrt(fabs(sqr(x[0])+x[1])))))+(x[0]+x[1])/100.0 );
-}
-
-static const CTestFn TestFnNewFunction01 = { "NewFunction01", 2, -10.0, 10.0,
-	-0.17894509347721144, &calcNewFunction01 };
-
-static double calcNewFunction02( const double* const x, const int N )
-{
-	return( sqrt(fabs(sin(sqrt(fabs(sqr(x[0])+x[1])))))+(x[0]+x[1])/100.0 );
-}
-
-static const CTestFn TestFnNewFunction02 = { "NewFunction02", 2, -10.0, 10.0,
-	-0.1971881059905, &calcNewFunction02 };
-
 static double calcLevy05( const double* const x, const int N )
 {
 	double s1 = 0.0;
@@ -1306,7 +1290,7 @@ static double calcMishra04( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra04 = { "Mishra04", 2, -10.00, 10.0,
-	-0.1994114689025, &calcMishra04 };
+	-0.1994114689059, &calcMishra04 };
 
 static double calcZeroSum( const double* const x, const int N )
 {
@@ -1382,7 +1366,7 @@ static double calcAlpine2_p( double* const minv, double* const maxv,
 		maxv[ i ] = 10.0;
 	}
 
-	return( -pow( 2.808, (double) N ));
+	return( -pow( 2.80813118, (double) N ));
 }
 
 static const CTestFn TestFnAlpine2 = { "Alpine2", 0, 0.0, 0.0, 0.0,
@@ -2543,15 +2527,6 @@ static double calcCarromTable( const double* const x, const int N )
 static const CTestFn TestFnCarromTable = { "CarromTable", 2, -10.0, 10.0,
 	-24.1568155473913, &calcCarromTable };
 
-static double calcNewFunction03( const double* const x, const int N )
-{
-	return( 0.01*x[0]+0.1*x[1]+sqr(x[0]+sqr(sin(sqr(cos(x[0])+cos(x[1]))))+
-		sqr(cos(sqr(sin(x[0])+sin(x[1]))))) );
-}
-
-static const CTestFn TestFnNewFunction03 = { "NewFunction03", 2, -10.0, 10.0,
-	-1.0198295199309, &calcNewFunction03 };
-
 static double calcLevy03( const double* const x, const int N )
 {
 	double y[ N ];
@@ -3288,7 +3263,7 @@ static double calcMishra03( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra03 = { "Mishra03", 2, -10.00, 10.0,
-	-0.1846669920032, &calcMishra03 };
+	-0.1846669934967, &calcMishra03 };
 
 static double calcPermFunction01( const double* const x, const int N )
 {
@@ -3491,7 +3466,7 @@ static double calcSchmidtVetters( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchmidtVetters = { "SchmidtVetters", 3, 0.1, 10.0,
-	0.194018, &calcSchmidtVetters };
+	0.1939725224402, &calcSchmidtVetters };
 
 static double penaltyLE( const double x )
 {
@@ -4251,34 +4226,36 @@ const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
 
 // Failing functions requiring more than 2000 iterations to converge.
 
-const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10, &TestFnMishra03,
-	&TestFnMishra04, &TestFnDeVilliersGlasser02, &TestFnHougen,
-	&TestFnBiggsExp5, &TestFnBiggsExp6, &TestFnWatson, &TestFnCola,
-	&TestFnOsborne, &TestFnSimpleton, &TestFnPriceTransistor, NULL };
+const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10,
+	&TestFnDeVilliersGlasser02, &TestFnHougen, &TestFnBiggsExp5,
+	&TestFnBiggsExp6, &TestFnWatson, &TestFnCola, &TestFnOsborne,
+	&TestFnSimpleton, &TestFnPriceTransistor, NULL };
 
 // CPU time-consuming functions, but solving correctly:
 // &TestFnDeVilliersGlasser01, &TestFnGulfResearchProblem
 
 // Test corpus including all solvable functions.
 
-const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
-	&TestFnEggHolder, &TestFnPowerSum, &TestFnStochastic, &TestFnXor,
-	&TestFnTrefethen, &TestFnZimmerman, &TestFnBranin02, &TestFnNewFunction02,
-	&TestFnDolan, &TestFnTripod, &TestFnRipple01, &TestFnUrsemWaves,
-	&TestFnSchmidtVetters, &TestFnHartman6, &TestFnMeyerRoth, &TestFnBeale,
-	&TestFnModifiedRosenbrock, &TestFnMishra06, &TestFnPeaks, &TestFnKowalik,
-	&TestFnChenBird, &TestFnPrice03, &TestFnFreudensteinRoth, &TestFnShekel05,
-	&TestFnShekel07, &TestFnShekel10, &TestFnGoldsteinPrice, &TestFnWhitley,
-	&TestFnCrossLegTable, &TestFnRana, &TestFnHansen,
-	&TestFnComplexHolderTable, &TestFnLevy05, &TestFnAlpine2, &TestFnDeceptive, &TestFnLunacekBiRastrigin, 
-	&TestFnSchaffer03, &TestFnSchaffer04, &TestFnXinSheYang01,
-	&TestFnCrownedCross, &TestFnMullerBrown, &TestFnOddSquare,
-	&TestFnPowellBadlyScaled, &TestFnHelicalValley, &TestFnAckley4,
-	&TestFnHartman3, &TestFnTrid6, &TestFnZagros, &TestFnMishra09,
-	&TestFnJudge, &TestFnMultiGaussian, &TestFnBranin01, &TestFnGear,
-	&TestFnLangermann, &TestFnColville, &TestFnLennardJones,
-	&TestFnTestTubeHolder, &TestFnMichalewicz, &TestFnMishra05,
-	&TestFnNewFunction03,
+const CTestFn* TestCorpusAll[] = { &TestFnTripod, &TestFnXor,
+	&TestFnLangerman5, &TestFnPowerSum, &TestFnTrefethen, &TestFnMishra03,
+	&TestFnEggHolder, &TestFnDolan, &TestFnZimmerman, &TestFnRipple01,
+	&TestFnMishra04, &TestFnStochastic, &TestFnSchmidtVetters,
+	&TestFnHartman6, &TestFnKowalik, &TestFnPrice03, &TestFnMeyerRoth,
+	&TestFnMishra06, &TestFnBeale, &TestFnDeceptive, &TestFnBranin02,
+	&TestFnPeaks, &TestFnHansen, &TestFnComplexHolderTable, &TestFnAlpine2,
+	&TestFnUrsemWaves, &TestFnLevy05, &TestFnLunacekBiRastrigin,
+	&TestFnFreudensteinRoth, &TestFnShekel05, &TestFnShekel07,
+	&TestFnShekel10, &TestFnTrid6, &TestFnMishra05, &TestFnWhitley,
+	&TestFnCrossLegTable, &TestFnCrownedCross, &TestFnRana,
+	&TestFnElAttarVidyasDutta, &TestFnSchaffer03, &TestFnSchaffer04,
+	&TestFnOddSquare, &TestFnMishra09, &TestFnJudge, &TestFnTestTubeHolder,
+	&TestFnLangermann, &TestFnHelicalValley, &TestFnShubert01,
+	&TestFnPowellBadlyScaled, &TestFnAckley4, &TestFnColville,
+	&TestFnMichalewicz, &TestFnModifiedRosenbrock, &TestFnGoldsteinPrice,
+	&TestFnXinSheYang01, &TestFnChenBird, &TestFnZagros, &TestFnDeJong5,
+	&TestFnChichinadze, &TestFnLennardJones, &TestFnHartman3,
+	&TestFnMultiGaussian, &TestFnBranin01, &TestFnGear, &TestFnMullerBrown,
+	&TestFnTrigonometric01, &TestFnPeriodic,
 
 	&TestFnChenV, &TestFnThreeHumpCamel, &TestFnBooth, &TestFnMatyas,
 	&TestFnSphere, &TestFnLevy13, &TestFnSchaffer01, &TestFnSchaffer02,
@@ -4287,42 +4264,42 @@ const CTestFn* TestCorpusAll[] = { &TestFnNewFunction01, &TestFnLangerman5,
 	&TestFnBohachevsky3, &TestFnEasomN, &TestFnEasom, &TestFnCrossInTray,
 	&TestFnRastrigin, &TestFnDropWave, &TestFnSumSquares, &TestFnZacharov,
 	&TestFnRotatedHyperEllipsoid, &TestFnGriewank, &TestFnSalomon,
-	&TestFnPrice02, &TestFnWavy, &TestFnShubert01, &TestFnShubert03,
-	&TestFnShubert04, &TestFnWeierstrass, &TestFnTrigonometric02, &TestFnBird,
-	&TestFnTreccani, &TestFnXinSheYang02, &TestFnXinSheYang03,
-	&TestFnXinSheYang04, &TestFnBiggsEXP2, &TestFnSchwefel06,
-	&TestFnChichinadze, &TestFnHolderTable2, &TestFnPowellSum, &TestFnPrice01,
-	&TestFnPrice04, &TestFnBrown, &TestFnBrent, &TestFnPowell, &TestFnPaviani,
-	&TestFnMieleCantrell, &TestFnWolfe, &TestFnAlpine1, &TestFnBukin2,
-	&TestFnBukin4, &TestFnBartelsConn, &TestFnSixHumpCamel,
-	&TestFnChungReynolds, &TestFnCube, &TestFnDeckkersAarts, &TestFnEggCrate,
-	&TestFnKeane, &TestFnLeon, &TestFnQing, &TestFnSchwefel220,
-	&TestFnSchwefel221, &TestFnSchwefel222,	&TestFnWayburnSeader02,
-	&TestFnSawtoothxy, &TestFnSchwefel, &TestFnAdjiman, &TestFnStyblinskiTank,
-	&TestFnMcCormick, &TestFnHimmelblau, &TestFnBoxBettsExpQuadSum,
-	&TestFnPowellQuartic, &TestFnZirilli, &TestFnCamel, &TestFnComplex,
-	&TestFnDavis, &TestFnDownhillStep, &TestFnEngvall, &TestFnGramacyLee02,
-	&TestFnGiunta, &TestFnHosaki, &TestFnKearfott, &TestFnJennrichSampson,
-	&TestFnTsoulos, &TestFnYaoLiu04, &TestFnBentCigar, &TestFnDeflCorrSpring,
+	&TestFnPrice02, &TestFnWavy, &TestFnShubert03, &TestFnShubert04,
+	&TestFnWeierstrass, &TestFnTrigonometric02, &TestFnBird, &TestFnTreccani,
+	&TestFnXinSheYang02, &TestFnXinSheYang03, &TestFnXinSheYang04,
+	&TestFnBiggsEXP2, &TestFnSchwefel06, &TestFnHolderTable2,
+	&TestFnPowellSum, &TestFnPrice01, &TestFnPrice04, &TestFnBrown,
+	&TestFnBrent, &TestFnPowell, &TestFnPaviani, &TestFnMieleCantrell,
+	&TestFnWolfe, &TestFnAlpine1, &TestFnBukin2, &TestFnBukin4,
+	&TestFnBartelsConn, &TestFnSixHumpCamel, &TestFnChungReynolds,
+	&TestFnCube, &TestFnDeckkersAarts, &TestFnEggCrate, &TestFnKeane,
+	&TestFnLeon, &TestFnQing, &TestFnSchwefel220, &TestFnSchwefel221,
+	&TestFnSchwefel222,	&TestFnWayburnSeader02, &TestFnSawtoothxy,
+	&TestFnSchwefel, &TestFnAdjiman, &TestFnStyblinskiTank, &TestFnMcCormick,
+	&TestFnHimmelblau, &TestFnBoxBettsExpQuadSum, &TestFnPowellQuartic,
+	&TestFnZirilli, &TestFnCamel, &TestFnComplex, &TestFnDavis,
+	&TestFnDownhillStep, &TestFnEngvall, &TestFnGramacyLee02, &TestFnGiunta,
+	&TestFnHosaki, &TestFnKearfott, &TestFnJennrichSampson, &TestFnTsoulos,
+	&TestFnYaoLiu04, &TestFnBentCigar, &TestFnDeflCorrSpring,
 	&TestFnHyperGrid, &TestFnQuintic, &TestFnVincent, &TestFnStep01,
 	&TestFnStep02, &TestFnStep03, &TestFnDixonPrice, &TestFnZeroSum,
 	&TestFnBuecheRastrigin, &TestFnDifferentPowers, &TestFnDiscus,
 	&TestFnEllipsoid, &TestFnSchaffer07, &TestFnKatsuura,
-	&TestFnRotatedEllipse01, &TestFnRotatedEllipse02, &TestFnTrigonometric01,
-	&TestFnExponential, &TestFnUrsem01, &TestFnQuadratic, &TestFnSchwefel01,
-	&TestFnSchwefel02, &TestFnSchwefel04, &TestFnSchwefel236, &TestFnMishra01,
-	&TestFnMishra02, &TestFnMishra07, &TestFnZettl, &TestFnMultiModal,
-	&TestFnParsopoulos, &TestFnDeb01, &TestFnDeb02, &TestFnCarromTable,
-	&TestFnLevy03, &TestFnStretchedV, &TestFnUrsem04, &TestFnWayburnSeader01,
-	&TestFnVenterSobiSobieski, &TestFnElAttarVidyasDutta, &TestFnPathological,
-	&TestFnYaoLiu09, &TestFnUrsem03, &TestFnMishra08, &TestFnAluffiPentini,
-	&TestFnBeckerLago, &TestFnCosineMixture, &TestFnPeriodic,
-	&TestFnLevyMontalvo2, &TestFnMishra10, &TestFnMishra10b, &TestFnPenalty01,
-	&TestFnPenalty02, &TestFnWayburnSeader03, &TestFnCorana, &TestFnBrad,
-	&TestFnGramacyLee03, &TestFnPermFunction01, &TestFnPermFunction02,
-	&TestFnPinter, &TestFnHolderTable1, &TestFnSchwefel225,
-	&TestFnRosenbrockDisk, &TestFnSineEnvelope, &TestFnPowellSingular,
-	&TestFnBiggsExp2, &TestFnBiggsExp3, &TestFnBiggsExp4, &TestFnDeJong5,
-	&TestFnHilbert, &TestTridiagonalMatrix, &TestFnRipple25, &TestFnSargan,
-	&TestFnFriedman, &TestFnF2, &TestFnInvertedCosine, &TestFnSinusoidal,
+	&TestFnRotatedEllipse01, &TestFnRotatedEllipse02, &TestFnExponential,
+	&TestFnUrsem01, &TestFnQuadratic, &TestFnSchwefel01, &TestFnSchwefel02,
+	&TestFnSchwefel04, &TestFnSchwefel236, &TestFnMishra01, &TestFnMishra02,
+	&TestFnMishra07, &TestFnZettl, &TestFnMultiModal, &TestFnParsopoulos,
+	&TestFnDeb01, &TestFnDeb02, &TestFnCarromTable, &TestFnLevy03,
+	&TestFnStretchedV, &TestFnUrsem04, &TestFnWayburnSeader01,
+	&TestFnVenterSobiSobieski, &TestFnPathological, &TestFnYaoLiu09,
+	&TestFnUrsem03, &TestFnMishra08, &TestFnAluffiPentini, &TestFnBeckerLago,
+	&TestFnCosineMixture, &TestFnLevyMontalvo2, &TestFnMishra10,
+	&TestFnMishra10b, &TestFnPenalty01, &TestFnPenalty02,
+	&TestFnWayburnSeader03, &TestFnCorana, &TestFnBrad, &TestFnGramacyLee03,
+	&TestFnPermFunction01, &TestFnPermFunction02, &TestFnPinter,
+	&TestFnHolderTable1, &TestFnSchwefel225, &TestFnRosenbrockDisk,
+	&TestFnSineEnvelope, &TestFnPowellSingular, &TestFnBiggsExp2,
+	&TestFnBiggsExp3, &TestFnBiggsExp4, &TestFnHilbert,
+	&TestTridiagonalMatrix, &TestFnRipple25, &TestFnSargan, &TestFnFriedman,
+	&TestFnF2, &TestFnInvertedCosine, &TestFnSinusoidal,
 	&TestFnLunacekBiSphere, &TestSphericalSinc, NULL };

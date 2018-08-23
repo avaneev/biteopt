@@ -51,12 +51,12 @@ public:
 		Tester.opt -> CentSpan = roundp( p[ 3 ]);
 		Tester.opt -> AllpProb[ 0 ] = roundp( p[ 4 ]);
 		Tester.opt -> AllpProb[ 1 ] = 1.0;
-		Tester.opt -> ScutProb = 0.11;
 		Tester.opt -> RandProb2[ 0 ] = roundp( p[ 5 ]);
 		Tester.opt -> RandProb2[ 1 ] = 1.0;
+		Tester.opt -> ScutProb = 0.09;
 
 		rnd.init( 0 );
-		Tester.init( 2, TestCorpusAll, 0.000001, 60, 2000, false, false );
+		Tester.init( 2, TestCorpusAll, 0.000001, 90, 2000, false, false );
 
 		Tester.run();
 
@@ -98,9 +98,9 @@ int main()
 		printf( "CentSpan = %.8f;\n", Params[ 3 ]);
 		printf( "AllpProb[ 0 ] = %.8f;\n", Params[ 4 ]);
 		printf( "AllpProb[ 1 ] = %.8f;\n", 1.0 );
-		printf( "ScutProb = %.8f;\n", 0.11 );
 		printf( "RandProb2[ 0 ] = %.8f;\n", Params[ 5 ]);
 		printf( "RandProb2[ 1 ] = %.8f;\n", 1.0 );
+		printf( "ScutProb = %.8f;\n", 0.09 );
 	}
 
 	return( 0 );

@@ -8,6 +8,8 @@ CBiteRnd rnd;
 
 #include "testfn.h"
 
+//#define EVALBINS 1
+
 /**
  * Function test corpus class.
  */
@@ -221,13 +223,14 @@ public:
 		ItRtAvg = 0.0;
 		RjAvg = 0.0;
 		AtAvg = 0.0;
-		int RejTotal = 0;
+		double RejTotal = 0.0;
 		int ComplTotal = 0;
 		int* Iters = new int[ IterCount ];
 		int k;
 		double GoodIters = 0.0;
 		int GoodItersCount = 0;
 
+		#if defined( EVALBINS )
 		const int binspan = 50;
 		const int binc = 1 + binspan * 2;
 		double bins[ binc ];
@@ -237,6 +240,7 @@ public:
 		{
 			bins[ k ] = 0.0;
 		}
+		#endif // defined( EVALBINS )
 
 		for( k = 0; k < FnCount; k++ )
 		{
@@ -257,6 +261,8 @@ public:
 
 			for( j = 0; j < IterCount; j++ )
 			{
+				rnd.init( k + j * 10000 );
+
 				if( opt -> fn -> ParamFunc != NULL )
 				{
 					opt -> optv = (*opt -> fn -> ParamFunc)(
@@ -381,6 +387,7 @@ public:
 
 				RMS = sqrt( RMS / ( IterCount - Rej ));
 
+				#if defined( EVALBINS )
 				for( j = 0; j < IterCount; j++ )
 				{
 					if( Iters[ j ] >= 0 )
@@ -401,6 +408,7 @@ public:
 						bins[ z ]++;
 					}
 				}
+				#endif // defined( EVALBINS )
 			}
 
 			ItAvg += Avg;
@@ -411,25 +419,28 @@ public:
 			const double At = 1.0 / ( 1.0 - (double) Rej / IterCount );
 			AtAvg += At;
 			RejTotal += Rej;
+//			RejTotal += Rj * Rj;
 
 			if( DoPrint )
 			{
 				printf( "AI:%6.0f RI:%5.0f At:%5.2f C:%13.10f RjC:%7.4f "
 					"%s_%i\n", Avg, RMS, At, MinCost,
 					MinRjCost, opt -> fn -> Name, Dims );
+//				printf( "C:%20.13f %20.13f %s_%i\n",
+//					MinRjCost, opt -> optv, opt -> fn -> Name, Dims );
 			}
 		}
 
 /*		for( k = 0; k < binc; k++ )
 		{
-			printf( "%2.2f\t", bins[ k ] / ComplTotal * 100.0 );
+			printf( "%2.2f\t", RMSSpan * ( k - binspan ) / binspan );
 		}
 
 		printf( "\n" );
 
 		for( k = 0; k < binc; k++ )
 		{
-			printf( "%2.2f\t", RMSSpan * ( k - binspan ) / binspan );
+			printf( "%2.2f\t", bins[ k ] / ComplTotal * 100.0 );
 		}
 
 		printf( "\n" );
@@ -439,7 +450,8 @@ public:
 		RMSAvg /= FnCount;
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
-		AtAvg = 1.0 / ( 1.0 - (double) RejTotal / IterCount / FnCount );
+		AtAvg = 1.0 / ( 1.0 - RejTotal / IterCount / FnCount );
+//		AtAvg = 1.0 / ( 1.0 - sqrt( RejTotal / FnCount ));
 		Score = ( AtAvg - 1.0 ) * 100.0 +
 			fabs( ItAvg - 334.0 ) * 0.1;
 		Success = 100.0 * ComplTotal / FnCount / IterCount;
@@ -449,8 +461,10 @@ public:
 
 		if( DoPrint )
 		{
+			#if defined( EVALBINS )
 			printf( ">=%.0f-sigma: %.2f%%\n", RMSSpan,
 				bins[ binc - 1 ] / ComplTotal * 100.0 );
+			#endif // defined( EVALBINS )
 
 			printf( "GoodItersAvg: %.2f%% (avg percentage of improving "
 				"iterations in all attempts)\n",

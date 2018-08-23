@@ -11,6 +11,13 @@
 
 const int N = 10;
 
+inline double applyRound( double v )
+{
+	v *= 10000000.0;
+	v = ( v < 0.0 ? -floor( 0.5 - v ) : floor( v + 0.5 ));
+	return( v / 10000000.0 );
+}
+
 class CTestOpt : public CBiteOptDeep
 {
 public:
@@ -39,8 +46,16 @@ public:
 		return( v <= 0.0001 ? 0.0 : 100000 + v * 9999 );
 	}
 
-	virtual double optcost( const double* const p )
+	virtual double optcost( const double* const p0 )
 	{
+		double p[ N ];
+		int i;
+
+		for( i = 0; i < N; i++ )
+		{
+			p[ i ] = applyRound( p0[ i ]);
+		}
+
 		double cost = sqr(p[0])+sqr(p[1])+p[0]*p[1]-14*p[0]-16*p[1]+sqr(p[2]-10)+
 			4*sqr(p[3]-5)+sqr(p[4]-3)+2*sqr(p[5]-1)+5*sqr(p[6])+
 			7*sqr(p[7]-11)+2*sqr(p[8]-10)+sqr(p[9]-7)+45;
@@ -69,7 +84,7 @@ int main()
 	opt.updateDims( N, 15 );
 	opt.init( rnd );
 
-	for( i = 0; i < 250000; i++ )
+	for( i = 0; i < 100000; i++ )
 	{
 		opt.optimize( rnd );
 	}
@@ -78,7 +93,7 @@ int main()
 
 	for( i = 0; i < N; i++ )
 	{
-		printf( "x[%i] = %0.10g\n", i, opt.getBestParams()[ i ]);
+		printf( "x[%i] = %0.10g\n", i, applyRound( opt.getBestParams()[ i ]));
 	}
 
 	// Optimum provided by function's source.
@@ -94,8 +109,7 @@ int main()
 	x[ 7 ] = 9.828726;
 	x[ 8 ] = 8.280092;
 	x[ 9 ] = 8.375927;
-
-	printf( "Source opt: %f\n", opt.optcost( x ));
+	printf( "Source opt: %.8f\n", opt.optcost( x ));
 
 	return( 0 );
 }

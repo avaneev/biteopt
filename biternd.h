@@ -7,7 +7,7 @@
  *
  * @section license License
  * 
- * Copyright (c) 2016-2017 Aleksey Vaneev
+ * Copyright (c) 2016-2018 Aleksey Vaneev
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -37,7 +37,7 @@
  * Class that implements random number generation. The default implementation
  * includes a relatively fast pseudo-random number generator (PRNG) using a
  * classic formula "seed = ( a * seed + c ) % m" (LCG). This implementation
- * uses bits 32-62 (30 bits) of the state variable which ensures at least 2^32
+ * uses bits 32-61 (30 bits) of the state variable which ensures at least 2^32
  * period in the lowest significant bit of the resulting pseudo-random
  * sequence. See https://en.wikipedia.org/wiki/Linear_congruential_generator
  * for more details.
@@ -49,8 +49,7 @@ public:
 	/**
 	 * Function initializes *this PRNG object.
 	 *
-	 * @param NewSeed New random seed value. Lower 10 bits are used to select
-	 * pseudo-random sequence.
+	 * @param NewSeed New random seed value.
 	 */
 
 	void init( const int NewSeed )
@@ -67,12 +66,47 @@ public:
 	 * @return Random number in the range [0; 1).
 	 */
 
-	virtual double getRndValue()
+	double getRndValue()
 	{
 		seed = 500009 * seed + 300119;
 
-//		return( (double) (int) (( seed >> 32 ) & 0x3FFFFFFF ) / 0x40000000 );
 		return((( seed >> 32 ) & 0x3FFFFFFF ) * 9.31322574615478516e-10 );
+	}
+
+	/**
+	 * @return Scale of "raw" random values returned by functions with the
+	 * "raw" suffix.
+	 */
+
+	static int32_t getRawScale()
+	{
+		return( 0x40000000 );
+	}
+
+	/**
+	 * @return Uniformly-distributed random number in the range [0; 1), in the
+	 * "raw" scale.
+	 */
+
+	int32_t getUniformRaw()
+	{
+		seed = 500009 * seed + 300119;
+
+		return( (int32_t) (( seed >> 32 ) & 0x3FFFFFFF ));
+	}
+
+	/**
+	 * @return TPDF random number in the range (-1; 1), in the "raw" scale.
+	 */
+
+	int32_t getTPDFRaw()
+	{
+		seed = 500009 * seed + 300119;
+		const int32_t v1 = (int32_t) (( seed >> 32 ) & 0x3FFFFFFF );
+		seed = 500009 * seed + 300119;
+		const int32_t v2 = (int32_t) (( seed >> 32 ) & 0x3FFFFFFF );
+
+		return( v1 - v2 );
 	}
 
 private:

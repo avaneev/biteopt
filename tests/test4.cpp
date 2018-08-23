@@ -1,4 +1,4 @@
-// High-dimensional convergence test of the BiteOpt strategy.
+// High-dimensional convergence test of the BiteOpt method.
 //
 // On each line:
 // AI - average number of iterations taken in successful attempts.

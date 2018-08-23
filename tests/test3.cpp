@@ -1,4 +1,4 @@
-// High-dimensional convergence test of the BiteOpt strategy.
+// High-dimensional convergence test of the BiteOpt method.
 //
 // On each line:
 // AI - average number of iterations taken in successful attempts.
@@ -16,7 +16,7 @@ int main()
 	CTester Tester;
 
 	rnd.init( 1 );
-	Tester.init( 5, OptCorpusNDRotOfs, 0.01, 15, 50000, true, true );
+	Tester.init( 14, OptCorpusNDRotOfs, 0.01, 15, 50000, true, true );
 
 	Tester.run();
 }

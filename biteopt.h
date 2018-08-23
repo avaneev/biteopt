@@ -36,17 +36,9 @@
 
 /**
  * BiteOpt optimization class. Implements a stochastic non-linear
- * bound-constrained derivative-free optimization strategy. It maintains a
- * cost-ordered population list of previously evaluated solutions that are
- * evolved towards a lower cost. On every iteration, the highest-cost solution
- * in the list can be replaced with a new solution, and the list reordered. A
- * population of solutions allows the strategy to space solution vectors apart
- * from each other thus making them cover a larger parameter search space
- * collectively. Beside that, parameter randomization and the "step in the
- * right direction" operation are used that move the solutions into position
- * with a probabilistically lower objective function value.
+ * bound-constrained derivative-free optimization method.
  *
- * Algorithm's description is available at https://github.com/avaneev/biteopt
+ * Description is available at https://github.com/avaneev/biteopt
  */
 
 class CBiteOpt
@@ -54,15 +46,15 @@ class CBiteOpt
 public:
 	double RandProb[ 2 ]; ///< Parameter value randomization probability.
 		///<
+	double RandProb2[ 2 ]; ///< Alt parameter value randomization probability.
+		///<
+	double AllpProb[ 2 ]; ///< All parameters randomization probability.
+		///<
 	double CentProb[ 2 ]; ///< Centroid move probability.
 		///<
 	double CentSpan; ///< Centroid move range multiplier.
 		///<
-	double AllpProb[ 2 ]; ///< All parameters randomization probability.
-		///<
 	double ScutProb; ///< Short-cut probability.
-		///<
-	double RandProb2[ 2 ]; ///< Alt parameter value randomization probability.
 		///<
 
 	/**
@@ -71,6 +63,7 @@ public:
 
 	CBiteOpt()
 		: MantMult( 1 << MantSize )
+		, MantMultI( 1.0 / ( 1 << MantSize ))
 		, ParamCount( 0 )
 		, PopSize( 0 )
 		, PopOrder( NULL )
@@ -82,28 +75,24 @@ public:
 		, MaxValues( NULL )
 		, DiffValues( NULL )
 		, BestParams( NULL )
-		, BestAuxData( NULL )
-		, CurAuxData( NULL )
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=-0.043395
-		RandProb[ 0 ] = 0.46825569;
-		RandProb[ 1 ] = 0.43904185;
+		// Cost=-0.038908
+		RandProb[ 0 ] = 0.33084565;
+		RandProb[ 1 ] = 0.56289567;
 		CentProb[ 0 ] = 1.00000000;
-		CentProb[ 1 ] = 0.17993158;
-		CentSpan = 2.07783493;
-		AllpProb[ 0 ] = 0.58733721;
+		CentProb[ 1 ] = 0.42182248;
+		CentSpan = 1.91421063;
+		AllpProb[ 0 ] = 0.54601532;
 		AllpProb[ 1 ] = 1.00000000;
-		ScutProb = 0.11000000;
-		RandProb2[ 0 ] = 0.10361101;
+		RandProb2[ 0 ] = 0.10498679;
 		RandProb2[ 1 ] = 1.00000000;
+		ScutProb = 0.09000000;
 	}
 
 	~CBiteOpt()
 	{
-		deleteAuxData( CurAuxData );
-		deleteAuxData( BestAuxData );
 		deleteBuffers();
 	}
 
@@ -132,6 +121,7 @@ public:
 		ParamCount = aParamCount;
 		PopSize = aPopSize;
 		PopSize1 = aPopSize - 1;
+		PopSizeI = 1.0 / aPopSize;
 		PopOrder = new int[ PopSize ];
 		CurParamsBuf = new double[ PopSize * ParamCount ];
 		CurParams = new double*[ PopSize ];
@@ -192,9 +182,9 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				double r = ( rnd.getRndValue() - 0.5 ) * 2.0;
-				r = pow( fabs( r ), 0.125 ) *
-					( r < 0.0 ? -1.0 : 1.0 ) * 0.5 + 0.5;
+				const double r = pow( fabs( rnd.getRndValue() -
+					rnd.getRndValue() ), 0.125 ) *
+					( rnd.getRndValue() < 0.5 ? -0.5 : 0.5 ) + 0.5;
 
 				const double v = ( j == 0 && InitParams != NULL ?
 					wrapParam( rnd, ( InitParams[ i ] - MinValues[ i ]) /
@@ -215,23 +205,20 @@ public:
 				{
 					BestParams[ i ] = NewParams[ i ];
 				}
-
-				if( BestAuxData != NULL )
-				{
-					deleteAuxData( BestAuxData );
-				}
-
-				BestAuxData = CurAuxData;
-				CurAuxData = NULL;
 			}
 		}
 
-		CentCntr = rnd.getRndValue();
 		RandCntr = rnd.getRndValue();
-		ParamCntr = (int) ( rnd.getRndValue() * ParamCount );
 		RandCntr2 = rnd.getRndValue();
-		StallCount = 0;
+		AllpCntr = rnd.getRndValue();
+		CentCntr = rnd.getRndValue();
+		ParamCntr = (int) ( rnd.getRndValue() * ParamCount );
 		RandSwitch = 0;
+		StallCount = 0;
+
+		CentSpanRnd = CentSpan / rnd.getRawScale();
+		PopSizeRnd = (double) PopSize / rnd.getRawScale();
+		ParamCountRnd = (double) ParamCount / rnd.getRawScale();
 	}
 
 	/**
@@ -265,6 +252,7 @@ public:
 
 		int RaiseFlags = 0; // Which RandSwitch flags to raise on
 			// optimization improvement.
+
 		RandCntr += RandProb[ RandSwitch & 1 ];
 
 		if( RandCntr >= 1.0 )
@@ -281,6 +269,8 @@ public:
 
 				// Alternative randomization method, works well for convex
 				// functions.
+
+				const double* const MinParams = CurParams[ PopOrder[ 0 ]];
 
 				for( i = 0; i < ParamCount; i++ )
 				{
@@ -301,32 +291,36 @@ public:
 				int a;
 				int b;
 
-				if( rnd.getRndValue() < AllpProb[( RandSwitch >> 2 ) & 1 ])
+				AllpCntr += AllpProb[( RandSwitch >> 2 ) & 1 ];
+
+				if( AllpCntr >= 1.0 )
 				{
 					RaiseFlags |= 4;
+					AllpCntr -= 1.0;
 					a = 0;
 					b = ParamCount - 1;
 				}
 				else
 				{
 					a = ParamCntr;
-					b = a;
+					b = ParamCntr;
 					ParamCntr = ( ParamCntr == 0 ?
 						ParamCount : ParamCntr ) - 1;
 				}
 
 				// Bitmask inversion operation, works as a "driver" of
-				// optimization process, applied to 1 random parameter at a
-				// time.
+				// optimization process, applied to 1 random or all 
+				// parameters.
 
 				const double r = mp;
-				const int imask = ( 2 <<
-					(int) (( 0.999999997 - r * r * r * r ) * MantSize )) - 1;
+				const double r2 = mp * mp;
+				const int imask =
+					MantSizeMask >> (int) ( r2 * r2 * r * MantSize );
 
 				for( i = a; i <= b; i++ )
 				{
 					Params[ i ] = ( (int) ( Params[ i ] * MantMult ) ^
-						imask ) / MantMult;
+						imask ) * MantMultI;
 				}
 
 				CentCntr += CentProb[( RandSwitch >> 3 ) & 1 ];
@@ -338,9 +332,7 @@ public:
 
 					// Random move around random previous solution vector.
 
-					const double m = ( rnd.getRndValue() -
-						rnd.getRndValue() ) * CentSpan; // TPDF.
-
+					const double m = rnd.getTPDFRaw() * CentSpanRnd;
 					const int si = (int) ( mp * mp * PopSize );
 					const double* const rp1 = CurParams[ PopOrder[ si ]];
 
@@ -364,15 +356,16 @@ public:
 
 			// Select two more previous solutions to be used in the mix.
 
-			const int si2 = (int) ( rnd.getRndValue() * PopSize );
+			const int si2 = (int) ( rnd.getUniformRaw() * PopSizeRnd );
 			const double* const rp1 = CurParams[ PopOrder[ si2 ]];
 			const double* const rp2 = CurParams[ PopOrder[ PopSize1 - si2 ]];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				// The "step in the right direction" operation towards the
-				// best (minimal) and away from the worst (maximal) parameter
-				// vector.
+				// The "step in the right direction" (Differential Evolution
+				// "mutation") operation towards the best (minimal) and away
+				// from the worst (maximal) parameter vector, plus a
+				// difference of two random vectors.
 
 				Params[ i ] = MinParams[ i ] -
 					(( MaxParams[ i ] - OrigParams[ i ]) -
@@ -386,7 +379,7 @@ public:
 			// reduce convergence time for some functions while not severely
 			// impacting performance for other functions.
 
-			i = (int) ( rnd.getRndValue() * ParamCount );
+			i = (int) ( rnd.getUniformRaw() * ParamCountRnd );
 			const double v = getRealValue( Params[ i ], i );
 
 			for( i = 0; i < ParamCount; i++ )
@@ -407,8 +400,7 @@ public:
 
 		const double NewCost = optcost( NewParams );
 
-		if( PushOpt != NULL && PushOpt != this &&
-			PushOpt -> ParamCount == ParamCount )
+		if( PushOpt != NULL )
 		{
 			const int sH = PushOpt -> PopOrder[ PushOpt -> PopSize1 ];
 
@@ -419,12 +411,13 @@ public:
 				for( i = 0; i < ParamCount; i++ )
 				{
 					PushOpt -> CentParams[ i ] +=
-						( Params[ i ] - rp[ i ]) / PushOpt -> PopSize;
+						( Params[ i ] - rp[ i ]) * PushOpt -> PopSizeI;
 
 					rp[ i ] = Params[ i ];
 				}
 
 				PushOpt -> insertPopOrder( NewCost, sH, PushOpt -> PopSize1 );
+				PushOpt -> RandSwitch = RandSwitch;
 			}
 		}
 
@@ -456,14 +449,6 @@ public:
 			}
 
 			BestCost = NewCost;
-
-			if( BestAuxData != NULL )
-			{
-				deleteAuxData( BestAuxData );
-			}
-
-			BestAuxData = CurAuxData;
-			CurAuxData = NULL;
 		}
 
 		// Replace the highest-cost previous solution, update centroid.
@@ -472,7 +457,7 @@ public:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			CentParams[ i ] += ( Params[ i ] - rp[ i ]) / PopSize;
+			CentParams[ i ] += ( Params[ i ] - rp[ i ]) * PopSizeI;
 			rp[ i ] = Params[ i ];
 		}
 
@@ -501,16 +486,6 @@ public:
 	}
 
 	/**
-	 * Function returns pointer to aux data provided with the best solution.
-	 * This pointer should not be deleted.
-	 */
-
-	void* getBestAuxData() const
-	{
-		return( BestAuxData );
-	}
-
-	/**
 	 * Virtual function that should fill minimal parameter value vector.
 	 *
 	 * @param[out] p Minimal value vector.
@@ -536,23 +511,17 @@ public:
 
 	virtual double optcost( const double* const p ) = 0;
 
-	/**
-	 * Function deletes auxiliary data previously provided with the solution.
-	 *
-	 * @param p Pointer to aux data, can be NULL. Should be type-casted to the
-	 * actual data type.
-	 */
-
-	virtual void deleteAuxData( void* const p )
-	{
-	}
-
 protected:
 	static const int MantSize = 29; ///< Mantissa size of bitmask inversion
 		///< operation. Must be lower than the random number generator's
 		///< precision.
 		///<
+	static const int MantSizeMask = ( 1 << MantSize ) - 1; ///< Mask that
+		///< corresponds to mantissa.
+		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
+		///<
+	double MantMultI; ///< =1/MantMult.
 		///<
 	int ParamCount; ///< The total number of internal parameter values in use.
 		///<
@@ -560,18 +529,31 @@ protected:
 		///<
 	int PopSize1; ///< = PopSize - 1.
 		///<
-	double CentCntr; ///< Centroid move probability counter.
+	double PopSizeI; ///< = 1/PopSize.
 		///<
 	double RandCntr; ///< Parameter randomization probability counter.
 		///<
-	int RandSwitch; ///< Index flags for probability values switch. Finite
-		///< state automata like.
+	double RandCntr2; ///< Alt parameter randomization probability counter.
+		///<
+	double AllpCntr; ///< All-parameter randomization probability counter.
+		///<
+	double CentCntr; ///< Centroid move probability counter.
 		///<
 	int ParamCntr; ///< Parameter randomization index counter.
 		///<
-	double RandCntr2; ///< Alt parameter randomization probability counter.
+	int RandSwitch; ///< Index flags for probability values switching.
+		///< State automata-like.
 		///<
 	int StallCount; ///< The number of iterations without improvement.
+		///<
+	double CentSpanRnd; ///< CentSpan multiplier converted into "raw"
+		///< random value scale.
+		///<
+	double PopSizeRnd; ///< PopSize converted into "raw" random value
+		///< scale.
+		///<
+	double ParamCountRnd; ///< ParamCount converted into "raw" random value
+		///< scale.
 		///<
 	int* PopOrder; ///< The current solution vectors ordering,
 		///< ascending-sorted by cost.
@@ -595,29 +577,10 @@ protected:
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
 		///<
-	void* BestAuxData; ///< Auxiliary data of the best parameter vector.
-		///<
-	void* CurAuxData; ///< Aux data provided with the latest solution, will be
-		///< deleted if new solution is not the best solution.
-		///<
 	double* Params; ///< Temporary parameter buffer.
 		///<
 	double* NewParams; ///< Temporary new parameter buffer.
 		///<
-
-	/**
-	 * Function provides auxiliary data, this function should be called in the
-	 * optcost() function. The deleteAuxData() should be implemented to delete
-	 * unused aux data.
-	 *
-	 * @param AuxData Pointer to aux data. Can be NULL.
-	 */
-
-	void provideAuxData( void* const AuxData )
-	{
-		deleteAuxData( CurAuxData );
-		CurAuxData = AuxData;
-	}
 
 	/**
 	 * Function deletes previously allocated buffers.
@@ -733,24 +696,10 @@ protected:
 
 /**
  * Deep optimization class. Based on an array of M CBiteOpt objects. This
- * "deep" strategy pushes the newly-obtained solution to the next CBiteOpt
- * object which is then optimized. This strategy while increasing the
- * convergence time by a factor of about sqrt(M) is able to solve even
- * somewhat noisy non-linear functions.
+ * "deep" method pushes the newly-obtained solution to the next CBiteOpt
+ * object which is then optimized.
  *
- * This strategy is most effective on noisy functions or functions with
- * huge fluctuations near the global solution that are not very expensive to
- * calculate and that have a large iteration budget. Tests have shown that on
- * smooth functions that have many strongly competing minima this strategy
- * increases the chance to find a global solution by a factor of sqrt(M)
- * relative to the CBiteOpt class, but still requires several runs at
- * different random seeds. However, the number of required runs in most cases
- * is lower by about sqrt(M). So, in many cases it's more efficient to
- * increase the iteration budget by a factor of sqrt(M) which will in turn
- * increase the chance to find a global optimum by a factor of sqrt(M) and
- * also reduce the number of optimization attempts by the same number. In
- * practice, the chance to find a global optimum is increased even more
- * considerably with this "deep" strategy.
+ * Description is available at https://github.com/avaneev/biteopt
  */
 
 class CBiteOptDeep
@@ -856,29 +805,37 @@ public:
 	 *
 	 * @param rnd Random number generator.
 	 * @return The number of non-improving iterations so far. The plateau
-	 * threshold value is getInitEvals() * 8.
+	 * threshold value is getInitEvals() / M * 8.
 	 */
 
 	int optimize( CBiteRnd& rnd )
 	{
-		const int NextOpt = ( CurOpt == BiteCount - 1 ? 0 : CurOpt + 1 );
-
-		if( Opts[ CurOpt ] -> optimize( rnd, Opts[ NextOpt ]) == 0 )
+		if( BiteCount == 1 )
 		{
-			StallCount = 0;
+			StallCount = Opts[ 0 ] -> optimize( rnd );
 		}
 		else
 		{
-			StallCount++;
-		}
+			int NextOpt = ( CurOpt == BiteCount - 1 ? 0 : CurOpt + 1 );
 
-		if( Opts[ CurOpt ] -> getBestCost() <
-			Opts[ BestOpt ] -> getBestCost() )
-		{
-			BestOpt = CurOpt;
-		}
+			if( Opts[ CurOpt ] -> optimize( rnd, Opts[ NextOpt ]) == 0 )
+			{
+				StallCount = 0;
+			}
+			else
+			{
+				StallCount++;
+				NextOpt = (int) ( rnd.getRndValue() * BiteCount );
+			}
 
-		CurOpt = NextOpt;
+			if( Opts[ CurOpt ] -> getBestCost() <
+				Opts[ BestOpt ] -> getBestCost() )
+			{
+				BestOpt = CurOpt;
+			}
+
+			CurOpt = NextOpt;
+		}
 
 		return( StallCount );
 	}
