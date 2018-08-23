@@ -316,19 +316,17 @@ On every iteration, one of the 4 best solutions is evolved (best selection
 allows method to be less sensitive to noise). At start, solution vectors
 are initialized almost on hyper-box boundaries.
 
-```math
-x_\text{new}=x_\text{best}
-```
+[equation1](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best})
 
-Below, $`i`$ is either equal to $`rand(1, N)`$ or in the range $`[1; N]`$,
-depending on the `AllpProb` probability. Probabilities are defined in the
-range $`[0; 1]`$ and in many instances in the code were replaced with simple
-resetting counters for more efficiency. Parameter values are internally
-normalized to $`[0; 1]`$ range and, to stay in this range, are wrapped in a
-special manner before each function evaluation. Algorithm's hyper-parameters
-(probabilities) were pre-selected and should not be changed. Algorithm uses an
-alike of state automata to switch between different probability values
-depending on the candidate solution acceptance.
+Below, _i_ is either equal to rand(1, N) or in the range [1; N], depending on
+the `AllpProb` probability. Probabilities are defined in the range [0; 1] and
+in many instances in the code were replaced with simple resetting counters for
+more efficiency. Parameter values are internally normalized to [0; 1] range
+and, to stay in this range, are wrapped in a special manner before each
+function evaluation. Algorithm's hyper-parameters (probabilities) were
+pre-selected and should not be changed. Algorithm uses an alike of state
+automata to switch between different probability values depending on the
+candidate solution acceptance.
 
 2. Depending on the `RandProb` probability, a single (or all) parameter value
 randomization is performed using "bitmask inversion" operation.
