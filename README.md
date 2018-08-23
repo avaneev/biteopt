@@ -346,6 +346,7 @@ With `RandProb2` probability an alternative randomization method is used
 involving the current best solution and centroid vector.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{new}[i]),&space;\quad&space;i=1,\ldots,N,\\&space;\quad&space;s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5&space;?&space;1:2))
+<pre xml:lang="latex">x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}\cdot CentSpan\cdot (x_\text{new}[i]-x_\text{rand}[i])</pre>
 
 3. (Not together with N.2) the "step in the right direction" operation is
 performed using the random previous solution, chosen best and worst
