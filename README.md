@@ -318,24 +318,25 @@ are initialized almost on hyper-box boundaries.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best})
 
-Below, _i_ is either equal to rand(1, N) or in the range [1; N], depending on
-the `AllpProb` probability. Probabilities are defined in the range [0; 1] and
-in many instances in the code were replaced with simple resetting counters for
-more efficiency. Parameter values are internally normalized to [0; 1] range
-and, to stay in this range, are wrapped in a special manner before each
-function evaluation. Algorithm's hyper-parameters (probabilities) were
-pre-selected and should not be changed. Algorithm uses an alike of state
-automata to switch between different probability values depending on the
-candidate solution acceptance.
+Probabilities are defined in the range [0; 1] and in many instances in the
+code were replaced with simple resetting counters for more efficiency.
+Parameter values are internally normalized to [0; 1] range and, to stay in
+this range, are wrapped in a special manner before each function evaluation.
+Algorithm's hyper-parameters (probabilities) were pre-selected and should not
+be changed. Algorithm uses an alike of state automata to switch between
+different probability values depending on the candidate solution acceptance.
 
 2. Depending on the `RandProb` probability, a single (or all) parameter value
-randomization is performed using "bitmask inversion" operation.
+randomization is performed using "bitmask inversion" operation. Below, _i_ is
+either equal to rand(1, N) or in the range [1; N], depending on the `AllpProb`
+probability. `>>` is a shift-right operation, `MantSize` is a constant equal
+to 29.
 
-![equation2](http://quicklatex.com/cache3/15/ql_0791b3be35d15c7e3a987e558dd2b615_l3.png)
+![equation](https://latex.codecogs.com/gif.latex?mask=(2^{MantSize}-1)\gg&space;\lfloor&space;rand(0\ldots1)^5\cdot&space;MantSize\rfloor)
 
-![equation3](http://quicklatex.com/cache3/70/ql_fe4d99ed011962956503c80053908b70_l3.png)
+![equation](https://latex.codecogs.com/gif.latex?MantMult=2^{MantSize})
 
-![equation4](http://quicklatex.com/cache3/51/ql_c1f36edbe9027044ef6d120b4a2b8451_l3.png)
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]&space;=&space;\frac{\lfloor&space;x_\text{new}[i]\cdot&space;MantMult&space;\rfloor&space;\bigotimes&space;mask&space;}{MantMult})
 
 Plus, with `CentProb` probability the move around a random previous solution
 is performed, utilizing a TPDF random value.
@@ -346,22 +347,21 @@ With `RandProb2` probability an alternative randomization method is used
 involving the current best solution and centroid vector.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{new}[i]),&space;\quad&space;i=1,\ldots,N,\\&space;\quad&space;s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5&space;?&space;1:2))
-<pre xml:lang="latex">x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}\cdot CentSpan\cdot (x_\text{new}[i]-x_\text{rand}[i])</pre>
 
 3. (Not together with N.2) the "step in the right direction" operation is
 performed using the random previous solution, chosen best and worst
-solutions, plus a difference of two random solutions. This is conceptually
-similar to Differential Evolution's "mutation" operation. The used worst
-solution is chosen from 3 worst solutions.
+solutions, plus a difference of two other random solutions. This is
+conceptually similar to Differential Evolution's "mutation" operation. The
+used worst solution is chosen from 3 worst solutions.
 
-![equation10](http://quicklatex.com/cache3/58/ql_a15224c3709fd3fda67760646e7b7e58_l3.png)
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-(x_\text{rand2}-x_\text{rand3}))}{2})
 
 4. With `ScutProb` probability a "short-cut" parameter vector change operation
 is performed.
 
-![equation11](http://quicklatex.com/cache3/da/ql_3c8871a6c42a602b2bfac8c1c89affda_l3.png)
+![equation](https://latex.codecogs.com/gif.latex?z=x_\text{new}[\text{rand}(1,N)])
 
-![equation12](http://quicklatex.com/cache3/67/ql_b434d4517882743a2528d2e10b7ff767_l3.png)
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=z,&space;\quad&space;i=1,\ldots,N)
 
 5. After each objective function evaluation, the highest-cost previous
 solution is replaced using the upper bound cost constraint.
