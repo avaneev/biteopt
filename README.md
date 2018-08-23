@@ -316,7 +316,7 @@ On every iteration, one of the 4 best solutions is evolved (best selection
 allows method to be less sensitive to noise). At start, solution vectors
 are initialized almost on hyper-box boundaries.
 
-[equation1](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best})
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best})
 
 Below, _i_ is either equal to rand(1, N) or in the range [1; N], depending on
 the `AllpProb` probability. Probabilities are defined in the range [0; 1] and
@@ -340,18 +340,12 @@ randomization is performed using "bitmask inversion" operation.
 Plus, with `CentProb` probability the move around a random previous solution
 is performed, utilizing a TPDF random value.
 
-![equation5](http://quicklatex.com/cache3/3d/ql_faa3b8c6fd883fb228f68b258fb3b33d_l3.png)
-
-![equation6](http://quicklatex.com/cache3/0f/ql_c9ea3d70b8eb29a1c0e112f9d15a5b0f_l3.png)
-
-![equation7](http://quicklatex.com/cache3/24/ql_ccfec27c2b5a32348a59a84caa552924_l3.png)
-
-![equation8](http://quicklatex.com/cache3/cf/ql_40565ca7f1625f7e0f28d06f3f6a8acf_l3.png)
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}\cdot&space;CentSpan\cdot&space;(x_\text{new}[i]-x_\text{rand}[i]))
 
 With `RandProb2` probability an alternative randomization method is used
 involving the current best solution and centroid vector.
 
-![equation9](http://quicklatex.com/cache3/f7/ql_b2e88e9d9710ddf91a1561a021ee66f7_l3.png)
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{new}[i]),&space;\quad&space;i=1,\ldots,N,\\&space;\quad&space;s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5&space;?&space;1:2))
 
 3. (Not together with N.2) the "step in the right direction" operation is
 performed using the random previous solution, chosen best and worst
