@@ -18,88 +18,96 @@
 ## Introduction ##
 
 BITEOPT is a free open-source stochastic non-linear bound-constrained
-derivative-free optimization strategy (heuristic). The name "BiteOpt" is an
-acronym for "BITmask Evolution OPTimization".
+derivative-free optimization method (heuristic or strategy). The name
+"BiteOpt" is an acronym for "BITmask Evolution OPTimization".
 
-The benefit of this strategy is a relatively high robustness: it can
+The benefit of this method is a relatively high robustness: it can
 successfully optimize a wide range of multi-dimensional test functions.
 Another benefit is a low convergence time which depends on the complexity
 of the objective function. Hard (multi-modal) problems may require many
 optimization attempts to reach optimum.
 
 Instead of iterating through different "starting guesses" to find optimum
-like in deterministic strategies, this strategy requires optimization attempts
+like in deterministic methods, this method requires optimization attempts
 (runs) with different random seeds. The stochastic nature of the method allows
 it to automatically "fall" into different competing minima with each run. If
 there are no competing minima in a function (or the true/global minimum is
-rogue and cannot be detected), this strategy in absolute majority of runs will
+rogue and cannot be detected), this method in absolute majority of runs will
 return the same optimum.
 
 ## Comparison ##
 
-This "black-box" strategy was tested on 400+ 1-10 dimensional optimization
-problems and performed well, and it successfully solves even 600-dimensional
-test problems found in some textbooks. Due to its design this strategy may be
-particularly good at improving an existing sub-optimal local solution.
+This "black-box" optimization algorithm was tested on 450+ 1-10 dimensional
+optimization problems and performed well, and it successfully solves even
+600-dimensional test problems found in some textbooks. But the main focus of
+the method is to provide fast solutions for computationally expensive
+"black-box" problems of medium dimensionality (up to 60).
 
-This strategy was compared with the results of this paper (on 244 published C
+This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
 evaluated): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp).
-This strategy was able to solve 77% of non-convex smooth problems in 10
+This method was able to solve 77% of non-convex smooth problems in 10
 attempts, 2500 iterations each. It comes 2nd in the comparison on non-convex
-smooth problems (see Fig.9 in the paper). With a huge iteration budget (1
-million) this strategy solves 95% of problems.
+smooth problems (see Fig.9 in the paper). With a huge iteration budget (up to 1
+million) this method solves 95% of problems.
 
 On a comparable test function suite and conditions outlined at this page:
 [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
 (excluding several ill-defined and overly simple functions, and including
-several complex functions, use `test2.cpp` to run the test) this strategy's
+several complex functions, use `test2.cpp` to run the test) this method's
 success rate is >90% while the average number of objective function
 evaluations is ~330.
 
-At least in these comparisons, this strategy performs better than plain
-CMA-ES which is also a well-performing stochastic strategy.
+At least in these comparisons, this method performs better than plain
+CMA-ES which is also a well-performing stochastic optimization method. CMA-ES
+outperforms CBiteOptDeep (e.g. with M=9) on synthetic function sets that
+involve random coordinate axis rotations and offsets (e.g.
+[BBOB suite](http://coco.gforge.inria.fr/)). Plain CBiteOpt lags far behind in
+such benchmark arrangements. However, BiteOpt's development from its inception
+was based on a wider selection of functions proposed by global optimization
+researchers, without focus on synthetic transformations.
 
 ## CBiteOpt (biteopt.h) ##
 
 BiteOpt optimization class. Implements a stochastic non-linear
-bound-constrained derivative-free optimization strategy. It maintains a
+bound-constrained derivative-free optimization method. It maintains a
 cost-ordered population list of previously evaluated solutions that are
-evolved towards a lower cost. On every iteration, the highest-cost solution in
-the list can be replaced with a new solution, and the list reordered. A
-population of solutions allows the strategy to space solution vectors apart
-from each other thus making them cover a larger parameter search space
-collectively. Beside that, parameter randomization and the "step in the
-right direction" operation are used that move the solutions into position
-with a probabilistically lower objective function value.
+evolved towards a lower cost (objective function value). On every iteration,
+the highest-cost solution in the list can be replaced with a new solution, and
+the list reordered. A population of solutions allows the method to space
+solution vectors apart from each other thus making them cover a larger
+parameter search space collectively. Beside that, a range of parameter
+randomization and the "step in the right direction" (Differential Evolution
+"mutation") operations are used that move the solutions into positions with a
+probabilistically lower objective function value.
 
 ## CBiteOptDeep (biteopt.h) ##
 
 Deep optimization class. Based on an array of M CBiteOpt objects. This "deep"
-strategy pushes the newly-obtained solution to the next CBiteOpt object which
-is then optimized. This strategy while increasing the convergence time by a
-factor of about sqrt(M) is able to solve even somewhat noisy non-linear
-functions.
+method pushes the newly-obtained solution to the next CBiteOpt object which
+is then optimized. This method while increasing the convergence time is able
+to solve complex multi-modal functions.
 
-This strategy is most effective on noisy functions or functions with
-noisy fluctuations near the global solution that are not very expensive to
-calculate and that have a large iteration budget. Tests have shown that on
-smooth functions that have many strongly competing minima this strategy
-increases the chance to find a global solution by a factor of sqrt(M)
-relative to the CBiteOpt class, but still requires several runs at
-different random seeds. When using this strategy the iteration budget
-increases by a factor of sqrt(M), but the number of optimization attempts is
-reduced by the same number. In practice, the chance to find a global optimum
-is sometimes increased more than by sqrt(M) with this "deep" strategy.
+This method is most effective on complex functions, possibly with noisy
+fluctuations near the global solution that are not very expensive to calculate
+and that have a large iteration budget. Tests have shown that on smooth
+functions that have many strongly competing minima this "deep" method
+considerably increases the chance to find a global solution relative to the
+CBiteOpt class, but still requires several runs at different random seeds.
+When using this method, the iteration budget increases but the number of
+required optimization attempts usually decreases. In practice, it is not
+always possible to predict the convergence time increase of the CBiteOptDeep
+class, but increase does correlate to its M parameter. For sure, CBiteOptDeep
+class often produces better solutions than the CBiteOpt class.
 
 ## Notes ##
 
-Strategy's hyper-parameters (probabilities) were pre-selected and should not
+Method's hyper-parameters (probabilities) were pre-selected and should not
 be changed.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
-Running 10 times is a minimal general requirement. This strategy is hugely
+Running 10 times is a minimal general requirement. This method is hugely
 probabilistic and it depends on its initial state, which is selected randomly.
 In most cases it is more efficient to rerun the optimization with a new random
 seed than to wait for the optimization process to converge. Based on the
@@ -114,35 +122,37 @@ precision.
 
 The required number of optimization attempts is usually proportional to the
 number of strongly competing minima in a function. Rogue optimums may not be
-found by this strategy. A rogue optimum is an optimum that has a very small,
+found by this method. A rogue optimum is an optimum that has a very small,
 almost undetectable area of descent and is placed apart from other competing
-minima. The strategy favors minimum with a larger area of descent. The
+minima. The method favors minimum with a larger area of descent. The
 Damavandi test function is a perfect example of the limitation of this
-strategy (this test function is solved by this strategy, but requires a lot
+method (this test function is solved by this method, but requires a lot
 of iterations). In practice, however, rogue optimums can be considered as
 undesired outliers that rely on unstable parameter values (if such parameters
 are used in real-world system that has a certain parameter value precision, a
 system may leave the "rogue" optimal regime easily).
 
-To a small degree this strategy is immune to noise in the objective function.
-While this strategy was designed to be applied to continuous functions, it is
-also immune to discontinuities to some degree, and it can solve problems that
-utilize parameter value rounding (integer parameters). This strategy can't
-acceptably solve high-dimensional problems that are implicitly or explicitly
-combinatorial (e.g. Perm and Lennard-Jones atom clustering problems) as in
-such problems the global descent vanishes at some point and the strategy is
-left with an exponentially increasing number of local minima. Similarly,
-problems with many competing minima without a pronounced global descent
-towards global minimum (e.g. Bukin N.6 problem) may not be solved acceptably
-as in most cases they require exhaustive search or a search involving
-knowledge of the structure of the problem.
+To a small degree this method is immune to noise in the objective function.
+While this method was designed to be applied to continuous functions, it is
+immune to discontinuities, and it can solve problems that utilize parameter
+value rounding (integer parameters). This method can't acceptably solve
+high-dimensional problems that are implicitly or explicitly combinatorial
+(e.g. Perm and Lennard-Jones atom clustering problems) as in such problems the
+global descent vanishes at some point and the method is left with an
+exponentially increasing number of local minima. Similarly, problems with many
+competing minima without a pronounced global descent towards global minimum
+(e.g. Bukin N.6 problem) may not be solved acceptably as in most cases they
+require exhaustive search or a search involving knowledge of the structure of
+the problem.
 
 Difference between upper and lower parameter bound values affects precision of
-the strategy. To increase precision, this difference should be kept as low as
+the method. To increase precision, this difference should be kept as low as
 possible: for example, [-100; 100] bounds should be used instead of
-[-1000; 1000], if possible.
+[-1000; 1000], if possible. Other than that, the bounds should be specified
+in a way to cover a wider value range, in order to reduce boundary effects
+that may reduce convergence.
 
-Tests have shown, that in comparison to stochastic strategy like CMA-ES,
+Tests have shown, that in comparison to stochastic method like CMA-ES,
 BiteOpt's convergence time varies more from attempt to attempt. For example,
 on some problem CMA-ES's average convergence time may be 7000 iterations +/-
 1400 while BiteOpt's may be 7000 +/- 3000. Such higher standard deviation
@@ -165,7 +175,7 @@ Mixed integer programming can be achieved by using rounded parameter values in
 the objective function. Note that using categorical variables may not be
 effective, because they require an exhaustive search. Binary variables may be
 used, in small quantities (otherwise the problem usually transforms into
-complex combinatorial problem).
+a complex combinatorial problem).
 
 Value constraints can be implemented as penalties, in this way: constraint
 c1:x1+2.0\*x2-3.0\*x3<=0 can be used to adjust objective function value:
@@ -176,31 +186,28 @@ solution's value is equal to or higher than the penalty base it means either a
 feasible solution was not found or the chosen constraint scale does not
 generate a useful gradient. See `constr.cpp` for an example of constraint
 programming. `constr2.cpp` is an example of non-linear constraint programming
-with both non-equalities and equalities.
+with both non-equalities and equalities. In practice, using quadratic
+penalties may be more effective than adding the aforementioned barrier
+constant.
 
 It is not advisable to use constraints like (x1-round(x1)=0) commonly used
 in model libraries to force integer or binary values, as such constraint
 formulation does not provide a global descent. Instead, direct rounding should
 be used on integer variables.
 
-The minimal and maximal allowed parameter values (bounds) should be specified
-in a way to cover a wider value range, in order to reduce boundary effects
-that may reduce convergence. It may be beneficial to specify bounds in a way
-so that the expected optimum is located at the center of the search space.
-
 ## Convergence proof ##
 
-Considering the structure of the strategy and the fact that on every
-iteration only improving solutions are accepted into the population, with ever
+Considering the structure of the method and the fact that on every iteration
+only improving solutions are accepted into the population, with ever
 decreasing upper bound on the objective function value, it is logically
-impossible for the strategy to be divergent. While it is strictly
-non-divergent, the formal proof of ability of the strategy to converge is
-complicated, and should be at least as good as partly random search and partly
-Differential Evolution.
+impossible for the method to be divergent. While it is strictly non-divergent,
+the formal proof of ability of the method to converge is complicated, and
+should be at least as good as partly random search and partly Differential
+Evolution.
 
 ## Tested uses ##
 
-This optimization strategy was tested for the following applications beside
+This optimization method was tested for the following applications beside
 synthetic benchmarking:
 
 1. Hyperparameter optimization of complex non-linear black-box systems.
@@ -242,7 +249,7 @@ optimization attempts on all functions. Prints various performance
 information, including percentage of rejected attempts (rejection rate).
 
 `test3.cpp` is a convergence test for multi-dimensional functions with random
-rotations and offsets.
+axis rotations and offsets.
 
 `test4.cpp` is a convergence test for multi-dimensional functions without
 randomization.
@@ -250,11 +257,11 @@ randomization.
 `constr.cpp` and `constr2.cpp` programs demonstrate use of constraint
 penalties.
 
-`constr3.cpp` demonstrates use of the "deep" optimization strategy.
+`constr3.cpp` demonstrates use of the "deep" optimization method.
 
 ## Development ##
 
-While the basic algorithm of the strategy is finished, the built-in
+While the basic algorithm of the method is finished, the built-in
 hyper-parameters of the algorithm is an area of ongoing research. There are
 several things that were discovered that may need to be addressed in the
 future:
@@ -281,6 +288,17 @@ percent. These "short-cuts" are not critically important to method's
 convergence properties, but they increase convergence speed even for functions
 that do not have minimum at a point where all arguments are equal.
 
+4. The method uses resetting counters instead of direct probability
+evaluation. This was done to reduce method's overhead (it was important to
+keep overhead low so that optimization of method's own hyper-parameters does
+not take too much time). In practice, resetting counters are equivalent to
+`if( getRndValue() < Probability )` constructs, and actually provide slightly
+better convergence properties, probably due to some "state automata" effect.
+
+5. The method uses LCG pseudo-random number generator due to its efficiency.
+The method was also tested with a more statistically-correct PRNG and the
+difference turned out to be negligible.
+
 ## Users ##
 
 This library is used by:
@@ -295,20 +313,22 @@ The algorithm consists of the following elements:
 1. A cost-ordered population of previous solutions is maintained. A solution
 is an independent parameter vector which is evolved towards a better solution.
 On every iteration, one of the 4 best solutions is evolved (best selection
-allows strategy to be less sensitive to noise). At start, solution vectors
+allows method to be less sensitive to noise). At start, solution vectors
 are initialized almost on hyper-box boundaries.
 
-![equation1](http://quicklatex.com/cache3/8b/ql_66f6b6e1379996e5dceb22a4238fb08b_l3.png)
+```math
+x_\text{new}=x_\text{best}
+```
 
-Below, _i_ is either equal to rand(1, N) or in the range [1; N], depending on
-the `AllpProb` probability. Probabilities are defined in the range [0; 1] and
-in many instances in the code were replaced with simple resetting counters for
-more efficiency. Parameter values are internally normalized to [0; 1] range
-and, to stay in this range, are wrapped in a special manner before each
-function evaluation. Algorithm's hyper-parameters (probabilities) were
-pre-selected and should not be changed. Algorithm uses an alike of finite
-state automata to switch between different probability values depending on the
-candidate solution acceptance.
+Below, $`i`$ is either equal to $`rand(1, N)`$ or in the range $`[1; N]`$,
+depending on the `AllpProb` probability. Probabilities are defined in the
+range $`[0; 1]`$ and in many instances in the code were replaced with simple
+resetting counters for more efficiency. Parameter values are internally
+normalized to $`[0; 1]`$ range and, to stay in this range, are wrapped in a
+special manner before each function evaluation. Algorithm's hyper-parameters
+(probabilities) were pre-selected and should not be changed. Algorithm uses an
+alike of state automata to switch between different probability values
+depending on the candidate solution acceptance.
 
 2. Depending on the `RandProb` probability, a single (or all) parameter value
 randomization is performed using "bitmask inversion" operation.
@@ -319,8 +339,8 @@ randomization is performed using "bitmask inversion" operation.
 
 ![equation4](http://quicklatex.com/cache3/51/ql_c1f36edbe9027044ef6d120b4a2b8451_l3.png)
 
-Plus, with `CentProb` probability the random "step in the right direction"
-operation is performed using the centroid vector, twice.
+Plus, with `CentProb` probability the move around a random previous solution
+is performed, utilizing a TPDF random value.
 
 ![equation5](http://quicklatex.com/cache3/3d/ql_faa3b8c6fd883fb228f68b258fb3b33d_l3.png)
 
@@ -330,14 +350,16 @@ operation is performed using the centroid vector, twice.
 
 ![equation8](http://quicklatex.com/cache3/cf/ql_40565ca7f1625f7e0f28d06f3f6a8acf_l3.png)
 
-With `RandProb2` probability an alternative randomization method is used.
+With `RandProb2` probability an alternative randomization method is used
+involving the current best solution and centroid vector.
 
 ![equation9](http://quicklatex.com/cache3/f7/ql_b2e88e9d9710ddf91a1561a021ee66f7_l3.png)
 
 3. (Not together with N.2) the "step in the right direction" operation is
-performed using the random previous solution, current best and worst
-solutions. This is conceptually similar to Differential Evolution's "mutation"
-operation. The used worst solution is chosen from 3 worst solutions.
+performed using the random previous solution, chosen best and worst
+solutions, plus a difference of two random solutions. This is conceptually
+similar to Differential Evolution's "mutation" operation. The used worst
+solution is chosen from 3 worst solutions.
 
 ![equation10](http://quicklatex.com/cache3/58/ql_a15224c3709fd3fda67760646e7b7e58_l3.png)
 
