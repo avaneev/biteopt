@@ -356,7 +356,7 @@ used worst solution is chosen from 3 worst solutions.
 4. With `ScutProb` probability a "short-cut" parameter vector change operation
 is performed.
 
-![equation](https://latex.codecogs.com/gif.latex?z=x_\text{new}[\text{rand}(1\ldotsN)])
+![equation](https://latex.codecogs.com/gif.latex?z=x_\text{new}[\text{rand}(1\ldots&space;N)])
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=z,&space;\quad&space;i=1,\ldots,N)
 
