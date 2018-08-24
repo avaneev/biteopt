@@ -47,9 +47,9 @@ This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
 evaluated): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp).
 This method was able to solve 77% of non-convex smooth problems in 10
-attempts, 2500 iterations each. It comes 2nd in the comparison on non-convex
-smooth problems (see Fig.9 in the paper). With a huge iteration budget (up to 1
-million) this method solves 95% of problems.
+attempts, 2500 iterations each. It comes 2nd (on par with the 1st) in the
+comparison on non-convex smooth problems (see Fig.9 in the paper). With a huge
+iteration budget (up to 1 million) this method solves 95% of problems.
 
 On a comparable test function suite and conditions outlined at this page:
 [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
@@ -65,7 +65,7 @@ involve random coordinate axis rotations and offsets (e.g.
 [BBOB suite](http://coco.gforge.inria.fr/)). Plain CBiteOpt lags far behind in
 such benchmark arrangements. However, BiteOpt's development from its inception
 was based on a wider selection of functions proposed by global optimization
-researchers, without focus on synthetic transformations.
+researchers, without focus on synthetic function space transformations.
 
 ## CBiteOpt (biteopt.h) ##
 
@@ -97,8 +97,9 @@ CBiteOpt class, but still requires several runs at different random seeds.
 When using this method, the iteration budget increases but the number of
 required optimization attempts usually decreases. In practice, it is not
 always possible to predict the convergence time increase of the CBiteOptDeep
-class, but increase does correlate to its M parameter. For sure, CBiteOptDeep
-class often produces better solutions than the CBiteOpt class.
+class, but increase does correlate to its M parameter. For some complex
+functions the use of CBiteOptDeep even decreases convergence time. For sure,
+CBiteOptDeep class often produces better solutions than the CBiteOpt class.
 
 ## Notes ##
 
@@ -145,10 +146,7 @@ competing minima without a pronounced global descent towards global minimum
 require exhaustive search or a search involving knowledge of the structure of
 the problem.
 
-Difference between upper and lower parameter bound values affects precision of
-the method. To increase precision, this difference should be kept as low as
-possible: for example, [-100; 100] bounds should be used instead of
-[-1000; 1000], if possible. Other than that, the bounds should be specified
+Difference between upper and lower parameter bound values should be specified
 in a way to cover a wider value range, in order to reduce boundary effects
 that may reduce convergence.
 
@@ -269,7 +267,7 @@ future:
 1. Parallelization of this algorithm is technically possible, but may be
 counter-productive (increases convergence time considerably). It is more
 efficient to run several optimizers in parallel with different random seeds.
-Specifically saying, it is possible (tested to be working on some commits
+Specifically saying, it is possible (tested to be working on some code commits
 before May 15, 2018) to generate a serie of candidate solutions, evaluate them
 in parallel, and then update optimizer's state before generating a new batch
 of candidate solutions. Later commits have changed the algorithm to a from
@@ -327,12 +325,14 @@ be changed. Algorithm uses an alike of state automata to switch between
 different probability values depending on the candidate solution acceptance.
 
 2. Depending on the `RandProb` probability, a single (or all) parameter value
-randomization is performed using "bitmask inversion" operation. Below, _i_ is
-either equal to rand(1, N) or in the range [1; N], depending on the `AllpProb`
-probability. `>>` is a shift-right operation, `MantSize` is a constant equal
-to 29.
+randomization is performed using "bitmask inversion" operation (which is
+approximately equivalent to `v=1-v` operation in normalized parameter space).
+Below, _i_ is either equal to rand(1, N) or in the range [1; N], depending on
+the `AllpProb` probability. `>>` is a bit shift-right operation, `MantSize` is
+a constant equal to 54, `MantSizeSh` is a hyper-parameter that limits bit
+shift operation range.
 
-![equation](https://latex.codecogs.com/gif.latex?mask=(2^{MantSize}-1)\gg&space;\lfloor&space;rand(0\ldots1)^5\cdot&space;MantSize\rfloor)
+![equation](https://latex.codecogs.com/gif.latex?mask=(2^{MantSize}-1)\gg&space;\lfloor&space;rand(0\ldots1)^5\cdot&space;MantSizeSh\rfloor)
 
 ![equation](https://latex.codecogs.com/gif.latex?MantMult=2^{MantSize})
 
@@ -344,7 +344,7 @@ is performed, utilizing a TPDF random value.
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}\cdot&space;CentSpan\cdot&space;(x_\text{new}[i]-x_\text{rand}[i]))
 
 With `RandProb2` probability an alternative randomization method is used
-involving the current best solution and centroid vector.
+involving the best solution and centroid vector.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{new}[i]),&space;\quad&space;i=1,\ldots,N,\\&space;\quad&space;s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5&space;?&space;1:2))
 

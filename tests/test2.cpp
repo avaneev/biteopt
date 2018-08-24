@@ -11,6 +11,11 @@
 #include <stdio.h>
 #include "tester.h"
 
+#if defined( _WIN32 ) || defined( _WIN64 )
+	#include <windows.h>
+	#define USEPERF 1
+#endif // defined( _WIN32 ) || defined( _WIN64 )
+
 int main()
 {
 	CTester Tester;
@@ -18,5 +23,19 @@ int main()
 	rnd.init( 0 );
 	Tester.init( 2, TestCorpusAll, 0.000001, 500, 2000, false, true );
 
+	#if USEPERF
+	LARGE_INTEGER Freq;
+	QueryPerformanceFrequency( &Freq );
+	LARGE_INTEGER t1;
+	QueryPerformanceCounter( &t1 );
+	#endif // USEPERF
+
 	Tester.run();
+
+	#if USEPERF
+	LARGE_INTEGER t2;
+	QueryPerformanceCounter( &t2 );
+	printf("time: %f s\n", ( t2.QuadPart - t1.QuadPart ) /
+		(double) Freq.QuadPart );
+	#endif // USEPERF
 }

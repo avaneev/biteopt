@@ -4,7 +4,7 @@
 #include "tests/tester.h"
 //#include "tester2.h"
 
-const int FanParamCount = 6;
+const int FanParamCount = 7;
 const int FanIterCount = 4000;
 
 static double roundp( const double x )
@@ -28,6 +28,7 @@ public:
 		p[ 3 ] = 0.0;
 		p[ 4 ] = 0.0;
 		p[ 5 ] = 0.0;
+		p[ 6 ] = 2.0;
 	}
 
 	virtual void getMaxValues( double* const p ) const
@@ -38,6 +39,7 @@ public:
 		p[ 3 ] = 3.0;
 		p[ 4 ] = 1.0;
 		p[ 5 ] = 1.0;
+		p[ 6 ] = 54.999;
 	}
 
 	virtual double optcost( const double* const p )
@@ -54,6 +56,7 @@ public:
 		Tester.opt -> RandProb2[ 0 ] = roundp( p[ 5 ]);
 		Tester.opt -> RandProb2[ 1 ] = 1.0;
 		Tester.opt -> ScutProb = 0.09;
+		Tester.opt -> MantSizeSh = roundp( p[ 6 ]);
 
 		rnd.init( 0 );
 		Tester.init( 2, TestCorpusAll, 0.000001, 90, 2000, false, false );
@@ -101,6 +104,7 @@ int main()
 		printf( "RandProb2[ 0 ] = %.8f;\n", Params[ 5 ]);
 		printf( "RandProb2[ 1 ] = %.8f;\n", 1.0 );
 		printf( "ScutProb = %.8f;\n", 0.09 );
+		printf( "MantSizeSh = %.8f;\n", Params[ 6 ]);
 	}
 
 	return( 0 );

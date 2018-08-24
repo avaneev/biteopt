@@ -56,14 +56,16 @@ public:
 		///<
 	double ScutProb; ///< Short-cut probability.
 		///<
+	double MantSizeSh; ///< MantSize used in "bitmask inversion" shift.
+		///<
 
 	/**
 	 * Constructor.
 	 */
 
 	CBiteOpt()
-		: MantMult( 1 << MantSize )
-		, MantMultI( 1.0 / ( 1 << MantSize ))
+		: MantMult( 1LL << MantSize )
+		, MantMultI( 1.0 / ( 1LL << MantSize ))
 		, ParamCount( 0 )
 		, PopSize( 0 )
 		, PopOrder( NULL )
@@ -78,17 +80,18 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=-0.038908
-		RandProb[ 0 ] = 0.33084565;
-		RandProb[ 1 ] = 0.56289567;
+		// Cost=-0.046309
+		RandProb[ 0 ] = 0.13693406;
+		RandProb[ 1 ] = 0.77198907;
 		CentProb[ 0 ] = 1.00000000;
-		CentProb[ 1 ] = 0.42182248;
-		CentSpan = 1.91421063;
-		AllpProb[ 0 ] = 0.54601532;
+		CentProb[ 1 ] = 0.75561817;
+		CentSpan = 2.15484196;
+		AllpProb[ 0 ] = 0.51075492;
 		AllpProb[ 1 ] = 1.00000000;
-		RandProb2[ 0 ] = 0.10498679;
+		RandProb2[ 0 ] = 0.08655118;
 		RandProb2[ 1 ] = 1.00000000;
 		ScutProb = 0.09000000;
+		MantSizeSh = 31.15424210;
 	}
 
 	~CBiteOpt()
@@ -268,7 +271,7 @@ public:
 				RandCntr2 -= 1.0;
 
 				// Alternative randomization method, works well for convex
-				// functions.
+				// functions. Use the very best solution.
 
 				const double* const MinParams = CurParams[ PopOrder[ 0 ]];
 
@@ -286,7 +289,8 @@ public:
 					Params[ i ] = MinParams[ i ];
 				}
 
-				// Select a single random parameter or all parameters.
+				// Select a single random parameter or all parameters for
+				// further operations.
 
 				int a;
 				int b;
@@ -309,17 +313,16 @@ public:
 				}
 
 				// Bitmask inversion operation, works as a "driver" of
-				// optimization process, applied to 1 random or all 
-				// parameters.
+				// optimization process.
 
 				const double r = mp;
 				const double r2 = mp * mp;
-				const int imask =
-					MantSizeMask >> (int) ( r2 * r2 * r * MantSize );
+				const int64_t imask =
+					MantSizeMask >> (int64_t) ( r2 * r2 * r * MantSizeSh );
 
 				for( i = a; i <= b; i++ )
 				{
-					Params[ i ] = ( (int) ( Params[ i ] * MantMult ) ^
+					Params[ i ] = ( (int64_t) ( Params[ i ] * MantMult ) ^
 						imask ) * MantMultI;
 				}
 
@@ -345,8 +348,8 @@ public:
 		}
 		else
 		{
-			// Select a random previous solution from the ordered list,
-			// apply offsets to reduce sensitivity to noise.
+			// Select worst and a random previous solution from the ordered
+			// list, apply offsets to reduce sensitivity to noise.
 
 			const int op = (int) ( mp * 3 );
 			const int si = mpi + (int) ( mp * ( PopSize1 - mpi ));
@@ -431,6 +434,12 @@ public:
 			{
 				RandSwitch = 0;
 			}
+			else
+			{
+				RandSwitch |= 1; // Raise RandProb flag. This is not
+					// critically important, but introduces a kind of "order"
+					// useful when optimizing method's hyper-parameters.
+			}
 
 			StallCount++;
 
@@ -512,12 +521,11 @@ public:
 	virtual double optcost( const double* const p ) = 0;
 
 protected:
-	static const int MantSize = 29; ///< Mantissa size of bitmask inversion
-		///< operation. Must be lower than the random number generator's
-		///< precision.
+	static const int64_t MantSize = 54; ///< Mantissa size of the "bitmask
+		///< inversion" operation.
 		///<
-	static const int MantSizeMask = ( 1 << MantSize ) - 1; ///< Mask that
-		///< corresponds to mantissa.
+	static const int64_t MantSizeMask = ( 1LL << MantSize ) - 1; ///< Mask
+		///< that corresponds to mantissa.
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
 		///<
