@@ -184,9 +184,8 @@ solution's value is equal to or higher than the penalty base it means either a
 feasible solution was not found or the chosen constraint scale does not
 generate a useful gradient. See `constr.cpp` for an example of constraint
 programming. `constr2.cpp` is an example of non-linear constraint programming
-with both non-equalities and equalities. In practice, using quadratic
-penalties may be more effective than adding the aforementioned barrier
-constant.
+with both non-equalities and equalities. Sometimes using quadratic penalties
+may be more effective than adding the aforementioned barrier constant.
 
 It is not advisable to use constraints like (x1-round(x1)=0) commonly used
 in model libraries to force integer or binary values, as such constraint
@@ -334,14 +333,12 @@ shift operation range.
 
 ![equation](https://latex.codecogs.com/gif.latex?mask=(2^{MantSize}-1)\gg&space;\lfloor&space;rand(0\ldots1)^5\cdot&space;MantSizeSh\rfloor)
 
-![equation](https://latex.codecogs.com/gif.latex?MantMult=2^{MantSize})
-
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]&space;=&space;\frac{\lfloor&space;x_\text{new}[i]\cdot&space;MantMult&space;\rfloor&space;\bigotimes&space;mask&space;}{MantMult})
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]&space;=&space;\frac{\lfloor&space;x_\text{new}[i]\cdot&space;2^{MantSize}&space;\rfloor&space;\bigotimes&space;mask&space;}{2^{MantSize}})
 
 Plus, with `CentProb` probability the move around a random previous solution
 is performed, utilizing a TPDF random value.
 
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}\cdot&space;CentSpan\cdot&space;(x_\text{new}[i]-x_\text{rand}[i]))
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}(-1\ldots1)\cdot&space;CentSpan\cdot&space;(x_\text{new}[i]-x_\text{rand}[i]))
 
 With `RandProb2` probability an alternative randomization method is used
 involving the best solution and centroid vector.
@@ -359,7 +356,7 @@ used worst solution is chosen from 3 worst solutions.
 4. With `ScutProb` probability a "short-cut" parameter vector change operation
 is performed.
 
-![equation](https://latex.codecogs.com/gif.latex?z=x_\text{new}[\text{rand}(1,N)])
+![equation](https://latex.codecogs.com/gif.latex?z=x_\text{new}[\text{rand}(1\ldotsN)])
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=z,&space;\quad&space;i=1,\ldots,N)
 
