@@ -52,7 +52,7 @@ public:
 		///<
 	double CentProb[ 2 ]; ///< Centroid move probability.
 		///<
-	double CentSpan; ///< Centroid move range multiplier.
+	double CentSpan[ 2 ]; ///< Centroid move range multiplier.
 		///<
 	double ScutProb; ///< Short-cut probability.
 		///<
@@ -80,18 +80,19 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=-0.046309
-		RandProb[ 0 ] = 0.13693406;
-		RandProb[ 1 ] = 0.77198907;
-		CentProb[ 0 ] = 1.00000000;
-		CentProb[ 1 ] = 0.75561817;
-		CentSpan = 2.15484196;
-		AllpProb[ 0 ] = 0.51075492;
-		AllpProb[ 1 ] = 1.00000000;
-		RandProb2[ 0 ] = 0.08655118;
+		// Cost=-0.043547
+		RandProb[ 0 ] = 0.15839906;
+		RandProb[ 1 ] = 0.74111321;
+		RandProb2[ 0 ] = 0.10590099;
 		RandProb2[ 1 ] = 1.00000000;
+		AllpProb[ 0 ] = 0.61992702;
+		AllpProb[ 1 ] = 1.00000000;
+		CentProb[ 0 ] = 1.00000000;
+		CentProb[ 1 ] = 0.31864224;
+		CentSpan[ 0 ] = 1.88139149;
+		CentSpan[ 1 ] = 1.64418562;
 		ScutProb = 0.09000000;
-		MantSizeSh = 31.15424210;
+		MantSizeSh = 19.20456693;
 	}
 
 	~CBiteOpt()
@@ -219,9 +220,11 @@ public:
 		RandSwitch = 0;
 		StallCount = 0;
 
-		CentSpanRnd = CentSpan / rnd.getRawScale();
+		CentSpanRnd[ 0 ] = CentSpan[ 0 ] / rnd.getRawScale();
+		CentSpanRnd[ 1 ] = CentSpan[ 1 ] / rnd.getRawScale();
 		PopSizeRnd = (double) PopSize / rnd.getRawScale();
 		ParamCountRnd = (double) ParamCount / rnd.getRawScale();
+		AllpProbDamp = 2.0 / ParamCount;
 	}
 
 	/**
@@ -295,7 +298,10 @@ public:
 				int a;
 				int b;
 
-				AllpCntr += AllpProb[( RandSwitch >> 2 ) & 1 ];
+				AllpCntr += AllpProb[( RandSwitch >> 2 ) & 1 ] * AllpProbDamp;
+					// Apply probability damping for higher dimensions as
+					// "all parameter" randomization is ineffective in higher
+					// dimensions.
 
 				if( AllpCntr >= 1.0 )
 				{
@@ -326,7 +332,8 @@ public:
 						imask ) * MantMultI;
 				}
 
-				CentCntr += CentProb[( RandSwitch >> 3 ) & 1 ];
+				const int ci = ( RandSwitch >> 3 ) & 1;
+				CentCntr += CentProb[ ci ];
 
 				if( CentCntr >= 1.0 )
 				{
@@ -335,13 +342,15 @@ public:
 
 					// Random move around random previous solution vector.
 
-					const double m = rnd.getTPDFRaw() * CentSpanRnd;
+					const double m1 = rnd.getTPDFRaw() * CentSpanRnd[ ci ];
+					const double m2 = rnd.getTPDFRaw() * CentSpanRnd[ ci ];
 					const int si = (int) ( mp * mp * PopSize );
 					const double* const rp1 = CurParams[ PopOrder[ si ]];
 
 					for( i = a; i <= b; i++ )
 					{
-						Params[ i ] -= ( Params[ i ] - rp1[ i ]) * m;
+						Params[ i ] -= ( Params[ i ] - rp1[ i ]) * m1;
+						Params[ i ] -= ( Params[ i ] - rp1[ i ]) * m2;
 					}
 				}
 			}
@@ -547,6 +556,8 @@ protected:
 		///<
 	double CentCntr; ///< Centroid move probability counter.
 		///<
+	double AllpProbDamp; ///< AllpProb damping that depends on ParamCount.
+		///<
 	int ParamCntr; ///< Parameter randomization index counter.
 		///<
 	int RandSwitch; ///< Index flags for probability values switching.
@@ -554,7 +565,7 @@ protected:
 		///<
 	int StallCount; ///< The number of iterations without improvement.
 		///<
-	double CentSpanRnd; ///< CentSpan multiplier converted into "raw"
+	double CentSpanRnd[ 2 ]; ///< CentSpan multiplier converted into "raw"
 		///< random value scale.
 		///<
 	double PopSizeRnd; ///< PopSize converted into "raw" random value

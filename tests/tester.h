@@ -46,6 +46,9 @@ public:
 			///<
 		bool DoRandomize; ///< Apply value randomization.
 			///<
+		bool DoRandomizeAll; ///< Apply all randomizations, "false" only
+			///< shift and scale randomizations will be applied.
+			///<
 
 		CTestOpt()
 			: minv( NULL )
@@ -126,15 +129,25 @@ public:
 
 			int i;
 
-			for( i = 0; i < Dims; i++ )
+			if( DoRandomizeAll )
 			{
-				tp[ i ] = 0.0;
-				int j;
-
-				for( j = 0; j < Dims; j++ )
+				for( i = 0; i < Dims; i++ )
 				{
-					tp[ i ] += rots[ i ][ j ] *
-						( p[ j ] * signs[ j ] + shifts[ j ]);
+					tp[ i ] = 0.0;
+					int j;
+
+					for( j = 0; j < Dims; j++ )
+					{
+						tp[ i ] += rots[ i ][ j ] *
+							( p[ j ] * signs[ j ] + shifts[ j ]);
+					}
+				}
+			}
+			else
+			{
+				for( i = 0; i < Dims; i++ )
+				{
+					tp[ i ] = p[ i ] * signs[ i ] + shifts[ i ];
 				}
 			}
 
@@ -180,21 +193,24 @@ public:
 	 * @param IterCount The number of attempts to solve a function to perform.
 	 * @param InnerIterCount The maximal number of solver iterations to
 	 * perform.
-	 * @param DoRandomize "True" if randomization of value shifts should be
-	 * performed.
+	 * @param DoRandomize "True" if randomization of parameter shifts and
+	 * rotations should be performed.
+	 * @param DoRandomizeAll "True" if all randomizations should be applied,
+	 * otherwise only shifts and scales will be applied.
 	 * @param DoPrint "True" if results should be printed to "stdout".
 	 */
 
 	void init( const int aDefDims, const CTestFn** Corpus,
 		const double aThreshold, const int aIterCount,
 		const int aInnerIterCount, const bool aDoRandomize,
-		const bool aDoPrint )
+		const bool aDoRandomizeAll, const bool aDoPrint )
 	{
 		DefDims = aDefDims;
 		CostThreshold = aThreshold;
 		IterCount = aIterCount;
 		InnerIterCount = aInnerIterCount;
 		DoRandomize = aDoRandomize;
+		DoRandomizeAll = aDoRandomizeAll;
 		DoPrint = aDoPrint;
 		FnCount = 0;
 		Funcs = Corpus;
@@ -258,6 +274,7 @@ public:
 
 			opt -> updateDims( Dims );
 			opt -> DoRandomize = DoRandomize;
+			opt -> DoRandomizeAll = DoRandomizeAll;
 
 			for( j = 0; j < IterCount; j++ )
 			{
@@ -281,22 +298,25 @@ public:
 
 				if( DoRandomize )
 				{
-					if( Dims == 1 )
+					if( DoRandomizeAll )
 					{
-						opt -> rots[ 0 ][ 0 ] = 1.0;
-					}
-					else
-					if( Dims == 2 )
-					{
-						const double th = rnd.getRndValue() * 2.0 * M_PI;
-						opt -> rots[ 0 ][ 0 ] = cos( th );
-						opt -> rots[ 0 ][ 1 ] = -sin( th );
-						opt -> rots[ 1 ][ 0 ] = sin( th );
-						opt -> rots[ 1 ][ 1 ] = cos( th );
-					}
-					else
-					{
-						makeRotationMatrix( opt -> rots, Dims, rnd );
+						if( Dims == 1 )
+						{
+							opt -> rots[ 0 ][ 0 ] = 1.0;
+						}
+						else
+						if( Dims == 2 )
+						{
+							const double th = rnd.getRndValue() * 2.0 * M_PI;
+							opt -> rots[ 0 ][ 0 ] = cos( th );
+							opt -> rots[ 0 ][ 1 ] = -sin( th );
+							opt -> rots[ 1 ][ 0 ] = sin( th );
+							opt -> rots[ 1 ][ 1 ] = cos( th );
+						}
+						else
+						{
+							makeRotationMatrix( opt -> rots, Dims, rnd );
+						}
 					}
 
 					for( i = 0; i < Dims; i++ )
@@ -499,7 +519,9 @@ protected:
 		///<
 	int InnerIterCount; ///< Inner iteration count (the number of
 		///< optimization calls).
-	bool DoRandomize; ///< Randomize argument signs.
+	bool DoRandomize; ///< Randomize parameters.
+		///<
+	bool DoRandomizeAll; ///< Randomize parameters using all techniques.
 		///<
 	bool DoPrint; ///< Print results to stdout.
 		///<

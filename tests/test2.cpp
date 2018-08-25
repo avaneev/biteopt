@@ -20,8 +20,7 @@ int main()
 {
 	CTester Tester;
 
-	rnd.init( 0 );
-	Tester.init( 2, TestCorpusAll, 0.000001, 500, 2000, false, true );
+	Tester.init( 2, TestCorpusAll, 0.000001, 500, 2000, false, false, true );
 
 	#if USEPERF
 	LARGE_INTEGER Freq;

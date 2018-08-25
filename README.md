@@ -298,6 +298,12 @@ better convergence properties, probably due to some "state automata" effect.
 The method was also tested with a more statistically-correct PRNG and the
 difference turned out to be negligible.
 
+6. The method was developed using `test2.cpp` benchmark probably introducing
+bias towards 2-dimensional functions. It is possible that method's
+hyper-parameters should depend on problem's dimensionality, but due to
+computation complexity and unavailability of a wide range of multi-dimensional
+test functions this hypothesis has not been tested.
+
 ## Users ##
 
 This library is used by:
@@ -338,7 +344,8 @@ shift operation range.
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]&space;=&space;\frac{\lfloor&space;x_\text{new}[i]\cdot&space;2^{MantSize}&space;\rfloor&space;\bigotimes&space;mask&space;}{2^{MantSize}})
 
 Plus, with `CentProb` probability the move around a random previous solution
-is performed, utilizing a TPDF random value.
+is performed, utilizing a TPDF random value. This operation is performed
+twice.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}(-1\ldots1)\cdot&space;CentSpan\cdot&space;(x_\text{new}[i]-x_\text{rand}[i]))
 
