@@ -451,20 +451,14 @@ public:
 			}
 		}
 
-/*		for( k = 0; k < binc; k++ )
-		{
-			printf( "%2.2f\t", RMSSpan * ( k - binspan ) / binspan );
-		}
-
-		printf( "\n" );
-
+		#if defined( EVALBINS )
 		for( k = 0; k < binc; k++ )
 		{
-			printf( "%2.2f\t", bins[ k ] / ComplTotal * 100.0 );
+			printf( "%2.2f\t%2.2f\n", RMSSpan * ( k - binspan ) / binspan,
+				bins[ k ] / ComplTotal * 100.0 );
 		}
+		#endif // defined( EVALBINS )
 
-		printf( "\n" );
-*/
 		_mm_empty();
 		ItAvg /= FnCount;
 		RMSAvg /= FnCount;

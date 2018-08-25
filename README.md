@@ -71,6 +71,13 @@ researchers, without focus on synthetic parameter space transformations.
 CBiteOpt stands parameter space offsetting and orthogonal scaling pretty well,
 but partially fails when the space is rotated.
 
+As a sport curiosity, BiteOpt is able to solve in reasonable time almost all
+functions proposed in classic academic literature on global optimization.
+This is quite a feat for a derivative-free method (not to be confused with
+large-scale analytic global optimization methods). Of course, BiteOpt is
+capable of more than that. If you have a reference to a function published in
+literature that BiteOpt can't solve, let the author know.
+
 ## CBiteOpt (biteopt.h) ##
 
 BiteOpt optimization class. Implements a stochastic non-linear
