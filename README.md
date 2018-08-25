@@ -74,9 +74,10 @@ but partially fails when the space is rotated.
 As a sport curiosity, BiteOpt is able to solve in reasonable time almost all
 functions proposed in classic academic literature on global optimization.
 This is quite a feat for a derivative-free method (not to be confused with
-large-scale analytic global optimization methods). Of course, BiteOpt is
-capable of more than that. If you have a reference to a function published in
-literature that BiteOpt can't solve, let the author know.
+large-scale analytic and gradient-based global optimization methods). Of
+course, BiteOpt is capable of more than that. If you have a reference to a
+function published in literature that BiteOpt can't solve, let the author
+know.
 
 ## CBiteOpt (biteopt.h) ##
 
@@ -290,11 +291,12 @@ better with a population as large as 10+Dim\*6, but possibly at the expense of
 a longer convergence time.
 
 3. The method currently uses "short-cuts" which can be considered as "tricks"
-which are non-universal. However, optimization of some functions benefits from
-them greatly, they increase optimization success of test suites by several
-percent. These "short-cuts" are not critically important to method's
-convergence properties, but they increase convergence speed even for functions
-that do not have minimum at a point where all arguments are equal.
+(criticized in literature) which are non-universal, and reduce convergence
+time out of proportion for many known test functions. These "short-cuts" are
+not critically important to method's convergence properties, but they reduce
+convergence time even for functions that do not have minimum at a point where
+all arguments are equal. It just often happens that such "short-cuts" provide
+useful "reference points" to the method.
 
 4. The method uses resetting counters instead of direct probability
 evaluation. This was done to reduce method's overhead (it was important to
