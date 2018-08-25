@@ -80,19 +80,19 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=-0.043547
-		RandProb[ 0 ] = 0.15839906;
-		RandProb[ 1 ] = 0.74111321;
-		RandProb2[ 0 ] = 0.10590099;
+		// Cost=-0.044417
+		RandProb[ 0 ] = 0.21399646;
+		RandProb[ 1 ] = 0.83585947;
+		RandProb2[ 0 ] = 0.15239115;
 		RandProb2[ 1 ] = 1.00000000;
-		AllpProb[ 0 ] = 0.61992702;
+		AllpProb[ 0 ] = 0.61098024;
 		AllpProb[ 1 ] = 1.00000000;
 		CentProb[ 0 ] = 1.00000000;
-		CentProb[ 1 ] = 0.31864224;
-		CentSpan[ 0 ] = 1.88139149;
-		CentSpan[ 1 ] = 1.64418562;
+		CentProb[ 1 ] = 0.31491799;
+		CentSpan[ 0 ] = 1.79848888;
+		CentSpan[ 1 ] = 0.93384294;
 		ScutProb = 0.09000000;
-		MantSizeSh = 19.20456693;
+		MantSizeSh = 28.38911418;
 	}
 
 	~CBiteOpt()
@@ -274,15 +274,19 @@ public:
 				RandCntr2 -= 1.0;
 
 				// Alternative randomization method, works well for convex
-				// functions. Use the very best solution.
+				// functions. Use the very best solution and a random previous
+				// solution. "mp*mp" is equivalent of giving more weight to
+				// better solutions.
 
 				const double* const MinParams = CurParams[ PopOrder[ 0 ]];
+				const int si = (int) ( mp * mp * PopSize );
+				const double* const rp1 = CurParams[ PopOrder[ si ]];
 
 				for( i = 0; i < ParamCount; i++ )
 				{
 					Params[ i ] = ( rnd.getRndValue() < 0.5 ?
 						CentParams[ i ] :
-						MinParams[ i ] + ( MinParams[ i ] - CentParams[ i ]));
+						MinParams[ i ] + ( MinParams[ i ] - rp1[ i ]));
 				}
 			}
 			else

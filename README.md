@@ -41,7 +41,9 @@ This "black-box" optimization algorithm was tested on 450+ 1-10 dimensional
 optimization problems and performed well, and it successfully solves even
 600-dimensional test problems found in some textbooks. But the main focus of
 the method is to provide fast solutions for computationally expensive
-"black-box" problems of medium dimensionality (up to 60).
+"black-box" problems of medium dimensionality (up to 60). For example, this
+method when optimizing its own hyper-parameters (8 dimensions) generates a
+good solution in under 500 function evaluations.
 
 This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
@@ -56,7 +58,7 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
 success rate is >90% while the average number of objective function
-evaluations is ~330.
+evaluations is ~320.
 
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. CMA-ES
@@ -298,11 +300,16 @@ better convergence properties, probably due to some "state automata" effect.
 The method was also tested with a more statistically-correct PRNG and the
 difference turned out to be negligible.
 
-6. The method was developed using `test2.cpp` benchmark probably introducing
-bias towards 2-dimensional functions. It is possible that method's
+6. The method was developed using `test2.cpp` benchmark which probably
+introduces bias towards 2-dimensional functions. It is possible that method's
 hyper-parameters should depend on problem's dimensionality, but due to
-computation complexity and unavailability of a wide range of multi-dimensional
-test functions this hypothesis has not been tested.
+computation complexity of hyper-parameter optimization and unavailability of a
+wide range of multi-dimensional test functions this hypothesis has not been
+tested.
+
+7. The method of selection of initial solution vectors slightly affects
+success rate when solving test problem suites. Initialization method evolved
+over time, but there may still be a place for improvement present.
 
 ## Users ##
 
@@ -350,7 +357,7 @@ twice.
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}(-1\ldots1)\cdot&space;CentSpan\cdot&space;(x_\text{new}[i]-x_\text{rand}[i]))
 
 With `RandProb2` probability an alternative randomization method is used
-involving the best solution and centroid vector.
+involving the best solution, centroid vector and a random solution.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{new}[i]),&space;\quad&space;i=1,\ldots,N,\\&space;\quad&space;s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5&space;?&space;1:2))
 
