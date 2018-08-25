@@ -66,9 +66,8 @@ involve random coordinate axis rotations and offsets (e.g.
 such benchmark arrangements. However, BiteOpt's development from its inception
 was based on a wider selection of functions proposed by global optimization
 researchers, without focus on synthetic parameter space transformations.
-CBiteOpt stands parameter space offsetting and orthogonal scaling pretty well
-(in some tests, better than CMA-ES), but partially fails when the space is
-rotated.
+CBiteOpt stands parameter space offsetting and orthogonal scaling pretty well,
+but partially fails when the space is rotated.
 
 ## CBiteOpt (biteopt.h) ##
 
