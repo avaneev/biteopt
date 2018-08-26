@@ -65,7 +65,7 @@ int main()
 
 	int i;
 
-	for( i = 0; i < 30000; i++ )
+	for( i = 0; i < 40000; i++ )
 	{
 		opt.optimize( rnd );
 	}

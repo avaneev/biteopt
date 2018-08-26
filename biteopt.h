@@ -848,7 +848,8 @@ public:
 			else
 			{
 				StallCount++;
-				NextOpt = (int) ( rnd.getRndValue() * BiteCount );
+				NextOpt = ( CurOpt - 1 + (int) ( rnd.getRndValue() * 3 ) +
+					BiteCount ) % BiteCount;
 			}
 
 			if( Opts[ CurOpt ] -> getBestCost() <
