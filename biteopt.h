@@ -251,7 +251,8 @@ public:
 		// noise.
 
 		const double mp = rnd.getRndValue(); // Also reused later.
-		const int mpi = (int) ( mp * mp * mp * 4 );
+		const double mp2 = mp * mp; // Used later.
+		const int mpi = (int) ( mp * mp2 * 4 );
 		const double* const MinParams = CurParams[ PopOrder[ mpi ]];
 
 		int i;
@@ -279,7 +280,7 @@ public:
 				// better solutions.
 
 				const double* const MinParams = CurParams[ PopOrder[ 0 ]];
-				const int si = (int) ( mp * mp * PopSize );
+				const int si = (int) ( mp2 * PopSize );
 				const double* const rp1 = CurParams[ PopOrder[ si ]];
 
 				for( i = 0; i < ParamCount; i++ )
@@ -325,10 +326,8 @@ public:
 				// Bitmask inversion operation, works as a "driver" of
 				// optimization process.
 
-				const double r = mp;
-				const double r2 = mp * mp;
 				const int64_t imask =
-					MantSizeMask >> (int64_t) ( r2 * r2 * r * MantSizeSh );
+					MantSizeMask >> (int64_t) ( mp * mp2 * mp2 * MantSizeSh );
 
 				for( i = a; i <= b; i++ )
 				{
@@ -348,7 +347,7 @@ public:
 
 					const double m1 = rnd.getTPDFRaw() * CentSpanRnd[ ci ];
 					const double m2 = rnd.getTPDFRaw() * CentSpanRnd[ ci ];
-					const int si = (int) ( mp * mp * PopSize );
+					const int si = (int) ( mp2 * PopSize );
 					const double* const rp1 = CurParams[ PopOrder[ si ]];
 
 					for( i = a; i <= b; i++ )

@@ -25,7 +25,7 @@ public:
 	{
 		int i;
 
-		for( i = 0; i < N; i++ )
+		for( i = 0; i < ::N; i++ )
 		{
 			p[ i ] = -10.0;
 		}
@@ -35,7 +35,7 @@ public:
 	{
 		int i;
 
-		for( i = 0; i < N; i++ )
+		for( i = 0; i < ::N; i++ )
 		{
 			p[ i ] = 10.0;
 		}
@@ -48,10 +48,10 @@ public:
 
 	virtual double optcost( const double* const p0 )
 	{
-		double p[ N ];
+		double p[ ::N ];
 		int i;
 
-		for( i = 0; i < N; i++ )
+		for( i = 0; i < ::N; i++ )
 		{
 			p[ i ] = applyRound( p0[ i ]);
 		}

@@ -159,7 +159,11 @@ public:
 		///<
 	CTestOpt* opt; ///< Optimizer.
 		///<
-	double ItAvg; ///< Average of convergence time after run().
+	double ItAvg; ///< Average of convergence time after run() across
+		///< functions.
+		///<
+	double ItAvg2; ///< Average of convergence time after run() across all
+		///< attempts.
 		///<
 	double RMSAvg; ///< Std.dev of convergence time after run().
 		///<
@@ -235,6 +239,8 @@ public:
 	void run()
 	{
 		ItAvg = 0.0;
+		ItAvg2 = 0.0;
+		int ItAvg2Count = 0;
 		RMSAvg = 0.0;
 		ItRtAvg = 0.0;
 		RjAvg = 0.0;
@@ -395,6 +401,8 @@ public:
 			{
 				Avg = AvgIter / ( IterCount - Rej );
 				RMS = 0.0;
+				ItAvg2 += AvgIter;
+				ItAvg2Count += IterCount - Rej;
 
 				for( j = 0; j < IterCount; j++ )
 				{
@@ -461,6 +469,7 @@ public:
 
 		_mm_empty();
 		ItAvg /= FnCount;
+		ItAvg2 /= ItAvg2Count;
 		RMSAvg /= FnCount;
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
@@ -486,6 +495,9 @@ public:
 
 			printf( "Success: %.2f%%\n", Success );
 			printf( "ItAvg: %.1f (avg convergence time)\n", ItAvg );
+			printf( "ItAvg2: %.1f (avg convergence time across all "
+				"attempts)\n", ItAvg2 );
+
 			printf( "RMSAvg: %.1f (avg std.dev of convergence time)\n",
 				RMSAvg );
 
