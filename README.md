@@ -79,6 +79,11 @@ methods). Of course, BiteOpt is capable of more than that. If you have a
 reference to a function (with a known solution) published in literature that
 BiteOpt can't solve, let the author know.
 
+BiteOpt (state at commit 124) took 2nd place (1st by sum of ranks) in
+[BBComp2018-1OBJ-expensive](https://bbcomp.ini.rub.de/results/BBComp2018-1OBJ-expensive/summary.html)
+competition track. Since that commit algorithm was improved in many aspects,
+especially in low-dimensional convergence rates.
+
 ## CBiteOpt (biteopt.h) ##
 
 BiteOpt optimization class. Implements a stochastic non-linear
