@@ -20,7 +20,9 @@ int main()
 {
 	CTester Tester;
 
-	Tester.init( 2, TestCorpusAll, 0.000001, 500, 2000, false, false, true );
+	Tester.init( 0.000001, 500, 2000, true );
+	Tester.addCorpus( 2, TestCorpusAll, false, false );
+	Tester.addCorpus( 2, OptCorpusNDRotOfs, true, true );
 
 	#if USEPERF
 	LARGE_INTEGER Freq;

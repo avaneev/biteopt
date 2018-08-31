@@ -56,7 +56,12 @@ public:
 		///<
 	double ScutProb; ///< Short-cut probability.
 		///<
-	double MantSizeSh; ///< MantSize used in "bitmask inversion" shift.
+	double MantSizeSh; ///< MantSize used in "bitmask inversion" shift, used
+		///< to shrink or extend the range.
+		///<
+	double PopSizeBase; ///< Minimal population size.
+		///<
+	double PopSizeMult; ///< Dimensional population size multiplier.
 		///<
 
 	/**
@@ -80,19 +85,21 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=-0.044417
-		RandProb[ 0 ] = 0.21399646;
-		RandProb[ 1 ] = 0.83585947;
-		RandProb2[ 0 ] = 0.15239115;
-		RandProb2[ 1 ] = 1.00000000;
-		AllpProb[ 0 ] = 0.61098024;
-		AllpProb[ 1 ] = 1.00000000;
-		CentProb[ 0 ] = 1.00000000;
-		CentProb[ 1 ] = 0.31491799;
-		CentSpan[ 0 ] = 1.79848888;
-		CentSpan[ 1 ] = 0.93384294;
+		// Cost=2.111078
+		RandProb[ 0 ] = 0.31508141;
+		RandProb[ 1 ] = 0.90938107;
+		RandProb2[ 0 ] = 0.52293452;
+		RandProb2[ 1 ] = 0.34912817;
+		AllpProb[ 0 ] = 0.58539518;
+		AllpProb[ 1 ] = 0.99524848;
+		CentProb[ 0 ] = 0.78193307;
+		CentProb[ 1 ] = 0.06864891;
+		CentSpan[ 0 ] = 2.83389125;
+		CentSpan[ 1 ] = 1.80295892;
 		ScutProb = 0.09000000;
-		MantSizeSh = 28.38911418;
+		MantSizeSh = 61.79139210;
+		PopSizeBase = 11.10262668;
+		PopSizeMult = 2.42149368;
 	}
 
 	~CBiteOpt()
@@ -113,7 +120,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			10 + aParamCount * 2 );
+			(int) ( PopSizeBase + aParamCount * PopSizeMult ));
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -327,12 +334,21 @@ public:
 				// optimization process.
 
 				const int64_t imask =
-					MantSizeMask >> (int64_t) ( mp * mp2 * mp2 * MantSizeSh );
+					MantSizeMask >> (int64_t) ( mp2 * mp2 * MantSizeSh );
+
+				const double rr = rnd.getRndValue();
+				const int64_t imask2 =
+					MantSizeMask >> (int64_t) ( rr * rr * MantSizeSh );
+
+				const int si = (int) ( mp * mp2 * PopSize );
+				const double* const rp0 = CurParams[ PopOrder[ si ]];
 
 				for( i = a; i <= b; i++ )
 				{
-					Params[ i ] = ( (int64_t) ( Params[ i ] * MantMult ) ^
-						imask ) * MantMultI;
+					const int64_t v1 = (int64_t) ( Params[ i ] * MantMult );
+					const int64_t v2 = (int64_t) ( rp0[ i ] * MantMult );
+					int64_t v0 = (( v1 ^ imask ) + ( v2 ^ imask2 )) >> 1;
+					Params[ i ] = v0 * MantMultI;
 				}
 
 				const int ci = ( RandSwitch >> 3 ) & 1;

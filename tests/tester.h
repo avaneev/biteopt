@@ -1,7 +1,7 @@
 //$ nocpp
 
 #include <stdio.h>
-#include <emmintrin.h>
+#include <string.h>
 #include "../biteopt.h"
 
 CBiteRnd rnd;
@@ -34,15 +34,16 @@ public:
 			///<
 		double optv; ///< Optimal value.
 			///<
-		double* rotsbuf; ///< rots buffer.
-			///<
-		double** rots; ///< Rotation matrix to apply to function parameters.
-			///<
 		double* shifts; ///< Shifts to apply to function parameters.
 			///<
 		double* signs; ///< Signs or scales to apply to function parameters.
 			///<
+		double** rots; ///< Rotation matrix to apply to function parameters,
+			///< should be provided externally if DoRandomizeAll == true.
+			///<
 		double* tp; ///< Temporary parameter storage.
+			///<
+		double* tp2; ///< Temporary parameter storage 2.
 			///<
 		bool DoRandomize; ///< Apply value randomization.
 			///<
@@ -53,11 +54,10 @@ public:
 		CTestOpt()
 			: minv( NULL )
 			, maxv( NULL )
-			, rotsbuf( NULL )
-			, rots( NULL )
 			, shifts( NULL )
 			, signs( NULL )
 			, tp( NULL )
+			, tp2( NULL )
 		{
 		}
 
@@ -65,11 +65,10 @@ public:
 		{
 			delete[] minv;
 			delete[] maxv;
-			delete[] rotsbuf;
-			delete[] rots;
 			delete[] shifts;
 			delete[] signs;
 			delete[] tp;
+			delete[] tp2;
 		}
 
 		void updateDims( const int aDims )
@@ -77,25 +76,16 @@ public:
 			Dims = aDims;
 			delete[] minv;
 			delete[] maxv;
-			delete[] rotsbuf;
-			delete[] rots;
 			delete[] shifts;
 			delete[] signs;
 			delete[] tp;
+			delete[] tp2;
 			minv = new double[ Dims ];
 			maxv = new double[ Dims ];
-			rotsbuf = new double[ Dims * Dims ];
-			rots = new double*[ Dims ];
 			shifts = new double[ Dims ];
 			signs = new double[ Dims ];
 			tp = new double[ Dims ];
-
-			int i;
-
-			for( i = 0; i < Dims; i++ )
-			{
-				rots[ i ] = rotsbuf + i * Dims;
-			}
+			tp2 = new double[ Dims ];
 
 			CBiteOpt :: updateDims( Dims );
 		}
@@ -129,25 +119,24 @@ public:
 
 			int i;
 
-			if( DoRandomizeAll )
+			for( i = 0; i < Dims; i++ )
 			{
-				for( i = 0; i < Dims; i++ )
-				{
-					tp[ i ] = 0.0;
-					int j;
-
-					for( j = 0; j < Dims; j++ )
-					{
-						tp[ i ] += rots[ i ][ j ] *
-							( p[ j ] * signs[ j ] + shifts[ j ]);
-					}
-				}
+				tp2[ i ] = p[ i ] * signs[ i ] + shifts[ i ];
 			}
-			else
+
+			if( !DoRandomizeAll )
 			{
-				for( i = 0; i < Dims; i++ )
+				return( (*fn -> CalcFunc)( tp2, Dims ));
+			}
+
+			for( i = 0; i < Dims; i++ )
+			{
+				tp[ i ] = 0.0;
+				int j;
+
+				for( j = 0; j < Dims; j++ )
 				{
-					tp[ i ] = p[ i ] * signs[ i ] + shifts[ i ];
+					tp[ i ] += rots[ i ][ j ] * tp2[ j ];
 				}
 			}
 
@@ -165,6 +154,8 @@ public:
 	double ItAvg2; ///< Average of convergence time after run() across all
 		///< attempts.
 		///<
+	double ItAvg2l10n; ///< = log( AtAvg2 / N ) / log( 10 ).
+		///<
 	double RMSAvg; ///< Std.dev of convergence time after run().
 		///<
 	double ItRtAvg; ///< Average ratio of std.dev and average after run().
@@ -179,6 +170,7 @@ public:
 
 	CTester()
 		: opt( new CTestOpt() )
+		, RMCacheCount( 0 )
 	{
 	}
 
@@ -188,44 +180,52 @@ public:
 	}
 
 	/**
-	 * Function initalizes the tester.
+	 * Function initalizes the tester. Then the addCorpus() function should be
+	 * called at least once.
 	 *
- 	 * @param aDefDims The number of dimensions in each function with variable
-	 * number of dimensions.
-	 * @param Corpus NULL-limited list of test functions.
 	 * @param Threshold Objective function value threshold - stop condition.
 	 * @param IterCount The number of attempts to solve a function to perform.
 	 * @param InnerIterCount The maximal number of solver iterations to
 	 * perform.
+	 * @param DoPrint "True" if results should be printed to "stdout".
+	 */
+
+	void init( const double aThreshold, const int aIterCount,
+		const int aInnerIterCount, const bool aDoPrint )
+	{
+		CostThreshold = aThreshold;
+		IterCount = aIterCount;
+		InnerIterCount = aInnerIterCount;
+		DoPrint = aDoPrint;
+		FnCount = 0;
+	}
+
+	/**
+	 * Function adds a function corpus to the tester.
+	 *
+ 	 * @param aDefDims The number of dimensions in each function with variable
+	 * number of dimensions.
+	 * @param Corpus NULL-limited list of test functions.
 	 * @param DoRandomize "True" if randomization of parameter shifts and
 	 * rotations should be performed.
 	 * @param DoRandomizeAll "True" if all randomizations should be applied,
 	 * otherwise only shifts and scales will be applied.
-	 * @param DoPrint "True" if results should be printed to "stdout".
 	 */
 
-	void init( const int aDefDims, const CTestFn** Corpus,
-		const double aThreshold, const int aIterCount,
-		const int aInnerIterCount, const bool aDoRandomize,
-		const bool aDoRandomizeAll, const bool aDoPrint )
+	void addCorpus( const int aDefDims, const CTestFn** Corpus,
+		const bool aDoRandomize, const bool aDoRandomizeAll )
 	{
-		DefDims = aDefDims;
-		CostThreshold = aThreshold;
-		IterCount = aIterCount;
-		InnerIterCount = aInnerIterCount;
-		DoRandomize = aDoRandomize;
-		DoRandomizeAll = aDoRandomizeAll;
-		DoPrint = aDoPrint;
-		FnCount = 0;
-		Funcs = Corpus;
-
-		while( true )
+		while( FnCount < MaxFuncs )
 		{
 			if( *Corpus == NULL )
 			{
 				break;
 			}
 
+			Funcs[ FnCount ] = *Corpus;
+			FuncData[ FnCount ].DefDims = aDefDims;
+			FuncData[ FnCount ].DoRandomize = aDoRandomize;
+			FuncData[ FnCount ].DoRandomizeAll = aDoRandomizeAll;
 			FnCount++;
 			Corpus++;
 		}
@@ -241,6 +241,7 @@ public:
 		ItAvg = 0.0;
 		ItAvg2 = 0.0;
 		int ItAvg2Count = 0;
+		ItAvg2l10n = 0.0;
 		RMSAvg = 0.0;
 		ItRtAvg = 0.0;
 		RjAvg = 0.0;
@@ -266,7 +267,7 @@ public:
 
 		for( k = 0; k < FnCount; k++ )
 		{
-			_mm_empty();
+			const CTestFnData* const fndata = &FuncData[ k ];
 			double AvgIter = 0;
 			double MinCost = 1e300; // Minimal cost detected in successes.
 			double MinRjCost = 1e300; // Minimal cost detected in rejects.
@@ -276,11 +277,11 @@ public:
 
 			opt -> fn = Funcs[ k ];
 			const int Dims = ( opt -> fn -> Dims == 0 ?
-				DefDims : opt -> fn -> Dims );
+				fndata -> DefDims : opt -> fn -> Dims );
 
 			opt -> updateDims( Dims );
-			opt -> DoRandomize = DoRandomize;
-			opt -> DoRandomizeAll = DoRandomizeAll;
+			opt -> DoRandomize = fndata -> DoRandomize;
+			opt -> DoRandomizeAll = fndata -> DoRandomizeAll;
 
 			for( j = 0; j < IterCount; j++ )
 			{
@@ -302,27 +303,11 @@ public:
 					opt -> optv = opt -> fn -> OptValue;
 				}
 
-				if( DoRandomize )
+				if( fndata -> DoRandomize )
 				{
-					if( DoRandomizeAll )
+					if( fndata -> DoRandomizeAll )
 					{
-						if( Dims == 1 )
-						{
-							opt -> rots[ 0 ][ 0 ] = 1.0;
-						}
-						else
-						if( Dims == 2 )
-						{
-							const double th = rnd.getRndValue() * 2.0 * M_PI;
-							opt -> rots[ 0 ][ 0 ] = cos( th );
-							opt -> rots[ 0 ][ 1 ] = -sin( th );
-							opt -> rots[ 1 ][ 0 ] = sin( th );
-							opt -> rots[ 1 ][ 1 ] = cos( th );
-						}
-						else
-						{
-							makeRotationMatrix( opt -> rots, Dims, rnd );
-						}
+						getRotationMatrix( Dims, opt -> rots, rnd );
 					}
 
 					for( i = 0; i < Dims; i++ )
@@ -340,7 +325,6 @@ public:
 					}
 				}
 
-				_mm_empty();
 				opt -> init( rnd );
 				i = 0;
 				int impriters = 0;
@@ -364,8 +348,10 @@ public:
 						GoodIters += (double) impriters / i;
 						GoodItersCount++;
 						ComplTotal++;
-						Iters[ j ] = i + opt -> getInitEvals();
-						AvgIter += i + opt -> getInitEvals();
+						const int itc = i + opt -> getInitEvals();
+						Iters[ j ] = itc;
+						AvgIter += itc;
+						ItAvg2l10n += log( (double) itc / Dims ) / log( 10.0 );
 						break;
 					}
 
@@ -447,13 +433,13 @@ public:
 			const double At = 1.0 / ( 1.0 - (double) Rej / IterCount );
 			AtAvg += At;
 			RejTotal += Rej;
-//			RejTotal += Rj * Rj;
 
 			if( DoPrint )
 			{
-				printf( "AI:%6.0f RI:%5.0f At:%5.2f C:%13.10f RjC:%7.4f "
-					"%s_%i\n", Avg, RMS, At, MinCost,
-					MinRjCost, opt -> fn -> Name, Dims );
+				printf( "AI:%6.0f RI:%5.0f At:%5.2f C:%13.8f RjC:%7.4f "
+					"%s_%i%c\n", Avg, RMS, At, MinCost,
+					MinRjCost, opt -> fn -> Name, Dims,
+					( fndata -> DoRandomize ? 'r' : ' ' ));
 //				printf( "C:%20.13f %20.13f %s_%i\n",
 //					MinRjCost, opt -> optv, opt -> fn -> Name, Dims );
 			}
@@ -467,14 +453,13 @@ public:
 		}
 		#endif // defined( EVALBINS )
 
-		_mm_empty();
 		ItAvg /= FnCount;
 		ItAvg2 /= ItAvg2Count;
+		ItAvg2l10n /= ItAvg2Count;
 		RMSAvg /= FnCount;
 		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
 		AtAvg = 1.0 / ( 1.0 - RejTotal / IterCount / FnCount );
-//		AtAvg = 1.0 / ( 1.0 - sqrt( RejTotal / FnCount ));
 		Score = ( AtAvg - 1.0 ) * 100.0 +
 			fabs( ItAvg - 334.0 ) * 0.1;
 		Success = 100.0 * ComplTotal / FnCount / IterCount;
@@ -496,7 +481,10 @@ public:
 			printf( "Success: %.2f%%\n", Success );
 			printf( "ItAvg: %.1f (avg convergence time)\n", ItAvg );
 			printf( "ItAvg2: %.1f (avg convergence time across all "
-				"attempts)\n", ItAvg2 );
+				"successful attempts)\n", ItAvg2 );
+
+			printf( "ItAvg2l10n: %.3f (avg log10(it/N) across all successful "
+				"attempts)\n", ItAvg2l10n );
 
 			printf( "RMSAvg: %.1f (avg std.dev of convergence time)\n",
 				RMSAvg );
@@ -515,7 +503,29 @@ public:
 	}
 
 protected:
-	const CTestFn** Funcs; ///< Test functions corpus.
+	static const int MaxFuncs = 500; ///< The maximal number of functions
+		///< possible to add to the tester.
+		///<
+
+	/**
+	 * Structure holds auxilliary function data.
+	 */
+
+	struct CTestFnData
+	{
+		int DefDims; ///< The number of dimensions to use if function
+			///< supports any number of dimensions.
+			///<
+		bool DoRandomize; ///< Perform parameter shift randomization.
+			///<
+		bool DoRandomizeAll; ///< Use all randomization techniques, "false"
+			///< if only shift and scale.
+			///<
+	};
+
+	const CTestFn* Funcs[ MaxFuncs ]; ///< Test functions corpus.
+		///<
+	CTestFnData FuncData[ MaxFuncs ]; ///< Test function aux data.
 		///<
 	int FnCount; ///< Test function count.
 		///<
@@ -525,11 +535,51 @@ protected:
 		///<
 	int InnerIterCount; ///< Inner iteration count (the number of
 		///< optimization calls).
-	bool DoRandomize; ///< Randomize parameters.
-		///<
-	bool DoRandomizeAll; ///< Randomize parameters using all techniques.
-		///<
 	bool DoPrint; ///< Print results to stdout.
+		///<
+
+	/**
+	 * Structure that holds cached random rotation matrices for a specified
+	 * dimensionality.
+	 */
+
+	struct CRotMatCacheItem
+	{
+		static const int EntryCount = 2048; ///< The number of cache entries.
+			///<
+		int Dims; ///< Dimension count.
+			///<
+		double* rmbuf[ EntryCount ]; ///< Rotation matrix buffer pointers.
+			///<
+		double** rm[ EntryCount ]; ///< Row-wise rotation matrices pointers.
+			///<
+
+		CRotMatCacheItem()
+			: Dims( 0 )
+		{
+			memset( rmbuf, 0, sizeof( rmbuf ));
+			memset( rm, 0, sizeof( rm ));
+		}
+
+		~CRotMatCacheItem()
+		{
+			int i;
+
+			for( i = 0; i < EntryCount; i++ )
+			{
+				delete[] rmbuf[ i ];
+				delete[] rm[ i ];
+			}
+		}
+	};
+
+	static const int RMCacheSize = 8; ///< The maximal number of different
+		///< dimensionalities supported by cache.
+		///<
+	int RMCacheCount; ///< The number of cache entires actually used.
+		///<
+	CRotMatCacheItem RMCache[ RMCacheSize ]; ///< Rotation matrix cache for
+		///< different dimensionalities.
 		///<
 
 	/**
@@ -599,5 +649,61 @@ protected:
 				B[k][i] /= prod;
 			}
 		}
+	}
+
+	/**
+	 * Function creates or returns a cached random rotation matrix.
+	 *
+	 * @param _DIM Dimensionality.
+	 * @param[out] B Row-wise matrix pointers.
+	 * @param rrnd Random number generator.
+	 */
+
+	void getRotationMatrix( const int _DIM, double**& B, CBiteRnd& rrnd )
+	{
+		CRotMatCacheItem* Cache = NULL;
+		int i;
+
+		for( i = 0; i < RMCacheCount; i++ )
+		{
+			if( RMCache[ i ].Dims == _DIM )
+			{
+				Cache = &RMCache[ i ];
+				break;
+			}
+		}
+
+		if( Cache == NULL )
+		{
+			if( RMCacheCount == RMCacheSize )
+			{
+				printf( "rmcache overflow\n" );
+				Cache = &RMCache[ 0 ];
+			}
+			else
+			{
+				Cache = &RMCache[ RMCacheCount ];
+				Cache -> Dims = _DIM;
+				RMCacheCount++;
+			}
+		}
+
+		const int ri = (int) ( rrnd.getRndValue() *
+			CRotMatCacheItem :: EntryCount );
+
+		if( Cache -> rm[ ri ] == NULL )
+		{
+			Cache -> rm[ ri ] = new double*[ _DIM ];
+			Cache -> rmbuf[ ri ] = new double[ _DIM * _DIM ];
+
+			for( i = 0; i < _DIM; i++ )
+			{
+				Cache -> rm[ ri ][ i ] = Cache -> rmbuf[ ri ] + i * _DIM;
+			}
+
+			makeRotationMatrix( Cache -> rm[ ri ], _DIM, rrnd );
+		}
+
+		B = Cache -> rm[ ri ];
 	}
 };

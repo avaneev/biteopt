@@ -4219,6 +4219,21 @@ const CTestFn* OptCorpusNDRotOfs[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnInvertedCosine, &TestFnSinusoidal, &TestFnLunacekBiRastrigin,
 	&TestSphericalSinc, NULL };
 
+// N-dimensional test corpus of functions that support rotation and offseting,
+// only "solvable" functions.
+
+const CTestFn* OptCorpusNDRotOfsSol[] = { &TestFnSchwefel220,
+	&TestFnSchwefel221, &TestFnSchwefel222, &TestFnQing, &TestFnSphere,
+	&TestFnAckley2, &TestFnRosenbrock, &TestFnZacharov,
+	&TestFnRotatedHyperEllipsoid, &TestFnBrown, &TestFnChungReynolds,
+	&TestFnHolzman, &TestFnStep01, &TestFnStep02, &TestFnStep03,
+	&TestFnZeroSum, &TestFnYaoLiu04, &TestFnPowellSum, &TestFnQuintic,
+	&TestFnDifferentPowers, &TestFnDiscus, &TestFnExponential,
+	&TestFnSchwefel01, &TestFnSchwefel02, &TestFnLevy03, &TestFnLevyMontalvo2,
+	&TestFnPenalty01, &TestFnPenalty02, &TestFnStretchedV,
+	&TestFnXinSheYang01, &TestFnHilbert, &TestTridiagonalMatrix,
+	&TestFnSinusoidal, NULL };
+
 // Failing functions.
 
 const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,

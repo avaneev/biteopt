@@ -42,8 +42,8 @@ optimization problems and performed well, and it successfully solves even
 600-dimensional test problems found in some textbooks. But the main focus of
 the method is to provide fast solutions for computationally expensive
 "black-box" problems of medium dimensionality (up to 60). For example, this
-method when optimizing its own hyper-parameters (8 dimensions) generates a
-good solution in under 500 function evaluations.
+method when optimizing its own hyper-parameters (13 dimensions) generates a
+good solution in under 800 function evaluations.
 
 This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
@@ -58,7 +58,7 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
 success rate is >90% while the average number of objective function
-evaluations is ~320.
+evaluations is ~300.
 
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. CMA-ES
@@ -69,7 +69,8 @@ such benchmark arrangements. However, BiteOpt's development from its inception
 was based on a wider selection of functions proposed by global optimization
 researchers, without focus on synthetic parameter space transformations.
 CBiteOpt stands parameter space offsetting and orthogonal scaling pretty well,
-but partially fails when the space is rotated.
+but partially fails when the space is rotated (a good solution is obtained,
+but not the theoretical optimum).
 
 As a matter of sport curiosity, BiteOpt is able to solve in reasonable time
 almost all functions proposed in classic academic literature on global
@@ -81,8 +82,11 @@ BiteOpt can't solve, let the author know.
 
 BiteOpt (state at commit 124) took 2nd place (1st by sum of ranks) in
 [BBComp2018-1OBJ-expensive](https://bbcomp.ini.rub.de/results/BBComp2018-1OBJ-expensive/summary.html)
-competition track. Since that commit algorithm was improved in many aspects,
-especially in low-dimensional convergence rates.
+competition track. Since the time of that commit algorithm improved in many
+aspects, especially in low-dimensional convergence performance. Commit 124 can
+be considered as "baseline effective" version of the method (it is also
+maximally simple), with further commits implementing gradual improvements, but
+also adding more complexity.
 
 ## CBiteOpt (biteopt.h) ##
 
@@ -192,17 +196,19 @@ effective, because they require an exhaustive search. Binary variables may be
 used, in small quantities (otherwise the problem usually transforms into
 a complex combinatorial problem).
 
-Value constraints can be implemented as penalties, in this way: constraint
-c1:x1+2.0\*x2-3.0\*x3<=0 can be used to adjust objective function value:
-cost+=(c1<=0?0:100000+c1*9999), with 100000 penalty base (barrier) and 9999
-constraint scale chosen to assure no interaction with the expected "normal"
-objective function values while providing a useful gradient. Note that if the
-solution's value is equal to or higher than the penalty base it means either a
-feasible solution was not found or the chosen constraint scale does not
-generate a useful gradient. See `constr.cpp` for an example of constraint
-programming. `constr2.cpp` is an example of non-linear constraint programming
-with both non-equalities and equalities. Sometimes using quadratic penalties
-may be more effective than adding the aforementioned barrier constant.
+While constraint satisfaction is generally not the best area of application of
+derivative-free methods, value constraints can be implemented as penalties, in
+this way: constraint c1:x1+2.0\*x2-3.0\*x3<=0 can be used to adjust objective
+function value: cost+=(c1<=0?0:100000+c1*9999), with 100000 penalty base
+(barrier) and 9999 constraint scale chosen to assure no interaction with the
+expected "normal" objective function values while providing a useful gradient.
+Note that if the solution's value is equal to or higher than the penalty base
+it means either a feasible solution was not found or the chosen constraint
+scale does not generate a useful gradient. See `constr.cpp` for an example of
+constraint programming. `constr2.cpp` is an example of non-linear constraint
+programming with both non-equalities and equalities. Sometimes using quadratic
+penalties may be more effective than adding the aforementioned barrier
+constant.
 
 It is not advisable to use constraints like (x1-round(x1)=0) commonly used
 in model libraries to force integer or binary values, as such constraint
@@ -289,13 +295,7 @@ in parallel, and then update optimizer's state before generating a new batch
 of candidate solutions. Later commits have changed the algorithm to a from
 less suitable for such parallelization.
 
-2. The default population size formula 10+Dim\*2 works well for most
-non-convex functions, however some functions converge better if a higher
-population size is used. Tests have revealed that convex problems converge
-better with a population as large as 10+Dim\*6, but possibly at the expense of
-a longer convergence time.
-
-3. The method currently uses "short-cuts" which can be considered as "tricks"
+2. The method currently uses "short-cuts" which can be considered as "tricks"
 (criticized in literature) which are non-universal, and reduce convergence
 time out of proportion for many known test functions. These "short-cuts" are
 not critically important to method's convergence properties, but they reduce
@@ -303,27 +303,21 @@ convergence time even for functions that do not have minimum at a point where
 all arguments are equal. It just often happens that such "short-cuts" provide
 useful "reference points" to the method. Removing these "short-cuts" will
 increase average convergence time of the method, but in most cases won't
-impact method's ability to find a global solution.
+impact method's ability to find a global solution. "Short-cuts" are used only
+in 9% of objective function evaluations.
 
-4. The method uses resetting counters instead of direct probability
+3. The method uses resetting counters instead of direct probability
 evaluation. This was done to reduce method's overhead (it was important to
 keep overhead low so that optimization of method's own hyper-parameters does
 not take too much time). In practice, resetting counters are equivalent to
 `if( getRndValue() < Probability )` constructs, and actually provide slightly
 better convergence properties, probably due to some "state automata" effect.
 
-5. The method uses LCG pseudo-random number generator due to its efficiency.
+4. The method uses LCG pseudo-random number generator due to its efficiency.
 The method was also tested with a more statistically-correct PRNG and the
 difference turned out to be negligible.
 
-6. The method was developed using `test2.cpp` benchmark which probably
-introduces bias towards 2-dimensional functions. It is possible that method's
-hyper-parameters should depend on problem's dimensionality, but due to
-computation complexity of hyper-parameter optimization and unavailability of a
-wide range of multi-dimensional test functions this hypothesis has not been
-tested.
-
-7. The method of selection of initial solution vectors slightly affects
+5. The method of selection of initial solution vectors slightly affects
 success rate when solving test problem suites. Initialization method evolved
 over time, but there may still be a place for improvement present.
 
@@ -353,6 +347,8 @@ this range, are wrapped in a special manner before each function evaluation.
 Algorithm's hyper-parameters (probabilities) were pre-selected and should not
 be changed. Algorithm uses an alike of state automata to switch between
 different probability values depending on the candidate solution acceptance.
+In many instances random solution selection uses square of the random
+variable - this has an effect of giving more weight to better solutions.
 
 2. Depending on the `RandProb` probability, a single (or all) parameter value
 randomization is performed using "bitmask inversion" operation (which is
@@ -360,9 +356,10 @@ approximately equivalent to `v=1-v` operation in normalized parameter space).
 Below, _i_ is either equal to rand(1, N) or in the range [1; N], depending on
 the `AllpProb` probability. `>>` is a bit shift-right operation, `MantSize` is
 a constant equal to 54, `MantSizeSh` is a hyper-parameter that limits bit
-shift operation range.
+shift operation range. Actual implementation is more complex as it uses
+average of two such operations.
 
-![equation](https://latex.codecogs.com/gif.latex?mask=(2^{MantSize}-1)\gg&space;\lfloor&space;rand(0\ldots1)^5\cdot&space;MantSizeSh\rfloor)
+![equation](https://latex.codecogs.com/gif.latex?mask=(2^{MantSize}-1)\gg&space;\lfloor&space;rand(0\ldots1)^4\cdot&space;MantSizeSh\rfloor)
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]&space;=&space;\frac{\lfloor&space;x_\text{new}[i]\cdot&space;2^{MantSize}&space;\rfloor&space;\bigotimes&space;mask&space;}{2^{MantSize}})
 
@@ -381,7 +378,7 @@ involving the best solution, centroid vector and a random solution.
 performed using the random previous solution, chosen best and worst
 solutions, plus a difference of two other random solutions. This is
 conceptually similar to Differential Evolution's "mutation" operation. The
-used worst solution is chosen from 3 worst solutions.
+used worst solution is randomly chosen from 3 worst solutions.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-(x_\text{rand2}-x_\text{rand3}))}{2})
 
