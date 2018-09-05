@@ -14,6 +14,7 @@
 * [Examples](#examples)
 * [Users](#users)
 * [Method description](#method-description)
+* [Method philosophy](#method-philosophy)
 
 ## Introduction ##
 
@@ -391,3 +392,20 @@ is performed.
 
 5. After each objective function evaluation, the highest-cost previous
 solution is replaced using the upper bound cost constraint.
+
+## Method philosophy ##
+
+BiteOpt is an evolutionary optimization method. Unlike many established
+optimization methods like CMA-ES where new populations are generated on each
+iteration, with or without combining with the previous generation, BiteOpt
+keeps and updates a single population of solutions at any given time. A new
+solution either replaces a worst solution or is discarded. In common terms it
+means that population has some fixed "living space" which is only available to
+the best fit (least cost) solutions. Structurally, this is similar to a
+natural evolutionary environment which usually offers only a limited "living
+space" to its members. Least fit members have little chance to stay in this
+"living space".
+
+BiteOpt uses several methods to generate new solutions, each method taking
+various information from the population. These methods are used in
+a probabilistic manner without any predefined preference.
