@@ -123,6 +123,8 @@ class, but increase does correlate to its M parameter. For some complex
 functions the use of CBiteOptDeep even decreases convergence time. For sure,
 CBiteOptDeep class often produces better solutions than the CBiteOpt class.
 
+It is possible to parallelize this method without much effort.
+
 ## Notes ##
 
 Method's hyper-parameters (probabilities) were pre-selected and should not
@@ -287,14 +289,15 @@ hyper-parameters of the algorithm is an area of ongoing research. There are
 several things that were discovered that may need to be addressed in the
 future:
 
-1. Parallelization of this algorithm is technically possible, but may be
+1. Parallelization of BiteOpt algorithm is technically possible, but may be
 counter-productive (increases convergence time considerably). It is more
 efficient to run several optimizers in parallel with different random seeds.
 Specifically saying, it is possible (tested to be working on some code commits
 before May 15, 2018) to generate a serie of candidate solutions, evaluate them
 in parallel, and then update optimizer's state before generating a new batch
 of candidate solutions. Later commits have changed the algorithm to a from
-less suitable for such parallelization.
+less suitable for such parallelization. BiteOptDeep can be parallelized
+without much effort, but with a certain limit on parallelism.
 
 2. The method currently uses "short-cuts" which can be considered as "tricks"
 (criticized in literature) which are non-universal, and reduce convergence
@@ -409,3 +412,8 @@ space" to its members. Least fit members have little chance to stay in this
 BiteOpt uses several methods to generate new solutions, each method taking
 various information from the population. These methods are used in
 a probabilistic manner without any predefined preference.
+
+BiteOptDeep implements evolutionary method which can be seen in society and
+nature: exchange of solutions between independent populations. Such exchange
+allows to find better solutions in teamwork of sufficiently diverse members,
+it also reduces time (but not human-hours) to find a better solution.
