@@ -43,7 +43,7 @@ optimization problems and performed well, and it successfully solves even
 600-dimensional test problems found in some textbooks. But the main focus of
 the method is to provide fast solutions for computationally expensive
 "black-box" problems of medium dimensionality (up to 60). For example, this
-method when optimizing its own hyper-parameters (13 dimensions) generates a
+method when optimizing its own hyper-parameters (14 dimensions) generates a
 good solution in under 800 function evaluations.
 
 This method was compared with the results of this paper (on 244 published C
@@ -142,6 +142,13 @@ for 10-dimensional functions it is reasonable to expect convergence in 5000
 iterations (harder functions may require more iterations to converge). Most
 classic 2-dimensional problems converge in 400 iterations or less, at 1e-6
 precision.
+
+Each run may generate an equally-usable candidate solution (not necessarily
+having the least cost), in practice the researcher may select solution from
+any run based on his/her own considerations. In this light, it may be
+incorrect to assume that least-performing runs are "wasted", in practice
+least-performing runs may give more acceptable parameter values within the
+search space in comparison to the best-performing runs.
 
 ## Limitations ##
 
