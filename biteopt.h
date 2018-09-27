@@ -59,6 +59,9 @@ public:
 	double MantSizeSh; ///< MantSize used in "bitmask inversion" shift, used
 		///< to shrink or extend the range.
 		///<
+	double MantSizeSh2; ///< MantSize used in "bitmask inversion" shift, used
+		///< to shrink or extend the range, for second operand.
+		///<
 	double PopSizeBase; ///< Minimal population size.
 		///<
 	double PopSizeMult; ///< Dimensional population size multiplier.
@@ -85,21 +88,22 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=2.111078
-		RandProb[ 0 ] = 0.31508141;
-		RandProb[ 1 ] = 0.90938107;
-		RandProb2[ 0 ] = 0.52293452;
-		RandProb2[ 1 ] = 0.34912817;
-		AllpProb[ 0 ] = 0.58539518;
-		AllpProb[ 1 ] = 0.99524848;
-		CentProb[ 0 ] = 0.78193307;
-		CentProb[ 1 ] = 0.06864891;
-		CentSpan[ 0 ] = 2.83389125;
-		CentSpan[ 1 ] = 1.80295892;
+		// Cost=2.101823
+		RandProb[ 0 ] = 0.40891214;
+		RandProb[ 1 ] = 0.98786512;
+		RandProb2[ 0 ] = 0.45861012;
+		RandProb2[ 1 ] = 0.32664134;
+		AllpProb[ 0 ] = 0.52827167;
+		AllpProb[ 1 ] = 0.98183325;
+		CentProb[ 0 ] = 0.94613304;
+		CentProb[ 1 ] = 0.01094351;
+		CentSpan[ 0 ] = 2.87005732;
+		CentSpan[ 1 ] = 1.50000000;
 		ScutProb = 0.09000000;
-		MantSizeSh = 61.79139210;
-		PopSizeBase = 11.10262668;
-		PopSizeMult = 2.42149368;
+		MantSizeSh = 21.97054644;
+		MantSizeSh2 = 81.69065658;
+		PopSizeBase = 11.10471664;
+		PopSizeMult = 1.92913120;
 	}
 
 	~CBiteOpt()
@@ -286,7 +290,6 @@ public:
 				// solution. "mp*mp" is equivalent of giving more weight to
 				// better solutions.
 
-				const double* const MinParams = CurParams[ PopOrder[ 0 ]];
 				const int si = (int) ( mp2 * PopSize );
 				const double* const rp1 = CurParams[ PopOrder[ si ]];
 
@@ -338,7 +341,7 @@ public:
 
 				const double rr = rnd.getRndValue();
 				const int64_t imask2 =
-					MantSizeMask >> (int64_t) ( rr * rr * MantSizeSh );
+					MantSizeMask >> (int64_t) ( rr * rr * MantSizeSh2 );
 
 				const int si = (int) ( mp * mp2 * PopSize );
 				const double* const rp0 = CurParams[ PopOrder[ si ]];
