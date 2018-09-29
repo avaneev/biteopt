@@ -1426,7 +1426,7 @@ static double calcBukin6_p( double* const minv, double* const maxv,
 static const CTestFn TestFnBukin6 = { "Bukin6", 2, 0.0, 0.0, 0.0, &calcBukin6,
 	&calcBukin6_p };
 
-static double calcStyblinskiTank( const double* const x, const int N )
+static double calcStyblinskiTang( const double* const x, const int N )
 {
 	double s = 0.0;
 	int i;
@@ -1439,7 +1439,7 @@ static double calcStyblinskiTank( const double* const x, const int N )
 	return( 0.5*s );
 }
 
-static double calcStyblinskiTank_p( double* const minv, double* const maxv,
+static double calcStyblinskiTang_p( double* const minv, double* const maxv,
 	const int N )
 {
 	int i;
@@ -1453,8 +1453,8 @@ static double calcStyblinskiTank_p( double* const minv, double* const maxv,
 	return( -39.1661657037714*N );
 }
 
-static const CTestFn TestFnStyblinskiTank = { "StyblinskiTank", 0, 0.0, 0.0,
-	0.0, &calcStyblinskiTank, &calcStyblinskiTank_p };
+static const CTestFn TestFnStyblinskiTang = { "StyblinskiTang", 0, 0.0, 0.0,
+	0.0, &calcStyblinskiTang, &calcStyblinskiTang_p };
 
 static double calcMcCormick( const double* const x, const int N )
 {
@@ -4173,6 +4173,22 @@ static double calcSphericalSinc( const double* const x, const int N )
 static const CTestFn TestSphericalSinc = { "SphericalSinc", 0,
 	-15.0, 15.0, -1.0, &calcSphericalSinc };
 
+static double calcBiprime203( const double* const x, const int N )
+{
+	const int nval = (int) x[ 0 ] * (int) x[ 1 ];
+	double d = 7 * 29 - nval;
+
+	if( d < 0 )
+	{
+		d = -d;
+	}
+
+	return( d );
+}
+
+static const CTestFn TestBiprime203 = { "Biprime203", 2, 0.0, 35.0, 0.0,
+	&calcBiprime203 };
+
 // Strategy optimization corpus based on N-dimensional functions.
 
 const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
@@ -4182,7 +4198,7 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnRotatedHyperEllipsoid, &TestFnWavy, &TestFnBrown, &TestFnAlpine1,
 	&TestFnChungReynolds, &TestFnBentCigar, &TestFnHolzman, &TestFnHyperGrid,
 	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnGriewank,
-	&TestFnZeroSum, &TestFnSchwefel, &TestFnStyblinskiTank, &TestFnYaoLiu04,
+	&TestFnZeroSum, &TestFnSchwefel, &TestFnStyblinskiTang, &TestFnYaoLiu04,
 	&TestFnWeierstrass, &TestFnXinSheYang04, &TestFnPowellSum, &TestFnAlpine2,
 	&TestFnQuintic, &TestFnBuecheRastrigin, &TestFnDifferentPowers,
 	&TestFnDiscus, &TestFnEllipsoid, &TestFnSchaffer07,
@@ -4207,7 +4223,7 @@ const CTestFn* OptCorpusNDRotOfs[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnRotatedHyperEllipsoid, &TestFnBrown, &TestFnAlpine1,
 	&TestFnChungReynolds, &TestFnBentCigar, &TestFnHolzman,
 	&TestFnStep01, &TestFnStep02, &TestFnStep03, &TestFnGriewank,
-	&TestFnZeroSum, &TestFnStyblinskiTank, &TestFnYaoLiu04,
+	&TestFnZeroSum, &TestFnStyblinskiTang, &TestFnYaoLiu04,
 	&TestFnWeierstrass, &TestFnPowellSum, &TestFnQuintic,
 	&TestFnBuecheRastrigin, &TestFnDifferentPowers, &TestFnDiscus,
 	&TestFnEllipsoid, &TestFnSchaffer07, &TestFnTrigonometric02,
@@ -4253,8 +4269,8 @@ const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10,
 
 const CTestFn* TestCorpusAll[] = { &TestFnTripod, &TestFnXor,
 	&TestFnLangerman5, &TestFnPowerSum, &TestFnTrefethen, &TestFnMishra03,
-	&TestFnEggHolder, &TestFnDolan, &TestFnZimmerman, &TestFnRipple01,
-	&TestFnMishra04, &TestFnStochastic, &TestFnSchmidtVetters,
+	&TestFnEggHolder, &TestFnDolan, &TestFnZimmerman, &TestBiprime203,
+	&TestFnRipple01, &TestFnMishra04, &TestFnStochastic, &TestFnSchmidtVetters,
 	&TestFnHartman6, &TestFnKowalik, &TestFnPrice03, &TestFnMeyerRoth,
 	&TestFnMishra06, &TestFnBeale, &TestFnDeceptive, &TestFnBranin02,
 	&TestFnPeaks, &TestFnHansen, &TestFnComplexHolderTable, &TestFnAlpine2,
@@ -4290,7 +4306,7 @@ const CTestFn* TestCorpusAll[] = { &TestFnTripod, &TestFnXor,
 	&TestFnCube, &TestFnDeckkersAarts, &TestFnEggCrate, &TestFnKeane,
 	&TestFnLeon, &TestFnQing, &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnSchwefel222,	&TestFnWayburnSeader02, &TestFnSawtoothxy,
-	&TestFnSchwefel, &TestFnAdjiman, &TestFnStyblinskiTank, &TestFnMcCormick,
+	&TestFnSchwefel, &TestFnAdjiman, &TestFnStyblinskiTang, &TestFnMcCormick,
 	&TestFnHimmelblau, &TestFnBoxBettsExpQuadSum, &TestFnPowellQuartic,
 	&TestFnZirilli, &TestFnCamel, &TestFnComplex, &TestFnDavis,
 	&TestFnDownhillStep, &TestFnEngvall, &TestFnGramacyLee02, &TestFnGiunta,
