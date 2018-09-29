@@ -1,6 +1,6 @@
 // Prime-number factoring example. Uses BiteOptDeep with a huge (5000) depth
 // factor. This is purely a proof-of-concept example, may not work for
-// factoring of huge numbers, so far works for 16-digit numbers. Since this
+// factoring of huge numbers, so far works for 17-digit numbers. Since this
 // method is probabilistic, various variables should be changed to obtain
 // solutions - iteration number, depth, attempt count, MinMaxFactor values,
 // Split. The resulting "minf" is equal to 0 when a precise solution was
@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include "biteopt.h"
 
-const int64_t val = 160000003LL * 10000079LL; // n=pq
+const int64_t val = 160000003LL * 148030163LL; // n=pq
 const int Split = 4;
 const int N = Split * 2;
 const double lb[] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
@@ -22,7 +22,7 @@ const double MinFactor1 = 0.0;
 const double MaxFactor1 = 400000000.0;
 const double Factor1Diff = ( MaxFactor1 - MinFactor1 ) / Split;
 const double MinFactor2 = 0.0;
-const double MaxFactor2 = 40000000.0;
+const double MaxFactor2 = 400000000.0;
 const double Factor2Diff = ( MaxFactor2 - MinFactor2 ) / Split;
 bool DoPrint = false;
 
@@ -69,7 +69,7 @@ int main()
 {
 	double x[ N ];
 	double minf;
-	biteopt_minimize( N, fn, NULL, lb, ub, x, &minf, 2000000, 5000, 3 );
+	biteopt_minimize( N, fn, NULL, lb, ub, x, &minf, 2000000, 5000, 10 );
 
 	printf( "minf = %.10g\n", minf );
 
