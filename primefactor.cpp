@@ -1,15 +1,29 @@
 // Prime-number factoring example. Uses BiteOptDeep with a huge (5000) depth
-// factor.
+// factor. This is purely a proof-of-concept example, may not work for
+// factoring of huge numbers, so far works for 16-digit numbers. Since this
+// method is probabilistic, various variables should be changed to obtain
+// solutions - iteration number, depth, attempt count, MinMaxFactor values,
+// Split. The resulting "minf" is equal to 0 when a precise solution was
+// found.
+//
+// Currently method uses just an even-odd check as a primality test. Using a
+// more elaborative and precise test may produce better convergence property.
 
 #include <stdio.h>
-#include <math.h>
 #include <stdint.h>
 #include "biteopt.h"
 
-const int N = 8;
-double lb[ N ] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
-double ub[ N ] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
-int64_t val = 160000003LL * 10000079LL;
+const int64_t val = 160000003LL * 10000079LL; // n=pq
+const int Split = 4;
+const int N = Split * 2;
+const double lb[] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+const double ub[] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+const double MinFactor1 = 0.0;
+const double MaxFactor1 = 400000000.0;
+const double Factor1Diff = ( MaxFactor1 - MinFactor1 ) / Split;
+const double MinFactor2 = 0.0;
+const double MaxFactor2 = 40000000.0;
+const double Factor2Diff = ( MaxFactor2 - MinFactor2 ) / Split;
 bool DoPrint = false;
 
 double fn( int ND, const double* x, void* data )
@@ -19,10 +33,10 @@ double fn( int ND, const double* x, void* data )
 	double cost = 0.0;
 	int i;
 
-	for( i = 0; i < 4; i++ )
+	for( i = 0; i < Split; i++ )
 	{
-		a1 += (int) ( x[ i ] * 50000000.0 + 0.5 );
-		a2 += (int) ( x[ 4 + i ] * 5000000.0 + 0.5 );
+		a1 += (int64_t) ( MinFactor1 + x[ i ] * Factor1Diff + 0.5 );
+		a2 += (int64_t) ( MinFactor2 + x[ Split + i ] * Factor2Diff + 0.5 );
 	}
 
 	if(( a1 & 1 ) == 0 )
