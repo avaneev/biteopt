@@ -4,7 +4,7 @@
 #define CCMAES_INCLUDED
 
 #include <string.h>
-#include "biternd.h"
+#include "../biternd.h"
 #include "../cmaes/cmaes_interface.h"
 
 /**
