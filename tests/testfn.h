@@ -1808,6 +1808,24 @@ static double calcBentCigar( const double* const x, const int N )
 static const CTestFn TestFnBentCigar = { "BentCigar", 0, -100.0, 100.0, 0.0,
 	&calcBentCigar };
 
+static double calcCigar( const double* const x, const int N )
+{
+	double s = 0.0;
+	double s2 = 0.0;
+	int i;
+
+	for( i = 0; i < N; i++ )
+	{
+		s += sqr(x[i]);
+		s2 += x[i];
+	}
+
+	return( 1e6*s+(1.0-1e6)*sqr(s2/sqrt((double)N)) );
+}
+
+static const CTestFn TestFnCigar = { "Cigar", 0, -100.0, 100.0, 0.0,
+	&calcCigar };
+
 static double calcDeflCorrSpring( const double* const x, const int N )
 {
 	const double a = 5.0;
@@ -4212,7 +4230,7 @@ const CTestFn* OptCorpusND[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnStretchedV, &TestFnPathological, &TestFnXinSheYang01,
 	&TestFnSineEnvelope, &TestFnHilbert, &TestTridiagonalMatrix,
 	&TestFnF2, &TestFnInvertedCosine, &TestFnSinusoidal,
-	&TestFnLunacekBiRastrigin, &TestSphericalSinc, NULL };
+	&TestFnLunacekBiRastrigin, &TestSphericalSinc, &TestFnCigar, NULL };
 
 // N-dimensional test corpus of functions that support rotation and offseting.
 
@@ -4233,22 +4251,25 @@ const CTestFn* OptCorpusNDRotOfs[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnPenalty01, &TestFnPenalty02, &TestFnPinter, &TestFnStretchedV,
 	&TestFnXinSheYang01, &TestFnHilbert, &TestTridiagonalMatrix,
 	&TestFnInvertedCosine, &TestFnSinusoidal, &TestFnLunacekBiRastrigin,
-	&TestSphericalSinc, NULL };
+	&TestSphericalSinc, &TestFnCigar, NULL };
 
 // N-dimensional test corpus of functions that support rotation and offseting,
 // only "solvable" functions.
 
 const CTestFn* OptCorpusNDRotOfsSol[] = { &TestFnSchwefel220,
 	&TestFnSchwefel221, &TestFnSchwefel222, &TestFnQing, &TestFnSphere,
-	&TestFnAckley2, &TestFnRosenbrock, &TestFnZacharov,
-	&TestFnRotatedHyperEllipsoid, &TestFnBrown, &TestFnChungReynolds,
+	&TestFnAckley, &TestFnAckley2, &TestFnRosenbrock, &TestFnZacharov,
+	&TestFnRastrigin, &TestFnSumSquares, &TestFnRotatedHyperEllipsoid,
+	&TestFnBrown, &TestFnAlpine1, &TestFnChungReynolds, &TestFnBentCigar,
 	&TestFnHolzman, &TestFnStep01, &TestFnStep02, &TestFnStep03,
-	&TestFnZeroSum, &TestFnYaoLiu04, &TestFnPowellSum, &TestFnQuintic,
-	&TestFnDifferentPowers, &TestFnDiscus, &TestFnExponential,
-	&TestFnSchwefel01, &TestFnSchwefel02, &TestFnLevy03, &TestFnLevyMontalvo2,
-	&TestFnPenalty01, &TestFnPenalty02, &TestFnStretchedV,
-	&TestFnXinSheYang01, &TestFnHilbert, &TestTridiagonalMatrix,
-	&TestFnSinusoidal, NULL };
+	&TestFnZeroSum, &TestFnStyblinskiTang, &TestFnStyblinskiTang,
+	&TestFnYaoLiu04, &TestFnPowellSum, &TestFnQuintic, &TestFnBuecheRastrigin,
+	&TestFnDifferentPowers, &TestFnDiscus, &TestFnEllipsoid,
+	&TestFnSchaffer07, &TestFnExponential, &TestFnSchwefel01,
+	&TestFnSchwefel02, &TestFnLevy03, &TestFnYaoLiu09, &TestFnLevyMontalvo2,
+	&TestFnCosineMixture, &TestFnLevyMontalvo2, &TestFnPenalty01,
+	&TestFnPenalty02, &TestFnPinter, &TestFnStretchedV, &TestFnXinSheYang01,
+	&TestFnHilbert, &TestTridiagonalMatrix, &TestFnSinusoidal, NULL };
 
 // Failing functions.
 
@@ -4333,4 +4354,4 @@ const CTestFn* TestCorpusAll[] = { &TestFnTripod, &TestFnXor,
 	&TestFnBiggsExp3, &TestFnBiggsExp4, &TestFnHilbert,
 	&TestTridiagonalMatrix, &TestFnRipple25, &TestFnSargan, &TestFnFriedman,
 	&TestFnF2, &TestFnInvertedCosine, &TestFnSinusoidal,
-	&TestFnLunacekBiSphere, &TestSphericalSinc, NULL };
+	&TestFnLunacekBiSphere, &TestSphericalSinc, &TestFnCigar, NULL };

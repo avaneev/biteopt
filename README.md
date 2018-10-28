@@ -204,7 +204,10 @@ Mixed integer programming can be achieved by using rounded parameter values in
 the objective function. Note that using categorical variables may not be
 effective, because they require an exhaustive search. Binary variables may be
 used, in small quantities (otherwise the problem usually transforms into
-a complex combinatorial problem).
+a complex combinatorial problem). While not very fast, BiteOpt is able to
+solve binary combinatorics problems if the cost function is formulated as
+a sum of differences between bit values and continuous variables in the range
+[0; 1].
 
 While constraint satisfaction is generally not the best area of application of
 derivative-free methods, value constraints can be implemented as penalties, in
@@ -423,4 +426,6 @@ a probabilistic manner without any predefined preference.
 BiteOptDeep implements evolutionary method which can be seen in society and
 nature: exchange of solutions between independent populations. Such exchange
 allows to find better solutions in teamwork of sufficiently diverse members,
-it also reduces time (but not human-hours) to find a better solution.
+it also reduces time (but not human-hours) to find a better solution. This
+method is a model of Swiss presidency rotation (each independent population
+represents an independent human brain).
