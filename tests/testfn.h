@@ -4262,14 +4262,14 @@ const CTestFn* OptCorpusNDRotOfsSol[] = { &TestFnSchwefel220,
 	&TestFnRastrigin, &TestFnSumSquares, &TestFnRotatedHyperEllipsoid,
 	&TestFnBrown, &TestFnAlpine1, &TestFnChungReynolds, &TestFnBentCigar,
 	&TestFnHolzman, &TestFnStep01, &TestFnStep02, &TestFnStep03,
-	&TestFnZeroSum, &TestFnStyblinskiTang, &TestFnStyblinskiTang,
-	&TestFnYaoLiu04, &TestFnPowellSum, &TestFnQuintic, &TestFnBuecheRastrigin,
-	&TestFnDifferentPowers, &TestFnDiscus, &TestFnEllipsoid,
-	&TestFnSchaffer07, &TestFnExponential, &TestFnSchwefel01,
-	&TestFnSchwefel02, &TestFnLevy03, &TestFnYaoLiu09, &TestFnLevyMontalvo2,
-	&TestFnCosineMixture, &TestFnLevyMontalvo2, &TestFnPenalty01,
-	&TestFnPenalty02, &TestFnPinter, &TestFnStretchedV, &TestFnXinSheYang01,
-	&TestFnHilbert, &TestTridiagonalMatrix, &TestFnSinusoidal, NULL };
+	&TestFnZeroSum, &TestFnStyblinskiTang, &TestFnYaoLiu04, &TestFnPowellSum,
+	&TestFnQuintic, &TestFnBuecheRastrigin, &TestFnDifferentPowers,
+	&TestFnDiscus, &TestFnEllipsoid, &TestFnSchaffer07, &TestFnExponential,
+	&TestFnSchwefel01, &TestFnSchwefel02, &TestFnLevy03, &TestFnYaoLiu09,
+	&TestFnLevyMontalvo2, &TestFnCosineMixture, &TestFnLevyMontalvo2,
+	&TestFnPenalty01, &TestFnPenalty02, &TestFnPinter, &TestFnStretchedV,
+	&TestFnXinSheYang01, &TestFnHilbert, &TestTridiagonalMatrix,
+	&TestFnSinusoidal, NULL };
 
 // Failing functions.
 

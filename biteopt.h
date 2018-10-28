@@ -748,7 +748,7 @@ class CBiteOptDeep
 public:
 	CBiteOptDeep()
 		: ParamCount( 0 )
-		, BiteCount( 0 )
+		, OptCount( 0 )
 		, Opts( NULL )
 	{
 	}
@@ -776,7 +776,7 @@ public:
 	void updateDims( const int aParamCount, const int M = 16,
 		const int PopSize0 = 0 )
 	{
-		if( aParamCount == ParamCount && M == BiteCount )
+		if( aParamCount == ParamCount && M == OptCount )
 		{
 			return;
 		}
@@ -784,12 +784,12 @@ public:
 		deleteBuffers();
 
 		ParamCount = aParamCount;
-		BiteCount = M;
-		Opts = new CBiteOptWrap*[ BiteCount ];
+		OptCount = M;
+		Opts = new CBiteOptWrap*[ OptCount ];
 
 		int i;
 
-		for( i = 0; i < BiteCount; i++ )
+		for( i = 0; i < OptCount; i++ )
 		{
 			Opts[ i ] = new CBiteOptWrap( this );
 			Opts[ i ] -> updateDims( aParamCount, PopSize0 );
@@ -805,7 +805,7 @@ public:
 		int ec = 0;
 		int i;
 
-		for( i = 0; i < BiteCount; i++ )
+		for( i = 0; i < OptCount; i++ )
 		{
 			ec += Opts[ i ] -> getInitEvals();
 		}
@@ -825,7 +825,7 @@ public:
 	{
 		int i;
 
-		for( i = 0; i < BiteCount; i++ )
+		for( i = 0; i < OptCount; i++ )
 		{
 			Opts[ i ] -> init( rnd, InitParams );
 
@@ -851,24 +851,32 @@ public:
 
 	int optimize( CBiteRnd& rnd )
 	{
-		if( BiteCount == 1 )
+		if( OptCount == 1 )
 		{
 			StallCount = Opts[ 0 ] -> optimize( rnd );
 		}
 		else
 		{
-			int NextOpt = ( CurOpt == BiteCount - 1 ? 0 : CurOpt + 1 );
+			int NextOpt;
 
-			if( Opts[ CurOpt ] -> optimize( rnd, Opts[ NextOpt ]) == 0 )
+			if( OptCount < 3 )
 			{
-				StallCount = 0;
+				NextOpt = ( CurOpt + 1 ) % 2;
 			}
 			else
 			{
-				StallCount++;
-				NextOpt = ( CurOpt - 1 + (int) ( rnd.getRndValue() * 3 ) +
-					BiteCount ) % BiteCount;
+				while( true )
+				{
+					NextOpt = (int) ( rnd.getRndValue() * OptCount );
+
+					if( NextOpt != CurOpt )
+					{
+						break;
+					}
+				}
 			}
+
+			const int sc = Opts[ CurOpt ] -> optimize( rnd, Opts[ NextOpt ]);
 
 			if( Opts[ CurOpt ] -> getBestCost() <
 				Opts[ BestOpt ] -> getBestCost() )
@@ -876,7 +884,15 @@ public:
 				BestOpt = CurOpt;
 			}
 
-			CurOpt = NextOpt;
+			if( sc == 0 )
+			{
+				StallCount = 0;
+			}
+			else
+			{
+				StallCount++;
+				CurOpt = NextOpt;
+			}
 		}
 
 		return( StallCount );
@@ -960,7 +976,7 @@ protected:
 
 	int ParamCount; ///< The total number of internal parameter values in use.
 		///<
-	int BiteCount; ///< The total number of optimization objects in use.
+	int OptCount; ///< The total number of optimization objects in use.
 		///<
 	CBiteOptWrap** Opts; ///< Optimization objects.
 		///<
@@ -981,7 +997,7 @@ protected:
 		{
 			int i;
 
-			for( i = 0; i < BiteCount; i++ )
+			for( i = 0; i < OptCount; i++ )
 			{
 				delete Opts[ i ];
 			}
