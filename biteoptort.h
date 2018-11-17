@@ -16,6 +16,17 @@
 class CBiteOptOrt
 {
 public:
+	double CentPow; ///< Centroid weighting power coefficient.
+		///<
+	double BaseSlow; ///< Covariance update rate, slow.
+		///<
+	double BaseFast; ///< Covariance update rate, fast.
+		///<
+	double SigmaMulBase; ///< Sigma damping multiplier base.
+		///<
+	double SigmaMulExp; ///< Additional sigma expansion multiplier.
+		///<
+
 	CBiteOptOrt()
 		: ParamCount( 0 )
 		, PopSize( 0 )
@@ -34,6 +45,11 @@ public:
 		, SortedParams( NULL )
 		, TmpParams( NULL )
 	{
+		CentPow = 6.0;
+		BaseSlow = 5.0;
+		BaseFast = 10.0;
+		SigmaMulBase = 0.9;
+		SigmaMulExp = 0.25;
 	}
 
 	/**
@@ -87,9 +103,9 @@ public:
 		for( i = 0; i < PopSize; i++ )
 		{
 			const double l = 1.0 - (double) i / PopSize;
-			WPopCent[ i ] = pow( l, 6.0 );
+			WPopCent[ i ] = pow( l, CentPow );
 			s += WPopCent[ i ];
-			WPopCov[ i ] = pow( l, 6.0 );
+			WPopCov[ i ] = pow( l, CentPow );
 			s2 += WPopCov[ i ];
 		}
 
@@ -129,7 +145,7 @@ public:
 			PrevCentParams[ i ] = CentParams[ i ];
 		}
 
-		cbase = 5.0;
+		cbase = BaseSlow;
 	}
 
 	/**
@@ -222,7 +238,7 @@ public:
 
 		// Select covariance update rate based on geometry parameters.
 
-		cbase = ( c1 >= c2 ? 10.0 : 5.0 );
+		cbase = ( c1 >= c2 ? BaseFast : BaseSlow );
 
 		// Apply extension or contraction to positive and negative halfs of
 		// standard deviations, depending on centroid step size.
@@ -247,7 +263,7 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			const double c = 1.0 - TmpParams[ i ];
-			const double m = 0.9 + 0.25 * c * c * c * c;
+			const double m = SigmaMulBase + SigmaMulExp * c * c * c * c;
 			DParams[ i ] *= m;
 			DParamsN[ i ] *= m;
 		}
