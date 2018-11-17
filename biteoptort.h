@@ -143,14 +143,15 @@ public:
 	void update( double** const CurParams, const int* const PopOrder )
 	{
 		// Prepare PopParams (vector of per-parameter population deviations),
-		// later used to calculate covariances, use current centroid vector.
+		// later used to calculate weighted covariances, use current centroid
+		// vector.
 
 		int i;
 		int j;
 
 		for( i = 0; i < PopSize; i++ )
 		{
-			SortedParams[ i ] = CurParams[ PopOrder[ i ]];
+			SortedParams[ i ] = CurParams[ PopOrder[ i ]]; // For fast access.
 		}
 
 		for( i = 0; i < ParamCount; i++ )
@@ -191,7 +192,7 @@ public:
 
 		// Calculate distribution's geometry parameters.
 
-		double maxd = 0.0; // Maximal deviation among all parameters.
+		double maxd = 1e-100; // Maximal deviation among all parameters.
 
 		for( i = 0; i < ParamCount; i++ )
 		{
@@ -223,30 +224,32 @@ public:
 
 		cbase = ( c1 >= c2 ? 10.0 : 5.0 );
 
-		// Modify standard deviations, apply reduction, or extension to
-		// overly shrunk dimensions.
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			const double c = 1.0 - TmpParams[ i ];
-			DParams[ i ] *= 0.9 + 0.25 * c * c * c * c;
-		}
-
 		// Apply extension or contraction to positive and negative halfs of
 		// standard deviations, depending on centroid step size.
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			TmpParams[ i ] = CentParams[ i ] - PrevCentParams[ i ];
+			PrevCentParams[ i ] = CentParams[ i ] - PrevCentParams[ i ];
 		}
 
-		ortnc( TmpParams, DParamsN );
+		ortnc( PrevCentParams, DParamsN ); // Orthogonalize centroid step.
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			const double d = DParamsN[ i ];
 			DParamsN[ i ] = DParams[ i ] - d;
 			DParams[ i ] += d;
+		}
+
+		// Modify standard deviations, apply reduction, or extension to
+		// overly shrunk dimensions.
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			const double c = 1.0 - TmpParams[ i ];
+			const double m = 0.9 + 0.25 * c * c * c * c;
+			DParams[ i ] *= m;
+			DParamsN[ i ] *= m;
 		}
 	}
 

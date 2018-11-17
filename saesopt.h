@@ -47,7 +47,7 @@ public:
 		deleteBuffers();
 
 		ParamCount = aParamCount;
-		PopSize = 25 + ParamCount * 2;
+		PopSize = 25 + ParamCount * 2.0;
 		PopSize1 = PopSize - 1;
 
 		PopOrder = new int[ PopSize ];
