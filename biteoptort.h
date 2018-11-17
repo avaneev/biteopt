@@ -9,7 +9,8 @@
 
 /**
  * Rotation matrix calculation class, based on the Eigen decomposition of the
- * covariance matrix. Used to "orthogonalize" sample population.
+ * covariance matrix. Used to "orthogonalize" sample population. Applies
+ * weighting to population, and keeps track of several previous distributions.
  */
 
 class CBiteOptOrt
@@ -23,11 +24,14 @@ public:
 		, BParamsBuf( NULL )
 		, BParams( NULL )
 		, DParams( NULL )
+		, DParamsN( NULL )
 		, CentParams( NULL )
-		, WPop( NULL )
-		, WPopSqrt( NULL )
+		, PrevCentParams( NULL )
+		, WPopCent( NULL )
+		, WPopCov( NULL )
 		, PopParamsBuf( NULL )
 		, PopParams( NULL )
+		, SortedParams( NULL )
 		, TmpParams( NULL )
 	{
 	}
@@ -56,11 +60,14 @@ public:
 		BParamsBuf = new double[ ParamCount * ParamCount ];
 		BParams = new double*[ ParamCount ];
 		DParams = new double[ ParamCount ];
+		DParamsN = new double[ ParamCount ];
 		CentParams = new double[ ParamCount ];
-		WPop = new double[ PopSize ];
-		WPopSqrt = new double[ PopSize ];
+		PrevCentParams = new double[ ParamCount ];
+		WPopCent = new double[ PopSize ];
+		WPopCov = new double[ PopSize ];
 		PopParamsBuf = new double[ ParamCount * PopSize ];
 		PopParams = new double*[ ParamCount ];
+		SortedParams = new double*[ PopSize ];
 		TmpParams = new double[ ParamCount ];
 
 		int i;
@@ -72,27 +79,37 @@ public:
 			PopParams[ i ] = PopParamsBuf + i * PopSize;
 		}
 
+		// Calculate weights for centroid and covariance calculation.
+
 		double s = 0.0;
+		double s2 = 0.0;
 
 		for( i = 0; i < PopSize; i++ )
 		{
-			const double x = 1.0 - 0.5 * i / ( PopSize - 1 );
-			WPop[ i ] = x * x;
-			s += WPop[ i ];
+			const double l = 1.0 - (double) i / PopSize;
+			WPopCent[ i ] = pow( l, 6.0 );
+			s += WPopCent[ i ];
+			WPopCov[ i ] = pow( l, 6.0 );
+			s2 += WPopCov[ i ];
 		}
 
 		for( i = 0; i < PopSize; i++ )
 		{
-			WPop[ i ] /= s;
-			WPopSqrt[ i ] = sqrt( WPop[ i ]);
+			WPopCent[ i ] /= s;
+			WPopCov[ i ] = sqrt( WPopCov[ i ] / s2 );
 		}
 	}
 
 	/**
-	 * Function initializes *this object to "no rotation" state.
+	 * Function initializes *this object to "no rotation" state, with the
+	 * specified initial centroid and sigma.
+	 *
+	 * @param InitCent Initial centroids per parameter (NULL for origin).
+	 * @param InitSigma Initial sigmas per parameter (NULL for 0.5).
 	 */
 
-	void init()
+	void init( const double* const InitCent = NULL,
+		const double* const InitSigma = NULL )
 	{
 		memset( CovParamsBuf, 0, ParamCount * ParamCount *
 			sizeof( CovParamsBuf[ 0 ]));
@@ -106,85 +123,131 @@ public:
 		{
 			CovParams[ i ][ i ] = 1.0;
 			BParams[ i ][ i ] = 1.0;
-			CentParams[ i ] = 0.0;
-			DParams[ i ] = 0.5;
+			CentParams[ i ] = ( InitCent == NULL ? 0.0 : InitCent[ i ]);
+			DParams[ i ] = ( InitSigma == NULL ? 0.5 : InitSigma[ i ]);
+			DParamsN[ i ] = DParams[ i ];
+			PrevCentParams[ i ] = CentParams[ i ];
 		}
 
-		WAccum = 0.0;
+		cbase = 5.0;
 	}
 
 	/**
-	 * Function updates weight accumulator and performs rotation matrix
-	 * update.
+	 * Function performs rotation matrix update.
 	 *
-	 * @param ordi Ordered population vector index which was updated.
 	 * @param CurParams Population parameter vectors.
-	 * @param[out] OrtParams Orthogonalized population parameter vectors.
 	 * @param PopOrder Population ordering, used to obtain unordered
 	 * population indices.
 	 */
 
-	void update( const int ordi, double** CurParams, double** OrtParams,
-		const int* PopOrder )
+	void update( double** const CurParams, const int* const PopOrder )
 	{
-		WAccum += WPop[ ordi ];
-
-		if( WAccum < 2.0 )
-		{
-			const int k = PopOrder[ ordi ];
-			ort( CurParams[ k ], OrtParams[ k ]);
-			return;
-		}
-
-		WAccum = 0.0;
-
-		calcAvg( CurParams, PopOrder );
-
-		// Prepare PopParams, vector of per-parameter population deviations,
-		// later used to calculate covariances.
+		// Prepare PopParams (vector of per-parameter population deviations),
+		// later used to calculate covariances, use current centroid vector.
 
 		int i;
 		int j;
 
+		for( i = 0; i < PopSize; i++ )
+		{
+			SortedParams[ i ] = CurParams[ PopOrder[ i ]];
+		}
+
 		for( i = 0; i < ParamCount; i++ )
 		{
-			const double avg = CentParams[ i ];
 			double* const op = PopParams[ i ];
+			const double c = CentParams[ i ];
 
 			for( j = 0; j < PopSize; j++ )
 			{
-				const int k = PopOrder[ j ];
-				op[ j ] = ( CurParams[ k ][ i ] - avg ) * WPopSqrt[ j ];
+				op[ j ] = ( SortedParams[ j ][ i ] - c ) * WPopCov[ j ];
 			}
 		}
 
-		// Calculate covariance matrix, left-handed triangle only.
+		// Store older centroid and calculate new centroid.
+
+		memcpy( PrevCentParams, CentParams,
+			ParamCount * sizeof( PrevCentParams[ 0 ]));
+
+		calcCent( CurParams, PopOrder );
+
+		// Update covariance matrix, the left-handed triangle only. Uses leaky
+		// integrator filter. "cbase" selects corner frequency of the filter.
+
+		const double avgc = 1.0 - pow( 0.01, cbase / PopSize );
 
 		for( j = 0; j < ParamCount; j++ )
 		{
 			for( i = 0; i <= j; i++ )
 			{
-				CovParams[ j ][ i ] = calcCov( PopParams[ j ], PopParams[ i ]);
-//				CovParams[ j ][ i ] +=
-//					( calcCov( PopParams[ j ], PopParams[ i ]) -
-//					CovParams[ j ][ i ]) * 0.5;
+				const double cov = dotp( PopParams[ j ], PopParams[ i ]);
+				CovParams[ j ][ i ] += ( cov - CovParams[ j ][ i ]) * avgc;
 			}
 		}
 
-		// Calculate rotation matrix.
+		// Calculate rotation matrix and standard deviations.
 
 		eigen();
 
-		// Apply orthogonalization.
+		// Calculate distribution's geometry parameters.
 
-		for( j = 0; j < PopSize; j++ )
+		double maxd = 0.0; // Maximal deviation among all parameters.
+
+		for( i = 0; i < ParamCount; i++ )
 		{
-			ort( CurParams[ j ], OrtParams[ j ]);
+			if( DParams[ i ] > maxd )
+			{
+				maxd = DParams[ i ];
+			}
 		}
 
-		// Calculate standard deviations of each orthogonalized parameter.
+		maxd = 1.0 / maxd;
+		int c1 = 0; // Above 0.5 deviation count.
+		int c2 = 0; // Below 0.5 deviation count.
 
-		calcStdDev( OrtParams, PopOrder );
+		for( i = 0; i < ParamCount; i++ )
+		{
+			TmpParams[ i ] = DParams[ i ] * maxd;
+
+			if( TmpParams[ i ] >= 0.5 )
+			{
+				c1++;
+			}
+			else
+			{
+				c2++;
+			}
+		}
+
+		// Select covariance update rate based on geometry parameters.
+
+		cbase = ( c1 >= c2 ? 10.0 : 5.0 );
+
+		// Modify standard deviations, apply reduction, or extension to
+		// overly shrunk dimensions.
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			const double c = 1.0 - TmpParams[ i ];
+			DParams[ i ] *= 0.9 + 0.25 * c * c * c * c;
+		}
+
+		// Apply extension or contraction to positive and negative halfs of
+		// standard deviations, depending on centroid step size.
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			TmpParams[ i ] = CentParams[ i ] - PrevCentParams[ i ];
+		}
+
+		ortnc( TmpParams, DParamsN );
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			const double d = DParamsN[ i ];
+			DParamsN[ i ] = DParams[ i ] - d;
+			DParams[ i ] += d;
+		}
 	}
 
 	/**
@@ -211,7 +274,34 @@ public:
 
 			for( j = 0; j < ParamCount; j++ )
 			{
-				s += BParams[ i ][ j ] * TmpParams[ j ];
+				s += BParams[ j ][ i ] * TmpParams[ j ];
+			}
+
+			op[ i ] = s;
+		}
+	}
+
+	/**
+	 * Function applies orthogonalization (rotation) to the parameter vector,
+	 * without subtracting centroid vector.
+	 *
+	 * @param ip Input unorthogonalized vector.
+	 * @param[out] op Output orthogonalized vector, should not be equal to
+	 * "ip".
+	 */
+
+	void ortnc( const double* const ip, double* const op )
+	{
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			double s = 0.0;
+			int j;
+
+			for( j = 0; j < ParamCount; j++ )
+			{
+				s += BParams[ j ][ i ] * ip[ j ];
 			}
 
 			op[ i ] = s;
@@ -242,7 +332,7 @@ public:
 
 			for( j = 0; j < ParamCount; j++ )
 			{
-				s += BParams[ j ][ i ] * TmpParams[ j ];
+				s += BParams[ i ][ j ] * TmpParams[ j ];
 			}
 
 			op[ i ] = s + CentParams[ i ];
@@ -250,18 +340,23 @@ public:
 	}
 
 	/**
-	 * Function adds "noise" to the specified parameter vector. The noise
-	 * approximately follows the probability distribution of population.
+	 * Function "samples" new random population vector making a random draw
+	 * from previous distributions.
+	 *
+	 * @param rnd Random number generator.
+	 * @param op Resulting vector.
 	 */
 
-	void addNoise( CBiteRnd& rnd, double* const op,const double*mp )
+	void sample( CBiteRnd& rnd, double* const op ) const
 	{
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			TmpParams[ i ] = DParams[ i ] * rnd.getTPDFRaw() /
-				rnd.getRawScale() * 2;
+			TmpParams[ i ] = getGaussian( rnd );
+
+			TmpParams[ i ] *= ( TmpParams[ i ] < 0.0 ?
+				DParamsN[ i ] : DParams[ i ]);
 		}
 
 		for( i = 0; i < ParamCount; i++ )
@@ -271,7 +366,7 @@ public:
 
 			for( j = 0; j < ParamCount; j++ )
 			{
-				s += BParams[ j ][ i ] * TmpParams[ j ];
+				s += BParams[ i ][ j ] * TmpParams[ j ];
 			}
 
 			op[ i ] = s + CentParams[ i ];
@@ -293,21 +388,28 @@ protected:
 		///<
 	double* DParams; ///< Std. deviations vector.
 		///<
-	double* CentParams; ///< Centroid vector.
+	double* DParamsN; ///< Std. deviations vector, for negative values.
 		///<
-	double* WPop; ///< Weighting coefficients for ordered population.
+	double* CentParams; ///< Centroid vector, weighted.
 		///<
-	double* WPopSqrt; ///< sqrt(WPop) for faster covariance calculation.
+	double* PrevCentParams; ///< Previous centroid vector.
+		///<
+	double* WPopCent; ///< Weighting coefficients for ordered population, for
+		///< centroid calculation.
+		///<
+	double* WPopCov; ///< Weighting coefficients for covariance calculation,
+		///< squared.
 		///<
 	double* PopParamsBuf; ///< PopParams buffer.
 		///<
 	double** PopParams; ///< Population vectors per parameter (deviations,
 		///< weighted).
 		///<
+	double** SortedParams; ///< Temporary sorted parameter vectors.
+		///<
 	double* TmpParams; ///< Temporary parameter vector.
 		///<
-	double WAccum; ///< Update weight accumulator. When this value reaches a
-		///< certain threshold, the rotation matrix is recalculated.
+	double cbase; ///< Covariance matrix update averaging time coefficient.
 		///<
 
 	/**
@@ -321,11 +423,14 @@ protected:
 		delete[] BParamsBuf;
 		delete[] BParams;
 		delete[] DParams;
+		delete[] DParamsN;
 		delete[] CentParams;
-		delete[] WPop;
-		delete[] WPopSqrt;
+		delete[] PrevCentParams;
+		delete[] WPopCent;
+		delete[] WPopCov;
 		delete[] PopParamsBuf;
 		delete[] PopParams;
+		delete[] SortedParams;
 		delete[] TmpParams;
 	}
 
@@ -463,7 +568,7 @@ protected:
 
 	static double hypot_( double a, double b )
 	{
-		return(sqrt(a*a+b*b));
+		return( sqrt( a * a + b * b ));
 /*		double r;
 		if (abs(a) > abs(b)) {
 			r = b/a;
@@ -585,41 +690,47 @@ protected:
 	}
 
 	/**
-	 * Function calculates eigenpairs of the current covariance matrix.
+	 * Function calculates eigenpairs of the current covariance matrix and
+	 * updates DParams standard deviations vector.
 	 */
 
 	void eigen()
 	{
 		// Replicate left-handed triangular matrix.
 
+		int i;
 		int j;
 
 		for( j = 0; j < ParamCount; j++ )
 		{
-			int i;
-
 			for( i = 0; i <= j; i++ )
 			{
 				BParams[ j ][ i ] = BParams[ i ][ j ] = CovParams[ j ][ i ];
 			}
 		}
 
+		// Calculate eigen-pairs.
+
 		tred2( ParamCount, DParams, BParams, TmpParams );
 		tql2( ParamCount, DParams, BParams, TmpParams );
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			DParams[ i ] = sqrt( fabs( DParams[ i ]));
+		}
 	}
 
 	/**
-	 * Function calculates centroid (average) vector of population, without
-	 * weighting.
+	 * Function calculates centroid vector of population, with weighting.
 	 *
 	 * @param CurParams Population parameter vectors.
 	 * @param PopOrder Population ordering.
 	 */
 
-	void calcAvg( const double** const CurParams, const int* const PopOrder )
+	void calcCent( double** const CurParams, const int* const PopOrder )
 	{
-		const double* ip = CurParams[ PopOrder[ 0 ]];
-		double w = WPop[ 0 ];
+		const double* ip = SortedParams[ 0 ];
+		double w = WPopCent[ 0 ];
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
@@ -631,32 +742,25 @@ protected:
 
 		for( j = 1; j < PopSize; j++ )
 		{
-			ip = CurParams[ PopOrder[ j ]];
-			w = WPop[ j ];
+			ip = SortedParams[ j ];
+			w = WPopCent[ j ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
 				CentParams[ i ] += ip[ i ] * w;
 			}
 		}
-
-/*		const double m = 1.0 / PopSize;
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			CentParams[ i ] *= m;
-		}*/
 	}
 
 	/**
-	 * Function calculates weighted covariance of two per-parameter population
+	 * Function calculates dot product of two per-parameter population
 	 * vectors.
 	 *
 	 * @param p1 Parameter A's population vector.
 	 * @param p2 Parameter B's population vector.
 	 */
 
-	double calcCov( const double* const p1, const double* const p2 ) const
+	double dotp( const double* const p1, const double* const p2 ) const
 	{
 		double s = 0.0;
 		int i;
@@ -670,41 +774,39 @@ protected:
 	}
 
 	/**
-	 * Function calculates standard deviations of parameters.
+	 * Function generates a Gaussian-distributed pseudo-random number with
+	 * mean=0 and std.dev=1.
 	 *
-	 * @param OrtParams Orthogonalized population parameter vectors.
-	 * @param PopOrder Population ordering.
+	 * @param rnd Uniform PRNG.
 	 */
 
-	void calcStdDev( double** const OrtParams,
-		const int* const PopOrder )
+	static double getGaussian( CBiteRnd& rnd )
 	{
-		const double* ip = OrtParams[ PopOrder[ 0 ]];
-		double w = WPop[ 0 ];
-		int i;
+		double q, u, v;
 
-		for( i = 0; i < ParamCount; i++ )
+		do
 		{
-			DParams[ i ] = ip[ i ] * ip[ i ] * w;
-		}
+			u = rnd.getRndValue();
+			v = rnd.getRndValue();
 
-		int j;
-
-		for( j = 1; j < PopSize; j++ )
-		{
-			ip = OrtParams[ PopOrder[ j ]];
-			w = WPop[ j ];
-
-			for( i = 0; i < ParamCount; i++ )
+			if( u <= 0.0 || v <= 0.0 )
 			{
-				DParams[ i ] += ip[ i ] * ip[ i ] * w;
+				u = 1.0;
+				v = 1.0;
 			}
-		}
 
-		for( i = 0; i < ParamCount; i++ )
-		{
-			DParams[ i ] = sqrt( DParams[ i ]);
-		}
+			v = 1.7156 * ( v - 0.5 );
+			const double x = u - 0.449871;
+			const double y = fabs( v ) + 0.386595;
+			q = x * x + y * ( 0.19600 * y - 0.25472 * x );
+
+			if( q < 0.27597 )
+			{
+				break;
+			}
+		} while(( q > 0.27846 ) || ( v * v > -4.0 * log( u ) * u * u ));
+
+		return( v / u );
 	}
 };
 

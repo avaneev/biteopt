@@ -429,3 +429,13 @@ allows to find better solutions in teamwork of sufficiently diverse members,
 it also reduces time (but not human-hours) to find a better solution. This
 method is a model of Swiss presidency rotation (each independent population
 represents an independent human brain).
+
+## CSAESOpt (saesopt.h) ##
+
+This is an experimental optimization method called "Sigma Adaptation Evolution
+Strategy". It has the same programmatic interface as CBiteOpt class, so it
+can be easily used in place of CBiteOpt.
+
+SA-ES is based on the same concept as CMA-ES, but performs direct vector sigma
+adaptation. Covariance matrix update is also performed, but it is a linear
+update using leaky integrator filtering.
