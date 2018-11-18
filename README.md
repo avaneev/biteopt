@@ -437,5 +437,29 @@ Strategy". It has the same programmatic interface as CBiteOpt class, so it
 can be easily used in place of CBiteOpt.
 
 SA-ES is based on the same concept as CMA-ES, but performs direct vector sigma
-adaptation. Covariance matrix update is also performed, but it is a linear
-update using leaky integrator filtering.
+adaptation. SA-ES performs covariance matrix update like CMA-ES, but it is a
+simple linear update using leaky integrator averaging filtering.
+
+The main difference to CMA-ES is that per-parameter sigmas are automatically
+updated using these elements:
+
+1. Sigma auto-adapts due to weighted parameter covariance calculation. Better
+fit solutions have more influence on expansion or contraction of the sigma.
+
+2. SA-ES approximates the "geometry" of the sample distribution. It ranges
+from "spherical" to "needle" geometry. When geometry is spherical, covariance
+matrix update filter is tuned to an increased frequency (`BaseFast` instead
+of `BaseSlow`).
+
+3. An assymetry is introduced to the Gaussian noise function, depending on the
+centroid step size. Distribution is expanded in the direction of the step and
+contracted in opposite direction.
+
+4. On every update, all per-parameter sigmas are contracted (multiplied) by
+`SigmaMulBase` coefficient. Additionally, overly-contracted sigmas are
+expanded by `SigmaMulBase + SigmaMulExp` coefficient.
+
+In overall, SA-ES is a completely self-adaptive method, it has several fixed
+hyper-parameters that do not depend on problem's dimensionality. These
+parameters were manually fine-tuned, but it is possible to optimize them
+further.
