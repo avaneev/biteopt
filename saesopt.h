@@ -47,8 +47,7 @@ public:
 		deleteBuffers();
 
 		ParamCount = aParamCount;
-		PopSize = 25 + ParamCount * 2.0;
-		PopSize1 = PopSize - 1;
+		PopSize = 25 + ParamCount * 2;
 
 		PopOrder = new int[ PopSize ];
 		CurParamsBuf = new double[ PopSize * ParamCount ];
@@ -103,7 +102,7 @@ public:
 			CurParams[ 1 ][ i ] = fabs( MaxValues[ i ] - MinValues[ i ]) / 6.0;
 		}
 
-		Ort.init( CurParams[ 0 ], CurParams[ 1 ]);
+		UsePopSize = Ort.init( CurParams[ 0 ], CurParams[ 1 ]);
 	}
 
 	/**
@@ -183,14 +182,12 @@ public:
 
 		insertPopOrder( NewCost, cure, cure );
 
-		if( cure == PopSize1 )
+		cure++;
+
+		if( cure == UsePopSize )
 		{
 			cure = 0;
-			Ort.update( CurParams, PopOrder );
-		}
-		else
-		{
-			cure++;
+			UsePopSize = Ort.update( CurParams, PopOrder );
 		}
 
 		return( 0 );
@@ -243,9 +240,9 @@ public:
 protected:
 	int ParamCount; ///< The total number of internal parameter values in use.
 		///<
-	int PopSize; ///< The size of population in use.
+	int PopSize; ///< The size of population in use (max).
 		///<
-	int PopSize1; ///< = PopSize - 1.
+	int UsePopSize; ///< Current population size.
 		///<
 	CBiteOptOrt Ort; ///< Rotation vector and orthogonalization calculator.
 		///<
@@ -266,7 +263,7 @@ protected:
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
 		///<
-	int cure; ///< Current evaluation index, equals PopSize if population
+	int cure; ///< Current evaluation index, equals UsePopSize if population
 		///< distribution needs to be updated.
 		///<
 

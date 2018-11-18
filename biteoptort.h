@@ -94,22 +94,30 @@ public:
 			BParams[ i ] = BParamsBuf + i * ParamCount;
 			PopParams[ i ] = PopParamsBuf + i * PopSize;
 		}
+	}
 
+	/**
+	 * Function updates centroid and covariance estimation weights.
+	 */
+
+	void updateWeights()
+	{
 		// Calculate weights for centroid and covariance calculation.
 
 		double s = 0.0;
 		double s2 = 0.0;
+		int i;
 
-		for( i = 0; i < PopSize; i++ )
+		for( i = 0; i < UsePopSize; i++ )
 		{
-			const double l = 1.0 - (double) i / PopSize;
+			const double l = 1.0 - (double) i / UsePopSize;
 			WPopCent[ i ] = pow( l, CentPow );
 			s += WPopCent[ i ];
 			WPopCov[ i ] = pow( l, CentPow );
 			s2 += WPopCov[ i ];
 		}
 
-		for( i = 0; i < PopSize; i++ )
+		for( i = 0; i < UsePopSize; i++ )
 		{
 			WPopCent[ i ] /= s;
 			WPopCov[ i ] = sqrt( WPopCov[ i ] / s2 );
@@ -122,9 +130,10 @@ public:
 	 *
 	 * @param InitCent Initial centroids per parameter (NULL for origin).
 	 * @param InitSigma Initial sigmas per parameter (NULL for 0.5).
+	 * @return Population size to use.
 	 */
 
-	void init( const double* const InitCent = NULL,
+	int init( const double* const InitCent = NULL,
 		const double* const InitSigma = NULL )
 	{
 		memset( CovParamsBuf, 0, ParamCount * ParamCount *
@@ -140,12 +149,15 @@ public:
 			CovParams[ i ][ i ] = 1.0;
 			BParams[ i ][ i ] = 1.0;
 			CentParams[ i ] = ( InitCent == NULL ? 0.0 : InitCent[ i ]);
-			DParams[ i ] = ( InitSigma == NULL ? 0.5 : InitSigma[ i ]);
+			DParams[ i ] = ( InitSigma == NULL ? 0.25 : InitSigma[ i ]);
 			DParamsN[ i ] = DParams[ i ];
-			PrevCentParams[ i ] = CentParams[ i ];
 		}
 
 		cbase = BaseSlow;
+		UsePopSize = PopSize;
+		updateWeights();
+
+		return( UsePopSize );
 	}
 
 	/**
@@ -154,9 +166,10 @@ public:
 	 * @param CurParams Population parameter vectors.
 	 * @param PopOrder Population ordering, used to obtain unordered
 	 * population indices.
+	 * @return Current population size.
 	 */
 
-	void update( double** const CurParams, const int* const PopOrder )
+	int update( double** const CurParams, const int* const PopOrder )
 	{
 		// Prepare PopParams (vector of per-parameter population deviations),
 		// later used to calculate weighted covariances, use current centroid
@@ -165,7 +178,7 @@ public:
 		int i;
 		int j;
 
-		for( i = 0; i < PopSize; i++ )
+		for( i = 0; i < UsePopSize; i++ )
 		{
 			SortedParams[ i ] = CurParams[ PopOrder[ i ]]; // For fast access.
 		}
@@ -175,7 +188,7 @@ public:
 			double* const op = PopParams[ i ];
 			const double c = CentParams[ i ];
 
-			for( j = 0; j < PopSize; j++ )
+			for( j = 0; j < UsePopSize; j++ )
 			{
 				op[ j ] = ( SortedParams[ j ][ i ] - c ) * WPopCov[ j ];
 			}
@@ -186,12 +199,13 @@ public:
 		memcpy( PrevCentParams, CentParams,
 			ParamCount * sizeof( PrevCentParams[ 0 ]));
 
-		calcCent( CurParams, PopOrder );
+		calcCent();
 
 		// Update covariance matrix, the left-handed triangle only. Uses leaky
-		// integrator filter. "cbase" selects corner frequency of the filter.
+		// integrator averaging filter. "cbase" selects corner frequency of
+		// the filter.
 
-		const double avgc = 1.0 - pow( 0.01, cbase / PopSize );
+		const double avgc = 1.0 - pow( 0.01, cbase / UsePopSize );
 
 		for( j = 0; j < ParamCount; j++ )
 		{
@@ -267,6 +281,8 @@ public:
 			DParams[ i ] *= m;
 			DParamsN[ i ] *= m;
 		}
+
+		return( UsePopSize );
 	}
 
 	/**
@@ -360,7 +376,7 @@ public:
 
 	/**
 	 * Function "samples" new random population vector making a random draw
-	 * from previous distributions.
+	 * from the current distribution.
 	 *
 	 * @param rnd Random number generator.
 	 * @param op Resulting vector.
@@ -395,7 +411,9 @@ public:
 protected:
 	int ParamCount; ///< The number of parameters in parameter vector.
 		///<
-	int PopSize; ///< Population size.
+	int PopSize; ///< Population size (max).
+		///<
+	int UsePopSize; ///< Current population size.
 		///<
 	double* CovParamsBuf; ///< CovParams buffer.
 		///<
@@ -454,9 +472,7 @@ protected:
 	}
 
 	/**
-	 * Householder triagonalization routine from JAMA package. Slightly
-	 * optimized (and reduced precision) by replacing divisions by inverse
-	 * multiplications.
+	 * Householder triagonalization routine from JAMA package.
 	 */
 
 	static void tred2( const int n, double* d, double** V, double* e )
@@ -492,10 +508,8 @@ protected:
 
 				// Generate Householder vector.
 
-				const double scalei = 1.0 / scale;
 				for (int k = 0; k < i; k++) {
-//					d[k] /= scale;
-					d[k] *= scalei;
+					d[k] /= scale;
 					h += d[k] * d[k];
 				}
 				double f = d[i-1];
@@ -523,10 +537,8 @@ protected:
 					e[j] = g;
 				}
 				f = 0.0;
-				const double hi = 1.0 / h;
 				for (int j = 0; j < i; j++) {
-//					e[j] /= h;
-					e[j] *= hi;
+					e[j] /= h;
 					f += e[j] * d[j];
 				}
 				double hh = f / (h + h);
@@ -553,10 +565,8 @@ protected:
 			V[i][i] = 1.0;
 			double h = d[i+1];
 			if (h != 0.0) {
-				const double hi=1.0/h;
 				for (int k = 0; k <= i; k++) {
-//					d[k] = V[k][i+1] / h;
-					d[k] = V[k][i+1] * hi;
+					d[k] = V[k][i+1] / h;
 				}
 				for (int j = 0; j <= i; j++) {
 					double g = 0.0;
@@ -581,24 +591,13 @@ protected:
 	}
 
 	/**
-	 * sqrt(a^2 + b^2) without under/overflow, commented out and used a simple
-	 * more efficient version.
+	 * sqrt(a^2 + b^2) with possible under/overflow. Adequate for this
+	 * method's purposes.
 	 */
 
 	static double hypot_( double a, double b )
 	{
 		return( sqrt( a * a + b * b ));
-/*		double r;
-		if (abs(a) > abs(b)) {
-			r = b/a;
-			r = abs(a)*sqrt(1+r*r);
-		} else if (b != 0) {
-			r = a/b;
-			r = abs(b)*sqrt(1+r*r);
-		} else {
-			r = 0.0;
-		}
-		return r;*/
 	}
 
 	/**
@@ -741,12 +740,11 @@ protected:
 
 	/**
 	 * Function calculates centroid vector of population, with weighting.
-	 *
-	 * @param CurParams Population parameter vectors.
-	 * @param PopOrder Population ordering.
+	 * Requires SortedParams filled with pointers to ordered population
+	 * vectors.
 	 */
 
-	void calcCent( double** const CurParams, const int* const PopOrder )
+	void calcCent()
 	{
 		const double* ip = SortedParams[ 0 ];
 		double w = WPopCent[ 0 ];
@@ -759,7 +757,7 @@ protected:
 
 		int j;
 
-		for( j = 1; j < PopSize; j++ )
+		for( j = 1; j < UsePopSize; j++ )
 		{
 			ip = SortedParams[ j ];
 			w = WPopCent[ j ];
@@ -784,7 +782,7 @@ protected:
 		double s = 0.0;
 		int i;
 
-		for( i = 0; i < PopSize; i++ )
+		for( i = 0; i < UsePopSize; i++ )
 		{
 			s += p1[ i ] * p2[ i ];
 		}
