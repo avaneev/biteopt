@@ -463,3 +463,10 @@ In overall, SA-ES is a completely self-adaptive method, it has several fixed
 hyper-parameters that do not depend on problem's dimensionality. These
 parameters were manually fine-tuned, but it is possible to optimize them
 further.
+
+Population size formula in SA-ES is fixed to 13+Dims: according to tests,
+in average it suits all dimensionalities. Of course, particular problems may
+converge better/faster with a lower or higher population size. The number of
+objective function evaluations is twice the population size per sample
+distribution update (best fit solutions enter the population). Method's
+typical observed complexity is O(N^1.6).

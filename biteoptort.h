@@ -58,9 +58,12 @@ public:
 	 * @param aParamCount The number of elements in the parameter vector.
 	 * @param aPopSize Size of population used to calculate the rotation
 	 * matrix.
+	 * @param aEvalFac The multiplier of the population size - the actual
+	 * number of function evaluations performed, >=1.
 	 */
 
-	void updateDims( const int aParamCount, const int aPopSize )
+	void updateDims( const int aParamCount, const int aPopSize,
+		const double aEvalFac )
 	{
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -71,6 +74,7 @@ public:
 
 		ParamCount = aParamCount;
 		PopSize = aPopSize;
+		EvalFac = aEvalFac;
 		CovParamsBuf = new double[ ParamCount * ParamCount ];
 		CovParams = new double*[ ParamCount ];
 		BParamsBuf = new double[ ParamCount * ParamCount ];
@@ -105,22 +109,20 @@ public:
 		// Calculate weights for centroid and covariance calculation.
 
 		double s = 0.0;
-		double s2 = 0.0;
 		int i;
 
 		for( i = 0; i < UsePopSize; i++ )
 		{
-			const double l = 1.0 - (double) i / UsePopSize;
-			WPopCent[ i ] = pow( l, CentPow );
-			s += WPopCent[ i ];
-			WPopCov[ i ] = pow( l, CentPow );
-			s2 += WPopCov[ i ];
+			const double l = 1.0 - (double) i / ( UsePopSize * EvalFac );
+			const double v = pow( l, CentPow );
+			WPopCent[ i ] = v;
+			s += v;
 		}
 
 		for( i = 0; i < UsePopSize; i++ )
 		{
 			WPopCent[ i ] /= s;
-			WPopCov[ i ] = sqrt( WPopCov[ i ] / s2 );
+			WPopCov[ i ] = sqrt( WPopCent[ i ]);
 		}
 	}
 
@@ -205,7 +207,7 @@ public:
 		// integrator averaging filter. "cbase" selects corner frequency of
 		// the filter.
 
-		const double avgc = 1.0 - pow( 0.01, cbase / UsePopSize );
+		const double avgc = 1.0 - pow( 0.01, cbase / ( UsePopSize * EvalFac ));
 
 		for( j = 0; j < ParamCount; j++ )
 		{
@@ -267,6 +269,7 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			const double d = DParamsN[ i ];
+
 			DParamsN[ i ] = DParams[ i ] - d;
 			DParams[ i ] += d;
 		}
@@ -278,6 +281,7 @@ public:
 		{
 			const double c = 1.0 - TmpParams[ i ];
 			const double m = SigmaMulBase + SigmaMulExp * c * c * c * c;
+
 			DParams[ i ] *= m;
 			DParamsN[ i ] *= m;
 		}
@@ -412,6 +416,8 @@ protected:
 	int ParamCount; ///< The number of parameters in parameter vector.
 		///<
 	int PopSize; ///< Population size (max).
+		///<
+	double EvalFac; ///< Function evaluations factor.
 		///<
 	int UsePopSize; ///< Current population size.
 		///<

@@ -47,11 +47,12 @@ public:
 		deleteBuffers();
 
 		ParamCount = aParamCount;
-		PopSize = 25 + ParamCount * 2;
+		PopSize = 13 + ParamCount;
+		EvalFac = 2.0;
 
 		PopOrder = new int[ PopSize ];
-		CurParamsBuf = new double[ PopSize * ParamCount ];
-		CurParams = new double*[ PopSize ];
+		CurParamsBuf = new double[( PopSize + 1 ) * ParamCount ];
+		CurParams = new double*[ PopSize + 1 ]; // Last element is temporary.
 		CurCosts = new double[ PopSize ];
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
@@ -59,12 +60,12 @@ public:
 
 		int i;
 
-		for( i = 0; i < PopSize; i++ )
+		for( i = 0; i <= PopSize; i++ )
 		{
 			CurParams[ i ] = CurParamsBuf + i * ParamCount;
 		}
 
-		Ort.updateDims( ParamCount, PopSize );
+		Ort.updateDims( ParamCount, PopSize, EvalFac );
 	}
 
 	/**
@@ -89,6 +90,7 @@ public:
 		getMaxValues( MaxValues );
 
 		BestCost = 1e100;
+		curpi = 0;
 		cure = 0;
 
 		// Provide initial centroid and sigma (CurParams is used temporarily,
@@ -164,7 +166,8 @@ public:
 
 	int optimize( CBiteRnd& rnd )
 	{
-		double* const Params = CurParams[ cure ];
+		int i;
+		double* const Params = CurParams[ curpi ];
 		sample( rnd, Params );
 
 		const double NewCost = optcost( Params );
@@ -172,7 +175,6 @@ public:
 		if( NewCost < BestCost )
 		{
 			BestCost = NewCost;
-			int i;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -180,12 +182,32 @@ public:
 			}
 		}
 
-		insertPopOrder( NewCost, cure, cure );
+		if( curpi < UsePopSize )
+		{
+			insertPopOrder( NewCost, curpi, curpi );
+			curpi++;
+		}
+		else
+		{
+			const int ps1 = UsePopSize - 1;
+			const int sH = PopOrder[ ps1 ];
+
+			if( NewCost < CurCosts[ sH ])
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					CurParams[ sH ][ i ] = Params[ i ];
+				}
+
+				insertPopOrder( NewCost, sH, ps1 );
+			}
+		}
 
 		cure++;
 
-		if( cure == UsePopSize )
+		if( cure >= UsePopSize * EvalFac )
 		{
+			curpi = 0;
 			cure = 0;
 			UsePopSize = Ort.update( CurParams, PopOrder );
 		}
@@ -244,6 +266,8 @@ protected:
 		///<
 	int UsePopSize; ///< Current population size.
 		///<
+	double EvalFac; ///< Function evalutions factor.
+		///<
 	CBiteOptOrt Ort; ///< Rotation vector and orthogonalization calculator.
 		///<
 	int* PopOrder; ///< The current solution vectors ordering,
@@ -262,6 +286,8 @@ protected:
 	double* BestParams; ///< Best parameter vector.
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
+		///<
+	int curpi; ///< Current parameter index.
 		///<
 	int cure; ///< Current evaluation index, equals UsePopSize if population
 		///< distribution needs to be updated.
