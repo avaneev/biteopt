@@ -22,6 +22,8 @@ public:
 		///<
 	double BaseFast; ///< Covariance update rate, fast.
 		///<
+	double BaseFast2; ///< Covariance update rate, fast, off-diagonal.
+		///<
 	double SigmaMulBase; ///< Sigma damping multiplier base.
 		///<
 	double SigmaMulExp; ///< Additional sigma expansion multiplier.
@@ -48,6 +50,7 @@ public:
 		CentPow = 6.0;
 		BaseSlow = 5.0;
 		BaseFast = 10.0;
+		BaseFast2 = 15.0;
 		SigmaMulBase = 0.9;
 		SigmaMulExp = 0.25;
 	}
@@ -155,7 +158,8 @@ public:
 			DParamsN[ i ] = DParams[ i ];
 		}
 
-		cbase = BaseSlow;
+		cbase1 = BaseSlow;
+		cbase2 = BaseSlow;
 		UsePopSize = PopSize;
 		updateWeights();
 
@@ -204,17 +208,27 @@ public:
 		calcCent();
 
 		// Update covariance matrix, the left-handed triangle only. Uses leaky
-		// integrator averaging filter. "cbase" selects corner frequency of
-		// the filter.
+		// integrator averaging filter. "cbase1" selects corner frequency of
+		// the filter, "cbase2" for off-diagonal elements.
 
-		const double avgc = 1.0 - pow( 0.01, cbase / ( UsePopSize * EvalFac ));
+		const double avgc1 = 1.0 - pow( 0.01,
+			cbase1 / ( UsePopSize * EvalFac ));
+
+		const double avgc2 = 1.0 - pow( 0.01,
+			cbase2 / ( UsePopSize * EvalFac ));
 
 		for( j = 0; j < ParamCount; j++ )
 		{
-			for( i = 0; i <= j; i++ )
+			const double cov = dotp( PopParams[ j ], PopParams[ j ]);
+			CovParams[ j ][ j ] += ( cov - CovParams[ j ][ j ]) * avgc1;
+		}
+
+		for( j = 0; j < ParamCount; j++ )
+		{
+			for( i = 0; i < j; i++ )
 			{
 				const double cov = dotp( PopParams[ j ], PopParams[ i ]);
-				CovParams[ j ][ i ] += ( cov - CovParams[ j ][ i ]) * avgc;
+				CovParams[ j ][ i ] += ( cov - CovParams[ j ][ i ]) * avgc2;
 			}
 		}
 
@@ -254,7 +268,8 @@ public:
 
 		// Select covariance update rate based on geometry parameters.
 
-		cbase = ( c1 >= c2 ? BaseFast : BaseSlow );
+		cbase1 = ( c1 >= c2 ? BaseFast : BaseSlow );
+		cbase2 = ( c1 >= c2 ? BaseFast2 : BaseSlow );
 
 		// Apply extension or contraction to positive and negative halfs of
 		// standard deviations, depending on centroid step size.
@@ -452,7 +467,10 @@ protected:
 		///<
 	double* TmpParams; ///< Temporary parameter vector.
 		///<
-	double cbase; ///< Covariance matrix update averaging time coefficient.
+	double cbase1; ///< Covariance matrix update averaging time coefficient.
+		///<
+	double cbase2; ///< Covariance matrix update averaging time coefficient,
+		///< off-diagonal.
 		///<
 
 	/**
