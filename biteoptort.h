@@ -20,13 +20,15 @@ public:
 		///<
 	double BaseSlow; ///< Covariance update rate, slow.
 		///<
-	double BaseFast; ///< Covariance update rate, fast.
+	double BaseFast1; ///< Covariance update rate, fast, on-diagonal.
 		///<
 	double BaseFast2; ///< Covariance update rate, fast, off-diagonal.
 		///<
-	double SigmaMulBase; ///< Sigma damping multiplier base.
+	double SigmaMulBase1; ///< Sigma damping multiplier base, for sphere.
 		///<
-	double SigmaMulExp; ///< Additional sigma expansion multiplier.
+	double SigmaMulBase2; ///< Sigma damping multiplier base, for needle.
+		///<
+	double SigmaMulExp2; ///< Sigma expansion multiplier, for needle.
 		///<
 
 	CBiteOptOrt()
@@ -49,10 +51,11 @@ public:
 	{
 		CentPow = 6.0;
 		BaseSlow = 5.0;
-		BaseFast = 10.0;
-		BaseFast2 = 15.0;
-		SigmaMulBase = 0.9;
-		SigmaMulExp = 0.25;
+		BaseFast1 = 10.0;
+		BaseFast2 = 18.0;
+		SigmaMulBase1 = 0.75;
+		SigmaMulBase2 = 0.9;
+		SigmaMulExp2 = 1.15;
 	}
 
 	/**
@@ -158,8 +161,7 @@ public:
 			DParamsN[ i ] = DParams[ i ];
 		}
 
-		cbase1 = BaseSlow;
-		cbase2 = BaseSlow;
+		IsSphere = false;
 		UsePopSize = PopSize;
 		updateWeights();
 
@@ -208,14 +210,16 @@ public:
 		calcCent();
 
 		// Update covariance matrix, the left-handed triangle only. Uses leaky
-		// integrator averaging filter. "cbase1" selects corner frequency of
-		// the filter, "cbase2" for off-diagonal elements.
+		// integrator averaging filter. "avgc" selects corner frequency
+		// of the filter, "avgc2" for off-diagonal elements.
+
+		// Select covariance update rate based on geometry parameters.
 
 		const double avgc1 = 1.0 - pow( 0.01,
-			cbase1 / ( UsePopSize * EvalFac ));
+			( IsSphere ? BaseFast1 : BaseSlow ) / ( UsePopSize * EvalFac ));
 
 		const double avgc2 = 1.0 - pow( 0.01,
-			cbase2 / ( UsePopSize * EvalFac ));
+			( IsSphere ? BaseFast2 : BaseSlow ) / ( UsePopSize * EvalFac ));
 
 		for( j = 0; j < ParamCount; j++ )
 		{
@@ -236,7 +240,8 @@ public:
 
 		eigen();
 
-		// Calculate distribution's geometry parameters.
+		// Calculate distribution's geometry parameters, decide if it's a
+		// sphere.
 
 		double maxd = 1e-100; // Maximal deviation among all parameters.
 
@@ -266,10 +271,7 @@ public:
 			}
 		}
 
-		// Select covariance update rate based on geometry parameters.
-
-		cbase1 = ( c1 >= c2 ? BaseFast : BaseSlow );
-		cbase2 = ( c1 >= c2 ? BaseFast2 : BaseSlow );
+		IsSphere = ( ParamCount <= 2 ? c1 > c2 : c1 >= c2 );
 
 		// Apply extension or contraction to positive and negative halfs of
 		// standard deviations, depending on centroid step size.
@@ -295,7 +297,8 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			const double c = 1.0 - TmpParams[ i ];
-			const double m = SigmaMulBase + SigmaMulExp * c * c * c * c;
+			const double m = ( IsSphere ? SigmaMulBase1 : SigmaMulBase2 +
+				( SigmaMulExp2 - SigmaMulBase2 ) * c * c * c * c );
 
 			DParams[ i ] *= m;
 			DParamsN[ i ] *= m;
@@ -467,10 +470,7 @@ protected:
 		///<
 	double* TmpParams; ///< Temporary parameter vector.
 		///<
-	double cbase1; ///< Covariance matrix update averaging time coefficient.
-		///<
-	double cbase2; ///< Covariance matrix update averaging time coefficient,
-		///< off-diagonal.
+	bool IsSphere; ///< Is distribution spherical?
 		///<
 
 	/**
