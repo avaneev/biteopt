@@ -1,7 +1,7 @@
 //$ nocpp
 
-#ifndef SAESOPT_INCLUDED
-#define SAESOPT_INCLUDED
+#ifndef SMAESOPT_INCLUDED
+#define SMAESOPT_INCLUDED
 
 #include "biteoptort.h"
 
@@ -10,10 +10,10 @@
  * but performs sigma adaptation.
  */
 
-class CSAESOpt
+class CSMAESOpt
 {
 public:
-	CSAESOpt()
+	CSMAESOpt()
 		: ParamCount( 0 )
 		, PopSize( 0 )
 		, PopOrder( NULL )
@@ -26,7 +26,7 @@ public:
 	{
 	}
 
-	~CSAESOpt()
+	~CSMAESOpt()
 	{
 		deleteBuffers();
 	}
@@ -374,4 +374,4 @@ protected:
 	}
 };
 
-#endif // SAESOPT_INCLUDED
+#endif // SMAESOPT_INCLUDED

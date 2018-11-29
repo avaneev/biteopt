@@ -49,11 +49,6 @@ public:
 
 		lambda = 20 + ParamCount * 2;
 
-		if( lambda > 100 )
-		{
-			lambda = 100;
-		}
-
 		deleteBuffers();
 
 		ParamCount = aParamCount;

@@ -430,15 +430,15 @@ it also reduces time (but not human-hours) to find a better solution. This
 method is a model of Swiss presidency rotation (each independent population
 represents an independent human brain).
 
-## CSAESOpt (saesopt.h) ##
+## CSMAESOpt (smaesopt.h) ##
 
-This is an experimental optimization method called "Sigma Adaptation Evolution
+This is an experimental optimization method called "SigMa Adaptation Evolution
 Strategy". It has the same programmatic interface as CBiteOpt class, so it
 can be easily used in place of CBiteOpt.
 
-SA-ES is based on the same concept as CMA-ES, but performs direct vector sigma
-adaptation. SA-ES performs covariance matrix update like CMA-ES, but it is a
-simple linear update using leaky integrator averaging filtering.
+SMA-ES is based on the same concept as CMA-ES, but performs direct vector
+sigma adaptation. SMA-ES performs covariance matrix update like CMA-ES, but it
+is a simple linear update using leaky integrator averaging filtering.
 
 The main difference to CMA-ES is that per-parameter sigmas are automatically
 updated using these elements:
@@ -446,7 +446,7 @@ updated using these elements:
 1. Sigma auto-adapts due to weighted parameter covariance calculation. Better
 fit solutions have more influence on expansion or contraction of the sigma.
 
-2. SA-ES approximates the "geometry" of the sample distribution. It ranges
+2. SMA-ES approximates the "geometry" of the sample distribution. It ranges
 from "spherical" to "needle" geometry. When geometry is spherical, covariance
 matrix update filter is tuned to an increased frequency (`BaseFast` instead
 of `BaseSlow`).
@@ -459,12 +459,12 @@ contracted in opposite direction.
 `SigmaMulBase` coefficient. Additionally, overly-contracted sigmas are
 expanded by `SigmaMulBase + SigmaMulExp` coefficient.
 
-In overall, SA-ES is a completely self-adaptive method, it has several fixed
+In overall, SMA-ES is a completely self-adaptive method, it has several fixed
 hyper-parameters that do not depend on problem's dimensionality. These
 parameters were manually fine-tuned, but it is possible to optimize them
 further.
 
-Population size formula in SA-ES is fixed to 13+Dims: according to tests,
+Population size formula in SMA-ES is fixed to 13+Dims: according to tests,
 in average it suits all dimensionalities. Of course, particular problems may
 converge better/faster with a lower or higher population size. The number of
 objective function evaluations is twice the population size per sample
