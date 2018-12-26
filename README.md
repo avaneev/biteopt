@@ -318,7 +318,7 @@ all arguments are equal. It just often happens that such "short-cuts" provide
 useful "reference points" to the method. Removing these "short-cuts" will
 increase average convergence time of the method, but in most cases won't
 impact method's ability to find a global solution. "Short-cuts" are used only
-in 9% of objective function evaluations.
+in 6% of objective function evaluations.
 
 3. The method uses resetting counters instead of direct probability
 evaluation. This was done to reduce method's overhead (it was important to

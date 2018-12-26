@@ -88,22 +88,22 @@ public:
 		, Params( NULL )
 		, NewParams( NULL )
 	{
-		// Cost=2.101823
-		RandProb[ 0 ] = 0.40891214;
-		RandProb[ 1 ] = 0.98786512;
-		RandProb2[ 0 ] = 0.45861012;
-		RandProb2[ 1 ] = 0.32664134;
-		AllpProb[ 0 ] = 0.52827167;
-		AllpProb[ 1 ] = 0.98183325;
-		CentProb[ 0 ] = 0.94613304;
-		CentProb[ 1 ] = 0.01094351;
-		CentSpan[ 0 ] = 2.87005732;
-		CentSpan[ 1 ] = 1.50000000;
-		ScutProb = 0.09000000;
-		MantSizeSh = 21.97054644;
-		MantSizeSh2 = 81.69065658;
-		PopSizeBase = 11.10471664;
-		PopSizeMult = 1.92913120;
+		// Cost=2.146651
+		RandProb[ 0 ] = 0.40091111;
+		RandProb[ 1 ] = 0.99587547;
+		RandProb2[ 0 ] = 0.26628192;
+		RandProb2[ 1 ] = 0.50869810;
+		AllpProb[ 0 ] = 0.57927824;
+		AllpProb[ 1 ] = 0.99071231;
+		CentProb[ 0 ] = 0.99587644;
+		CentProb[ 1 ] = 0.14482312;
+		CentSpan[ 0 ] = 2.53962698;
+		CentSpan[ 1 ] = 1.08541910;
+		ScutProb = 0.06000000;
+		MantSizeSh = 38.62599250;
+		MantSizeSh2 = 83.99565521;
+		PopSizeBase = 11.02612544;
+		PopSizeMult = 1.92909238;
 	}
 
 	~CBiteOpt()
@@ -233,7 +233,6 @@ public:
 
 		CentSpanRnd[ 0 ] = CentSpan[ 0 ] / rnd.getRawScale();
 		CentSpanRnd[ 1 ] = CentSpan[ 1 ] / rnd.getRawScale();
-		PopSizeRnd = (double) PopSize / rnd.getRawScale();
 		ParamCountRnd = (double) ParamCount / rnd.getRawScale();
 		AllpProbDamp = 2.0 / ParamCount;
 	}
@@ -382,15 +381,15 @@ public:
 			// Select worst and a random previous solution from the ordered
 			// list, apply offsets to reduce sensitivity to noise.
 
-			const int op = (int) ( mp * 3 );
 			const int si = mpi + (int) ( mp * ( PopSize1 - mpi ));
 			const double* const OrigParams = CurParams[ PopOrder[ si ]];
 			const double* const MaxParams = CurParams[ PopOrder[
-				PopSize1 - op ]];
+				PopSize1 - mpi ]];
 
 			// Select two more previous solutions to be used in the mix.
 
-			const int si2 = (int) ( rnd.getUniformRaw() * PopSizeRnd );
+			const double r = rnd.getRndValue();
+			const int si2 = (int) ( r * r * PopSize );
 			const double* const rp1 = CurParams[ PopOrder[ si2 ]];
 			const double* const rp2 = CurParams[ PopOrder[ PopSize1 - si2 ]];
 
@@ -589,9 +588,6 @@ protected:
 		///<
 	double CentSpanRnd[ 2 ]; ///< CentSpan multiplier converted into "raw"
 		///< random value scale.
-		///<
-	double PopSizeRnd; ///< PopSize converted into "raw" random value
-		///< scale.
 		///<
 	double ParamCountRnd; ///< ParamCount converted into "raw" random value
 		///< scale.

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "tests/tester.h"
 
-const int FanParamCount = 13;
+const int FanParamCount = 14;
 const int FanIterCount = 4000;
 
 static double roundp( const double x )
@@ -32,8 +32,9 @@ public:
 		p[ 8 ] = 0.0;
 		p[ 9 ] = 0.0;
 		p[ 10 ] = 10.0;
-		p[ 11 ] = 11.0;
-		p[ 12 ] = 1.0;
+		p[ 11 ] = 10.0;
+		p[ 12 ] = 11.0;
+		p[ 13 ] = 1.0;
 	}
 
 	virtual void getMaxValues( double* const p ) const
@@ -49,8 +50,9 @@ public:
 		p[ 8 ] = 3.0;
 		p[ 9 ] = 3.0;
 		p[ 10 ] = 96.999;
-		p[ 11 ] = 16.0;
-		p[ 12 ] = 4.0;
+		p[ 11 ] = 96.999;
+		p[ 12 ] = 16.0;
+		p[ 13 ] = 3.0;
 	}
 
 	virtual double optcost( const double* const p )
@@ -66,10 +68,11 @@ public:
 		Tester.opt -> CentProb[ 1 ] = roundp( p[ 7 ]);
 		Tester.opt -> CentSpan[ 0 ] = roundp( p[ 8 ]);
 		Tester.opt -> CentSpan[ 1 ] = roundp( p[ 9 ]);
-		Tester.opt -> ScutProb = 0.09;
+		Tester.opt -> ScutProb = 0.06;
 		Tester.opt -> MantSizeSh = roundp( p[ 10 ]);
-		Tester.opt -> PopSizeBase = roundp( p[ 11 ]);
-		Tester.opt -> PopSizeMult = roundp( p[ 12 ]);
+		Tester.opt -> MantSizeSh2 = roundp( p[ 11 ]);
+		Tester.opt -> PopSizeBase = roundp( p[ 12 ]);
+		Tester.opt -> PopSizeMult = roundp( p[ 13 ]);
 
 		// Run low-dimensional and 14-dimensional test corpuses.
 
@@ -133,10 +136,11 @@ int main()
 		printf( "CentProb[ 1 ] = %.8f;\n", Params[ 7 ]);
 		printf( "CentSpan[ 0 ] = %.8f;\n", Params[ 8 ]);
 		printf( "CentSpan[ 1 ] = %.8f;\n", Params[ 9 ]);
-		printf( "ScutProb = %.8f;\n", 0.09 );
+		printf( "ScutProb = %.8f;\n", 0.06 );
 		printf( "MantSizeSh = %.8f;\n", Params[ 10 ]);
-		printf( "PopSizeBase = %.8f;\n", Params[ 11 ]);
-		printf( "PopSizeMult = %.8f;\n", Params[ 12 ]);
+		printf( "MantSizeSh2 = %.8f;\n", Params[ 11 ]);
+		printf( "PopSizeBase = %.8f;\n", Params[ 12 ]);
+		printf( "PopSizeMult = %.8f;\n", Params[ 13 ]);
 	}
 
 	return( 0 );
