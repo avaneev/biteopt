@@ -430,6 +430,18 @@ it also reduces time (but not human-hours) to find a better solution. This
 method is a model of Swiss presidency rotation (each independent population
 represents an independent human brain).
 
+The author did not originally employ results and reasoning available in papers
+on Differential Evolution. Author's use of DE operations is based on
+understanding that it provides an implicit gradient information. A candidate
+solution is generated as a sum of best solution and a difference between a
+random and the worst solution. Such difference between a random and the worst
+solution actually generates a probabilistically correct step towards the
+minimum of a function relative to the best solution. Due to this
+understanding, it is impossible to employ various DE variants in BiteOpt,
+only the difference between high rank and low rank solutions generates a
+valuable information, moreover only a difference multiplied by a factor of
+0.5 works in practice.
+
 ## CSMAESOpt (smaesopt.h) ##
 
 This is an experimental optimization method called "SigMa Adaptation Evolution
