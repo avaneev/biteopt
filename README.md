@@ -36,6 +36,8 @@ there are no competing minima in a function (or the true/global minimum is
 rogue and cannot be detected), this method in absolute majority of runs will
 return the same optimum.
 
+Please consider supporting the author on [Patreon](https://www.patreon.com/aleksey_vaneev).
+
 ## Comparison ##
 
 This "black-box" optimization algorithm was tested on 450+ 1-10 dimensional
@@ -250,6 +252,9 @@ algorithm's parameters.
 
 2. Non-linear least-squares problems, see calcHougen and calcOsborne functions
 in `testfn.h` for example problems.
+
+3. BiteOptDeep was successfuly used for direct search of optimal short
+symmetric FIR filters.
 
 ## Examples ##
 
