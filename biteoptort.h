@@ -120,9 +120,8 @@ public:
 		for( i = 0; i < UsePopSize; i++ )
 		{
 			const double l = 1.0 - (double) i / ( UsePopSize * EvalFac );
-			const double v = pow( l, CentPow );
-			WPopCent[ i ] = v;
-			s += v;
+			WPopCent[ i ] = pow( l, CentPow );
+			s += WPopCent[ i ];
 		}
 
 		for( i = 0; i < UsePopSize; i++ )
@@ -758,7 +757,14 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			DParams[ i ] = sqrt( fabs( DParams[ i ]));
+			if( DParams[ i ] < 1e-30 )
+			{
+				DParams[ i ] = 1e-15;
+			}
+			else
+			{
+				DParams[ i ] = sqrt( DParams[ i ]);
+			}
 		}
 	}
 
