@@ -10,7 +10,7 @@
 /**
  * Rotation matrix calculation class, based on the Eigen decomposition of the
  * covariance matrix. Used to "orthogonalize" sample population. Applies
- * weighting to population, and keeps track of several previous distributions.
+ * weighting to population.
  */
 
 class CBiteOptOrt
@@ -18,15 +18,13 @@ class CBiteOptOrt
 public:
 	double CentPow; ///< Centroid weighting power coefficient.
 		///<
-	double BaseSlow; ///< Covariance update rate, slow.
+	double CovUpdSlow; ///< Covariance matrix update rate, slow.
 		///<
-	double BaseFast1; ///< Covariance update rate, fast, on-diagonal.
+	double CovUpdFast; ///< Covariance matrix update rate, fast.
 		///<
-	double BaseFast2; ///< Covariance update rate, fast, off-diagonal.
+	double SigmaMulBase1; ///< Sigma damping multiplier, for sphere.
 		///<
-	double SigmaMulBase1; ///< Sigma damping multiplier base, for sphere.
-		///<
-	double SigmaMulBase2; ///< Sigma damping multiplier base, for needle.
+	double SigmaMulBase2; ///< Sigma damping multiplier, for needle.
 		///<
 	double SigmaMulExp2; ///< Sigma expansion multiplier, for needle.
 		///<
@@ -50,10 +48,9 @@ public:
 		, TmpParams( NULL )
 	{
 		CentPow = 6.0;
-		BaseSlow = 5.0;
-		BaseFast1 = 10.0;
-		BaseFast2 = 18.0;
-		SigmaMulBase1 = 0.75;
+		CovUpdSlow = 5.0;
+		CovUpdFast = 18.0;
+		SigmaMulBase1 = 0.4;
 		SigmaMulBase2 = 0.9;
 		SigmaMulExp2 = 1.15;
 	}
@@ -160,7 +157,7 @@ public:
 			DParamsN[ i ] = DParams[ i ];
 		}
 
-		IsSphere = false;
+		spc = 0.0;
 		UsePopSize = PopSize;
 		updateWeights();
 
@@ -210,28 +207,29 @@ public:
 
 		// Update covariance matrix, the left-handed triangle only. Uses leaky
 		// integrator averaging filter. "avgc" selects corner frequency
-		// of the filter, "avgc2" for off-diagonal elements.
+		// of the filter.
 
-		// Select covariance update rate based on geometry parameters.
+		// Select covariance update rate based on geometry parameter,
+		// depends on sphericity.
 
-		const double avgc1 = 1.0 - pow( 0.01,
-			( IsSphere ? BaseFast1 : BaseSlow ) / ( UsePopSize * EvalFac ));
+		const double spc2 = spc * spc;
+		const double spc3 = spc2 * spc;
+		const double spc4 = spc2 * spc2;
 
-		const double avgc2 = 1.0 - pow( 0.01,
-			( IsSphere ? BaseFast2 : BaseSlow ) / ( UsePopSize * EvalFac ));
+		const double avgc = 1.0 - pow( 0.01,
+			( CovUpdFast * spc4 + CovUpdSlow * ( 1.0 - spc4 )) /
+			( UsePopSize * EvalFac ));
+
+		// Perform covariance matrix update using a leaky integrator filter.
 
 		for( j = 0; j < ParamCount; j++ )
 		{
-			const double cov = dotp( PopParams[ j ], PopParams[ j ]);
-			CovParams[ j ][ j ] += ( cov - CovParams[ j ][ j ]) * avgc1;
-		}
+			double* const cp = CovParams[ j ];
 
-		for( j = 0; j < ParamCount; j++ )
-		{
-			for( i = 0; i < j; i++ )
+			for( i = 0; i <= j; i++ )
 			{
 				const double cov = dotp( PopParams[ j ], PopParams[ i ]);
-				CovParams[ j ][ i ] += ( cov - CovParams[ j ][ i ]) * avgc2;
+				cp[ i ] += ( cov - cp[ i ]) * avgc;
 			}
 		}
 
@@ -239,8 +237,7 @@ public:
 
 		eigen();
 
-		// Calculate distribution's geometry parameters, decide if it's a
-		// sphere.
+		// Calculate distribution's geometry parameter.
 
 		double maxd = 1e-100; // Maximal deviation among all parameters.
 
@@ -253,24 +250,15 @@ public:
 		}
 
 		maxd = 1.0 / maxd;
-		int c1 = 0; // Above 0.5 deviation count.
-		int c2 = 0; // Below 0.5 deviation count.
+		spc = 0.0;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			TmpParams[ i ] = DParams[ i ] * maxd;
-
-			if( TmpParams[ i ] >= 0.5 )
-			{
-				c1++;
-			}
-			else
-			{
-				c2++;
-			}
+			spc += TmpParams[ i ];
 		}
 
-		IsSphere = ( ParamCount <= 2 ? c1 > c2 : c1 >= c2 );
+		spc /= ParamCount;
 
 		// Apply extension or contraction to positive and negative halfs of
 		// standard deviations, depending on centroid step size.
@@ -291,13 +279,14 @@ public:
 		}
 
 		// Modify standard deviations, apply reduction, or extension to
-		// overly shrunk dimensions.
+		// overly shrunk dimensions. Depends on sphericity.
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			const double c = 1.0 - TmpParams[ i ];
-			const double m = ( IsSphere ? SigmaMulBase1 : SigmaMulBase2 +
-				( SigmaMulExp2 - SigmaMulBase2 ) * c * c * c * c );
+			const double m = ( SigmaMulBase2 +
+				( SigmaMulExp2 - SigmaMulBase2 ) * c * c * c * c ) *
+				( 1.0 - spc3 ) + SigmaMulBase1 * spc3;
 
 			DParams[ i ] *= m;
 			DParamsN[ i ] *= m;
@@ -469,8 +458,8 @@ protected:
 		///<
 	double* TmpParams; ///< Temporary parameter vector.
 		///<
-	bool IsSphere; ///< Is distribution spherical?
-		///<
+	double spc; ///< Distribution's sphericity coefficient. 1 - fully
+		///< spherical.
 
 	/**
 	 * Function deletes previously allocated buffers.

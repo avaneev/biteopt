@@ -453,37 +453,39 @@ This is an experimental optimization method called "SigMa Adaptation Evolution
 Strategy". It has the same programmatic interface as CBiteOpt class, so it
 can be easily used in place of CBiteOpt.
 
-SMA-ES is based on the same concept as CMA-ES, but performs direct vector
-sigma adaptation. SMA-ES performs covariance matrix update like CMA-ES, but it
+SMA-ES is based on the same concept as CMA-ES, but performs vector sigma
+adaptation. SMA-ES performs covariance matrix update like CMA-ES, but it
 is a simple linear update using leaky integrator averaging filtering.
 
-The main difference to CMA-ES is that per-parameter sigmas are automatically
-updated using these elements:
+The main difference to CMA-ES is that per-parameter sigmas are updated using
+these elements:
 
 1. Sigma auto-adapts due to weighted parameter covariance calculation. Better
 fit solutions have more influence on expansion or contraction of the sigma.
 
 2. SMA-ES approximates the "geometry" of the sample distribution. It ranges
 from "spherical" to "needle" geometry. When geometry is spherical, covariance
-matrix update filter is tuned to an increased frequency (`BaseFast` instead
-of `BaseSlow`).
+matrix update filter is tuned to an increased frequency (`CovUpdFast` instead
+of `CovUpdSlow`).
 
 3. An assymetry is introduced to the Gaussian noise function, depending on the
 centroid step size. Distribution is expanded in the direction of the step and
-contracted in opposite direction.
+contracted in the opposite direction.
 
 4. On every update, all per-parameter sigmas are contracted (multiplied) by
-`SigmaMulBase` coefficient. Additionally, overly-contracted sigmas are
-expanded by `SigmaMulBase + SigmaMulExp` coefficient.
+`SigmaMulBase` coefficients. Additionally, overly-contracted sigmas are
+expanded by `SigmaMulExp` coefficient.
 
 In overall, SMA-ES is a completely self-adaptive method, it has several fixed
 hyper-parameters that do not depend on problem's dimensionality. These
 parameters were manually fine-tuned, but it is possible to optimize them
 further.
 
-Population size formula in SMA-ES is fixed to 13+Dims: according to tests,
+Population size formula in SMA-ES is fixed to `13+Dims`: according to tests,
 in average it suits all dimensionalities. Of course, particular problems may
 converge better/faster with a lower or higher population size. The number of
 objective function evaluations is twice the population size per sample
-distribution update (best fit solutions enter the population). Method's
-typical observed complexity is O(N^1.6).
+distribution update (best fit solutions enter the population): this aspect is
+controlled via the `EvalFac` parameter, which adjusts method's overhead
+with only a minor effect on convergence property. Method's typical
+observed complexity is O(N^1.6).

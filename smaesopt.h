@@ -7,7 +7,7 @@
 
 /**
  * Sigma Adaptation Evolution Strategy class. Fundamentally similar to CMA-ES,
- * but performs sigma adaptation.
+ * but mainly focuses on sigma adaptation.
  */
 
 class CSMAESOpt
