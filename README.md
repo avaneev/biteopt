@@ -91,6 +91,10 @@ be considered as "baseline effective" version of the method (it is also
 maximally simple), with further commits implementing gradual improvements, but
 also adding more complexity.
 
+Also, BiteOpt (state at commit 256) took 2nd place (3rd by sum of ranks) in
+[BBComp2019-1OBJ](https://bbcomp.ini.rub.de/results/BBComp2019-1OBJ/summary.html)
+competition track.
+
 ## CBiteOpt (biteopt.h) ##
 
 BiteOpt optimization class. Implements a stochastic non-linear
@@ -455,7 +459,8 @@ can be easily used in place of CBiteOpt.
 
 SMA-ES is based on the same concept as CMA-ES, but performs vector sigma
 adaptation. SMA-ES performs covariance matrix update like CMA-ES, but it
-is a simple linear update using leaky integrator averaging filtering.
+is a simple linear update using leaky integrator averaging filtering. SMA-ES
+algorithm's operation is based on principles of control signals.
 
 The main difference to CMA-ES is that per-parameter sigmas are updated using
 these elements:
@@ -464,17 +469,17 @@ these elements:
 fit solutions have more influence on expansion or contraction of the sigma.
 
 2. SMA-ES approximates the "geometry" of the sample distribution. It ranges
-from "spherical" to "needle" geometry. When geometry is spherical, covariance
-matrix update filter is tuned to an increased frequency (`CovUpdFast` instead
-of `CovUpdSlow`).
+from "spherical" to "needle" geometry (represented by a continous `spc`
+variable). When geometry is spherical, covariance matrix update filter is
+tuned to an increased frequency (`CovUpdFast` instead of `CovUpdSlow`).
 
 3. An assymetry is introduced to the Gaussian noise function, depending on the
 centroid step size. Distribution is expanded in the direction of the step and
 contracted in the opposite direction.
 
 4. On every update, all per-parameter sigmas are contracted (multiplied) by
-`SigmaMulBase` coefficients. Additionally, overly-contracted sigmas are
-expanded by `SigmaMulExp` coefficient.
+the `SigmaMulBase` coefficients, depending on sphericity. Additionally,
+overly-contracted sigmas are expanded by the `SigmaMulExp` coefficient.
 
 In overall, SMA-ES is a completely self-adaptive method, it has several fixed
 hyper-parameters that do not depend on problem's dimensionality. These

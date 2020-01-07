@@ -285,7 +285,7 @@ public:
 		{
 			const double c = 1.0 - TmpParams[ i ];
 			const double m = ( SigmaMulBase2 +
-				( SigmaMulExp2 - SigmaMulBase2 ) * c * c * c * c ) *
+				( SigmaMulExp2 - SigmaMulBase2 ) * c * c * c ) *
 				( 1.0 - spc3 ) + SigmaMulBase1 * spc3;
 
 			DParams[ i ] *= m;
