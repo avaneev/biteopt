@@ -15,6 +15,7 @@
 * [Users](#users)
 * [Method description](#method-description)
 * [Method philosophy](#method-philosophy)
+* [SMA-ES](#sma-es)
 
 ## Introduction ##
 
@@ -35,8 +36,6 @@ it to automatically "fall" into different competing minima with each run. If
 there are no competing minima in a function (or the true/global minimum is
 rogue and cannot be detected), this method in absolute majority of runs will
 return the same optimum.
-
-Please consider supporting the author on [Patreon](https://www.patreon.com/aleksey_vaneev).
 
 ## Comparison ##
 
@@ -351,6 +350,12 @@ This library is used by:
 Please drop me a note at aleksey.vaneev@gmail.com and I will include a link to
 your project to the list of users.
 
+## Other ##
+
+[Follow me on Twitter](https://twitter.com/AlekseyVaneev)
+
+[Become a patron on Patreon](https://patreon.com/aleksey_vaneev)
+
 ## Method description ##
 
 The algorithm consists of the following elements:
@@ -451,7 +456,7 @@ only the difference between high rank and low rank solutions generates a
 valuable information, moreover only a difference multiplied by a factor of
 0.5 works in practice.
 
-## CSMAESOpt (smaesopt.h) ##
+## SMA-ES ##
 
 This is an experimental optimization method called "SigMa Adaptation Evolution
 Strategy". It has the same programmatic interface as CBiteOpt class, so it
