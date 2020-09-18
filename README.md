@@ -83,7 +83,7 @@ reference to a function (with a known solution) published in literature that
 BiteOpt can't solve, let the author know.
 
 BiteOpt (state at commit 124) took 2nd place (1st by sum of ranks) in
-[BBComp2018-1OBJ-expensive](https://bbcomp.ini.rub.de/results/BBComp2018-1OBJ-expensive/summary.html)
+[BBComp2018-1OBJ-expensive](https://www.ini.rub.de/PEOPLE/glasmtbl/projects/bbcomp/results/BBComp2018-1OBJ-expensive/summary.html)
 competition track. Since the time of that commit algorithm improved in many
 aspects, especially in low-dimensional convergence performance. Commit 124 can
 be considered as "baseline effective" version of the method (it is also
@@ -91,7 +91,7 @@ maximally simple), with further commits implementing gradual improvements, but
 also adding more complexity.
 
 Also, BiteOpt (state at commit 256) took 2nd place (3rd by sum of ranks) in
-[BBComp2019-1OBJ](https://bbcomp.ini.rub.de/results/BBComp2019-1OBJ/summary.html)
+[BBComp2019-1OBJ](https://www.ini.rub.de/PEOPLE/glasmtbl/projects/bbcomp/results/BBComp2019-1OBJ/summary.html)
 competition track.
 
 ## CBiteOpt (biteopt.h) ##
