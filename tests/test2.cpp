@@ -11,10 +11,10 @@
 #include <stdio.h>
 #include "tester.h"
 
-#if defined( _WIN32 ) || defined( _WIN64 )
+#if defined( _WIN32 )
 	#include <windows.h>
 	#define USEPERF 1
-#endif // defined( _WIN32 ) || defined( _WIN64 )
+#endif // defined( _WIN32 )
 
 int main()
 {
@@ -22,7 +22,6 @@ int main()
 
 	Tester.init( 0.000001, 500, 2000, true );
 	Tester.addCorpus( 2, TestCorpusAll, false, false );
-	Tester.addCorpus( 2, OptCorpusNDRotOfs, true, true );
 
 	#if USEPERF
 	LARGE_INTEGER Freq;

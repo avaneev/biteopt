@@ -11,16 +11,17 @@
 #include <stdio.h>
 #include "tester.h"
 
-#if defined( _WIN32 ) || defined( _WIN64 )
+#if defined( _WIN32 )
 	#include <windows.h>
 	#define USEPERF 1
-#endif // defined( _WIN32 ) || defined( _WIN64 )
+#endif // defined( _WIN32 )
 
 int main()
 {
 	CTester Tester;
 
-	Tester.init( 0.01, 35, 14000, true );
+	Tester.init( 0.01, 15, 70000, true );
+//	Tester.addCorpus( 14, OptCorpusND, true, false );
 	Tester.addCorpus( 14, OptCorpusNDRotOfs, true, false );
 //	Tester.addCorpus( 14, OptCorpusNDRotOfsSol, true, true );
 

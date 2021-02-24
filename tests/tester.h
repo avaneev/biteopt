@@ -1,13 +1,17 @@
 //$ nocpp
 
 #include <stdio.h>
-#include <string.h>
 #include "../biteopt.h"
+#include "../smaesopt.h"
+#include "../spheropt.h"
+//#include "../other/ccmaes.h"
 
 CBiteRnd rnd;
 
 #include "testfn.h"
 
+#define OPT_CLASS CBiteOpt//CBiteOptDeep//CSMAESOpt//CSpherOpt//CCMAESOpt//
+#define OPT_DIMS_PARAMS Dims
 //#define EVALBINS 1
 
 /**
@@ -21,7 +25,7 @@ public:
 	 * Function optimizer class.
 	 */
 
-	class CTestOpt : public CBiteOpt
+	class CTestOpt : public OPT_CLASS
 	{
 	public:
 		const CTestFn* fn; ///< Test function.
@@ -61,7 +65,7 @@ public:
 		{
 		}
 
-		~CTestOpt()
+		virtual ~CTestOpt()
 		{
 			delete[] minv;
 			delete[] maxv;
@@ -87,7 +91,7 @@ public:
 			tp = new double[ Dims ];
 			tp2 = new double[ Dims ];
 
-			CBiteOpt :: updateDims( Dims );
+			OPT_CLASS :: updateDims( OPT_DIMS_PARAMS );
 		}
 
 		virtual void getMinValues( double* const p ) const
@@ -151,12 +155,16 @@ public:
 	double ItAvg; ///< Average of convergence time after run() across
 		///< functions.
 		///<
+	double ItAvgl10n; ///< = log( AtAvg / N ) / log( 10 ).
+		///<
 	double ItAvg2; ///< Average of convergence time after run() across all
 		///< attempts.
 		///<
 	double ItAvg2l10n; ///< = log( AtAvg2 / N ) / log( 10 ).
 		///<
 	double RMSAvg; ///< Std.dev of convergence time after run().
+		///<
+	double RMSAvgl10n; ///< = log( RMSAvg / N ) / log( 10 ).
 		///<
 	double ItRtAvg; ///< Average ratio of std.dev and average after run().
 		///<
@@ -239,11 +247,14 @@ public:
 	void run()
 	{
 		ItAvg = 0.0;
+		ItAvgl10n = 0.0;
 		ItAvg2 = 0.0;
 		int ItAvg2Count = 0;
 		ItAvg2l10n = 0.0;
 		RMSAvg = 0.0;
+		RMSAvgl10n = 0.0;
 		ItRtAvg = 0.0;
+		int AvgCount = 0;
 		RjAvg = 0.0;
 		AtAvg = 0.0;
 		double RejTotal = 0.0;
@@ -351,7 +362,9 @@ public:
 						const int itc = i + opt -> getInitEvals();
 						Iters[ j ] = itc;
 						AvgIter += itc;
+						ItAvg2 += itc;
 						ItAvg2l10n += log( (double) itc / Dims ) / log( 10.0 );
+						ItAvg2Count++;
 						break;
 					}
 
@@ -372,7 +385,7 @@ public:
 			}
 
 			MinCost = ( Rej >= IterCount ?
-				1.0 / ( Rej - IterCount) : MinCost );
+				1.0 / ( Rej - IterCount ) : MinCost );
 
 			MinRjCost = ( Rej == 0 ? 1.0 / Rej : MinRjCost );
 			double Avg;
@@ -380,15 +393,13 @@ public:
 
 			if( Rej >= IterCount )
 			{
-				Avg = 1.0;
-				RMS = 1.0;
+				Avg = 0.0;
+				RMS = 0.0;
 			}
 			else
 			{
 				Avg = AvgIter / ( IterCount - Rej );
 				RMS = 0.0;
-				ItAvg2 += AvgIter;
-				ItAvg2Count += IterCount - Rej;
 
 				for( j = 0; j < IterCount; j++ )
 				{
@@ -400,6 +411,15 @@ public:
 				}
 
 				RMS = sqrt( RMS / ( IterCount - Rej ));
+
+				ItAvg += Avg;
+				ItAvgl10n += log( Avg / Dims ) / log( 10.0 );
+				RMSAvg += RMS;
+				RMSAvgl10n += ( RMS == 0.0 ? 10.0 :
+					log( RMS / Dims ) / log( 10.0 ));
+
+				ItRtAvg += RMS / Avg;
+				AvgCount++;
 
 				#if defined( EVALBINS )
 				for( j = 0; j < IterCount; j++ )
@@ -425,9 +445,6 @@ public:
 				#endif // defined( EVALBINS )
 			}
 
-			ItAvg += Avg;
-			RMSAvg += RMS;
-			ItRtAvg += RMS / Avg;
 			const double Rj = (double) Rej / IterCount;
 			RjAvg += Rj;
 			const double At = 1.0 / ( 1.0 - (double) Rej / IterCount );
@@ -453,11 +470,13 @@ public:
 		}
 		#endif // defined( EVALBINS )
 
-		ItAvg /= FnCount;
+		ItAvg /= AvgCount;
+		ItAvgl10n /= AvgCount;
+		RMSAvg /= AvgCount;
+		RMSAvgl10n /= AvgCount;
+		ItRtAvg /= AvgCount;
 		ItAvg2 /= ItAvg2Count;
 		ItAvg2l10n /= ItAvg2Count;
-		RMSAvg /= FnCount;
-		ItRtAvg /= FnCount;
 		RjAvg /= FnCount;
 		AtAvg = 1.0 / ( 1.0 - RejTotal / IterCount / FnCount );
 		Score = ( AtAvg - 1.0 ) * 100.0 +
@@ -480,6 +499,7 @@ public:
 
 			printf( "Success: %.2f%%\n", Success );
 			printf( "ItAvg: %.1f (avg convergence time)\n", ItAvg );
+			printf( "ItAvgl10n: %.3f (avg log10(it/N))\n", ItAvgl10n );
 			printf( "ItAvg2: %.1f (avg convergence time across all "
 				"successful attempts)\n", ItAvg2 );
 

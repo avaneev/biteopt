@@ -56,7 +56,7 @@ static double calcThreeHumpCamel( const double* const x, const int N )
 }
 
 static const CTestFn TestFnThreeHumpCamel = { "ThreeHumpCamel", 2, -10.0,
-	10.0, 0.0, &calcThreeHumpCamel };
+	10.0, 0.0, &calcThreeHumpCamel, NULL };
 
 static double calcBooth( const double* const x, const int N )
 {
@@ -64,7 +64,7 @@ static double calcBooth( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBooth = { "Booth", 2, -10.0, 10.0, 0.0,
-	&calcBooth };
+	&calcBooth, NULL };
 
 static double calcMatyas( const double* const x, const int N )
 {
@@ -72,7 +72,7 @@ static double calcMatyas( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMatyas = { "Matyas", 2, -10.0, 10.0, 0.0,
-	&calcMatyas };
+	&calcMatyas, NULL };
 
 static double calcSphere( const double* const x, const int N )
 {
@@ -88,7 +88,7 @@ static double calcSphere( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSphere = { "Sphere", 0, -10.0, 10.0, 0.0,
-	&calcSphere };
+	&calcSphere, NULL };
 
 static double calcLevy13( const double* const x, const int N )
 {
@@ -97,7 +97,7 @@ static double calcLevy13( const double* const x, const int N )
 }
 
 static const CTestFn TestFnLevy13 = { "Levy13", 2, -10.0, 10.0, 0.0,
-	&calcLevy13 };
+	&calcLevy13, NULL };
 
 static double calcSchaffer01( const double* const x, const int N )
 {
@@ -106,7 +106,7 @@ static double calcSchaffer01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchaffer01 = { "Schaffer01", 2, -100.0, 100.0,
-	0.0, &calcSchaffer01 };
+	0.0, &calcSchaffer01, NULL };
 
 static double calcSchaffer02( const double* const x, const int N )
 {
@@ -115,7 +115,7 @@ static double calcSchaffer02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchaffer02 = { "Schaffer02", 2, -100.0, 100.0,
-	0.0, &calcSchaffer02 };
+	0.0, &calcSchaffer02, NULL };
 
 static double calcSchaffer03( const double* const x, const int N )
 {
@@ -124,7 +124,7 @@ static double calcSchaffer03( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchaffer03 = { "Schaffer03", 2, -100.0, 100.0,
-	0.0024558581695, &calcSchaffer03 };
+	0.0024558581695, &calcSchaffer03, NULL };
 
 static double calcSchaffer04( const double* const x, const int N )
 {
@@ -133,7 +133,7 @@ static double calcSchaffer04( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchaffer04 = { "Schaffer04", 2, -100.0, 100.0,
-	0.2929486652748, &calcSchaffer04 };
+	0.2929486652748, &calcSchaffer04, NULL };
 
 static double calcSchaffer06( const double* const x, const int N )
 {
@@ -142,7 +142,7 @@ static double calcSchaffer06( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchaffer06 = { "Schaffer06", 2, -100.0, 100.0, 0.0,
-	&calcSchaffer06 };
+	&calcSchaffer06, NULL };
 
 static double calcAckley( const double* const x, const int N )
 {
@@ -163,7 +163,7 @@ static double calcAckley( const double* const x, const int N )
 }
 
 static const CTestFn TestFnAckley = { "Ackley", 0, -32.0, 32.0, 0.0,
-	&calcAckley };
+	&calcAckley, NULL };
 
 static double calcAckley2( const double* const x, const int N )
 {
@@ -179,7 +179,7 @@ static double calcAckley2( const double* const x, const int N )
 }
 
 static const CTestFn TestFnAckley2 = { "Ackley2", 0, -32.0, 32.0, -200.0,
-	&calcAckley2 };
+	&calcAckley2, NULL };
 
 static double calcAckley3( const double* const x, const int N )
 {
@@ -188,7 +188,7 @@ static double calcAckley3( const double* const x, const int N )
 }
 
 static const CTestFn TestFnAckley3 = { "Ackley3", 2, -32.0, 32.0,
-	-195.6290282622794, &calcAckley3 };
+	-195.6290282622794, &calcAckley3, NULL };
 
 static double calcAckley4( const double* const x, const int N )
 {
@@ -205,7 +205,7 @@ static double calcAckley4( const double* const x, const int N )
 }
 
 static const CTestFn TestFnAckley4 = { "Ackley4", 2, -32.0, 32.0, -5.0,
-	&calcAckley4 };
+	&calcAckley4, NULL };
 
 static double calcRosenbrock( const double* const x, const int N )
 {
@@ -221,7 +221,7 @@ static double calcRosenbrock( const double* const x, const int N )
 }
 
 static const CTestFn TestFnRosenbrock = { "Rosenbrock", 0, -10.0, 10.0, 0.0,
-	&calcRosenbrock };
+	&calcRosenbrock, NULL };
 
 static double calcBeale( const double* const x, const int N )
 {
@@ -230,7 +230,7 @@ static double calcBeale( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBeale = { "Beale", 2, -10.0, 10.0, 0.0,
-	&calcBeale };
+	&calcBeale, NULL };
 
 static double calcBohachevsky1( const double* const x, const int N )
 {
@@ -247,7 +247,7 @@ static double calcBohachevsky1( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBohachevsky1 = { "Bohachevsky1", 0, -15.0, 15.0,
-	0.0, &calcBohachevsky1 };
+	0.0, &calcBohachevsky1, NULL };
 
 static double calcBohachevsky2( const double* const x, const int N )
 {
@@ -256,7 +256,7 @@ static double calcBohachevsky2( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBohachevsky2 = { "Bohachevsky2", 2, -100.0, 100.0,
-	0.0, &calcBohachevsky2 };
+	0.0, &calcBohachevsky2, NULL };
 
 static double calcBohachevsky3( const double* const x, const int N )
 {
@@ -264,7 +264,7 @@ static double calcBohachevsky3( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBohachevsky3 = { "Bohachevsky3", 2, -100.0, 100.0,
-	0.0, &calcBohachevsky3 };
+	0.0, &calcBohachevsky3, NULL };
 
 static double calcEasomN( const double* const x, const int N )
 {
@@ -285,7 +285,7 @@ static double calcEasomN( const double* const x, const int N )
 }
 
 static const CTestFn TestFnEasomN = { "EasomN", 0, -100.0, 100.0, 0.0,
-	&calcEasomN };
+	&calcEasomN, NULL };
 
 static double calcEasom( const double* const x, const int N )
 {
@@ -293,7 +293,7 @@ static double calcEasom( const double* const x, const int N )
 }
 
 static const CTestFn TestFnEasom = { "Easom", 2, -100.0, 100.0, -1.0,
-	&calcEasom };
+	&calcEasom, NULL };
 
 static double calcCrossInTray( const double* const x, const int N )
 {
@@ -302,7 +302,7 @@ static double calcCrossInTray( const double* const x, const int N )
 }
 
 static const CTestFn TestFnCrossInTray = { "CrossInTray", 2, -15.0, 15.0,
-	-2.0626118708227, &calcCrossInTray };
+	-2.0626118708227, &calcCrossInTray, NULL };
 
 static double calcRastrigin( const double* const x, const int N )
 {
@@ -318,7 +318,7 @@ static double calcRastrigin( const double* const x, const int N )
 }
 
 static const CTestFn TestFnRastrigin = { "Rastrigin", 0, -5.12, 5.12, 0.0,
-	&calcRastrigin };
+	&calcRastrigin, NULL };
 
 static double calcDropWave( const double* const x, const int N )
 {
@@ -334,7 +334,7 @@ static double calcDropWave( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDropWave = { "DropWave", 0, -5.12, 5.12, -1.0,
-	&calcDropWave };
+	&calcDropWave, NULL };
 
 static double calcSumSquares( const double* const x, const int N )
 {
@@ -350,7 +350,7 @@ static double calcSumSquares( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSumSquares = { "SumSquares", 0, -5.12, 5.12, 0.0,
-	&calcSumSquares };
+	&calcSumSquares, NULL };
 
 static double calcZacharov( const double* const x, const int N )
 {
@@ -368,7 +368,7 @@ static double calcZacharov( const double* const x, const int N )
 }
 
 static const CTestFn TestFnZacharov = { "Zacharov", 0, -10.0, 10.0, 0.0,
-	&calcZacharov };
+	&calcZacharov, NULL };
 
 static double calcRotatedHyperEllipsoid( const double* const x, const int N )
 {
@@ -388,7 +388,7 @@ static double calcRotatedHyperEllipsoid( const double* const x, const int N )
 }
 
 static const CTestFn TestFnRotatedHyperEllipsoid = { "RotatHyperEllips", 0,
-	-65.536, 65.536, 0.0, &calcRotatedHyperEllipsoid };
+	-65.536, 65.536, 0.0, &calcRotatedHyperEllipsoid, NULL };
 
 static double calcGriewank( const double* const x, const int N )
 {
@@ -406,7 +406,7 @@ static double calcGriewank( const double* const x, const int N )
 }
 
 static const CTestFn TestFnGriewank = { "Griewank", 0, -600.0, 600.0, 0.0,
-	&calcGriewank };
+	&calcGriewank, NULL };
 
 static double calcGoldsteinPrice( const double* const x, const int N )
 {
@@ -416,7 +416,7 @@ static double calcGoldsteinPrice( const double* const x, const int N )
 }
 
 static const CTestFn TestFnGoldsteinPrice = { "GoldsteinPrice", 2, -2.0, 2.0,
-	3.0, &calcGoldsteinPrice };
+	3.0, &calcGoldsteinPrice, NULL };
 
 static double calcSalomon( const double* const x, const int N )
 {
@@ -434,7 +434,7 @@ static double calcSalomon( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSalomon = { "Salomon", 0, -100.0, 100.0, 0.0,
-	&calcSalomon };
+	&calcSalomon, NULL };
 
 static double calcBranin01( const double* const x, const int N )
 {
@@ -443,7 +443,7 @@ static double calcBranin01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBranin01 = { "Branin01", 2, -5.0, 10.0,
-	0.3978873577297, &calcBranin01 };
+	0.3978873577297, &calcBranin01, NULL };
 
 static double calcBranin02( const double* const x, const int N )
 {
@@ -453,7 +453,7 @@ static double calcBranin02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBranin02 = { "Branin02", 2, -5.0, 15.0,
-	5.5589144038938, &calcBranin02 };
+	5.5589144038938, &calcBranin02, NULL };
 
 static double calcTrefethen( const double* const x, const int N )
 {
@@ -463,7 +463,7 @@ static double calcTrefethen( const double* const x, const int N )
 }
 
 static const CTestFn TestFnTrefethen = { "Trefethen", 2, -10.0, 10.0,
-	-3.3068686474752, &calcTrefethen };
+	-3.3068686474752, &calcTrefethen, NULL };
 
 static double calcWhitley( const double* const x, const int N )
 {
@@ -484,7 +484,7 @@ static double calcWhitley( const double* const x, const int N )
 }
 
 static const CTestFn TestFnWhitley = { "Whitley", 0, -10.24, 10.24, 0.0,
-	&calcWhitley };
+	&calcWhitley, NULL };
 
 static double calcPrice02( const double* const x, const int N )
 {
@@ -492,7 +492,7 @@ static double calcPrice02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPrice02 = { "Price02", 2, -10.0, 10.0, 0.9,
-	&calcPrice02 };
+	&calcPrice02, NULL };
 
 static double calcWavy( const double* const x, const int N )
 {
@@ -508,7 +508,8 @@ static double calcWavy( const double* const x, const int N )
 	return( 1.0-s/N );
 }
 
-static const CTestFn TestFnWavy = { "Wavy", 0, -M_PI, M_PI, 0.0, &calcWavy };
+static const CTestFn TestFnWavy = { "Wavy", 0, -M_PI, M_PI, 0.0,
+	&calcWavy, NULL };
 
 static double calcShubert01( const double* const x, const int N )
 {
@@ -526,7 +527,7 @@ static double calcShubert01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnShubert01 = { "Shubert01", 2, -10.0, 10.0,
-	-186.7309088310240, &calcShubert01 };
+	-186.7309088310240, &calcShubert01, NULL };
 
 static double calcShubert03( const double* const x, const int N )
 {
@@ -551,7 +552,7 @@ static double calcShubert03( const double* const x, const int N )
 }
 
 static const CTestFn TestFnShubert03 = { "Shubert03", 2, -10.0, 10.0,
-	-29.6759000514212, &calcShubert03 };
+	-29.6759000514212, &calcShubert03, NULL };
 
 static double calcShubert04( const double* const x, const int N )
 {
@@ -576,7 +577,7 @@ static double calcShubert04( const double* const x, const int N )
 }
 
 static const CTestFn TestFnShubert04 = { "Shubert04", 2, -10.0, 10.0,
-	-25.7417709954514, &calcShubert04 };
+	-25.7417709954514, &calcShubert04, NULL };
 
 static double calcWeierstrass( const double* const x, const int N )
 {
@@ -640,7 +641,7 @@ static double calcFreudensteinRoth( const double* const x, const int N )
 }
 
 static const CTestFn TestFnFreudensteinRoth = { "FreudensteinRoth", 2,
-	-10.0, 10.0, 0.0, &calcFreudensteinRoth };
+	-10.0, 10.0, 0.0, &calcFreudensteinRoth, NULL };
 
 static double calcTrigonometric02( const double* const x, const int N )
 {
@@ -657,7 +658,7 @@ static double calcTrigonometric02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnTrigonometric02 = { "Trigonometric02", 0,
-	-500.0, 500.0, 1.0, &calcTrigonometric02 };
+	-500.0, 500.0, 1.0, &calcTrigonometric02, NULL };
 
 static double calcBird( const double* const x, const int N )
 {
@@ -666,7 +667,7 @@ static double calcBird( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBird = { "Bird", 2, -2.0 * M_PI, 2.0 * M_PI,
-	-106.7645367492648, &calcBird };
+	-106.7645367492648, &calcBird, NULL };
 
 static double calcTreccani( const double* const x, const int N )
 {
@@ -674,7 +675,7 @@ static double calcTreccani( const double* const x, const int N )
 }
 
 static const CTestFn TestFnTreccani = { "Treccani", 2, -5.0, 5.0, 0.0,
-	&calcTreccani };
+	&calcTreccani, NULL };
 
 static double calcXinSheYang02( const double* const x, const int N )
 {
@@ -692,7 +693,7 @@ static double calcXinSheYang02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnXinSheYang02 = { "XinSheYang02", 0,
-	-2.0 * M_PI, 2.0 * M_PI, 0.0, &calcXinSheYang02 };
+	-2.0 * M_PI, 2.0 * M_PI, 0.0, &calcXinSheYang02, NULL };
 
 static double calcXinSheYang03( const double* const x, const int N )
 {
@@ -714,7 +715,7 @@ static double calcXinSheYang03( const double* const x, const int N )
 }
 
 static const CTestFn TestFnXinSheYang03 = { "XinSheYang03", 0,
-	-2.0 * M_PI, 2.0 * M_PI, -1.0, &calcXinSheYang03 };
+	-2.0 * M_PI, 2.0 * M_PI, -1.0, &calcXinSheYang03, NULL };
 
 static double calcXinSheYang04( const double* const x, const int N )
 {
@@ -734,7 +735,7 @@ static double calcXinSheYang04( const double* const x, const int N )
 }
 
 static const CTestFn TestFnXinSheYang04 = { "XinSheYang04", 0, -10.0, 10.0,
-	-1.0, &calcXinSheYang04 };
+	-1.0, &calcXinSheYang04, NULL };
 
 static double calcBiggsEXP2( const double* const x, const int N )
 {
@@ -751,7 +752,7 @@ static double calcBiggsEXP2( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBiggsEXP2 = { "BiggsEXP2", 2, 0.0, 20.0, 0.0,
-	&calcBiggsEXP2 };
+	&calcBiggsEXP2, NULL };
 
 static double calcSchwefel06( const double* const x, const int N )
 {
@@ -762,7 +763,7 @@ static double calcSchwefel06( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchwefel06 = { "Schwefel06", 2, -100.0, 100.0, 0.0,
-	&calcSchwefel06 };
+	&calcSchwefel06, NULL };
 
 static double calcChichinadze( const double* const x, const int N )
 {
@@ -771,7 +772,7 @@ static double calcChichinadze( const double* const x, const int N )
 }
 
 static const CTestFn TestFnChichinadze = { "Chichinadze", 2, -30.0, 30.0,
-	-42.9443870189910, &calcChichinadze };
+	-42.9443870189910, &calcChichinadze, NULL };
 
 static double calcEggHolder( const double* const x, const int N )
 {
@@ -780,7 +781,7 @@ static double calcEggHolder( const double* const x, const int N )
 }
 
 static const CTestFn TestFnEggHolder = { "EggHolder", 2, -512.0, 512.0,
-	-959.6406627208510, &calcEggHolder };
+	-959.6406627208510, &calcEggHolder, NULL };
 
 static double calcHolderTable1( const double* const x, const int N )
 {
@@ -789,7 +790,7 @@ static double calcHolderTable1( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHolderTable1 = { "HolderTable1", 2, -10.0, 10.0,
-	-26.9203355555189, &calcHolderTable1 };
+	-26.9203355555189, &calcHolderTable1, NULL };
 
 static double calcHolderTable2( const double* const x, const int N )
 {
@@ -798,7 +799,7 @@ static double calcHolderTable2( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHolderTable2 = { "HolderTable2", 2, -10.0, 10.0,
-	-19.2085025678868, &calcHolderTable2 };
+	-19.2085025678868, &calcHolderTable2, NULL };
 
 static double calcComplexHolderTable( const double* const x, const int N )
 {
@@ -822,7 +823,7 @@ static double calcComplexHolderTable( const double* const x, const int N )
 }
 
 static const CTestFn TestFnComplexHolderTable = { "ComplexHolderTable", 2,
-	-10.0, 10.0, -21.9210396635469, &calcComplexHolderTable };
+	-10.0, 10.0, -21.9210396635469, &calcComplexHolderTable, NULL };
 
 static double calcPowellSum( const double* const x, const int N )
 {
@@ -838,7 +839,7 @@ static double calcPowellSum( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPowellSum = { "PowellSum", 0, -1.0, 1.0, 0.0,
-	&calcPowellSum };
+	&calcPowellSum, NULL };
 
 static double calcPrice01( const double* const x, const int N )
 {
@@ -846,7 +847,7 @@ static double calcPrice01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPrice01 = { "Price01", 2, -500.0, 500.0, 0.0,
-	&calcPrice01 };
+	&calcPrice01, NULL };
 
 static double calcPrice03( const double* const x, const int N )
 {
@@ -854,7 +855,7 @@ static double calcPrice03( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPrice03 = { "Price03", 2, -50.0, 50.0, 0.0,
-	&calcPrice03 };
+	&calcPrice03, NULL };
 
 static double calcPrice04( const double* const x, const int N )
 {
@@ -863,7 +864,7 @@ static double calcPrice04( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPrice04 = { "Price04", 2, -50.0, 50.0, 0.0,
-	&calcPrice04 };
+	&calcPrice04, NULL };
 
 static double calcBrown( const double* const x, const int N )
 {
@@ -879,7 +880,8 @@ static double calcBrown( const double* const x, const int N )
 	return( s );
 }
 
-static const CTestFn TestFnBrown = { "Brown", 0, -4.0, 4.0, 0.0, &calcBrown };
+static const CTestFn TestFnBrown = { "Brown", 0, -4.0, 4.0, 0.0,
+	&calcBrown, NULL };
 
 static double calcBrent( const double* const x, const int N )
 {
@@ -887,7 +889,7 @@ static double calcBrent( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBrent = { "Brent", 2, -10.0, 10.0, 0.0,
-	&calcBrent };
+	&calcBrent, NULL };
 
 static double calcLevy05( const double* const x, const int N )
 {
@@ -905,7 +907,7 @@ static double calcLevy05( const double* const x, const int N )
 }
 
 static const CTestFn TestFnLevy05 = { "Levy05", 2, -10.0, 10.0,
-	-176.1375780016295, &calcLevy05 };
+	-176.1375780016295, &calcLevy05, NULL };
 
 static double calcDamavandi( const double* const x, const int N )
 {
@@ -915,7 +917,7 @@ static double calcDamavandi( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDamavandi = { "Damavandi", 2, 0.0, 14.0, 0.0,
-	&calcDamavandi };
+	&calcDamavandi, NULL };
 
 static double calcPowerSum( const double* const x, const int N )
 {
@@ -940,7 +942,7 @@ static double calcPowerSum( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPowerSum = { "PowerSum", 4, 0.0, 4.0, 0.0,
-	&calcPowerSum };
+	&calcPowerSum, NULL };
 
 static double calcPowell( const double* const x, const int N )
 {
@@ -949,7 +951,7 @@ static double calcPowell( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPowell = { "Powell", 4, -4.0, 5.0, 0.0,
-	&calcPowell };
+	&calcPowell, NULL };
 
 static double calcPowellBadlyScaled( const double* const x, const int N )
 {
@@ -957,7 +959,7 @@ static double calcPowellBadlyScaled( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPowellBadlyScaled = { "PowellBadlyScaled", 2,
-	-10.0, 10.0, 0.0, &calcPowellBadlyScaled };
+	-10.0, 10.0, 0.0, &calcPowellBadlyScaled, NULL };
 
 static double calcPaviani( const double* const x, const int N )
 {
@@ -975,7 +977,7 @@ static double calcPaviani( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPaviani = { "Paviani", 10, 2.001, 9.999,
-	-45.7784697074463, &calcPaviani };
+	-45.7784697074463, &calcPaviani, NULL };
 
 static double calcDolan( const double* const x, const int N )
 {
@@ -984,7 +986,7 @@ static double calcDolan( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDolan = { "Dolan", 5, -100.0, 100.0,
-	-529.8714387324576, &calcDolan };
+	-529.8714387324576, &calcDolan, NULL };
 
 static double calcTrid6( const double* const x, const int N )
 {
@@ -1006,7 +1008,7 @@ static double calcTrid6( const double* const x, const int N )
 }
 
 static const CTestFn TestFnTrid6 = { "Trid6", 6, -20.0, 20.0, -50.0,
-	&calcTrid6 };
+	&calcTrid6, NULL };
 
 static double calcTrid10( const double* const x, const int N )
 {
@@ -1028,7 +1030,7 @@ static double calcTrid10( const double* const x, const int N )
 }
 
 static const CTestFn TestFnTrid10 = { "Trid10", 10, -100.0, 100.0, -210.0,
-	&calcTrid10 };
+	&calcTrid10, NULL };
 
 static double calcMieleCantrell( const double* const x, const int N )
 {
@@ -1037,7 +1039,7 @@ static double calcMieleCantrell( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMieleCantrell = { "MieleCantrell", 4, -1.0, 1.0,
-	0.0, &calcMieleCantrell };
+	0.0, &calcMieleCantrell, NULL };
 
 static double calcColville( const double* const x, const int N )
 {
@@ -1047,14 +1049,15 @@ static double calcColville( const double* const x, const int N )
 }
 
 static const CTestFn TestFnColville = { "Colville", 4, -10.0, 10.0, 0.0,
-	&calcColville };
+	&calcColville, NULL };
 
 static double calcWolfe( const double* const x, const int N )
 {
 	return( 4.0/3.0*pow(sqr(x[0])+sqr(x[1])-x[0]*x[1],0.75)+x[2] );
 }
 
-static const CTestFn TestFnWolfe = { "Wolfe", 3, 0.0, 2.0, 0.0, &calcWolfe };
+static const CTestFn TestFnWolfe = { "Wolfe", 3, 0.0, 2.0, 0.0,
+	&calcWolfe, NULL };
 
 static double calcAlpine1( const double* const x, const int N )
 {
@@ -1070,7 +1073,7 @@ static double calcAlpine1( const double* const x, const int N )
 }
 
 static const CTestFn TestFnAlpine1 = { "Alpine1", 0, -10.0, 10.0, 0.0,
-	&calcAlpine1 };
+	&calcAlpine1, NULL };
 
 static double calcBartelsConn( const double* const x, const int N )
 {
@@ -1079,7 +1082,7 @@ static double calcBartelsConn( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBartelsConn = { "BartelsConn", 2, -500.0, 500.0,
-	1.0, &calcBartelsConn };
+	1.0, &calcBartelsConn, NULL };
 
 static double calcSixHumpCamel( const double* const x, const int N )
 {
@@ -1088,7 +1091,7 @@ static double calcSixHumpCamel( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSixHumpCamel = { "SixHumpCamel", 2, -5.0, 5.0,
-	-1.0316284534899, &calcSixHumpCamel };
+	-1.0316284534899, &calcSixHumpCamel, NULL };
 
 static double calcChenV( const double* const x, const int N )
 {
@@ -1099,7 +1102,7 @@ static double calcChenV( const double* const x, const int N )
 }
 
 static const CTestFn TestFnChenV = { "ChenV", 2, -500.0, 500.0,
-	-2000.003999984000, &calcChenV };
+	-2000.003999984000, &calcChenV, NULL };
 
 static double calcChenBird( const double* const x, const int N )
 {
@@ -1109,7 +1112,7 @@ static double calcChenBird( const double* const x, const int N )
 }
 
 static const CTestFn TestFnChenBird = { "ChenBird", 2, -500.0, 500.0, -2000.0,
-	&calcChenBird };
+	&calcChenBird, NULL };
 
 static double calcChungReynolds( const double* const x, const int N )
 {
@@ -1125,14 +1128,15 @@ static double calcChungReynolds( const double* const x, const int N )
 }
 
 static const CTestFn TestFnChungReynolds = { "ChungReynolds", 0,
-	-100.0, 100.0, 0.0, &calcChungReynolds };
+	-100.0, 100.0, 0.0, &calcChungReynolds, NULL };
 
 static double calcCube( const double* const x, const int N )
 {
 	return( 100.0*pow(x[1]-pow(x[0],3.0),2.0)+pow(1.0-x[0],2.0) );
 }
 
-static const CTestFn TestFnCube = { "Cube", 2, -10.0, 10.0, 0.0, &calcCube };
+static const CTestFn TestFnCube = { "Cube", 2, -10.0, 10.0, 0.0,
+	&calcCube, NULL };
 
 static double calcDeckkersAarts( const double* const x, const int N )
 {
@@ -1141,7 +1145,7 @@ static double calcDeckkersAarts( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDeckkersAarts = { "DeckkersAarts", 2, -20.0, 20.0,
-	-24776.5183423176930, &calcDeckkersAarts };
+	-24776.5183423176930, &calcDeckkersAarts, NULL };
 
 static double calcEggCrate( const double* const x, const int N )
 {
@@ -1149,7 +1153,7 @@ static double calcEggCrate( const double* const x, const int N )
 }
 
 static const CTestFn TestFnEggCrate = { "EggCrate", 2, -5.0, 5.0, 0.0,
-	&calcEggCrate };
+	&calcEggCrate, NULL };
 
 static double calcKeane( const double* const x, const int N )
 {
@@ -1158,14 +1162,15 @@ static double calcKeane( const double* const x, const int N )
 }
 
 static const CTestFn TestFnKeane = { "Keane", 2, 0.00001, 10.0,
-	-0.6736675209904, &calcKeane };
+	-0.6736675209904, &calcKeane, NULL };
 
 static double calcLeon( const double* const x, const int N )
 {
 	return( 100.0*sqr(x[1]-pow(x[0],3.0))+sqr(1.0-x[0]) );
 }
 
-static const CTestFn TestFnLeon = { "Leon", 2, 0.0, 10.0, 0.0, &calcLeon };
+static const CTestFn TestFnLeon = { "Leon", 2, 0.0, 10.0, 0.0,
+	&calcLeon, NULL };
 
 static double calcQing( const double* const x, const int N )
 {
@@ -1181,7 +1186,7 @@ static double calcQing( const double* const x, const int N )
 }
 
 static const CTestFn TestFnQing = { "Qing", 0, -500.0, 500.0, 0.0,
-	&calcQing };
+	&calcQing, NULL };
 
 static double calcSchwefel220( const double* const x, const int N )
 {
@@ -1197,7 +1202,7 @@ static double calcSchwefel220( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchwefel220 = { "Schwefel220", 0, -100.0, 100.0,
-	0.0, &calcSchwefel220 };
+	0.0, &calcSchwefel220, NULL };
 
 static double calcSchwefel221( const double* const x, const int N )
 {
@@ -1216,7 +1221,7 @@ static double calcSchwefel221( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchwefel221 = { "Schwefel221", 0, -100.0, 100.0,
-	0.0, &calcSchwefel221 };
+	0.0, &calcSchwefel221, NULL };
 
 static double calcSchwefel222( const double* const x, const int N )
 {
@@ -1234,7 +1239,7 @@ static double calcSchwefel222( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchwefel222 = { "Schwefel222", 0, -100.0, 100.0,
-	0.0, &calcSchwefel222 };
+	0.0, &calcSchwefel222, NULL };
 
 static double calcSchwefel225( const double* const x, const int N )
 {
@@ -1250,7 +1255,7 @@ static double calcSchwefel225( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchwefel225 = { "Schwefel225", 0, 0.0, 10.0,
-	0.0, &calcSchwefel225 };
+	0.0, &calcSchwefel225, NULL };
 
 static double calcTestTubeHolder( const double* const x, const int N )
 {
@@ -1259,7 +1264,7 @@ static double calcTestTubeHolder( const double* const x, const int N )
 }
 
 static const CTestFn TestFnTestTubeHolder = { "TestTubeHolder", 2,
-	-10.0, 10.0, -10.8723001056227, &calcTestTubeHolder };
+	-10.0, 10.0, -10.8723001056227, &calcTestTubeHolder, NULL };
 
 static double calcWayburnSeader02( const double* const x, const int N )
 {
@@ -1268,7 +1273,7 @@ static double calcWayburnSeader02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnWayburnSeader02 = { "WayburnSeader02", 2,
-	-500.0, 500.0, 0.0, &calcWayburnSeader02 };
+	-500.0, 500.0, 0.0, &calcWayburnSeader02, NULL };
 
 static double calcSawtoothxy( const double* const x, const int N )
 {
@@ -1282,7 +1287,7 @@ static double calcSawtoothxy( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSawtoothxy = { "Sawtoothxy", 2, -20.0, 20.0, 0.0,
-	&calcSawtoothxy };
+	&calcSawtoothxy, NULL };
 
 static double calcMishra04( const double* const x, const int N )
 {
@@ -1290,7 +1295,7 @@ static double calcMishra04( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra04 = { "Mishra04", 2, -10.00, 10.0,
-	-0.1994114689059, &calcMishra04 };
+	-0.1994114689059, &calcMishra04, NULL };
 
 static double calcZeroSum( const double* const x, const int N )
 {
@@ -1306,7 +1311,7 @@ static double calcZeroSum( const double* const x, const int N )
 }
 
 static const CTestFn TestFnZeroSum = { "ZeroSum", 0, -10.0, 10.0, 0.0,
-	&calcZeroSum };
+	&calcZeroSum, NULL };
 
 static double calcSchwefel( const double* const x, const int N )
 {
@@ -1322,7 +1327,7 @@ static double calcSchwefel( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchwefel = { "Schwefel", 0, -500.0, 500.0,
-	0.0, &calcSchwefel };
+	0.0, &calcSchwefel, NULL };
 
 static double calcAdjiman( const double* const x, const int N )
 {
@@ -1480,7 +1485,7 @@ static double calcHimmelblau( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHimmelblau = { "Himmelblau", 2, -6.0, 6.0, 0.0,
-	&calcHimmelblau };
+	&calcHimmelblau, NULL };
 
 static double calcMichalewicz( const double* const x, const int N )
 {
@@ -1497,7 +1502,7 @@ static double calcMichalewicz( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMichalewicz = { "Michalewicz", 2, 0.0, M_PI,
-	-1.8013034100986, &calcMichalewicz };
+	-1.8013034100986, &calcMichalewicz, NULL };
 
 static double calcBoxBettsExpQuadSum( const double* const x, const int N )
 {
@@ -1537,7 +1542,7 @@ static double calcPowellQuartic( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPowellQuartic = { "PowellQuartic", 4, -10.0, 10.0,
-	0.0, &calcPowellQuartic };
+	0.0, &calcPowellQuartic, NULL };
 
 static double calcMishra05( const double* const x, const int N )
 {
@@ -1548,7 +1553,7 @@ static double calcMishra05( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra05 = { "Mishra05", 2, -10.0, 10.0,
-	-1.0198295199309, &calcMishra05 };
+	-1.0198295199309, &calcMishra05, NULL };
 
 static double calcMishra06( const double* const x, const int N )
 {
@@ -1560,7 +1565,7 @@ static double calcMishra06( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra06 = { "Mishra06", 2, -10.0, 10.0,
-	-2.2839498384748, &calcMishra06 };
+	-2.2839498384748, &calcMishra06, NULL };
 
 static double calcMishra09( const double* const x, const int N )
 {
@@ -1575,7 +1580,7 @@ static double calcMishra09( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra09 = { "Mishra09", 3, -10.0, 10.0, 0.0,
-	&calcMishra09 };
+	&calcMishra09, NULL };
 
 static double calcZirilli( const double* const x, const int N )
 {
@@ -1583,7 +1588,7 @@ static double calcZirilli( const double* const x, const int N )
 }
 
 static const CTestFn TestFnZirilli = { "Zirilli", 2, -10.0, 10.0,
-	-0.3523860738000, &calcZirilli };
+	-0.3523860738000, &calcZirilli, NULL };
 
 static double calcCamel( const double* const x, const int N )
 {
@@ -1591,7 +1596,7 @@ static double calcCamel( const double* const x, const int N )
 }
 
 static const CTestFn TestFnCamel = { "Camel", 2, -2.0, 2.0, -7.0625000000000,
-	&calcCamel };
+	&calcCamel, NULL };
 
 static double calcComplex( const double* const x, const int N )
 {
@@ -1600,7 +1605,7 @@ static double calcComplex( const double* const x, const int N )
 }
 
 static const CTestFn TestFnComplex = { "Complex", 2, -2.0, 2.0, 0.0,
-	&calcComplex };
+	&calcComplex, NULL };
 
 static double calcDavis( const double* const x, const int N )
 {
@@ -1609,7 +1614,7 @@ static double calcDavis( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDavis = { "Davis", 2, -100.0, 100.0, 0.0,
-	&calcDavis };
+	&calcDavis, NULL };
 
 static double calcDownhillStep( const double* const x, const int N )
 {
@@ -1617,7 +1622,7 @@ static double calcDownhillStep( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDownhillStep = { "DownhillStep", 2, -10.0, 10.0,
-	9.0, &calcDownhillStep };
+	9.0, &calcDownhillStep, NULL };
 
 static double calcEngvall( const double* const x, const int N )
 {
@@ -1626,7 +1631,7 @@ static double calcEngvall( const double* const x, const int N )
 }
 
 static const CTestFn TestFnEngvall = { "Engvall", 2, -2000.0, 2000.0, 0.0,
-	&calcEngvall };
+	&calcEngvall, NULL };
 
 static double calcCrossLegTable( const double* const x, const int N )
 {
@@ -1635,7 +1640,7 @@ static double calcCrossLegTable( const double* const x, const int N )
 }
 
 static const CTestFn TestFnCrossLegTable = { "CrossLegTable", 2, -10.0, 10.0,
-	-1.0, &calcCrossLegTable };
+	-1.0, &calcCrossLegTable, NULL };
 
 static double calcCrownedCross( const double* const x, const int N )
 {
@@ -1644,7 +1649,7 @@ static double calcCrownedCross( const double* const x, const int N )
 }
 
 static const CTestFn TestFnCrownedCross = { "CrownedCross", 2, -10.0, 10.0,
-	0.0001, &calcCrownedCross };
+	0.0001, &calcCrownedCross, NULL };
 
 static double calcGramacyLee02( const double* const x, const int N )
 {
@@ -1652,7 +1657,7 @@ static double calcGramacyLee02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnGramacyLee02 = { "GramacyLee02", 2, -1.5, 1.5,
-	-0.4288819424804, &calcGramacyLee02 };
+	-0.4288819424804, &calcGramacyLee02, NULL };
 
 static double calcGramacyLee03( const double* const x, const int N )
 {
@@ -1666,7 +1671,7 @@ static double calcGramacyLee03( const double* const x, const int N )
 }
 
 static const CTestFn TestFnGramacyLee03 = { "GramacyLee03", 2, -1.5, 1.5,
-	-1.1268717457863, &calcGramacyLee03 };
+	-1.1268717457863, &calcGramacyLee03, NULL };
 
 static double calcGiunta( const double* const x, const int N )
 {
@@ -1683,7 +1688,7 @@ static double calcGiunta( const double* const x, const int N )
 }
 
 static const CTestFn TestFnGiunta = { "Giunta", 2, -1.0, 1.0, 0.0644704205369,
-	&calcGiunta };
+	&calcGiunta, NULL };
 
 static double calcHosaki( const double* const x, const int N )
 {
@@ -1692,7 +1697,7 @@ static double calcHosaki( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHosaki = { "Hosaki", 2, 0.0, 10.0,
-	-2.3458115761013, &calcHosaki };
+	-2.3458115761013, &calcHosaki, NULL };
 
 static double calcKearfott( const double* const x, const int N )
 {
@@ -1700,7 +1705,7 @@ static double calcKearfott( const double* const x, const int N )
 }
 
 static const CTestFn TestFnKearfott = { "Kearfott", 2, -3.0, 4.0, 0.0,
-	&calcKearfott };
+	&calcKearfott, NULL };
 
 static double calcJennrichSampson( const double* const x, const int N )
 {
@@ -1716,7 +1721,7 @@ static double calcJennrichSampson( const double* const x, const int N )
 }
 
 static const CTestFn TestFnJennrichSampson = { "JennrichSampson", 2,
-	-1.0, 1.0, 124.3621823556148, &calcJennrichSampson };
+	-1.0, 1.0, 124.3621823556148, &calcJennrichSampson, NULL };
 
 static double calcTsoulos( const double* const x, const int N )
 {
@@ -1724,7 +1729,7 @@ static double calcTsoulos( const double* const x, const int N )
 }
 
 static const CTestFn TestFnTsoulos = { "Tsoulos", 2, -1.0, 1.0, -2.0,
-	&calcTsoulos };
+	&calcTsoulos, NULL };
 
 static double calcUrsemWaves( const double* const x, const int N )
 {
@@ -1790,7 +1795,7 @@ static double calcYaoLiu04( const double* const x, const int N )
 }
 
 static const CTestFn TestFnYaoLiu04 = { "YaoLiu04", 0, -10.0, 10.0, 0.0,
-	&calcYaoLiu04 };
+	&calcYaoLiu04, NULL };
 
 static double calcBentCigar( const double* const x, const int N )
 {
@@ -1806,7 +1811,7 @@ static double calcBentCigar( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBentCigar = { "BentCigar", 0, -100.0, 100.0, 0.0,
-	&calcBentCigar };
+	&calcBentCigar, NULL };
 
 static double calcCigar( const double* const x, const int N )
 {
@@ -1824,7 +1829,7 @@ static double calcCigar( const double* const x, const int N )
 }
 
 static const CTestFn TestFnCigar = { "Cigar", 0, -100.0, 100.0, 0.0,
-	&calcCigar };
+	&calcCigar, NULL };
 
 static double calcDeflCorrSpring( const double* const x, const int N )
 {
@@ -1842,7 +1847,7 @@ static double calcDeflCorrSpring( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDeflCorrSpring = { "DeflCorrSpring", 0,
-	0.0, 10.0, -1.0, &calcDeflCorrSpring };
+	0.0, 10.0, -1.0, &calcDeflCorrSpring, NULL };
 
 static double calcHolzman( const double* const x, const int N )
 {
@@ -1858,7 +1863,7 @@ static double calcHolzman( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHolzman = { "Holzman", 0, -10.0, 10.0, 0.0,
-	&calcHolzman };
+	&calcHolzman, NULL };
 
 static double calcHyperGrid( const double* const x, const int N )
 {
@@ -1876,7 +1881,7 @@ static double calcHyperGrid( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHyperGrid = { "HyperGrid", 0, 0.0, 1.0, -1.0,
-	&calcHyperGrid };
+	&calcHyperGrid, NULL };
 
 static double calcQuintic( const double* const x, const int N )
 {
@@ -1893,7 +1898,7 @@ static double calcQuintic( const double* const x, const int N )
 }
 
 static const CTestFn TestFnQuintic = { "Quintic", 0, -10.0, 10.0, 0.0,
-	&calcQuintic };
+	&calcQuintic, NULL };
 
 static double calcVincent( const double* const x, const int N )
 {
@@ -1909,7 +1914,7 @@ static double calcVincent( const double* const x, const int N )
 }
 
 static const CTestFn TestFnVincent = { "Vincent", 0, 0.25, 10.0, -1.0,
-	&calcVincent };
+	&calcVincent, NULL };
 
 static double calcStep01( const double* const x, const int N )
 {
@@ -1925,7 +1930,7 @@ static double calcStep01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnStep01 = { "Step01", 0, -100, 100.0, 0.0,
-	&calcStep01 };
+	&calcStep01, NULL };
 
 static double calcStep02( const double* const x, const int N )
 {
@@ -1941,7 +1946,7 @@ static double calcStep02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnStep02 = { "Step02", 0, -100, 100.0, 0.0,
-	&calcStep02 };
+	&calcStep02, NULL };
 
 static double calcStep03( const double* const x, const int N )
 {
@@ -1957,7 +1962,7 @@ static double calcStep03( const double* const x, const int N )
 }
 
 static const CTestFn TestFnStep03 = { "Step03", 0, -100, 100.0, 0.0,
-	&calcStep03 };
+	&calcStep03, NULL };
 
 static double calcHelicalValley( const double* const x, const int N )
 {
@@ -1977,7 +1982,7 @@ static double calcHelicalValley( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHelicalValley = { "HelicalValley", 3,
-	-10.0, 10.0, 0.0, &calcHelicalValley };
+	-10.0, 10.0, 0.0, &calcHelicalValley, NULL };
 
 static double calcDixonPrice( const double* const x, const int N )
 {
@@ -1993,7 +1998,7 @@ static double calcDixonPrice( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDixonPrice = { "DixonPrice", 0, -10.0, 10.0, 0.0,
-	&calcDixonPrice };
+	&calcDixonPrice, NULL };
 
 static double calcHartman3( const double* const x, const int N )
 {
@@ -2034,7 +2039,7 @@ static double calcHartman3( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHartman3 = { "Hartman3", 3, 0.0, 1.0,
-	-3.8627797873327, &calcHartman3 };
+	-3.8627797873327, &calcHartman3, NULL };
 
 static double calcHartman6( const double* const x, const int N )
 {
@@ -2075,7 +2080,7 @@ static double calcHartman6( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHartman6 = { "Hartman6", 6, 0.0, 1.0,
-	-3.3223680114155, &calcHartman6 };
+	-3.3223680114155, &calcHartman6, NULL };
 
 static double calcDeVilliersGlasser02( const double* const x, const int N )
 {
@@ -2096,7 +2101,7 @@ static double calcDeVilliersGlasser02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDeVilliersGlasser02 = { "DeVilliersGlasser02", 5,
-	1.0, 60.0, 0.0, &calcDeVilliersGlasser02 };
+	1.0, 60.0, 0.0, &calcDeVilliersGlasser02, NULL };
 
 static double calcBuecheRastrigin( const double* const x, const int N )
 {
@@ -2114,7 +2119,7 @@ static double calcBuecheRastrigin( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBuecheRastrigin = { "BuecheRastrigin", 0,
-	-5.0, 5.0, 0.0, &calcBuecheRastrigin };
+	-5.0, 5.0, 0.0, &calcBuecheRastrigin, NULL };
 
 static double calcDifferentPowers( const double* const x, const int N )
 {
@@ -2131,7 +2136,7 @@ static double calcDifferentPowers( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDifferentPowers = { "DifferentPowers", 0,
-	-5.0, 5.0, 0.0, &calcDifferentPowers };
+	-5.0, 5.0, 0.0, &calcDifferentPowers, NULL };
 
 static double calcDiscus( const double* const x, const int N )
 {
@@ -2148,7 +2153,7 @@ static double calcDiscus( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDiscus = { "Discus", 0, -5.0, 5.0, 0.0,
-	&calcDiscus };
+	&calcDiscus, NULL };
 
 static double calcEllipsoid( const double* const x, const int N )
 {
@@ -2166,7 +2171,7 @@ static double calcEllipsoid( const double* const x, const int N )
 }
 
 static const CTestFn TestFnEllipsoid = { "Ellipsoid", 0, -5.0, 5.0, 0.0,
-	&calcEllipsoid };
+	&calcEllipsoid, NULL };
 
 static double calcSchaffer07( const double* const x, const int N )
 {
@@ -2183,7 +2188,7 @@ static double calcSchaffer07( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchaffer07 = { "Schaffer07", 0, -5.0, 5.0, 0.0,
-	&calcSchaffer07 };
+	&calcSchaffer07, NULL };
 
 static double calcKatsuura( const double* const x, const int N )
 {
@@ -2208,7 +2213,7 @@ static double calcKatsuura( const double* const x, const int N )
 }
 
 static const CTestFn TestFnKatsuura = { "Katsuura", 0, 0.0, 100.0, 1.0,
-	&calcKatsuura };
+	&calcKatsuura, NULL };
 
 static double calcRotatedEllipse01( const double* const x, const int N )
 {
@@ -2216,7 +2221,7 @@ static double calcRotatedEllipse01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnRotatedEllipse01 = { "RotatedEllipse01", 2,
-	-500.0, 500.0, 0.0, &calcRotatedEllipse01 };
+	-500.0, 500.0, 0.0, &calcRotatedEllipse01, NULL };
 
 static double calcRotatedEllipse02( const double* const x, const int N )
 {
@@ -2224,7 +2229,7 @@ static double calcRotatedEllipse02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnRotatedEllipse02 = { "RotatedEllipse02", 2,
-	-500.0, 500.0, 0.0, &calcRotatedEllipse02 };
+	-500.0, 500.0, 0.0, &calcRotatedEllipse02, NULL };
 
 static double calcTrigonometric01( const double* const x, const int N )
 {
@@ -2246,7 +2251,7 @@ static double calcTrigonometric01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnTrigonometric01 = { "Trigonometric01", 0,
-	0.0, M_PI, 0.0, &calcTrigonometric01 };
+	0.0, M_PI, 0.0, &calcTrigonometric01, NULL };
 
 static double calcExponential( const double* const x, const int N )
 {
@@ -2262,7 +2267,7 @@ static double calcExponential( const double* const x, const int N )
 }
 
 static const CTestFn TestFnExponential = { "Exponential", 0,
-	-1.0, 1.0, -1.0, &calcExponential };
+	-1.0, 1.0, -1.0, &calcExponential, NULL };
 
 static double calcUrsem01( const double* const x, const int N )
 {
@@ -2289,7 +2294,7 @@ static double calcQuadratic( const double* const x, const int N )
 }
 
 static const CTestFn TestFnQuadratic = { "Quadratic", 2,
-	-10.0, 10.0, -3873.7241821862713, &calcQuadratic };
+	-10.0, 10.0, -3873.7241821862713, &calcQuadratic, NULL };
 
 static double calcSchwefel01( const double* const x, const int N )
 {
@@ -2305,7 +2310,7 @@ static double calcSchwefel01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchwefel01 = { "Schwefel01", 0, -100.0, 100.0, 0.0,
-	&calcSchwefel01 };
+	&calcSchwefel01, NULL };
 
 static double calcSchwefel02( const double* const x, const int N )
 {
@@ -2329,7 +2334,7 @@ static double calcSchwefel02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchwefel02 = { "Schwefel02", 0, -100.0, 100.0, 0.0,
-	&calcSchwefel02 };
+	&calcSchwefel02, NULL };
 
 static double calcSchwefel04( const double* const x, const int N )
 {
@@ -2345,7 +2350,7 @@ static double calcSchwefel04( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchwefel04 = { "Schwefel04", 0, 0.0, 10.0, 0.0,
-	&calcSchwefel04 };
+	&calcSchwefel04, NULL };
 
 static double calcSchwefel236( const double* const x, const int N )
 {
@@ -2353,7 +2358,7 @@ static double calcSchwefel236( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchwefel236 = { "Schwefel236", 2, 0.0, 500.0,
-	-3456.0, &calcSchwefel236 };
+	-3456.0, &calcSchwefel236, NULL };
 
 static double calcShekel_inner( const double* const x, const int N,
 	const int m )
@@ -2400,7 +2405,7 @@ static double calcShekel05( const double* const x, const int N )
 }
 
 static const CTestFn TestFnShekel05 = { "Shekel05", 4, 0.0, 10.0,
-	-10.1531996790582, &calcShekel05 };
+	-10.1531996790582, &calcShekel05, NULL };
 
 static double calcShekel07( const double* const x, const int N )
 {
@@ -2408,7 +2413,7 @@ static double calcShekel07( const double* const x, const int N )
 }
 
 static const CTestFn TestFnShekel07 = { "Shekel07", 4, 0.0, 10.0,
-	-10.4029153367777, &calcShekel07 };
+	-10.4029153367777, &calcShekel07, NULL };
 
 static double calcShekel10( const double* const x, const int N )
 {
@@ -2416,7 +2421,7 @@ static double calcShekel10( const double* const x, const int N )
 }
 
 static const CTestFn TestFnShekel10 = { "Shekel10", 4, 0.0, 10.0,
-	-10.5320872211865, &calcShekel10 };
+	-10.5320872211865, &calcShekel10, NULL };
 
 static double calcMishra01( const double* const x, const int N )
 {
@@ -2434,7 +2439,7 @@ static double calcMishra01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra01 = { "Mishra01", 2, 0.0, 1.0, 2.0,
-	&calcMishra01 };
+	&calcMishra01, NULL };
 
 static double calcMishra02( const double* const x, const int N )
 {
@@ -2452,7 +2457,7 @@ static double calcMishra02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra02 = { "Mishra02", 2, 0.0, 1.0, 2.0,
-	&calcMishra02 };
+	&calcMishra02, NULL };
 
 static double calcMishra07( const double* const x, const int N )
 {
@@ -2470,7 +2475,7 @@ static double calcMishra07( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra07 = { "Mishra07", 0, -10.0, 10.0, 0.0,
-	&calcMishra07 };
+	&calcMishra07, NULL };
 
 static double calcZettl( const double* const x, const int N )
 {
@@ -2478,7 +2483,7 @@ static double calcZettl( const double* const x, const int N )
 }
 
 static const CTestFn TestFnZettl = { "Zettl", 2, -1.0, 5.0,
-	-0.003791237220468656, &calcZettl };
+	-0.003791237220468656, &calcZettl, NULL };
 
 static double calcMultiModal( const double* const x, const int N )
 {
@@ -2496,7 +2501,7 @@ static double calcMultiModal( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMultiModal = { "MultiModal", 0, -10.0, 10.0, 0.0,
-	&calcMultiModal };
+	&calcMultiModal, NULL };
 
 static double calcParsopoulos( const double* const x, const int N )
 {
@@ -2504,7 +2509,7 @@ static double calcParsopoulos( const double* const x, const int N )
 }
 
 static const CTestFn TestFnParsopoulos = { "Parsopoulos", 2, -5.0, 5.0, 0.0,
-	&calcParsopoulos };
+	&calcParsopoulos, NULL };
 
 static double calcDeb01( const double* const x, const int N )
 {
@@ -2519,7 +2524,8 @@ static double calcDeb01( const double* const x, const int N )
 	return( -s/N );
 }
 
-static const CTestFn TestFnDeb01 = { "Deb01", 0, -1.0, 1.0, -1.0, &calcDeb01 };
+static const CTestFn TestFnDeb01 = { "Deb01", 0, -1.0, 1.0, -1.0,
+	&calcDeb01, NULL };
 
 static double calcDeb02( const double* const x, const int N )
 {
@@ -2534,7 +2540,8 @@ static double calcDeb02( const double* const x, const int N )
 	return( -s/N );
 }
 
-static const CTestFn TestFnDeb02 = { "Deb02", 0, 0.0, 1.0, -1.0, &calcDeb02 };
+static const CTestFn TestFnDeb02 = { "Deb02", 0, 0.0, 1.0, -1.0,
+	&calcDeb02, NULL };
 
 static double calcCarromTable( const double* const x, const int N )
 {
@@ -2543,7 +2550,7 @@ static double calcCarromTable( const double* const x, const int N )
 }
 
 static const CTestFn TestFnCarromTable = { "CarromTable", 2, -10.0, 10.0,
-	-24.1568155473913, &calcCarromTable };
+	-24.1568155473913, &calcCarromTable, NULL };
 
 static double calcLevy03( const double* const x, const int N )
 {
@@ -2566,7 +2573,7 @@ static double calcLevy03( const double* const x, const int N )
 }
 
 static const CTestFn TestFnLevy03 = { "Levy03", 0, -10.0, 10.0, 0.0,
-	&calcLevy03 };
+	&calcLevy03, NULL };
 
 static double calcGear( const double* const x, const int N )
 {
@@ -2574,7 +2581,7 @@ static double calcGear( const double* const x, const int N )
 }
 
 static const CTestFn TestFnGear = { "Gear", 4, 12.0, 60.0,
-	2.7e-12, &calcGear };
+	2.7e-12, &calcGear, NULL };
 
 static double calcStretchedV( const double* const x, const int N )
 {
@@ -2591,7 +2598,7 @@ static double calcStretchedV( const double* const x, const int N )
 }
 
 static const CTestFn TestFnStretchedV = { "StretchedV", 0, -10.0, 10.0, 0.0,
-	&calcStretchedV };
+	&calcStretchedV, NULL };
 
 static double calcUrsem04( const double* const x, const int N )
 {
@@ -2600,7 +2607,7 @@ static double calcUrsem04( const double* const x, const int N )
 }
 
 static const CTestFn TestFnUrsem04 = { "Ursem04", 2, -2.0, 2.0,
-	-1.5, &calcUrsem04 };
+	-1.5, &calcUrsem04, NULL };
 
 static double calcJudge( const double* const x, const int N )
 {
@@ -2628,7 +2635,7 @@ static double calcJudge( const double* const x, const int N )
 }
 
 static const CTestFn TestFnJudge = { "Judge", 2, -10.0, 10.0,
-	16.0817301329604, &calcJudge };
+	16.0817301329604, &calcJudge, NULL };
 
 static double calcWayburnSeader01( const double* const x, const int N )
 {
@@ -2636,7 +2643,7 @@ static double calcWayburnSeader01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnWayburnSeader01 = { "WayburnSeader01", 2,
-	-5.0, 5.0, 0.0, &calcWayburnSeader01 };
+	-5.0, 5.0, 0.0, &calcWayburnSeader01, NULL };
 
 static double calcWayburnSeader03( const double* const x, const int N )
 {
@@ -2645,7 +2652,7 @@ static double calcWayburnSeader03( const double* const x, const int N )
 }
 
 static const CTestFn TestFnWayburnSeader03 = { "WayburnSeader03", 2,
-	-500.0, 500.0, 19.1058797945680, &calcWayburnSeader03 };
+	-500.0, 500.0, 19.1058797945680, &calcWayburnSeader03, NULL };
 
 static double calcVenterSobiSobieski( const double* const x, const int N )
 {
@@ -2654,7 +2661,7 @@ static double calcVenterSobiSobieski( const double* const x, const int N )
 }
 
 static const CTestFn TestFnVenterSobiSobieski = { "VenterSobiSobieski", 2,
-	-50.0, 50.0, -400.0, &calcVenterSobiSobieski };
+	-50.0, 50.0, -400.0, &calcVenterSobiSobieski, NULL };
 
 static double calcElAttarVidyasDutta( const double* const x, const int N )
 {
@@ -2663,7 +2670,7 @@ static double calcElAttarVidyasDutta( const double* const x, const int N )
 }
 
 static const CTestFn TestFnElAttarVidyasDutta = { "ElAttarVidyasDutta", 2,
-	-100.0, 100.0, 1.7127803548622, &calcElAttarVidyasDutta };
+	-100.0, 100.0, 1.7127803548622, &calcElAttarVidyasDutta, NULL };
 
 static double calcModifiedRosenbrock( const double* const x, const int N )
 {
@@ -2672,7 +2679,7 @@ static double calcModifiedRosenbrock( const double* const x, const int N )
 }
 
 static const CTestFn TestFnModifiedRosenbrock = { "ModifiedRosenbrock", 2,
-	-2.0, 2.0, 34.0402431066405, &calcModifiedRosenbrock };
+	-2.0, 2.0, 34.0402431066405, &calcModifiedRosenbrock, NULL };
 
 static double calcStochastic( const double* const x, const int N )
 {
@@ -2688,7 +2695,7 @@ static double calcStochastic( const double* const x, const int N )
 }
 
 static const CTestFn TestFnStochastic = { "Stochastic", 0, -5.0, 5.0, 0.0,
-	&calcStochastic };
+	&calcStochastic, NULL };
 
 static double calcXinSheYang01( const double* const x, const int N )
 {
@@ -2704,7 +2711,7 @@ static double calcXinSheYang01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnXinSheYang01 = { "XinSheYang01", 0, -5.0, 5.0, 0.0,
-	&calcXinSheYang01 };
+	&calcXinSheYang01, NULL };
 
 static double calcKowalik( const double* const x, const int N )
 {
@@ -2727,7 +2734,7 @@ static double calcKowalik( const double* const x, const int N )
 }
 
 static const CTestFn TestFnKowalik = { "Kowalik", 4, -5.0, 5.0,
-	0.0003074859878, &calcKowalik };
+	0.0003074859878, &calcKowalik, NULL };
 
 static double calcTripod( const double* const x, const int N )
 {
@@ -2739,7 +2746,7 @@ static double calcTripod( const double* const x, const int N )
 }
 
 static const CTestFn TestFnTripod = { "Tripod", 2, -100.0, 100.0, 0.0,
-	&calcTripod };
+	&calcTripod, NULL };
 
 static double calcPathological( const double* const x, const int N )
 {
@@ -2756,7 +2763,7 @@ static double calcPathological( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPathological = { "Pathological", 0, -100.0, 100.0,
-	0.0, &calcPathological };
+	0.0, &calcPathological, NULL };
 
 static double calcYaoLiu09( const double* const x, const int N )
 {
@@ -2772,7 +2779,7 @@ static double calcYaoLiu09( const double* const x, const int N )
 }
 
 static const CTestFn TestFnYaoLiu09 = { "YaoLiu09", 0, -5.12, 5.12, 0.0,
-	&calcYaoLiu09 };
+	&calcYaoLiu09, NULL };
 
 static double calcUrsem03( const double* const x, const int N )
 {
@@ -2807,7 +2814,7 @@ static double calcMishra08( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra08 = { "Mishra08", 2, -10.0, 10.0, 0.0,
-	&calcMishra08 };
+	&calcMishra08, NULL };
 
 static double calcAluffiPentini( const double* const x, const int N )
 {
@@ -2815,7 +2822,7 @@ static double calcAluffiPentini( const double* const x, const int N )
 }
 
 static const CTestFn TestFnAluffiPentini = { "AluffiPentini", 2, -10.0, 10.0,
-	-0.3523860738000, &calcAluffiPentini };
+	-0.3523860738000, &calcAluffiPentini, NULL };
 
 static double calcBeckerLago( const double* const x, const int N )
 {
@@ -2823,7 +2830,7 @@ static double calcBeckerLago( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBeckerLago = { "BeckerLago", 2, -10.0, 10.0,
-	0.0, &calcBeckerLago };
+	0.0, &calcBeckerLago, NULL };
 
 static double calcCosineMixture( const double* const x, const int N )
 {
@@ -2874,7 +2881,7 @@ static double calcMeyerRoth( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMeyerRoth = { "MeyerRoth", 3, -20.0, 20.0,
-	0.0000435526619, &calcMeyerRoth };
+	0.0000435526619, &calcMeyerRoth, NULL };
 
 static double calcMultiGaussian( const double* const x, const int N )
 {
@@ -2894,7 +2901,7 @@ static double calcMultiGaussian( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMultiGaussian = { "MultiGaussian", 2, -2.0, 2.0,
-	-1.2969540459538, &calcMultiGaussian };
+	-1.2969540459538, &calcMultiGaussian, NULL };
 
 static double calcPeriodic( const double* const x, const int N )
 {
@@ -2902,7 +2909,7 @@ static double calcPeriodic( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPeriodic = { "Periodic", 2, -10.0, 10.0,
-	0.9, &calcPeriodic };
+	0.9, &calcPeriodic, NULL };
 
 static double calcLevyMontalvo2( const double* const x, const int N )
 {
@@ -2919,7 +2926,7 @@ static double calcLevyMontalvo2( const double* const x, const int N )
 }
 
 static const CTestFn TestFnLevyMontalvo2 = { "LevyMontalvo2", 0, -5.0, 5.0,
-	0.0, &calcLevyMontalvo2 };
+	0.0, &calcLevyMontalvo2, NULL };
 
 static double calcLangermann( const double* const x, const int N )
 {
@@ -2939,7 +2946,7 @@ static double calcLangermann( const double* const x, const int N )
 }
 
 static const CTestFn TestFnLangermann = { "Langermann", 2, 0.0, 10.0,
-	-5.1621261599640, &calcLangermann };
+	-5.1621261599640, &calcLangermann, NULL };
 
 static double calcLangerman5( const double* const x, const int N )
 {
@@ -2973,7 +2980,7 @@ static double calcLangerman5( const double* const x, const int N )
 }
 
 static const CTestFn TestFnLangerman5 = { "Langerman5", 5, 0.0, 10.0,
-	-0.9649999197933, &calcLangerman5 };
+	-0.9649999197933, &calcLangerman5, NULL };
 
 static double calcMishra10( const double* const x, const int N )
 {
@@ -2981,7 +2988,7 @@ static double calcMishra10( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra10 = { "Mishra10", 2, -10.0, 10.0,
-	0.0, &calcMishra10 };
+	0.0, &calcMishra10, NULL };
 
 static double calcMishra10b( const double* const x, const int N )
 {
@@ -2989,7 +2996,7 @@ static double calcMishra10b( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra10b = { "Mishra10b", 2, -10.0, 10.0,
-	0.0, &calcMishra10b };
+	0.0, &calcMishra10b, NULL };
 
 static double calcXor( const double* const x, const int N )
 {
@@ -3010,7 +3017,7 @@ static double calcXor( const double* const x, const int N )
 }
 
 static const CTestFn TestFnXor = { "Xor", 9, -1.0, 1.0,
-	0.9597587570120, &calcXor };
+	0.9597587570120, &calcXor, NULL };
 
 static double calcRana( const double* const x, const int N )
 {
@@ -3087,7 +3094,7 @@ static double calcPenalty01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPenalty01 = { "Penalty01", 0, -50.0, 50.0,
-	0.0, &calcPenalty01 };
+	0.0, &calcPenalty01, NULL };
 
 static double calcPenalty02( const double* const x, const int N )
 {
@@ -3111,7 +3118,7 @@ static double calcPenalty02( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPenalty02 = { "Penalty02", 0, -50.0, 50.0,
-	0.0, &calcPenalty02 };
+	0.0, &calcPenalty02, NULL };
 
 static double calcPeaks( const double* const x, const int N )
 {
@@ -3125,7 +3132,7 @@ static double calcPeaks( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPeaks = { "Peaks", 2, -4.0, 4.0,
-	-6.5511333328358, &calcPeaks };
+	-6.5511333328358, &calcPeaks, NULL };
 
 static double calcMullerBrown( const double* const x, const int N )
 {
@@ -3185,7 +3192,7 @@ static double calcCorana( const double* const x, const int N )
 }
 
 static const CTestFn TestFnCorana = { "Corana", 4, -100.0, 100.0,
-	0.0, &calcCorana };
+	0.0, &calcCorana, NULL };
 
 static double calcBrad( const double* const x, const int N )
 {
@@ -3245,7 +3252,7 @@ static double calcLennardJones( const double* const x, const int N )
 }
 
 static const CTestFn TestFnLennardJones = { "LennardJones", 6, -4.0, 4.0,
-	-1.0, &calcLennardJones };
+	-1.0, &calcLennardJones, NULL };
 
 static double calcOddSquare( const double* const x, const int N )
 {
@@ -3269,7 +3276,7 @@ static double calcOddSquare( const double* const x, const int N )
 }
 
 static const CTestFn TestFnOddSquare = { "OddSquare", 2, -5.0 * M_PI,
-	5.0 * M_PI, -1.0084672811395, &calcOddSquare };
+	5.0 * M_PI, -1.0084672811395, &calcOddSquare, NULL };
 
 static double calcMishra03( const double* const x, const int N )
 {
@@ -3281,7 +3288,7 @@ static double calcMishra03( const double* const x, const int N )
 }
 
 static const CTestFn TestFnMishra03 = { "Mishra03", 2, -10.00, 10.0,
-	-0.1846669934967, &calcMishra03 };
+	-0.1846669934967, &calcMishra03, NULL };
 
 static double calcPermFunction01( const double* const x, const int N )
 {
@@ -3392,7 +3399,7 @@ static double calcWatson( const double* const x, const int N )
 }
 
 static const CTestFn TestFnWatson = { "Watson", 6, -5.00, 5.0,
-	0.0022876700536, &calcWatson };
+	0.0022876700536, &calcWatson, NULL };
 
 static double calcDeVilliersGlasser01( const double* const x, const int N )
 {
@@ -3411,7 +3418,7 @@ static double calcDeVilliersGlasser01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDeVilliersGlasser01 = { "DeVilliersGlasser01", 4,
-	1.0, 100.0, 0.0, &calcDeVilliersGlasser01 };
+	1.0, 100.0, 0.0, &calcDeVilliersGlasser01, NULL };
 
 static double calcPinter( const double* const x, const int N )
 {
@@ -3454,7 +3461,7 @@ static double calcPinter( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPinter = { "Pinter", 0, -10.0, 10.0, 0.0,
-	&calcPinter };
+	&calcPinter, NULL };
 
 static double calcHansen( const double* const x, const int N )
 {
@@ -3472,7 +3479,7 @@ static double calcHansen( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHansen = { "Hansen", 2, -10.00, 10.0,
-	-176.5417931367458, &calcHansen };
+	-176.5417931367458, &calcHansen, NULL };
 
 static double calcSchmidtVetters( const double* const x, const int N )
 {
@@ -3484,7 +3491,7 @@ static double calcSchmidtVetters( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSchmidtVetters = { "SchmidtVetters", 3, 0.1, 10.0,
-	0.1939725224402, &calcSchmidtVetters };
+	0.1939725224402, &calcSchmidtVetters, NULL };
 
 static double penaltyLE( const double x )
 {
@@ -3498,7 +3505,7 @@ static double calcRosenbrockDisk( const double* const x, const int N )
 }
 
 static const CTestFn TestFnRosenbrockDisk = { "RosenbrockDisk", 2, -1.5, 1.5,
-	0.0, &calcRosenbrockDisk };
+	0.0, &calcRosenbrockDisk, NULL };
 
 static double calcHougen( const double* const x, const int N )
 {
@@ -3530,7 +3537,7 @@ static double calcHougen( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHougen = { "Hougen", 5, 0.01, 2.0,
-	0.2989009807534, &calcHougen };
+	0.2989009807534, &calcHougen, NULL };
 
 static double calcSineEnvelope( const double* const x, const int N )
 {
@@ -3547,7 +3554,7 @@ static double calcSineEnvelope( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSineEnvelope = { "SineEnvelope", 0, -100.0, 100.0,
-	0.0, &calcSineEnvelope };
+	0.0, &calcSineEnvelope, NULL };
 
 static double calcZagros( const double* const x, const int N )
 {
@@ -3562,7 +3569,7 @@ static double calcZagros( const double* const x, const int N )
 }
 
 static const CTestFn TestFnZagros = { "Zagros", 2, -10.0, 10.0, -2.0,
-	&calcZagros };
+	&calcZagros, NULL };
 
 static double calcPowellSingular( const double* const x, const int N )
 {
@@ -3579,7 +3586,7 @@ static double calcPowellSingular( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPowellSingular = { "PowellSingular", 4, -4.0,
-	5.0, 0.0, &calcPowellSingular };
+	5.0, 0.0, &calcPowellSingular, NULL };
 
 static double calcBiggsExp2( const double* const x, const int N )
 {
@@ -3597,7 +3604,7 @@ static double calcBiggsExp2( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBiggsExp2 = { "BiggsExp2", 2, 0.0, 20.0, 0.0,
-	&calcBiggsExp2 };
+	&calcBiggsExp2, NULL };
 
 static double calcBiggsExp3( const double* const x, const int N )
 {
@@ -3615,7 +3622,7 @@ static double calcBiggsExp3( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBiggsExp3 = { "BiggsExp3", 3, 0.0, 20.0, 0.0,
-	&calcBiggsExp3 };
+	&calcBiggsExp3, NULL };
 
 static double calcBiggsExp4( const double* const x, const int N )
 {
@@ -3633,7 +3640,7 @@ static double calcBiggsExp4( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBiggsExp4 = { "BiggsExp4", 4, 0.0, 20.0, 0.0,
-	&calcBiggsExp4 };
+	&calcBiggsExp4, NULL };
 
 static double calcBiggsExp5( const double* const x, const int N )
 {
@@ -3651,7 +3658,7 @@ static double calcBiggsExp5( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBiggsExp5 = { "BiggsExp5", 5, 0.0, 20.0, 0.0,
-	&calcBiggsExp5 };
+	&calcBiggsExp5, NULL };
 
 static double calcBiggsExp6( const double* const x, const int N )
 {
@@ -3669,7 +3676,7 @@ static double calcBiggsExp6( const double* const x, const int N )
 }
 
 static const CTestFn TestFnBiggsExp6 = { "BiggsExp6", 6, 0.0, 20.0, 0.0,
-	&calcBiggsExp6 };
+	&calcBiggsExp6, NULL };
 
 static double calcDeJong5( const double* const x, const int N )
 {
@@ -3690,7 +3697,7 @@ static double calcDeJong5( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDeJong5 = { "DeJong5", 2, -65.536, 65.536,
-	0.9980038377944, &calcDeJong5 };
+	0.9980038377944, &calcDeJong5, NULL };
 
 static double calcHilbert( const double* const x, const int N )
 {
@@ -3711,7 +3718,7 @@ static double calcHilbert( const double* const x, const int N )
 }
 
 static const CTestFn TestFnHilbert = { "Hilbert", 0, -100.0, 100.0,
-	0.0, &calcHilbert };
+	0.0, &calcHilbert, NULL };
 
 static double calcTridiagonalMatrix( const double* const x, const int N )
 {
@@ -3828,7 +3835,7 @@ static double calcRipple01( const double* const x, const int N )
 }
 
 static const CTestFn TestFnRipple01 = { "Ripple01", 2, 0.0, 1.0,
-	-204.8, &calcRipple01 };
+	-204.8, &calcRipple01, NULL };
 
 static double calcRipple25( const double* const x, const int N )
 {
@@ -3845,7 +3852,7 @@ static double calcRipple25( const double* const x, const int N )
 }
 
 static const CTestFn TestFnRipple25 = { "Ripple25", 2, 0.0, 1.0,
-	-147.8372378155503, &calcRipple25 };
+	-147.8372378155503, &calcRipple25, NULL };
 
 static double _Zh1( const double* const x )
 {
@@ -3898,7 +3905,7 @@ static double calcZimmerman( const double* const x, const int N )
 }
 
 static const CTestFn TestFnZimmerman = { "Zimmerman", 2, 0.0, 100.0,
-	0.0, &calcZimmerman };
+	0.0, &calcZimmerman, NULL };
 
 static double calcSargan( const double* const x, const int N )
 {
@@ -3922,7 +3929,7 @@ static double calcSargan( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSargan = { "Sargan", 2, -100.0, 100.0,
-	0.0, &calcSargan };
+	0.0, &calcSargan, NULL };
 
 static double calcDeceptive( const double* const x, const int N )
 {
@@ -3959,7 +3966,7 @@ static double calcDeceptive( const double* const x, const int N )
 }
 
 static const CTestFn TestFnDeceptive = { "Deceptive", 0, 0.0, 1.0,
-	-1.0, &calcDeceptive };
+	-1.0, &calcDeceptive, NULL };
 
 static double calcFriedman( const double* const x, const int N )
 {
@@ -3967,7 +3974,7 @@ static double calcFriedman( const double* const x, const int N )
 }
 
 static const CTestFn TestFnFriedman = { "Friedman", 5, -1.5, 1.5,
-	-32.5, &calcFriedman };
+	-32.5, &calcFriedman, NULL };
 
 static double calcOsborne( const double* const x, const int N )
 {
@@ -4016,7 +4023,7 @@ static double calcSimpleton( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSimpleton = { "Simpleton", 10, 1.0, 10.0,
-	-100000.0, &calcSimpleton };
+	-100000.0, &calcSimpleton, NULL };
 
 static double calcPriceTransistor( const double* const x, const int N )
 {
@@ -4048,7 +4055,7 @@ static double calcPriceTransistor( const double* const x, const int N )
 }
 
 static const CTestFn TestFnPriceTransistor = { "PriceTransistor", 9,
-	-10.0, 10.0, 0.0, &calcPriceTransistor };
+	-10.0, 10.0, 0.0, &calcPriceTransistor, NULL };
 
 static double calcF2( const double* const x, const int N )
 {
@@ -4070,7 +4077,8 @@ static double calcF2( const double* const x, const int N )
 	return( -s );
 }
 
-static const CTestFn TestFnF2 = { "F2", 0, 0.0, 1.0, -1.0, &calcF2 };
+static const CTestFn TestFnF2 = { "F2", 0, 0.0, 1.0, -1.0,
+	&calcF2, NULL };
 
 static double calcInvertedCosine( const double* const x, const int N )
 {
@@ -4123,7 +4131,7 @@ static double calcSinusoidal( const double* const x, const int N )
 }
 
 static const CTestFn TestFnSinusoidal = { "Sinusoidal", 0, -180.0, 180.0,
-	-(2.5+1.0), &calcSinusoidal };
+	-(2.5+1.0), &calcSinusoidal, NULL };
 
 static double calcLunacekBiRastrigin( const double* const x, const int N )
 {
@@ -4148,7 +4156,7 @@ static double calcLunacekBiRastrigin( const double* const x, const int N )
 }
 
 static const CTestFn TestFnLunacekBiRastrigin = { "LunacekBiRastrigin", 0,
-	-5.12, 5.12, 0.0, &calcLunacekBiRastrigin };
+	-5.12, 5.12, 0.0, &calcLunacekBiRastrigin, NULL };
 
 static double calcLunacekBiSphere( const double* const x, const int N )
 {
@@ -4171,7 +4179,7 @@ static double calcLunacekBiSphere( const double* const x, const int N )
 }
 
 static const CTestFn TestFnLunacekBiSphere = { "LunacekBiSphere", 0,
-	-10.0, 10.0, 0.0, &calcLunacekBiSphere };
+	-10.0, 10.0, 0.0, &calcLunacekBiSphere, NULL };
 
 static double calcSphericalSinc( const double* const x, const int N )
 {
@@ -4189,7 +4197,7 @@ static double calcSphericalSinc( const double* const x, const int N )
 }
 
 static const CTestFn TestSphericalSinc = { "SphericalSinc", 0,
-	-15.0, 15.0, -1.0, &calcSphericalSinc };
+	-15.0, 15.0, -1.0, &calcSphericalSinc, NULL };
 
 static double calcBiprime203( const double* const x, const int N )
 {
@@ -4205,7 +4213,7 @@ static double calcBiprime203( const double* const x, const int N )
 }
 
 static const CTestFn TestBiprime203 = { "Biprime203", 2, 0.0, 35.0, 0.0,
-	&calcBiprime203 };
+	&calcBiprime203, NULL };
 
 // Strategy optimization corpus based on N-dimensional functions.
 

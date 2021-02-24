@@ -3,15 +3,14 @@
 #ifndef CCMAES_INCLUDED
 #define CCMAES_INCLUDED
 
-#include <string.h>
-#include "../biternd.h"
+#include "../biteaux.h"
 #include "../cmaes/cmaes_interface.h"
 
 /**
  * Interface to CMA-ES optimization method.
  */
 
-class CCMAESOpt
+class CCMAESOpt : public CBiteOptInterface
 {
 public:
 	CCMAESOpt()
@@ -24,7 +23,7 @@ public:
 	{
 	}
 
-	~CCMAESOpt()
+	virtual ~CCMAESOpt()
 	{
 		if( IsInit )
 		{
@@ -32,6 +31,21 @@ public:
 		}
 
 		deleteBuffers();
+	}
+
+	virtual int getInitEvals() const
+	{
+		return( 0 );
+	}
+
+	virtual const double* getBestParams() const
+	{
+		return( BestParams );
+	}
+
+	virtual double getBestCost() const
+	{
+		return( BestCost );
 	}
 
 	/**
@@ -56,15 +70,6 @@ public:
 		MaxValues = new double[ ParamCount ];
 		BestParams = new double[ ParamCount ];
 		Params = new double[ ParamCount ];
-	}
-
-	/**
-	 * @return The number of initial objective function evaluations.
-	 */
-
-	int getInitEvals() const
-	{
-		return( 0 );
 	}
 
 	/**
@@ -175,50 +180,6 @@ public:
 
 		return( 0 );
 	}
-
-	/**
-	 * @return Best parameter vector.
-	 */
-
-	const double* getBestParams() const
-	{
-		return( BestParams );
-	}
-
-	/**
-	 * @return Cost of the best parameter vector.
-	 */
-
-	double getBestCost() const
-	{
-		return( BestCost );
-	}
-
-	/**
-	 * Virtual function that should fill minimal parameter value vector.
-	 *
-	 * @param[out] p Minimal value vector.
-	 */
-
-	virtual void getMinValues( double* const p ) const = 0;
-
-	/**
-	 * Virtual function that should fill maximal parameter value vector.
-	 *
-	 * @param[out] p Maximal value vector.
-	 */
-
-	virtual void getMaxValues( double* const p ) const = 0;
-
-	/**
-	 * Virtual function (objective function) that should calculate parameter
-	 * vector's optimization cost.
-	 *
-	 * @param p Parameter vector to evaluate.
-	 * @return Optimized cost.
-	 */
-
-	virtual double optcost( const double* const p ) = 0;
 
 protected:
 	int ParamCount; ///< The total number of internal parameter values in use.

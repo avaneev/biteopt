@@ -4,13 +4,13 @@
 #define CNMP_INCLUDED
 
 #include <string.h>
-#include "biternd.h"
+#include "../biteaux.h"
 
 /**
  * Sequential Nelder-Mead simplex method with "Z" parameter improvement.
  */
 
-class CNelderMeadPlusOpt
+class CNelderMeadPlusOpt : public CBiteOptInterface
 {
 public:
 	CNelderMeadPlusOpt()
@@ -28,9 +28,24 @@ public:
 	{
 	}
 
-	~CNelderMeadPlusOpt()
+	virtual ~CNelderMeadPlusOpt()
 	{
 		deleteBuffers();
+	}
+
+	virtual int getInitEvals() const
+	{
+		return( M );
+	}
+
+	virtual const double* getBestParams() const
+	{
+		return( BestParams );
+	}
+
+	virtual double getBestCost() const
+	{
+		return( BestCost );
 	}
 
 	/**
@@ -71,15 +86,6 @@ public:
 		{
 			x[ j ] = xbuf + j * N;
 		}
-	}
-
-	/**
-	 * @return The number of initial objective function evaluations.
-	 */
-
-	int getInitEvals() const
-	{
-		return( M );
 	}
 
 	/**
@@ -165,10 +171,15 @@ public:
 	 * objective function evaluation.
 	 *
 	 * @param rnd Random number generator.
+	 * @param OutCost If not NULL, pointer to variable that receives cost
+	 * of the newly-evaluated solution.
+	 * @param OutParams If not NULL, pointer to array that receives
+	 * newly-evaluated parameter vector, in normalized scale.
 	 * @return The number of non-improving iterations so far.
 	 */
 
-	int optimize( CBiteRnd& rnd )
+	int optimize( CBiteRnd& rnd, double* OutCost = NULL,
+		double* OutParams = NULL )
 	{
 		StallCount++;
 		const double alpha = 1.0; // Reflection coeff.
@@ -188,7 +199,7 @@ public:
 					x1[ i ] = x0[ i ] + alpha * ( x0[ i ] - xH[ i ]);
 				}
 
-				y1 = eval( x1 );
+				y1 = eval( x1, OutCost, OutParams );
 
 				if( y1 >= y[ xlo ] && y1 < y[ xhi2 ])
 				{
@@ -218,7 +229,7 @@ public:
 					x2[ i ] = x0[ i ] + gamma * ( x0[ i ] - xH[ i ]);
 				}
 
-				const double y2 = eval( x2 );
+				const double y2 = eval( x2, OutCost, OutParams );
 				xlo = xhi;
 
 				if( y2 < y1 )
@@ -241,7 +252,7 @@ public:
 					x2[ i ] = x0[ i ] + rho * ( x0[ i ] - xH[ i ]);
 				}
 
-				const double y2 = eval( x2 );
+				const double y2 = eval( x2, OutCost, OutParams );
 
 				if( y2 < y[ xhi ])
 				{
@@ -279,7 +290,7 @@ public:
 					xx[ i ] = rx[ i ] + sigma * ( xx[ i ] - rx[ i ]);
 				}
 
-				y[ rj ] = eval( xx );
+				y[ rj ] = eval( xx, OutCost, OutParams );
 
 				if( y[ rj ] < y[ xlo ])
 				{
@@ -301,50 +312,6 @@ public:
 
 		return( StallCount );
 	}
-
-	/**
-	 * @return Best parameter vector.
-	 */
-
-	const double* getBestParams() const
-	{
-		return( BestParams );
-	}
-
-	/**
-	 * @return Cost of the best parameter vector.
-	 */
-
-	double getBestCost() const
-	{
-		return( BestCost );
-	}
-
-	/**
-	 * Virtual function that should fill minimal parameter value vector.
-	 *
-	 * @param[out] p Minimal value vector.
-	 */
-
-	virtual void getMinValues( double* const p ) const = 0;
-
-	/**
-	 * Virtual function that should fill maximal parameter value vector.
-	 *
-	 * @param[out] p Maximal value vector.
-	 */
-
-	virtual void getMaxValues( double* const p ) const = 0;
-
-	/**
-	 * Virtual function (objective function) that should calculate parameter
-	 * vector's optimization cost.
-	 *
-	 * @param p Parameter vector to evaluate.
-	 * @return Optimized cost.
-	 */
-
-	virtual double optcost( const double* const p ) = 0;
 
 private:
 	int ParamCount; ///< The number of parameters being optimized.
@@ -531,9 +498,14 @@ private:
 	 * also records a new best solution.
 	 *
 	 * @param p Parameter vector to evaluate.
+	 * @param OutCost If not NULL, pointer to variable that receives cost
+	 * of the newly-evaluated solution.
+	 * @param OutParams If not NULL, pointer to array that receives
+	 * newly-evaluated parameter vector, in normalized scale.
 	 */
 
-	double eval( const double* const p )
+	double eval( const double* const p, double* OutCost = NULL,
+		double* OutParams = NULL )
 	{
 		int i;
 
@@ -571,6 +543,20 @@ private:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				BestParams[ i ] = Params[ i ];
+			}
+		}
+
+		if( OutCost != NULL )
+		{
+			*OutCost = cost;
+		}
+
+		if( OutParams != NULL )
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				OutParams[ i ] = ( Params[ i ] - MinValues[ i ]) /
+					( MaxValues[ i ] - MinValues[ i ]);
 			}
 		}
 

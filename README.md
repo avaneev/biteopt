@@ -16,6 +16,7 @@
 * [Method description](#method-description)
 * [Method philosophy](#method-philosophy)
 * [SMA-ES](#sma-es)
+* [SpherOpt](#spheropt)
 
 ## Introduction ##
 
@@ -44,14 +45,14 @@ optimization problems and performed well, and it successfully solves even
 600-dimensional test problems found in some textbooks. But the main focus of
 the method is to provide fast solutions for computationally expensive
 "black-box" problems of medium dimensionality (up to 60). For example, this
-method when optimizing its own hyper-parameters (14 dimensions) generates a
+method when optimizing its own hyper-parameters (21 dimensions) generates a
 good solution in under 800 function evaluations.
 
 This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
 evaluated): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp).
 This method was able to solve 77% of non-convex smooth problems in 10
-attempts, 2500 iterations each. It comes 2nd (on par with the 1st) in the
+attempts, 2500 iterations each. It comes 2nd (very close to the 1st) in the
 comparison on non-convex smooth problems (see Fig.9 in the paper). With a huge
 iteration budget (up to 1 million) this method solves 95% of problems.
 
@@ -60,19 +61,14 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
 success rate is >90% while the average number of objective function
-evaluations is ~300.
+evaluations is ~360.
 
 At least in these comparisons, this method performs better than plain
-CMA-ES which is also a well-performing stochastic optimization method. CMA-ES
-outperforms CBiteOptDeep (e.g. with M=9) on synthetic function sets that
-involve random coordinate axis rotations and offsets (e.g.
-[BBOB suite](http://coco.gforge.inria.fr/)). Plain CBiteOpt lags far behind in
-such benchmark arrangements. However, BiteOpt's development from its inception
-was based on a wider selection of functions proposed by global optimization
-researchers, without focus on synthetic parameter space transformations.
-CBiteOpt stands parameter space offsetting and orthogonal scaling pretty well,
-but partially fails when the space is rotated (a good solution is obtained,
-but not the theoretical optimum).
+CMA-ES which is also a well-performing stochastic optimization method. As of
+version 2021.1, BiteOpt's "solvability" is on par with CMA-ES on synthetic
+function sets that involve random coordinate axis rotations and offsets (e.g.
+[BBOB suite](http://coco.gforge.inria.fr/)). BiteOptDeep (e.g. with M=6) even
+outperforms CMA-ES in "solvability".
 
 As a matter of sport curiosity, BiteOpt is able to solve in reasonable time
 almost all functions proposed in classic academic literature on global
@@ -107,6 +103,11 @@ parameter search space collectively. Beside that, a range of parameter
 randomization and the "step in the right direction" (Differential Evolution
 "mutation") operations are used that move the solutions into positions with a
 probabilistically lower objective function value.
+
+Since version 2021.1 BiteOpt uses a companion optimizer - CSpherOpt - which
+works independently and provides "reference points" to BiteOpt. This companion
+improves BiteOpt's convergence properties considerably, especially when the
+parameter space is rotated.
 
 ## CBiteOptDeep (biteopt.h) ##
 
@@ -499,3 +500,11 @@ distribution update (best fit solutions enter the population): this aspect is
 controlled via the `EvalFac` parameter, which adjusts method's overhead
 with only a minor effect on convergence property. Method's typical
 observed complexity is O(N^1.6).
+
+## SpherOpt ##
+
+This is a "converging hyper-spheroid" optimization method. While it is not
+as effective as, for example, CMA-ES, it also stands parameter space scaling,
+offsetting and rotation well. It is not effective for dimensions less than 5.
+Since version 2021.1 it is used as a companion to BiteOpt optimizer with
+excellent results.
