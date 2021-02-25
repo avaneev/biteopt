@@ -377,7 +377,7 @@ Algorithm's hyper-parameters (probabilities) were pre-selected and should not
 be changed. Algorithm uses an alike of state automata to switch between
 different probability values depending on the candidate solution acceptance.
 In many instances random solution selection uses square of the random
-variable - this has an effect of giving more weight to better solutions.
+variable: this has an effect of giving more weight to better solutions.
 
 2. Depending on the `RandProb` probability, a single (or all) parameter value
 randomization is performed using "bitmask inversion" operation (which is
@@ -408,6 +408,13 @@ performed using the random previous solution, chosen best and worst
 solutions, plus a difference of two other random solutions. This is
 conceptually similar to Differential Evolution's "mutation" operation. The
 used worst solution is randomly chosen from 3 worst solutions.
+
+Alternatively, an "entropy bit mixing" method is used to create a candidate
+solution. This method mixes (XORs) parameter values represented as raw bit
+strings drawn from an odd number of parameter vectors. Probabilistically,
+such composition creates a new random parameter vector with an overwhelming
+number of bits common to better-performing solutions, and fewer number of bits
+without certainty.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-(x_\text{rand2}-x_\text{rand3}))}{2})
 
@@ -508,3 +515,8 @@ as effective as, for example, CMA-ES, it also stands parameter space scaling,
 offsetting and rotation well. It is not effective for dimensions less than 5.
 Since version 2021.1 it is used as a companion to BiteOpt optimizer with
 excellent results.
+
+This method is structurally similar to SMA-ES, but instead of Gaussian
+sampling, SpherOpt selects random points on a hyper-spheroid. This makes the
+method very computationally-efficient, but at the same time providing immunity
+to coordinate axis rotations.
