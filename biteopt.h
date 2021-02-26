@@ -292,7 +292,8 @@ public:
 
 		const double mp = rnd.getRndValue(); // Also reused later.
 		const double mp2 = mp * mp; // Used later.
-		const int mpi = (int) ( mp * mp2 * 4 );
+		const double mp3 = mp2 * mp;
+		const int mpi = (int) ( mp3 * 4 );
 		const double* const MinParams = getParamsOrdered( mpi );
 
 		int UseRandSwitch = RandSwitch; // RandSwitch to use next.
@@ -369,7 +370,7 @@ public:
 				const uint64_t imask2 =
 					( imask2s > 63 ? 0 : MantSizeMask >> imask2s );
 
-				const int si0 = (int) ( mp * mp2 * PopSize );
+				const int si0 = (int) ( mp3 * PopSize );
 				const double* const rp0 = getParamsOrdered( si0 );
 
 				for( i = a; i <= b; i++ )
