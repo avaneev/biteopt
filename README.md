@@ -413,8 +413,8 @@ Alternatively, an "entropy bit mixing" method is used to create a candidate
 solution. This method mixes (XORs) parameter values represented as raw bit
 strings drawn from an odd number of parameter vectors. Probabilistically,
 such composition creates a new random parameter vector with an overwhelming
-number of bits common to better-performing solutions, and fewer number of bits
-without certainty.
+number of bits common to better-performing solutions, and a fewer number of
+bits without certainty.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-(x_\text{rand2}-x_\text{rand3}))}{2})
 
@@ -518,5 +518,5 @@ excellent results.
 
 This method is structurally similar to SMA-ES, but instead of Gaussian
 sampling, SpherOpt selects random points on a hyper-spheroid. This makes the
-method very computationally-efficient, but at the same time providing immunity
+method very computationally-efficient, but at the same time provides immunity
 to coordinate axis rotations.
