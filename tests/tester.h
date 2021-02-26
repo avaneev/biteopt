@@ -172,6 +172,11 @@ public:
 		///<
 	double AtAvg; ///< Average number of attempts.
 		///<
+	double CostAvg; ///< Average achieved cost among all functions, including
+		///< in successful and rejected attempts.
+		///<
+	double CostMin; ///< Possible achievable minimal CostAvg.
+		///<
 	double Score; ///< Optimization score.
 		///<
 	double Success; ///< Success rate.
@@ -257,6 +262,8 @@ public:
 		int AvgCount = 0;
 		RjAvg = 0.0;
 		AtAvg = 0.0;
+		CostAvg = 0.0;
+		CostMin = 0.0;
 		double RejTotal = 0.0;
 		int ComplTotal = 0;
 		int* Iters = new int[ IterCount ];
@@ -449,6 +456,11 @@ public:
 			RjAvg += Rj;
 			const double At = 1.0 / ( 1.0 - (double) Rej / IterCount );
 			AtAvg += At;
+			CostAvg += ( Rej >= IterCount ? MinRjCost : ( Rej == 0 ? MinCost :
+				( MinRjCost * Rej +
+				MinCost * ( IterCount - Rej )) / IterCount ));
+
+			CostMin += opt -> optv;
 			RejTotal += Rej;
 
 			if( DoPrint )
@@ -479,6 +491,8 @@ public:
 		ItAvg2l10n /= ItAvg2Count;
 		RjAvg /= FnCount;
 		AtAvg = 1.0 / ( 1.0 - RejTotal / IterCount / FnCount );
+		CostAvg /= FnCount;
+		CostMin /= FnCount;
 		Score = ( AtAvg - 1.0 ) * 100.0 +
 			fabs( ItAvg - 334.0 ) * 0.1;
 		Success = 100.0 * ComplTotal / FnCount / IterCount;
@@ -516,6 +530,8 @@ public:
 				RjAvg * 100.0 );
 
 			printf( "AtAvg: %.3f (avg number of attempts)\n", AtAvg );
+			printf( "CostAvg: %.6f (avg cost)\n", CostAvg );
+			printf( "CostMin: %.6f (minimal possible avg cost)\n", CostMin );
 			printf( "Score: %f\n", Score );
 		}
 

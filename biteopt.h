@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.1
+ * @version 2021.2
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -136,18 +136,15 @@ public:
 		}
 
 		deleteBuffers();
+		initBaseBuffers( aParamCount, aPopSize );
 
-		ParamCount = aParamCount;
-		PopSize = aPopSize;
-		InitEvals = aPopSize;
-
-		initBaseBuffers();
-
-		Params = CurParams[ PopSize ];
-		TmpParams = new uint64_t[ ParamCount ];
+		Params = CurParams[ aPopSize ];
+		TmpParams = new uint64_t[ aParamCount ];
 
 		ParOpt.Owner = this;
 		ParOpt.updateDims( ParamCount );
+
+		InitEvals = aPopSize;
 	}
 
 	/**
@@ -168,10 +165,10 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
-			CentParams[ i ] = 0.0;
 		}
 
 		resetCommonVars();
+		resetCentroid();
 
 		// Initialize solution vectors randomly, calculate objective function
 		// values of these solutions.
@@ -296,7 +293,7 @@ public:
 		const double mp = rnd.getRndValue(); // Also reused later.
 		const double mp2 = mp * mp; // Used later.
 		const int mpi = (int) ( mp * mp2 * 4 );
-		const double* const MinParams = CurParams[ PopOrder[ mpi ]];
+		const double* const MinParams = getParamsOrdered( mpi );
 
 		int UseRandSwitch = RandSwitch; // RandSwitch to use next.
 		int RaiseFlags = 0; // RandSwitch flags to raise on optimization
@@ -322,7 +319,7 @@ public:
 				// better solutions.
 
 				const int si1 = (int) ( mp2 * PopSize );
-				const double* const rp1 = CurParams[ PopOrder[ si1 ]];
+				const double* const rp1 = getParamsOrdered( si1 );
 
 				for( i = 0; i < ParamCount; i++ )
 				{
@@ -332,10 +329,7 @@ public:
 			}
 			else
 			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] = MinParams[ i ];
-				}
+				memcpy( Params, MinParams, ParamCount * sizeof( Params[ 0 ]));
 
 				// Select a single random parameter or all parameters for
 				// further operations.
@@ -376,7 +370,7 @@ public:
 					( imask2s > 63 ? 0 : MantSizeMask >> imask2s );
 
 				const int si0 = (int) ( mp * mp2 * PopSize );
-				const double* const rp0 = CurParams[ PopOrder[ si0 ]];
+				const double* const rp0 = getParamsOrdered( si0 );
 
 				for( i = a; i <= b; i++ )
 				{
@@ -399,7 +393,7 @@ public:
 					const double m1 = rnd.getTPDFRaw() * CentSpanRnd[ ci ];
 					const double m2 = rnd.getTPDFRaw() * CentSpanRnd[ ci ];
 					const int si = (int) ( mp2 * PopSize );
-					const double* const rp1 = CurParams[ PopOrder[ si ]];
+					const double* const rp1 = getParamsOrdered( si );
 
 					for( i = a; i <= b; i++ )
 					{
@@ -428,7 +422,7 @@ public:
 				{
 					const double r = rnd.getRndValue();
 					const int si = (int) ( r * r * PopSize );
-					const double* const rp = CurParams[ PopOrder[ si ]];
+					const double* const rp = getParamsOrdered( si );
 
 					if( k == 0 )
 					{
@@ -459,17 +453,16 @@ public:
 				// ordered list, apply offsets to reduce sensitivity to noise.
 
 				const int si0 = mpi + (int) ( mp * ( PopSize1 - mpi ));
-				const double* const OrigParams = CurParams[ PopOrder[ si0 ]];
-				const double* const MaxParams = CurParams[ PopOrder[
-					PopSize1 - mpi ]];
+				const double* const OrigParams = getParamsOrdered( si0 );
+				const double* const MaxParams = getParamsOrdered(
+					PopSize1 - mpi );
 
 				// Select two more previous solutions to be used in the mix.
 
 				const double r = rnd.getRndValue();
 				const int si1 = (int) ( r * r * PopSize );
-				const double* const rp1 = CurParams[ PopOrder[ si1 ]];
-				const double* const rp2 =
-					CurParams[ PopOrder[ PopSize1 - si1 ]];
+				const double* const rp1 = getParamsOrdered( si1 );
+				const double* const rp2 = getParamsOrdered( PopSize1 - si1 );
 
 				for( i = 0; i < ParamCount; i++ )
 				{
@@ -563,6 +556,7 @@ public:
 		}
 
 		updatePop( NewCost, Params, sH );
+
 		StallCount = 0;
 
 		return( StallCount );
@@ -627,7 +621,7 @@ protected:
 	{
 		const int sH = PopOrder[ PopSize1 ];
 
-		if( NewCost <= CurCosts[ sH ])
+		if( NewCost < CurCosts[ sH ])
 		{
 			double* const rp = CurParams[ sH ];
 			int i;
@@ -641,30 +635,6 @@ protected:
 			insertPopOrder( NewCost, sH, PopSize1 );
 			RandSwitch = NewRandSwitch;
 		}
-	}
-
-	/**
-	 * Function replaces the highest-cost previous solution (sH), updates
-	 * centroid.
-	 *
-	 * @param NewCost Cost of the new solution.
-	 * @param UpdParams New parameter values.
-	 * @param sH Index of vector to update.
-	 */
-
-	void updatePop( const double NewCost, const double* const UpdParams,
-		const int sH )
-	{
-		double* const rp = CurParams[ sH ];
-		int i;
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			CentParams[ i ] += ( UpdParams[ i ] - rp[ i ]) * PopSizeI;
-			rp[ i ] = UpdParams[ i ];
-		}
-
-		insertPopOrder( NewCost, sH, PopSize1 );
 	}
 
 	/**
@@ -692,8 +662,11 @@ protected:
 		}
 	};
 
-	CParOpt ParOpt; // Parallel optimizer.
-	int ParOptProbM; // Parallel optimizer's engagement probablity multiplier.
+	CParOpt ParOpt; ///< Parallel optimizer.
+		///<
+	int ParOptProbM; ///< Parallel optimizer's engagement probablity
+		///< multiplier.
+		///<
 };
 
 /**

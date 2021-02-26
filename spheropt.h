@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.1
+ * @version 2021.2
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -79,11 +79,7 @@ public:
 		}
 
 		deleteBuffers();
-
-		ParamCount = aParamCount;
-		PopSize = aPopSize;
-
-		initBaseBuffers();
+		initBaseBuffers( aParamCount, aPopSize );
 
 		WPopCent = new double[ PopSize ];
 		WPopRad = new double[ PopSize ];

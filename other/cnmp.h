@@ -3,7 +3,6 @@
 #ifndef CNMP_INCLUDED
 #define CNMP_INCLUDED
 
-#include <string.h>
 #include "../biteaux.h"
 
 /**
@@ -134,7 +133,7 @@ public:
 			}
 		}
 
-		BestCost = 1e100;
+		BestCost = 1e300;
 		y[ 0 ] = eval( x[ 0 ]);
 		xlo = 0;
 		int j;
@@ -182,6 +181,7 @@ public:
 		double* OutParams = NULL )
 	{
 		StallCount++;
+
 		const double alpha = 1.0; // Reflection coeff.
 		const double gamma = 2.0; // Expansion coeff.
 		const double rho = -0.5; // Contraction coeff.

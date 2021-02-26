@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.1
+ * @version 2021.2
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -63,12 +63,9 @@ public:
 		}
 
 		deleteBuffers();
+		initBaseBuffers( aParamCount, aPopSize );
 
-		ParamCount = aParamCount;
-		PopSize = aPopSize;
 		EvalFac = 2.0;
-
-		initBaseBuffers();
 
 		Ort.updateDims( ParamCount, PopSize, EvalFac );
 	}
