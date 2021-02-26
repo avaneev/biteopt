@@ -21,8 +21,8 @@
 ## Introduction ##
 
 BITEOPT is a free open-source stochastic non-linear bound-constrained
-derivative-free optimization method (heuristic or strategy). The name
-"BiteOpt" is an acronym for "BITmask Evolution OPTimization".
+derivative-free optimization method (algorithm, heuristic, or strategy). The
+name "BiteOpt" is an acronym for "BITmask Evolution OPTimization".
 
 The benefit of this method is a relatively high robustness: it can
 successfully optimize a wide range of multi-dimensional test functions.
@@ -40,7 +40,7 @@ return the same optimum.
 
 ## Comparison ##
 
-This "black-box" optimization algorithm was tested on 450+ 1-10 dimensional
+This "black-box" optimization method was tested on 450+ 1-14 dimensional
 optimization problems and performed well, and it successfully solves even
 600-dimensional test problems found in some textbooks. But the main focus of
 the method is to provide fast solutions for computationally expensive
@@ -80,7 +80,7 @@ BiteOpt can't solve, let the author know.
 
 BiteOpt (state at commit 124) took 2nd place (1st by sum of ranks) in
 [BBComp2018-1OBJ-expensive](https://www.ini.rub.de/PEOPLE/glasmtbl/projects/bbcomp/results/BBComp2018-1OBJ-expensive/summary.html)
-competition track. Since the time of that commit algorithm improved in many
+competition track. Since the time of that commit the method improved in many
 aspects, especially in low-dimensional convergence performance. Commit 124 can
 be considered as "baseline effective" version of the method (it is also
 maximally simple), with further commits implementing gradual improvements, but
@@ -104,7 +104,7 @@ randomization and the "step in the right direction" (Differential Evolution
 "mutation") operations are used that move the solutions into positions with a
 probabilistically lower objective function value.
 
-Since version 2021.1 BiteOpt uses a companion optimizer - CSpherOpt - which
+Since version 2021.1 BiteOpt uses a companion optimizer - SpherOpt - which
 works independently and provides "reference points" to BiteOpt. This companion
 improves BiteOpt's convergence properties considerably, especially when the
 parameter space is rotated.
@@ -198,9 +198,9 @@ optimization attempts BiteOpt converges faster and may find a better optimum
 with the same iteration budget per attempt. Based on `test2.cpp`
 (2-dimensional) and `test4.cpp` (10-dimensional) test corpuses, only about
 1% of attempts require more than 3\*sigma iterations, 58% of attempts require
-less than 0\*sigma. A typical probability distribution of percent of
+less than the mean. A typical probability distribution of percent of
 attempts/sigma is as follows (discretized, not centered around 0 because it
-deviates from standard distribution, average value corresponds to 0\*sigma):
+deviates from the standard distribution, the mean corresponds to 0\*sigma):
 
 ![PDF plot](https://github.com/avaneev/biteopt/blob/master/attempt_pdf_plot.png)
 
@@ -379,6 +379,10 @@ different probability values depending on the candidate solution acceptance.
 In many instances random solution selection uses square of the random
 variable: this has an effect of giving more weight to better solutions.
 
+Initially, depending on the `ParOptProb` probability, an independent,
+algorithmically different, parallel optimizer is engaged whose solution is
+evaluated for inclusion into the population.
+
 2. Depending on the `RandProb` probability, a single (or all) parameter value
 randomization is performed using "bitmask inversion" operation (which is
 approximately equivalent to `v=1-v` operation in normalized parameter space).
@@ -512,7 +516,7 @@ observed complexity is O(N^1.6).
 
 This is a "converging hyper-spheroid" optimization method. While it is not
 as effective as, for example, CMA-ES, it also stands parameter space scaling,
-offsetting and rotation well. It is not effective for dimensions less than 5.
+offsetting and rotation well. It is not effective for dimensions less than 4.
 Since version 2021.1 it is used as a companion to BiteOpt optimizer with
 excellent results.
 

@@ -37,7 +37,7 @@
 
 /**
  * "Converging hyper-spheroid" optimizer class. Converges quite fast, but is
- * not effective for dimensions below 5.
+ * not effective for dimensions below 4.
  *
  * Description is available at https://github.com/avaneev/biteopt
  */
@@ -152,7 +152,7 @@ public:
 		double* const OutParams = NULL )
 	{
 		double* const Params = CurParams[ curpi ];
-		double s2 = 1e-100;
+		double s2 = 1e-300;
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
@@ -161,7 +161,7 @@ public:
 			s2 += Params[ i ] * Params[ i ];
 		}
 
-		const double d = Radius * sqrt( 1.0 / s2 );
+		const double d = Radius / sqrt( s2 );
 
 		for( i = 0; i < ParamCount; i++ )
 		{
@@ -231,6 +231,7 @@ public:
 				StallCount += cure;
 			}
 
+			AvgCost = 0.0;
 			curpi = 0;
 			cure = 0;
 			update();

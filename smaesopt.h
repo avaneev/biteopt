@@ -236,6 +236,7 @@ public:
 				StallCount += cure;
 			}
 
+			AvgCost = 0.0;
 			curpi = 0;
 			cure = 0;
 			UsePopSize = Ort.update( CurParams, PopOrder );
