@@ -3,7 +3,8 @@
 /**
  * @file biteaux.h
  *
- * @brief The inclusion file for the CBiteRnd and CBiteOptBase classes.
+ * @brief The inclusion file for the CBiteRnd, CBiteOptPop, CBiteOptInterface,
+ * and CBiteOptBase classes.
  *
  * @section license License
  * 
@@ -27,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.2
+ * @version 2021.3
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -143,9 +144,9 @@ public:
 	}
 
 	/**
-	 * Function initializes population storage buffers. This function can only
-	 * be called after construction of *this object, or after
-	 * deletePopBuffers() function call.
+	 * Function initializes population storage buffers, include 1 vector for
+	 * temporary use. This function can only be called after the construction
+	 * of *this object, or after the deletePopBuffers() function call.
 	 *
 	 * @param aParamCount New parameter count.
 	 * @param aPopSize New population size.
@@ -189,22 +190,27 @@ public:
 	}
 
 	/**
-	 * Function copies population from the specified source population. Both
-	 * *this and source population should be initialized and have the same
-	 * size parameters.
+	 * Function copies population from the specified source population. If
+	 * *this population has a different size, or is uninitialized, it will
+	 * be initialized to source's population size.
 	 *
-	 * @param s Source population to copy.
+	 * @param s Source population to copy. Should be initalized.
 	 */
 
 	void copy( const CBiteOptPop& s )
 	{
-		memcpy( PopOrder, s.PopOrder, PopSize * sizeof( PopOrder[ 0 ]));
-		memcpy( CurParamsBuf, s.CurParamsBuf, PopSize * ParamCount *
-			sizeof( CurParamsBuf[ 0 ]));
+		if( ParamCount != s.ParamCount || PopSize != s.PopSize )
+		{
+			initPopBuffers( s.ParamCount, s.PopSize );
+		}
 
-		memcpy( CurCosts, s.CurCosts, PopSize * sizeof( CurCosts[ 0 ]));
+		memcpy( PopOrder, s.PopOrder, PopSize * sizeof( s.PopOrder[ 0 ]));
+		memcpy( CurParamsBuf, s.CurParamsBuf, PopSize * ParamCount *
+			sizeof( s.CurParamsBuf[ 0 ]));
+
+		memcpy( CurCosts, s.CurCosts, PopSize * sizeof( s.CurCosts[ 0 ]));
 		memcpy( CentParams, s.CentParams, ParamCount *
-			sizeof( CentParams[ 0 ]));
+			sizeof( s.CentParams[ 0 ]));
 	}
 
 	/**
@@ -267,9 +273,11 @@ public:
 	 * @param sH Index of vector to update. If equal to -1, the NewCost value
 	 * will be first compared to worst cost solution present in the
 	 * population.
+	 * @return If sH is not specified or negative the function returns "false"
+	 * if cost constraint is not met. "True" otherwise.
 	 */
 
-	void updatePop( const double NewCost, const double* const UpdParams,
+	bool updatePop( const double NewCost, const double* const UpdParams,
 		int sH = -1 )
 	{
 		if( sH < 0 )
@@ -278,7 +286,7 @@ public:
 
 			if( NewCost >= CurCosts[ sH ])
 			{
-				return;
+				return( false );
 			}
 		}
 
@@ -292,6 +300,8 @@ public:
 		}
 
 		insertPopOrder( NewCost, sH, PopSize1 );
+
+		return( true );
 	}
 
 protected:
@@ -497,12 +507,23 @@ protected:
 	 * variables.
 	 *
 	 * @param aParamCount New parameter count.
-	 * @param aPopSize New population size.
+	 * @param aPopSize New population size. If <= 0, population buffers will
+	 * not be allocated.
 	 */
 
 	void initBaseBuffers( const int aParamCount, const int aPopSize )
 	{
-		initPopBuffers( aParamCount, aPopSize );
+		if( aPopSize > 0 )
+		{
+			initPopBuffers( aParamCount, aPopSize );
+		}
+		else
+		{
+			ParamCount = aParamCount;
+			PopSize = 0;
+			PopSize1 = 0;
+			PopSizeI = 0.0;
+		}
 
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
@@ -540,16 +561,65 @@ protected:
 	}
 
 	/**
+	 * Function updates values in the DiffValues array, based on values in the
+	 * MinValues and MaxValues arrays.
+	 */
+
+	void updateDiffValues()
+	{
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
+		}
+	}
+
+	/**
+	 * Function updates BestCost and BestParams values, if the specified
+	 * NewCost is better.
+	 *
+	 * @param NewCost New solution's cost.
+	 * @param UpdParams New solution's values.
+	 * @param IsNormalized "True" if values are normalized, and should be
+	 * converted with the getRealValue() function.
+	 */
+
+	void updateBestCost( const double NewCost, const double* const UpdParams,
+		const bool IsNormalized = false )
+	{
+		if( NewCost < BestCost )
+		{
+			BestCost = NewCost;
+
+			if( IsNormalized )
+			{
+				int i;
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					BestParams[ i ] = getRealValue( UpdParams, i );
+				}
+			}
+			else
+			{
+				memcpy( BestParams, UpdParams,
+					ParamCount * sizeof( UpdParams[ 0 ]));
+			}
+		}
+	}
+
+	/**
 	 * Function returns specified parameter's value taking into account
 	 * minimal and maximal value range.
 	 *
-	 * @param Params Parameter vector of interest.
+	 * @param NormParams Parameter vector of interest, in normalized scale.
 	 * @param i Parameter index.
 	 */
 
-	double getRealValue( const double v, const int i ) const
+	double getRealValue( const double* const NormParams, const int i ) const
 	{
-		return( MinValues[ i ] + DiffValues[ i ] * v );
+		return( MinValues[ i ] + DiffValues[ i ] * NormParams[ i ]);
 	}
 
 	/**

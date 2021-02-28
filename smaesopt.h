@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.2
+ * @version 2021.3
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -67,7 +67,7 @@ public:
 
 		EvalFac = 2.0;
 
-		Ort.updateDims( ParamCount, PopSize, EvalFac );
+		Ort.updateDims( aParamCount, aPopSize, EvalFac );
 	}
 
 	/**
@@ -87,8 +87,8 @@ public:
 		curpi = 0;
 		cure = 0;
 
-		// Provide initial centroid and sigma (CurParams is used temporarily,
-		// otherwise initially undefined).
+		// Provide initial centroid and sigma (CurParams is used here
+		// temporarily, otherwise initially undefined).
 
 		int i;
 
@@ -188,15 +188,7 @@ public:
 			}
 		}
 
-		if( NewCost < BestCost )
-		{
-			BestCost = NewCost;
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				BestParams[ i ] = Params[ i ];
-			}
-		}
+		updateBestCost( NewCost, Params );
 
 		if( curpi < UsePopSize )
 		{
@@ -210,10 +202,8 @@ public:
 
 			if( NewCost < CurCosts[ sH ])
 			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					CurParams[ sH ][ i ] = Params[ i ];
-				}
+				memcpy( CurParams[ sH ], Params,
+					ParamCount * sizeof( Params[ 0 ]));
 
 				insertPopOrder( NewCost, sH, ps1 );
 			}

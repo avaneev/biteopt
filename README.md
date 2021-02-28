@@ -60,8 +60,8 @@ On a comparable test function suite and conditions outlined at this page:
 [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
-success rate is >90% while the average number of objective function
-evaluations is ~360.
+success rate is >93% while the average number of objective function
+evaluations is ~400.
 
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of
@@ -516,11 +516,10 @@ observed complexity is O(N^1.6).
 
 This is a "converging hyper-spheroid" optimization method. While it is not
 as effective as, for example, CMA-ES, it also stands parameter space scaling,
-offsetting and rotation well. It is not effective for dimensions less than 4.
-Since version 2021.1 it is used as a companion to BiteOpt optimizer with
-excellent results.
+offsetting and rotation well. Since version 2021.1 it is used as a companion
+to BiteOpt optimizer with excellent results.
 
 This method is structurally similar to SMA-ES, but instead of Gaussian
-sampling, SpherOpt selects random points on a hyper-spheroid. This makes the
-method very computationally-efficient, but at the same time provides immunity
-to coordinate axis rotations.
+sampling, SpherOpt selects random points on a hyper-spheroid (with a bit of
+added jitter). This makes the method very computationally-efficient, but at
+the same time provides immunity to coordinate axis rotations.

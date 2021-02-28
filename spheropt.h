@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.2
+ * @version 2021.3
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -36,8 +36,7 @@
 #include "biteaux.h"
 
 /**
- * "Converging hyper-spheroid" optimizer class. Converges quite fast, but is
- * not effective for dimensions below 4.
+ * "Converging hyper-spheroid" optimizer class. Simple, converges quite fast.
  *
  * Description is available at https://github.com/avaneev/biteopt
  */
@@ -49,6 +48,9 @@ public:
 		///<
 	double RadPow; ///< Radius power factor.
 		///<
+	double Jitter; ///< Solution sampling random jitter, improves convergence
+		///< at low dimensions.
+		///<
 	double EvalFac; ///< Evaluations factor.
 		///<
 
@@ -58,6 +60,7 @@ public:
 	{
 		CentPow = 6.0;
 		RadPow = 18.0;
+		Jitter = 2.0;
 		EvalFac = 2.0;
 	}
 
@@ -104,23 +107,30 @@ public:
 			WPopCent[ i ] /= s;
 			WPopRad[ i ] /= s2;
 		}
+
+		JitMult = 2.0 * Jitter / aParamCount;
+		JitOffs = 1.0 - JitMult * 0.5;
 	}
 
 	/**
 	 * Function initializes *this optimizer.
 	 *
 	 * @param rnd Random number generator.
-	 * @param InitParams Initial parameter values.
+	 * @param InitParams Initial parameter values (centroid).
+	 * @param InitRadius Initial radius, relative to the default value
+	 * (<= 1.0).
 	 */
 
-	void init( CBiteRnd& rnd, const double* const InitParams = NULL )
+	void init( CBiteRnd& rnd, const double* const InitParams = NULL,
+		const double InitRadius = 1.0 )
 	{
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
 
 		resetCommonVars();
+		updateDiffValues();
 
-		Radius = 0.5;
+		Radius = InitRadius * 0.5;
 		curpi = 0;
 		cure = 0;
 
@@ -131,8 +141,8 @@ public:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
-			CentParams[ i ] = 0.5;
+			CentParams[ i ] = ( InitParams == NULL ? 0.5 :
+				( InitParams[ i ] - MinValues[ i ]) / DiffValues[ i ]);
 		}
 	}
 
@@ -163,10 +173,27 @@ public:
 
 		const double d = Radius / sqrt( s2 );
 
-		for( i = 0; i < ParamCount; i++ )
+		if( ParamCount > 4 )
 		{
-			Params[ i ] = wrapParam( rnd, CentParams[ i ] + Params[ i ] * d );
-			NewParams[ i ] = getRealValue( Params[ i ], i );
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = wrapParam( rnd,
+					CentParams[ i ] + Params[ i ] * d );
+
+				NewParams[ i ] = getRealValue( Params, i );
+			}
+		}
+		else
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				const double m = JitOffs + rnd.getRndValue() * JitMult;
+
+				Params[ i ] = wrapParam( rnd,
+					CentParams[ i ] + Params[ i ] * d * m );
+
+				NewParams[ i ] = getRealValue( Params, i );
+			}
 		}
 
 		const double NewCost = optcost( NewParams );
@@ -178,21 +205,10 @@ public:
 
 		if( OutParams != NULL )
 		{
-			for( i = 0; i < ParamCount; i++ )
-			{
-				OutParams[ i ] = Params[ i ];
-			}
+			memcpy( OutParams, Params, ParamCount * sizeof( Params[ 0 ]));
 		}
 
-		if( NewCost < BestCost )
-		{
-			BestCost = NewCost;
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				BestParams[ i ] = NewParams[ i ];
-			}
-		}
+		updateBestCost( NewCost, NewParams );
 
 		if( curpi < PopSize )
 		{
@@ -205,10 +221,8 @@ public:
 
 			if( NewCost < CurCosts[ sH ])
 			{
-				for( i = 0; i < ParamCount; i++ )
-				{
-					CurParams[ sH ][ i ] = Params[ i ];
-				}
+				memcpy( CurParams[ sH ], Params,
+					ParamCount * sizeof( Params[ 0 ]));
 
 				insertPopOrder( NewCost, sH, PopSize1 );
 			}
@@ -234,6 +248,7 @@ public:
 			AvgCost = 0.0;
 			curpi = 0;
 			cure = 0;
+
 			update();
 		}
 
@@ -244,6 +259,10 @@ protected:
 	double* WPopCent; ///< Weighting coefficients for centroid.
 		///<
 	double* WPopRad; ///< Weighting coefficients for radius.
+		///<
+	double JitMult; ///< Jitter multiplier.
+		///<
+	double JitOffs; ///< Jitter multiplier offset.
 		///<
 	double Radius; ///< Current radius.
 		///<
