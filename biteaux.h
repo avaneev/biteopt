@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.3
+ * @version 2021.4
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -89,6 +89,16 @@ public:
 	}
 
 	/**
+	 * @return Inverse scale of "raw" random values returned by functions with
+	 * the "raw" suffix.
+	 */
+
+	static double getRawScaleInv()
+	{
+		return( 9.31322574615478516e-10 );
+	}
+
+	/**
 	 * @return Uniformly-distributed random number in the range [0; 1), in the
 	 * "raw" scale.
 	 */
@@ -117,6 +127,156 @@ public:
 private:
 	uint64_t seed; ///< The current random seed value.
 		///<
+};
+
+/**
+ * Histogram class. Used to keep track of success of various choices. Updates
+ * probabilities of future choices based on the current histogram state.
+ *
+ * @tparam Count The number of possible choices.
+ * @tparam Divisor Divisor used to obtain a minimal histogram value. Controls
+ * the ratio between minimal and maximal possible probabilities of all
+ * choices. Should be usually equal to Count, but can be set up to Count * 2
+ * if a certain choice is likely to be effective most of the time.
+ * @tparam Incr Histogram increment (on success) or decrement (on fail).
+ * Usually equal to 1, but a higher value can be used if a steep momentary
+ * probability increase of a certain choice is effective.
+ */
+
+template< int Count, int Divisor, int Incr >
+class CBiteOptHist
+{
+public:
+	CBiteOptHist()
+		: m( 1.0 / Divisor )
+		, rcm( (double) Count / CBiteRnd :: getRawScale() )
+	{
+	}
+
+	/**
+	 * This function resets histogram, should be called before calling other
+	 * functions, including after object's construction.
+	 */
+
+	void reset()
+	{
+		memset( Hist, 0, sizeof( Hist ));
+		updateProbs();
+	}
+
+	/**
+	 * This function should be called when a certain choice is successful.
+	 *
+	 * @param Index Choice index. If negative, histogram will not be updated.
+	 */
+
+	void incr( const int Index )
+	{
+		if( Index < 0 )
+		{
+			return;
+		}
+
+		Hist[ Index ] += Incr;
+		updateProbs();
+	}
+
+	/**
+	 * This function should be called when a certain choice is a failure.
+	 *
+	 * @param Index Choice index. If negative, histogram will not be updated.
+	 */
+
+	void decr( const int Index )
+	{
+		if( Index < 0 )
+		{
+			return;
+		}
+
+		Hist[ Index ] -= Incr;
+		updateProbs();
+	}
+
+	/**
+	 * Function produces a random choice index based on the current histogram
+	 * state.
+	 */
+
+	int select( CBiteRnd& rnd )
+	{
+		const double rv = rnd.getRndValue() * ProbSum;
+		int i;
+
+		for( i = 1; i < Count; i++ )
+		{
+			if( rv >= Probs[ i - 1 ] && rv < Probs[ i ])
+			{
+				return( i );
+			}
+		}
+
+		return( 0 );
+	}
+
+	/**
+	 * Function returns a uniformly-distributed choice index.
+	 */
+
+	int selectRandom( CBiteRnd& rnd )
+	{
+		return( (int) ( rnd.getUniformRaw() * rcm ));
+	}
+
+protected:
+	double m; ///< Multiplier (depends on Divisor)
+		///<
+	double rcm; ///< Raw random value multiplier that depends on Count.
+		///<
+	int Hist[ Count ]; ///< Histogram.
+		///<
+	double Probs[ Count ]; ///< Probabilities, cumulative.
+		///<
+	double ProbSum; ///< Sum of probabilities, for random variable scaling.
+		///<
+
+	/**
+	 * Function updates probabilities of choices based on the histogram state.
+	 */
+
+	void updateProbs()
+	{
+		int MinHist = Hist[ 0 ];
+		int i;
+
+		for( i = 1; i < Count; i++ )
+		{
+			if( Hist[ i ] < MinHist )
+			{
+				MinHist = Hist[ i ];
+			}
+		}
+
+		MinHist--;
+		double HistSum = 0.0;
+
+		for( i = 0; i < Count; i++ )
+		{
+			Probs[ i ] = Hist[ i ] - MinHist;
+			HistSum += Probs[ i ];
+		}
+
+		HistSum *= m;
+		ProbSum = 0.0;
+
+		for( i = 0; i < Count; i++ )
+		{
+			Probs[ i ] = ( Probs[ i ] < HistSum ? HistSum : Probs[ i ]) +
+				ProbSum;
+
+			ProbSum = Probs[ i ];
+		}
+	}
 };
 
 /**
@@ -387,13 +547,6 @@ public:
 	}
 
 	/**
-	 * @return The number of initial objective function evaluations.
-	 * May correspond to the population size.
-	 */
-
-	virtual int getInitEvals() const = 0;
-
-	/**
 	 * @return Best parameter vector.
 	 */
 
@@ -446,7 +599,6 @@ public:
 		, NewParams( NULL )
 		, BestParams( NULL )
 		, BestCost( 0.0 )
-		, InitEvals( 0 )
 		, BitsLeft( 0 )
 	{
 	}
@@ -454,11 +606,6 @@ public:
 	virtual ~CBiteOptBase()
 	{
 		deleteBuffers();
-	}
-
-	virtual int getInitEvals() const
-	{
-		return( InitEvals );
 	}
 
 	virtual const double* getBestParams() const
@@ -484,9 +631,6 @@ protected:
 	double* BestParams; ///< Best parameter vector.
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
-		///<
-	int InitEvals; ///< Initial number of function evaluations performed by
-		///< the opimzizer.
 		///<
 	int StallCount; ///< The number of iterations without improvement.
 		///<

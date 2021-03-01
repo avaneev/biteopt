@@ -33,11 +33,6 @@ public:
 		deleteBuffers();
 	}
 
-	virtual int getInitEvals() const
-	{
-		return( 0 );
-	}
-
 	virtual const double* getBestParams() const
 	{
 		return( BestParams );
@@ -118,7 +113,7 @@ public:
 	 *
 	 * @param rnd Random number generator.
 	 * @return The number of non-improving iterations so far. The plateau
-	 * threshold value is getInitEvals() / M * 8.
+	 * threshold value is ParamCount * 16.
 	 */
 
 	int optimize( CBiteRnd& rnd )

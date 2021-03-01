@@ -44,9 +44,7 @@ This "black-box" optimization method was tested on 450+ 1-14 dimensional
 optimization problems and performed well, and it successfully solves even
 600-dimensional test problems found in some textbooks. But the main focus of
 the method is to provide fast solutions for computationally expensive
-"black-box" problems of medium dimensionality (up to 60). For example, this
-method when optimizing its own hyper-parameters (21 dimensions) generates a
-good solution in under 800 function evaluations.
+"black-box" problems of medium dimensionality (up to 60).
 
 This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
@@ -61,14 +59,14 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
 success rate is >93% while the average number of objective function
-evaluations is ~400.
+evaluations is ~370.
 
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of
-version 2021.1, BiteOpt's "solvability" is on par with CMA-ES on synthetic
-function sets that involve random coordinate axis rotations and offsets (e.g.
-[BBOB suite](http://coco.gforge.inria.fr/)). BiteOptDeep (e.g. with M=6) even
-outperforms CMA-ES in "solvability".
+version 2021.1, BiteOpt's "solvability" exceeds CMA-ES on synthetic function
+sets that involve random coordinate axis rotations and offsets (e.g. [BBOB
+suite](http://coco.gforge.inria.fr/)). BiteOptDeep (e.g. with M=6)
+considerably outperforms CMA-ES in "solvability".
 
 As a matter of sport curiosity, BiteOpt is able to solve in reasonable time
 almost all functions proposed in classic academic literature on global
@@ -109,6 +107,9 @@ works independently and provides "reference points" to BiteOpt. This companion
 improves BiteOpt's convergence properties considerably, especially when the
 parameter space is rotated.
 
+Since version 2021.3 BiteOpt became a self-optimizing method not requiring any
+fune-tuning from the user nor the author.
+
 ## CBiteOptDeep (biteopt.h) ##
 
 Deep optimization class. Based on an array of M CBiteOpt objects. This "deep"
@@ -129,12 +130,11 @@ class, but increase does correlate to its M parameter. For some complex
 functions the use of CBiteOptDeep even decreases convergence time. For sure,
 CBiteOptDeep class often produces better solutions than the CBiteOpt class.
 
-It is possible to parallelize this method without much effort.
-
 ## Notes ##
 
-Method's hyper-parameters (probabilities) were pre-selected and should not
-be changed.
+As of version 2021.3, BiteOpt is a completely self-optimizing method. It does
+not feature user-adjustable hyper-parameters. Even population size adjustments
+may not be effective.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
@@ -315,10 +315,9 @@ Specifically saying, it is possible (tested to be working on some code commits
 before May 15, 2018) to generate a serie of candidate solutions, evaluate them
 in parallel, and then update optimizer's state before generating a new batch
 of candidate solutions. Later commits have changed the algorithm to a from
-less suitable for such parallelization. BiteOptDeep can be parallelized
-without much effort, but with a certain limit on parallelism.
+less suitable for such parallelization.
 
-2. The method currently uses "short-cuts" which can be considered as "tricks"
+2. The method uses "short-cuts" which can be considered as "tricks"
 (criticized in literature) which are non-universal, and reduce convergence
 time out of proportion for many known test functions. These "short-cuts" are
 not critically important to method's convergence properties, but they reduce
@@ -327,22 +326,17 @@ all arguments are equal. It just often happens that such "short-cuts" provide
 useful "reference points" to the method. Removing these "short-cuts" will
 increase average convergence time of the method, but in most cases won't
 impact method's ability to find a global solution. "Short-cuts" are used only
-in 6% of objective function evaluations.
+in 5% of objective function evaluations.
 
-3. The method uses resetting counters instead of direct probability
-evaluation. This was done to reduce method's overhead (it was important to
-keep overhead low so that optimization of method's own hyper-parameters does
-not take too much time). In practice, resetting counters are equivalent to
-`if( getRndValue() < Probability )` constructs, and actually provide slightly
-better convergence properties, probably due to some "state automata" effect.
+3. In some instances, the method uses resetting counters instead of direct
+probability evaluation. This was done to reduce method's overhead. In
+practice, resetting counters are equivalent to `if( getRndValue() <
+Probability )` constructs, and actually provide slightly better convergence
+properties, probably due to some "state automata" effect.
 
 4. The method uses LCG pseudo-random number generator due to its efficiency.
 The method was also tested with a more statistically-correct PRNG and the
 difference turned out to be negligible.
-
-5. The method of selection of initial solution vectors slightly affects
-success rate when solving test problem suites. Initialization method evolved
-over time, but there may still be a place for improvement present.
 
 ## Users ##
 
@@ -359,13 +353,15 @@ your project to the list of users.
 
 ## Method description ##
 
+NOTE: as of verison 2021.3 this topic is not yet up-to-date.
+
 The algorithm consists of the following elements:
 
 1. A cost-ordered population of previous solutions is maintained. A solution
 is an independent parameter vector which is evolved towards a better solution.
 On every iteration, one of the 4 best solutions is evolved (best selection
 allows method to be less sensitive to noise). At start, solution vectors
-are initialized almost on hyper-box boundaries.
+are initialized at the center of the search space, using Gaussian sampling.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best})
 
@@ -521,5 +517,6 @@ to BiteOpt optimizer with excellent results.
 
 This method is structurally similar to SMA-ES, but instead of Gaussian
 sampling, SpherOpt selects random points on a hyper-spheroid (with a bit of
-added jitter). This makes the method very computationally-efficient, but at
-the same time provides immunity to coordinate axis rotations.
+added jitter for lower dimensions). This makes the method very
+computationally-efficient, but at the same time provides immunity to
+coordinate axis rotations.

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "../biteopt.h"
 #include "../spheropt.h"
-//#include "../smaesopt.h"
+#include "../smaesopt.h"
 //#include "../other/nmpopt.h"
 //#include "../other/ccmaes.h"
 
@@ -369,7 +369,7 @@ public:
 						GoodIters += (double) impriters / i;
 						GoodItersCount++;
 						ComplTotal++;
-						const int itc = i + opt -> getInitEvals();
+						const int itc = i;
 						Iters[ j ] = itc;
 						AvgIter += itc;
 						ItAvg2 += itc;

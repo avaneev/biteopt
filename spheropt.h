@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.3
+ * @version 2021.4
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -116,9 +116,9 @@ public:
 	 * Function initializes *this optimizer.
 	 *
 	 * @param rnd Random number generator.
-	 * @param InitParams Initial parameter values (centroid).
-	 * @param InitRadius Initial radius, relative to the default value
-	 * (<= 1.0).
+	 * @param InitParams If not NULL, initial parameter vector, also used as
+	 * centroid.
+	 * @param InitRadius Initial radius, relative to the default value.
 	 */
 
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL,
@@ -130,7 +130,7 @@ public:
 		resetCommonVars();
 		updateDiffValues();
 
-		Radius = InitRadius * 0.5;
+		Radius = 0.5 * InitRadius;
 		curpi = 0;
 		cure = 0;
 
@@ -139,10 +139,24 @@ public:
 
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		if( InitParams == NULL )
 		{
-			CentParams[ i ] = ( InitParams == NULL ? 0.5 :
-				( InitParams[ i ] - MinValues[ i ]) / DiffValues[ i ]);
+			for( i = 0; i < ParamCount; i++ )
+			{
+				CentParams[ i ] = 0.5;
+			}
+
+			DoCentEval = false;
+		}
+		else
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				CentParams[ i ] = wrapParam( rnd,
+					( InitParams[ i ] - MinValues[ i ]) / DiffValues[ i ]);
+			}
+
+			DoCentEval = true;
 		}
 	}
 
@@ -162,37 +176,51 @@ public:
 		double* const OutParams = NULL )
 	{
 		double* const Params = CurParams[ curpi ];
-		double s2 = 1e-300;
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		if( DoCentEval )
 		{
-			Params[ i ] = rnd.getRndValue() - 0.5;
-			s2 += Params[ i ] * Params[ i ];
-		}
+			DoCentEval = false;
 
-		const double d = Radius / sqrt( s2 );
-
-		if( ParamCount > 4 )
-		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = wrapParam( rnd,
-					CentParams[ i ] + Params[ i ] * d );
-
+				Params[ i ] = CentParams[ i ];
 				NewParams[ i ] = getRealValue( Params, i );
 			}
 		}
 		else
 		{
+			double s2 = 1e-300;
+
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const double m = JitOffs + rnd.getRndValue() * JitMult;
+				Params[ i ] = rnd.getRndValue() - 0.5;
+				s2 += Params[ i ] * Params[ i ];
+			}
 
-				Params[ i ] = wrapParam( rnd,
-					CentParams[ i ] + Params[ i ] * d * m );
+			const double d = Radius / sqrt( s2 );
 
-				NewParams[ i ] = getRealValue( Params, i );
+			if( ParamCount > 4 )
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = wrapParam( rnd,
+						CentParams[ i ] + Params[ i ] * d );
+
+					NewParams[ i ] = getRealValue( Params, i );
+				}
+			}
+			else
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					const double m = JitOffs + rnd.getRndValue() * JitMult;
+
+					Params[ i ] = wrapParam( rnd,
+						CentParams[ i ] + Params[ i ] * d * m );
+
+					NewParams[ i ] = getRealValue( Params, i );
+				}
 			}
 		}
 
@@ -270,6 +298,8 @@ protected:
 		///<
 	int cure; ///< Current evaluation index.
 		///<
+	bool DoCentEval; ///< "True" if an initial objective function evaluation
+		///< at centroid point is required.
 
 	/**
 	 * Function deletes previously allocated buffers.
