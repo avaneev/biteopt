@@ -1,5 +1,6 @@
 //$ nocpp
 
+#include <conio.h>
 #include <stdio.h>
 #include "../biteopt.h"
 #include "../spheropt.h"
@@ -7,13 +8,334 @@
 //#include "../other/nmpopt.h"
 //#include "../other/ccmaes.h"
 
-CBiteRnd rnd;
-
 #include "testfn.h"
 
 #define OPT_CLASS CBiteOpt//CBiteOptDeep//CSMAESOpt//CSpherOpt//CNelderMeadPlusOpt//CCMAESOpt//
 #define OPT_DIMS_PARAMS Dims
 //#define EVALBINS 1
+
+#if 0
+	#define OPT_THREADS 1
+	#include "/libvox/Sources/Core/CWorkerThreadPool.h"
+	using namespace vox;
+	CSyncObject StatsSync;
+#else // OPT_THREADS
+	#define OPT_THREADS 0
+#endif // OPT_THREADS
+
+/**
+ * Summary optimization statistics class.
+ */
+
+class CSumStats
+{
+public:
+	double SumIt_l10n; ///< = sum( log( It ) / log( 10 )) in completed
+		///< attempts.
+		///<
+	double SumRjCost; ///< Summary costs detected in all attempts (successful
+		///< attempts include cost prior to success).
+		///<
+	double SumRMS_l10n; ///< = sum( log( RMS / N ) / log( 10 )).
+		///<
+	int SumRMSCount; ///< The number of elements summed in the SumRMS.
+		///<
+	int TotalAttempts; ///< The overall number of function evaluation attempts.
+		///< Must be set externally.
+		///<
+	int ComplAttempts; ///< The overall number of successful function
+		///< attempts.
+		///<
+	int SumIters; ///< The overall number of performed function evaluations
+		///< in successful attempts.
+		///<
+	int SumImprIters; ///< Sum of improving iterations across sucessful
+		///< attempts.
+		///<
+	int ComplFuncs; ///< The total number of optimized functions.
+		///<
+
+	#if defined( EVALBINS )
+		static const int binspan = 50;
+		static const int binc = 1 + binspan * 2;
+		double bins[ binc ];
+		double RMSSpan;
+	#endif // defined( EVALBINS )
+
+	void clear()
+	{
+		SumIt_l10n = 0.0;
+		SumRjCost = 0.0;
+		SumRMS_l10n = 0.0;
+		SumRMSCount = 0;
+		ComplAttempts = 0;
+		SumIters = 0;
+		SumImprIters = 0;
+		ComplFuncs = 0;
+
+		#if defined( EVALBINS )
+
+		RMSSpan = 3.0;
+
+		int k;
+
+		for( k = 0; k < binc; k++ )
+		{
+			bins[ k ] = 0.0;
+		}
+
+		#endif // defined( EVALBINS )
+	}
+};
+
+/**
+ * Function optimization statistics class, across all attempts.
+ */
+
+class CFuncStats
+{
+public:
+	double MinCost; ///< Minimal cost detected in successes.
+		///<
+	double MinRjCost; ///< Minimal cost detected in rejects.
+		///<
+	int ComplAttempts; ///< The number of completed attempts.
+		///<
+	int SumComplIters; ///< Sum of iterations in completed attempts.
+		///<
+
+	CFuncStats()
+	{
+		clear();
+	}
+
+	void clear()
+	{
+		MinCost = 1e300;
+		MinRjCost = 1e300;
+		ComplAttempts = 0;
+		SumComplIters = 0;
+	}
+};
+
+/**
+ * Function optimizer class.
+ */
+
+class CTestOpt : public OPT_CLASS
+#if OPT_THREADS
+	, public CWorkerThread
+#endif // OPT_THREADS
+{
+public:
+	const CTestFn* fn; ///< Test function.
+		///<
+	double CostThreshold; ///< Successful optimization attempt cost threshold.
+		///<
+	CSumStats* SumStats; ///< Pointer to summary statistics object.
+		///<
+	CFuncStats* FuncStats; ///< Pointer to function's statistics
+		///< object.
+		///<
+	CBiteRnd rnd; ///< Random number generator.
+		///<
+	int Dims; ///< Dimensions in the function.
+		///<
+	int MaxIters; ///< Maximal number of iterations per attempt.
+		///<
+	int Index; ///< Attempt index.
+		///<
+	int* Iters; ///< Pointer to array containing finishing iteration counts
+		///< for each attempt.
+		///<
+	double* minv; ///< Minimal parameter values.
+		///<
+	double* maxv; ///< Maximal parameter values.
+		///<
+	double optv; ///< Optimal value.
+		///<
+	double* shifts; ///< Shifts to apply to function parameters.
+		///<
+	double* signs; ///< Signs or scales to apply to function parameters.
+		///<
+	double** rots; ///< Rotation matrix to apply to function parameters,
+		///< should be provided externally if DoRandomizeAll == true.
+		///<
+	double* tp; ///< Temporary parameter storage.
+		///<
+	double* tp2; ///< Temporary parameter storage 2.
+		///<
+	bool DoRandomize; ///< Apply value randomization.
+		///<
+	bool DoRandomizeAll; ///< Apply all randomizations, "false" only
+		///< shift and scale randomizations will be applied.
+		///<
+
+	CTestOpt()
+		: minv( NULL )
+		, maxv( NULL )
+		, shifts( NULL )
+		, signs( NULL )
+		, tp( NULL )
+		, tp2( NULL )
+	{
+	}
+
+	virtual ~CTestOpt()
+	{
+		delete[] minv;
+		delete[] maxv;
+		delete[] shifts;
+		delete[] signs;
+		delete[] tp;
+		delete[] tp2;
+	}
+
+	void updateDims( const int aDims )
+	{
+		Dims = aDims;
+		delete[] minv;
+		delete[] maxv;
+		delete[] shifts;
+		delete[] signs;
+		delete[] tp;
+		delete[] tp2;
+		minv = new double[ Dims ];
+		maxv = new double[ Dims ];
+		shifts = new double[ Dims ];
+		signs = new double[ Dims ];
+		tp = new double[ Dims ];
+		tp2 = new double[ Dims ];
+
+		OPT_CLASS :: updateDims( OPT_DIMS_PARAMS );
+	}
+
+	virtual void getMinValues( double* const p ) const
+	{
+		int i;
+
+		for( i = 0; i < Dims; i++ )
+		{
+			p[ i ] = minv[ i ];
+		}
+	}
+
+	virtual void getMaxValues( double* const p ) const
+	{
+		int i;
+
+		for( i = 0; i < Dims; i++ )
+		{
+			p[ i ] = maxv[ i ];
+		}
+	}
+
+	virtual double optcost( const double* const p )
+	{
+		if( !DoRandomize )
+		{
+			return( (*fn -> CalcFunc)( p, Dims ));
+		}
+
+		int i;
+
+		for( i = 0; i < Dims; i++ )
+		{
+			tp2[ i ] = p[ i ] * signs[ i ] + shifts[ i ];
+		}
+
+		if( !DoRandomizeAll )
+		{
+			return( (*fn -> CalcFunc)( tp2, Dims ));
+		}
+
+		for( i = 0; i < Dims; i++ )
+		{
+			tp[ i ] = 0.0;
+			int j;
+
+			for( j = 0; j < Dims; j++ )
+			{
+				tp[ i ] += rots[ i ][ j ] * tp2[ j ];
+			}
+		}
+
+		return( (*fn -> CalcFunc)( tp, Dims ));
+	}
+
+	void performOpt()
+	{
+		init( rnd );
+
+		int i = 0;
+		int ImprIters = 0;
+		double PrevCost = 0.0;
+
+		while( true )
+		{
+			if( optimize( rnd ) == 0 )
+			{
+				ImprIters++;
+			}
+
+			i++;
+
+			if( getBestCost() - optv < CostThreshold )
+			{
+				#if OPT_THREADS
+					VOXSYNC( StatsSync );
+				#endif // OPT_THREADS
+
+				if( getBestCost() < FuncStats -> MinCost )
+				{
+					FuncStats -> MinCost = getBestCost();
+				}
+
+				Iters[ Index ] = i;
+				FuncStats -> ComplAttempts++;
+				FuncStats -> SumComplIters += i;
+				SumStats -> ComplAttempts++;
+				SumStats -> SumIters += i;
+				SumStats -> SumImprIters += ImprIters;
+				SumStats -> SumIt_l10n += log( (double) i / Dims ) /
+					log( 10.0 );
+
+				SumStats -> SumRjCost += PrevCost;
+
+				break;
+			}
+
+			PrevCost = getBestCost() - optv;
+
+			if( i == MaxIters )
+			{
+				#if OPT_THREADS
+					VOXSYNC( StatsSync );
+				#endif // OPT_THREADS
+
+				if( getBestCost() < FuncStats -> MinRjCost )
+				{
+					FuncStats -> MinRjCost = getBestCost();
+				}
+
+				Iters[ Index ] = -1;
+				SumStats -> SumRjCost += PrevCost;
+
+				break;
+			}
+		}
+	}
+
+#if OPT_THREADS
+protected:
+	virtual ecode performWork()
+	{
+		performOpt();
+
+		VOXRET;
+	}
+#endif // OPT_THREADS
+};
 
 /**
  * Function test corpus class.
@@ -22,171 +344,24 @@ CBiteRnd rnd;
 class CTester
 {
 public:
-	/**
-	 * Function optimizer class.
-	 */
-
-	class CTestOpt : public OPT_CLASS
-	{
-	public:
-		const CTestFn* fn; ///< Test function.
-			///<
-		int Dims; ///< Dimensions in the function.
-			///<
-		double* minv; ///< Minimal parameter values.
-			///<
-		double* maxv; ///< Maximal parameter values.
-			///<
-		double optv; ///< Optimal value.
-			///<
-		double* shifts; ///< Shifts to apply to function parameters.
-			///<
-		double* signs; ///< Signs or scales to apply to function parameters.
-			///<
-		double** rots; ///< Rotation matrix to apply to function parameters,
-			///< should be provided externally if DoRandomizeAll == true.
-			///<
-		double* tp; ///< Temporary parameter storage.
-			///<
-		double* tp2; ///< Temporary parameter storage 2.
-			///<
-		bool DoRandomize; ///< Apply value randomization.
-			///<
-		bool DoRandomizeAll; ///< Apply all randomizations, "false" only
-			///< shift and scale randomizations will be applied.
-			///<
-
-		CTestOpt()
-			: minv( NULL )
-			, maxv( NULL )
-			, shifts( NULL )
-			, signs( NULL )
-			, tp( NULL )
-			, tp2( NULL )
-		{
-		}
-
-		virtual ~CTestOpt()
-		{
-			delete[] minv;
-			delete[] maxv;
-			delete[] shifts;
-			delete[] signs;
-			delete[] tp;
-			delete[] tp2;
-		}
-
-		void updateDims( const int aDims )
-		{
-			Dims = aDims;
-			delete[] minv;
-			delete[] maxv;
-			delete[] shifts;
-			delete[] signs;
-			delete[] tp;
-			delete[] tp2;
-			minv = new double[ Dims ];
-			maxv = new double[ Dims ];
-			shifts = new double[ Dims ];
-			signs = new double[ Dims ];
-			tp = new double[ Dims ];
-			tp2 = new double[ Dims ];
-
-			OPT_CLASS :: updateDims( OPT_DIMS_PARAMS );
-		}
-
-		virtual void getMinValues( double* const p ) const
-		{
-			int i;
-
-			for( i = 0; i < Dims; i++ )
-			{
-				p[ i ] = minv[ i ];
-			}
-		}
-
-		virtual void getMaxValues( double* const p ) const
-		{
-			int i;
-
-			for( i = 0; i < Dims; i++ )
-			{
-				p[ i ] = maxv[ i ];
-			}
-		}
-
-		virtual double optcost( const double* const p )
-		{
-			if( !DoRandomize )
-			{
-				return( (*fn -> CalcFunc)( p, Dims ));
-			}
-
-			int i;
-
-			for( i = 0; i < Dims; i++ )
-			{
-				tp2[ i ] = p[ i ] * signs[ i ] + shifts[ i ];
-			}
-
-			if( !DoRandomizeAll )
-			{
-				return( (*fn -> CalcFunc)( tp2, Dims ));
-			}
-
-			for( i = 0; i < Dims; i++ )
-			{
-				tp[ i ] = 0.0;
-				int j;
-
-				for( j = 0; j < Dims; j++ )
-				{
-					tp[ i ] += rots[ i ][ j ] * tp2[ j ];
-				}
-			}
-
-			return( (*fn -> CalcFunc)( tp, Dims ));
-		}
-	};
-
 	int DefDims; ///< The default number of dimensions to use.
 		///<
-	CTestOpt* opt; ///< Optimizer.
+	CSumStats SumStats; ///< Summary statistics.
 		///<
-	double ItAvg; ///< Average of convergence time after run() across
-		///< functions.
+	double SuccessFunc; ///< Average Success func, available after run().
 		///<
-	double ItAvg_l10n; ///< = log( AtAvg / N ) / log( 10 ).
+	double SuccessAt; ///< Average Success attempts, available after run().
 		///<
-	double ItAvg2; ///< Average of convergence time after run() across all
-		///< attempts.
+	double AvgRMS; ///< Average RMS, available after run().
 		///<
-	double ItAvg2_l10n; ///< = avg( log( At / N ) / log( 10 )).
+	double AvgIt; ///< Average Iters, available after run().
 		///<
-	double RMSAvg; ///< Std.dev of convergence time after run().
+	double AvgRjCost; ///< Average reject cost, available after run().
 		///<
-	double RMSAvg_l10n; ///< = log( RMSAvg / N ) / log( 10 ).
-		///<
-	double ItRtAvg; ///< Average ratio of std.dev and average after run().
-		///<
-	double RjAvg; ///< Average number of rejects.
-		///<
-	double AtAvg; ///< Average number of attempts.
-		///<
-	double CostAvg; ///< Average achieved cost among all functions, including
-		///< in successful and rejected attempts, zero-based.
-		///<
-	double Success; ///< Success rate.
 
 	CTester()
-		: opt( new CTestOpt() )
-		, RMCacheCount( 0 )
+		: RMCacheCount( 0 )
 	{
-	}
-
-	~CTester()
-	{
-		delete opt;
 	}
 
 	/**
@@ -242,66 +417,56 @@ public:
 	}
 
 	/**
-	 * Function runs the test. On return, the ItAvg, RMSAvg, ItRtAvg, RjAvg,
-	 * AtAvg class variables will be updated.
+	 * Function runs the test. On return, SumStats object will be updated.
 	 */
 
 	void run()
 	{
-		ItAvg = 0.0;
-		ItAvg_l10n = 0.0;
-		ItAvg2 = 0.0;
-		int ItAvg2Count = 0;
-		ItAvg2_l10n = 0.0;
-		RMSAvg = 0.0;
-		RMSAvg_l10n = 0.0;
-		ItRtAvg = 0.0;
-		int AvgCount = 0;
-		RjAvg = 0.0;
-		AtAvg = 0.0;
-		CostAvg = 0.0;
-		double RejTotal = 0.0;
-		int ComplTotal = 0;
+		SumStats.clear();
+		SumStats.TotalAttempts = FnCount * IterCount;
+
+		CTestOpt* opt;
 		int* Iters = new int[ IterCount ];
 		int k;
-		double GoodIters = 0.0;
-		int GoodItersCount = 0;
 
-		#if defined( EVALBINS )
-		const int binspan = 50;
-		const int binc = 1 + binspan * 2;
-		double bins[ binc ];
-		const double RMSSpan = 3.0;
+		#if OPT_THREADS
+		CWorkerThreadPool Threads;
 
-		for( k = 0; k < binc; k++ )
+		for( k = 0; k < CSystem :: getProcessorCount(); k++ )
 		{
-			bins[ k ] = 0.0;
+			Threads.add( new CTestOpt() );
 		}
-		#endif // defined( EVALBINS )
+		#else // OPT_THREADS
+			opt = new CTestOpt();
+		#endif // OPT_THREADS
 
 		for( k = 0; k < FnCount; k++ )
 		{
 			const CTestFnData* const fndata = &FuncData[ k ];
-			double AvgIter = 0.0;
-			double MinCost = 1e300; // Minimal cost detected in successes.
-			double MinRjCost = 1e300; // Minimal cost detected in rejects.
-			double MinCost2 = 1e300; // Minimal cost detected in successes.
-			double AvgRjCost = 0.0; // Average cost detected in rejects.
-			int Rej = 0; // The number of rejected attempts.
-			int j;
+			const int Dims = ( Funcs[ k ] -> Dims == 0 ?
+				fndata -> DefDims : Funcs[ k ] -> Dims );
+
+			CFuncStats FuncStats;
 			int i;
-
-			opt -> fn = Funcs[ k ];
-			const int Dims = ( opt -> fn -> Dims == 0 ?
-				fndata -> DefDims : opt -> fn -> Dims );
-
-			opt -> updateDims( Dims );
-			opt -> DoRandomize = fndata -> DoRandomize;
-			opt -> DoRandomizeAll = fndata -> DoRandomizeAll;
+			int j;
 
 			for( j = 0; j < IterCount; j++ )
 			{
-				rnd.init( k + j * 10000 );
+				#if OPT_THREADS
+				VOXERRSKIP( Threads.getIdleThread( opt ));
+				#endif // OPT_THREADS
+
+				opt -> updateDims( Dims );
+				opt -> fn = Funcs[ k ];
+				opt -> CostThreshold = CostThreshold;
+				opt -> DoRandomize = fndata -> DoRandomize;
+				opt -> DoRandomizeAll = fndata -> DoRandomizeAll;
+				opt -> MaxIters = InnerIterCount;
+				opt -> SumStats = &SumStats;
+				opt -> FuncStats = &FuncStats;
+				opt -> Index = j;
+				opt -> Iters = Iters;
+				opt -> rnd.init( k + j * 10000 );
 
 				if( opt -> fn -> ParamFunc != NULL )
 				{
@@ -323,7 +488,7 @@ public:
 				{
 					if( fndata -> DoRandomizeAll )
 					{
-						getRotationMatrix( Dims, opt -> rots, rnd );
+						getRotationMatrix( Dims, opt -> rots, opt -> rnd );
 					}
 
 					for( i = 0; i < Dims; i++ )
@@ -332,87 +497,45 @@ public:
 							( opt -> maxv[ i ] - opt -> minv[ i ]) * 0.5;
 
 						opt -> shifts[ i ] = d *
-							( rnd.getRndValue() - 0.5 ) * 2.0;
+							( opt -> rnd.getRndValue() - 0.5 ) * 2.0;
 
 						opt -> minv[ i ] -= d * 2.5;
 						opt -> maxv[ i ] += d * 2.5;
 
-						opt -> signs[ i ] = 1.0 + rnd.getRndValue() * 0.5;
+						opt -> signs[ i ] = 1.0 +
+						opt -> rnd.getRndValue() * 0.5;
 					}
 				}
 
-				opt -> init( rnd );
-				i = 0;
-				int impriters = 0;
-
-				while( true )
-				{
-					if( opt -> optimize( rnd ) == 0 )
-					{
-						impriters++;
-					}
-
-					i++;
-
-					if( opt -> getBestCost() - opt -> optv < CostThreshold )
-					{
-						if( opt -> getBestCost() < MinCost )
-						{
-							MinCost = opt -> getBestCost();
-						}
-
-						if( opt -> getBestCost() - opt -> optv < MinCost2 )
-						{
-							MinCost2 = opt -> getBestCost() - opt -> optv;
-						}
-
-						GoodIters += (double) impriters / i;
-						GoodItersCount++;
-						ComplTotal++;
-						const int itc = i;
-						Iters[ j ] = itc;
-						AvgIter += itc;
-						ItAvg2 += itc;
-						ItAvg2_l10n += log( (double) itc / Dims ) /
-							log( 10.0 );
-
-						ItAvg2Count++;
-						break;
-					}
-
-					if( i == InnerIterCount )
-					{
-						if( opt -> getBestCost() < MinRjCost )
-						{
-							MinRjCost = opt -> getBestCost();
-						}
-
-						AvgRjCost += opt -> getBestCost() - opt -> optv;
-						GoodIters += (double) impriters / i;
-						GoodItersCount++;
-						Rej++;
-						Iters[ j ] = -1;
-						break;
-					}
-				}
+				#if OPT_THREADS
+				opt -> start();
+				#else // OPT_THREADS
+				opt -> performOpt();
+				#endif // OPT_THREADS
 			}
 
-			MinCost = ( Rej >= IterCount ?
-				1.0 / ( Rej - IterCount ) : MinCost );
+			#if OPT_THREADS
+			VOXERRSKIP( Threads.waitAllForFinish() );
+			#endif // OPT_THREADS
 
-			MinRjCost = ( Rej == 0 ? 1.0 / Rej : MinRjCost );
-			double Avg;
-			double RMS;
+			const double MinCost = ( FuncStats.ComplAttempts == 0 ?
+				1.0 / FuncStats.ComplAttempts : FuncStats.MinCost );
 
-			if( Rej >= IterCount )
+			const double MinRjCost = ( FuncStats.ComplAttempts == IterCount ?
+				1.0 / ( IterCount - FuncStats.ComplAttempts ) :
+				FuncStats.MinRjCost );
+
+			double Avg = 0.0;
+			double RMS = 0.0;
+
+			if( FuncStats.ComplAttempts > 0 )
 			{
-				Avg = 0.0;
+				SumStats.ComplFuncs++;
+				Avg = (double) FuncStats.SumComplIters /
+					FuncStats.ComplAttempts;
+
 				RMS = 0.0;
-			}
-			else
-			{
-				Avg = AvgIter / ( IterCount - Rej );
-				RMS = 0.0;
+				int RMSCount = 0;
 
 				for( j = 0; j < IterCount; j++ )
 				{
@@ -420,123 +543,112 @@ public:
 					{
 						const double v = Iters[ j ] - Avg;
 						RMS += v * v;
+						RMSCount++;
 					}
 				}
 
-				RMS = sqrt( RMS / ( IterCount - Rej ));
-
-				ItAvg += Avg;
-				ItAvg_l10n += log( Avg / Dims ) / log( 10.0 );
-				RMSAvg += RMS;
-				RMSAvg_l10n += ( RMS == 0.0 ? 10.0 :
-					log( RMS / Dims ) / log( 10.0 ));
-
-				ItRtAvg += RMS / Avg;
-				AvgCount++;
+				if( RMSCount > 0 && RMS > 0.0 )
+				{
+					RMS = sqrt( RMS / RMSCount );
+					SumStats.SumRMS_l10n += log( RMS / Dims ) / log( 10.0 );
+					SumStats.SumRMSCount++;
+				}
 
 				#if defined( EVALBINS )
 				for( j = 0; j < IterCount; j++ )
 				{
 					if( Iters[ j ] >= 0 )
 					{
-						const double v = ( Iters[ j ] - Avg ) / RMS / RMSSpan;
-						int z = (int) (( v + 1.0 ) * binspan + 0.5 );
+						const double v = ( Iters[ j ] - Avg ) / RMS /
+							SumStats.RMSSpan;
+
+						int z = (int) (( v + 1.0 ) * SumStats.binspan + 0.5 );
 
 						if( z < 0 )
 						{
 							z = 0;
 						}
 						else
-						if( z >= binc )
+						if( z >= SumStats.binc )
 						{
-							z = binc - 1;
+							z = SumStats.binc - 1;
 						}
 
-						bins[ z ]++;
+						SumStats.bins[ z ]++;
 					}
 				}
 				#endif // defined( EVALBINS )
 			}
 
-			const double Rj = (double) Rej / IterCount;
-			RjAvg += Rj;
-			const double At = 1.0 / ( 1.0 - (double) Rej / IterCount );
-			AvgRjCost = ( Rej > 0 ? AvgRjCost / Rej : 0.0 );
-			CostAvg += ( Rej >= IterCount ? AvgRjCost :
-				( Rej == 0 ? MinCost2 : ( AvgRjCost * Rej +
-				MinCost2 * ( IterCount - Rej )) / IterCount ));
-
-			RejTotal += Rej;
+			const double At = 1.0 / ( (double) FuncStats.ComplAttempts /
+				IterCount );
 
 			if( DoPrint )
 			{
 				printf( "AI:%6.0f RI:%5.0f At:%5.2f C:%13.8f RjC:%7.4f "
-					"%s_%i%c\n", Avg, RMS, At, MinCost,
-					MinRjCost, opt -> fn -> Name, Dims,
+					"%s_%i%c\n", Avg, RMS, At, MinCost, MinRjCost,
+					opt -> fn -> Name, Dims,
 					( fndata -> DoRandomize ? 'r' : ' ' ));
 //				printf( "C:%20.13f %20.13f %s_%i\n",
 //					MinRjCost, opt -> optv, opt -> fn -> Name, Dims );
 			}
+
+			if( _kbhit() && _getch() == 27 )
+			{
+				break;
+			}
 		}
 
 		#if defined( EVALBINS )
-		for( k = 0; k < binc; k++ )
+		for( k = 0; k < SumStats.binc; k++ )
 		{
-			printf( "%2.2f\t%2.2f\n", RMSSpan * ( k - binspan ) / binspan,
-				bins[ k ] / ComplTotal * 100.0 );
+			printf( "%2.2f\t%2.2f\n", SumStats.RMSSpan *
+				( k - SumStats.binspan ) / SumStats.binspan,
+				100.0 * SumStats.bins[ k ] / SumStats.ComplAttempts );
 		}
 		#endif // defined( EVALBINS )
 
-		ItAvg /= AvgCount;
-		ItAvg_l10n /= AvgCount;
-		RMSAvg /= AvgCount;
-		RMSAvg_l10n /= AvgCount;
-		ItRtAvg /= AvgCount;
-		ItAvg2 /= ItAvg2Count;
-		ItAvg2_l10n /= ItAvg2Count;
-		RjAvg /= FnCount;
-		AtAvg = 1.0 / ( 1.0 - (double) RejTotal / IterCount / FnCount );
-		CostAvg /= FnCount;
-		Success = 100.0 * ComplTotal / FnCount / IterCount;
+		SuccessFunc = 100.0 * SumStats.ComplFuncs / FnCount;
+		SuccessAt = 100.0 * SumStats.ComplAttempts / SumStats.TotalAttempts;
+		AvgRMS = SumStats.SumRMS_l10n / SumStats.SumRMSCount;
+		AvgIt = SumStats.SumIt_l10n / SumStats.ComplAttempts;
+		AvgRjCost = SumStats.SumRjCost * FnCount / SumStats.TotalAttempts;
 
 		if( DoPrint )
 		{
 			#if defined( EVALBINS )
-			printf( ">=%.0f-sigma: %.2f%%\n", RMSSpan,
-				bins[ binc - 1 ] / ComplTotal * 100.0 );
+			printf( ">=%.0f-sigma: %.2f%%\n", SumStats.RMSSpan,
+				100.0 * SumStats.bins[ SumStats.binc - 1 ] /
+				SumStats.ComplAttempts );
 			#endif // defined( EVALBINS )
 
-			printf( "GoodItersAvg: %.2f%% (avg percentage of improving "
-				"iterations in all attempts)\n",
-				GoodIters / GoodItersCount * 100.0 );
+			printf( "Func count: %i, Attempts: %i, MaxIters/Attempt: %i\n",
+				FnCount, IterCount, InnerIterCount );
 
-			printf( "Success: %.2f%%\n", Success );
-			printf( "ItAvg: %.1f (avg convergence time)\n", ItAvg );
-			printf( "ItAvg_l10n: %.3f (avg log10(it/N))\n", ItAvg_l10n );
-			printf( "ItAvg2: %.1f (avg convergence time across all "
-				"successful attempts)\n", ItAvg2 );
+			printf( "GoodItersAvg: %.2f%% (percent of improving "
+				"iterations in successful attempts)\n", 100.0 *
+				SumStats.SumImprIters / SumStats.SumIters );
 
-			printf( "ItAvg2_l10n: %.3f (avg log10(it/N) across all successful "
-				"attempts)\n", ItAvg2_l10n );
+			printf( "Func success: %.2f%%\n", SuccessFunc );
+			printf( "Attempts success: %.2f%%\n", SuccessAt );
+			printf( "AvgRMS_l10n: %.1f (avg log10(std.dev/N) of convergence time)\n",
+				AvgRMS );
 
-			printf( "RMSAvg: %.1f (avg std.dev of convergence time)\n",
-				RMSAvg );
+			printf( "AvgIt_l10n: %.3f (avg log10(it/N) across all successful "
+				"attempts)\n", AvgIt );
 
-			printf( "ItRtAvg: %.6f (avg ratio of std.dev and average)\n",
-				ItRtAvg );
-
-			printf( "RjAvg: %.2f%% (avg percentage of rejects)\n",
-				RjAvg * 100.0 );
-
-			printf( "AtAvg: %.3f (avg number of attempts)\n", AtAvg );
-			printf( "CostAvg: %.6f (avg cost)\n", CostAvg );
+			printf( "AvgRjCost: %.6f (avg reject cost)\n", AvgRjCost );
 		}
 
 		delete[] Iters;
+
+		#if !OPT_THREADS
+		delete opt;
+		#endif // !OPT_THREADS
 	}
 
 protected:
-	static const int MaxFuncs = 500; ///< The maximal number of functions
+	static const int MaxFuncs = 1000; ///< The maximal number of functions
 		///< possible to add to the tester.
 		///<
 
@@ -607,7 +719,7 @@ protected:
 	};
 
 	static const int RMCacheSize = 8; ///< The maximal number of different
-		///< dimensionalities supported by cache.
+		///< dimensionalities supported by cache in the same run.
 		///<
 	int RMCacheCount; ///< The number of cache entires actually used.
 		///<
@@ -635,7 +747,7 @@ protected:
 					unif = 1e-99;
 				}
 
-				double unif2 = rnd.getRndValue();
+				double unif2 = rrnd.getRndValue();
 
 				if( unif2 == 0.0 )
 				{

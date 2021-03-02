@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.4
+ * @version 2021.5
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -39,18 +39,29 @@
 #include <string.h>
 
 /**
- * Class that implements random number generation. The default implementation
- * includes a relatively fast pseudo-random number generator (PRNG) using a
- * classic formula "seed = ( a * seed + c ) % m" (LCG). This implementation
- * uses bits 32-61 (30 bits) of the state variable which ensures at least 2^32
- * period in the lowest significant bit of the resulting pseudo-random
- * sequence. See https://en.wikipedia.org/wiki/Linear_congruential_generator
- * for more details.
+ * Class that implements a pseudo-random number generator (PRNG). The default
+ * implementation includes a relatively fast PRNG that uses a classic formula
+ * "seed = ( a * seed + c ) % m" (LCG). This implementation uses bits 34-63
+ * (30 bits) of the state variable which ensures at least 2^34 period in the
+ * lowest significant bit of the resulting pseudo-random sequence. See
+ * https://en.wikipedia.org/wiki/Linear_congruential_generator for more
+ * details.
  */
 
 class CBiteRnd
 {
 public:
+	/**
+	 * Constructor, calls the init() function.
+	 *
+	 * @param NewSeed Random seed value.
+	 */
+
+	CBiteRnd( const int NewSeed = 1 )
+	{
+		init( NewSeed );
+	}
+
 	/**
 	 * Function initializes *this PRNG object.
 	 *
@@ -59,12 +70,42 @@ public:
 
 	void init( const int NewSeed )
 	{
-		seed = NewSeed;
+		seed = (uint64_t) NewSeed;
 
 		// Skip first values to make PRNG "settle down".
 
-		seed = 500009 * seed + 300119;
-		seed = 500009 * seed + 300119;
+		advance();
+		advance();
+	}
+
+	/**
+	 * @return Scale of "raw" random values returned by functions with the
+	 * "raw" suffix.
+	 */
+
+	inline static int getRawScale()
+	{
+		return( 0x40000000 );
+	}
+
+	/**
+	 * Function returns the number of significant bits in the "raw" random
+	 * value.
+	 */
+
+	inline static int getRawBitCount()
+	{
+		return( 30 );
+	}
+
+	/**
+	 * @return Inverse scale of "raw" random values returned by functions with
+	 * the "raw" suffix.
+	 */
+
+	inline static double getRawScaleInv()
+	{
+		return( 9.31322574615478516e-10 );
 	}
 
 	/**
@@ -73,29 +114,9 @@ public:
 
 	double getRndValue()
 	{
-		seed = 500009 * seed + 300119;
+		advance();
 
-		return((( seed >> 32 ) & 0x3FFFFFFF ) * 9.31322574615478516e-10 );
-	}
-
-	/**
-	 * @return Scale of "raw" random values returned by functions with the
-	 * "raw" suffix.
-	 */
-
-	static int32_t getRawScale()
-	{
-		return( 0x40000000 );
-	}
-
-	/**
-	 * @return Inverse scale of "raw" random values returned by functions with
-	 * the "raw" suffix.
-	 */
-
-	static double getRawScaleInv()
-	{
-		return( 9.31322574615478516e-10 );
+		return(( seed >> 34 ) * getRawScaleInv() );
 	}
 
 	/**
@@ -103,23 +124,24 @@ public:
 	 * "raw" scale.
 	 */
 
-	int32_t getUniformRaw()
+	int getUniformRaw()
 	{
-		seed = 500009 * seed + 300119;
+		advance();
 
-		return( (int32_t) (( seed >> 32 ) & 0x3FFFFFFF ));
+		return( (int) ( seed >> 34 ));
 	}
 
 	/**
 	 * @return TPDF random number in the range (-1; 1), in the "raw" scale.
 	 */
 
-	int32_t getTPDFRaw()
+	int getTPDFRaw()
 	{
-		seed = 500009 * seed + 300119;
-		const int32_t v1 = (int32_t) (( seed >> 32 ) & 0x3FFFFFFF );
-		seed = 500009 * seed + 300119;
-		const int32_t v2 = (int32_t) (( seed >> 32 ) & 0x3FFFFFFF );
+		advance();
+		const int v1 = (int) ( seed >> 34 );
+
+		advance();
+		const int v2 = (int) ( seed >> 34 );
 
 		return( v1 - v2 );
 	}
@@ -127,23 +149,36 @@ public:
 private:
 	uint64_t seed; ///< The current random seed value.
 		///<
+
+	/**
+	 * Function advances the PRNG.
+	 */
+
+	void advance()
+	{
+		seed = 500009 * seed + 300119;
+	}
 };
 
 /**
  * Histogram class. Used to keep track of success of various choices. Updates
  * probabilities of future choices based on the current histogram state.
  *
- * @tparam Count The number of possible choices.
+ * If the choice is used to select probability value, with a later probability
+ * evalutaion, the choice should be set to a random choice if the probability
+ * does not realise.
+ *
+ * @tparam Count The number of possible choices, greater than 1.
  * @tparam Divisor Divisor used to obtain a minimal histogram value. Controls
  * the ratio between minimal and maximal possible probabilities of all
  * choices. Should be usually equal to Count, but can be set up to Count * 2
  * if a certain choice is likely to be effective most of the time.
- * @tparam Incr Histogram increment (on success) or decrement (on fail).
- * Usually equal to 1, but a higher value can be used if a steep momentary
- * probability increase of a certain choice is effective.
+ * @tparam IncrDecr Histogram increment (on success) or decrement
+ * (on failure). Usually equal to 1, but a higher value can be used if a steep
+ * momentary probability change of a certain choice is effective.
  */
 
-template< int Count, int Divisor, int Incr >
+template< int Count, int Divisor, int IncrDecr >
 class CBiteOptHist
 {
 public:
@@ -167,45 +202,43 @@ public:
 	/**
 	 * This function should be called when a certain choice is successful.
 	 *
-	 * @param Index Choice index. If negative, histogram will not be updated.
+	 * @param Index Choice index. Should be in the Count range.
 	 */
 
 	void incr( const int Index )
 	{
-		if( Index < 0 )
-		{
-			return;
-		}
-
-		Hist[ Index ] += Incr;
+		Hist[ Index ] += IncrDecr;
 		updateProbs();
 	}
 
 	/**
 	 * This function should be called when a certain choice is a failure.
 	 *
-	 * @param Index Choice index. If negative, histogram will not be updated.
+	 * @param Index Choice index. Should be in the Count range.
 	 */
 
 	void decr( const int Index )
 	{
-		if( Index < 0 )
-		{
-			return;
-		}
-
-		Hist[ Index ] -= Incr;
+		Hist[ Index ] -= IncrDecr;
 		updateProbs();
 	}
 
 	/**
 	 * Function produces a random choice index based on the current histogram
 	 * state.
+	 *
+	 * @param rnd PRNG object.
 	 */
 
-	int select( CBiteRnd& rnd )
+	int select( CBiteRnd& rnd ) const
 	{
 		const double rv = rnd.getRndValue() * ProbSum;
+
+		if( Count == 2 )
+		{
+			return( rv < Probs[ 0 ] ? 0 : 1 );
+		}
+
 		int i;
 
 		for( i = 1; i < Count; i++ )
@@ -221,9 +254,11 @@ public:
 
 	/**
 	 * Function returns a uniformly-distributed choice index.
+	 *
+	 * @param rnd PRNG object.
 	 */
 
-	int selectRandom( CBiteRnd& rnd )
+	int selectRandom( CBiteRnd& rnd ) const
 	{
 		return( (int) ( rnd.getUniformRaw() * rcm ));
 	}
@@ -271,12 +306,74 @@ protected:
 
 		for( i = 0; i < Count; i++ )
 		{
-			Probs[ i ] = ( Probs[ i ] < HistSum ? HistSum : Probs[ i ]) +
+			const double v = ( Probs[ i ] < HistSum ? HistSum : Probs[ i ]) +
 				ProbSum;
 
-			ProbSum = Probs[ i ];
+			Probs[ i ] = v;
+			ProbSum = v;
 		}
 	}
+};
+
+/**
+ * Histogram class for binary variables. A lot more computationally-efficient,
+ * but functionally similar to the CBiteOptHistogram class in performance.
+ *
+ * The choice should be set to a random choice if the probability does not
+ * realise.
+ */
+
+class CBiteOptHistBinary
+{
+public:
+	/**
+	 * This function resets histogram, should be called before calling other
+	 * functions, including after object's construction.
+	 */
+
+	void reset()
+	{
+		Hist[ 0 ] = 0;
+		Hist[ 1 ] = 0;
+	}
+
+	/**
+	 * This function should be called when a certain choice is successful.
+	 *
+	 * @param Index Choice index. Should be equal to 0 or 1.
+	 */
+
+	void incr( const int Index )
+	{
+		Hist[ Index ]++;
+	}
+
+	/**
+	 * This function should be called when a certain choice is a failure.
+	 *
+	 * @param Index Choice index. Should be equal to 0 or 1.
+	 */
+
+	void decr( const int Index )
+	{
+		Hist[ Index ]--;
+	}
+
+	/**
+	 * Function produces a fixed binary choice index based on the current
+	 * histogram state.
+	 *
+	 * @param rnd PRNG object. Not used.
+	 */
+
+	int select( CBiteRnd& rnd ) const
+	{
+		return( Hist[ 1 ] > Hist[ 0 ]);
+	}
+
+protected:
+	int Hist[ 2 ]; ///< Histogram.
+		///<
 };
 
 /**
@@ -598,8 +695,6 @@ public:
 		, DiffValues( NULL )
 		, NewParams( NULL )
 		, BestParams( NULL )
-		, BestCost( 0.0 )
-		, BitsLeft( 0 )
 	{
 	}
 
@@ -802,7 +897,7 @@ protected:
 	}
 
 	/**
-	 * Function returns the next random bit, for use in 50% probability
+	 * Function returns the next random bit, usually used for 50% probability
 	 * evaluations efficiently.
 	 */
 
@@ -811,7 +906,7 @@ protected:
 		if( BitsLeft == 0 )
 		{
 			BitPool = rnd.getUniformRaw();
-			BitsLeft = 29;
+			BitsLeft = rnd.getRawBitCount() - 1;
 
 			const int b = ( BitPool & 1 );
 			BitPool >>= 1;
@@ -823,6 +918,32 @@ protected:
 			const int b = ( BitPool & 1 );
 			BitPool >>= 1;
 			BitsLeft--;
+
+			return( b );
+		}
+	}
+
+	/**
+	 * Function returns the next 2 random bits.
+	 */
+
+	int getBits2( CBiteRnd& rnd )
+	{
+		if( BitsLeft < 2 )
+		{
+			BitPool = rnd.getUniformRaw();
+			BitsLeft = rnd.getRawBitCount() - 2;
+
+			const int b = ( BitPool & 3 );
+			BitPool >>= 2;
+
+			return( b );
+		}
+		else
+		{
+			const int b = ( BitPool & 3 );
+			BitPool >>= 2;
+			BitsLeft -= 2;
 
 			return( b );
 		}

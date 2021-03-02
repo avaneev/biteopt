@@ -81,10 +81,10 @@ int main()
 	int i;
 
 	CTestOpt opt;
-	opt.updateDims( N, 5 );
+	opt.updateDims( N, 6 );
 	opt.init( rnd );
 
-	for( i = 0; i < 100000; i++ )
+	for( i = 0; i < 200000; i++ )
 	{
 		opt.optimize( rnd );
 	}

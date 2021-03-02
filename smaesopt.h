@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.4
+ * @version 2021.5
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -74,10 +74,14 @@ public:
 	 * Function initializes *this optimizer.
 	 *
 	 * @param rnd Random number generator.
-	 * @param InitParams Initial parameter values.
+	 * @param InitParams Initial parameter values, only used as centroid,
+	 * not evaluated.
+	 * @param InitRadius Initial radius, multiplier relative to the default
+	 * sigma value.
 	 */
 
-	void init( CBiteRnd& rnd, const double* const InitParams = NULL )
+	void init( CBiteRnd& rnd, const double* const InitParams = NULL,
+		const double InitRadius = 1.0 )
 	{
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
@@ -90,14 +94,30 @@ public:
 		// Provide initial centroid and sigma (CurParams is used here
 		// temporarily, otherwise initially undefined).
 
+		const double sd = 0.25 * InitRadius;
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		if( InitParams == NULL )
 		{
-			CurParams[ 0 ][ i ] = ( MinValues[ i ] + MaxValues[ i ]) * 0.5;
-			const double d = MaxValues[ i ] - MinValues[ i ];
-			CurParams[ 1 ][ i ] = fabs( d ) / 6.0;
-			DiffValues[ i ] = 1.0 / d;
+			for( i = 0; i < ParamCount; i++ )
+			{
+				CurParams[ 0 ][ i ] =
+					( MinValues[ i ] + MaxValues[ i ]) * 0.5;
+
+				const double d = MaxValues[ i ] - MinValues[ i ];
+				CurParams[ 1 ][ i ] = fabs( d ) * sd;
+				DiffValues[ i ] = 1.0 / d;
+			}
+		}
+		else
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				CurParams[ 0 ][ i ] = InitParams[ i ];
+				const double d = MaxValues[ i ] - MinValues[ i ];
+				CurParams[ 1 ][ i ] = fabs( d ) * sd;
+				DiffValues[ i ] = 1.0 / d;
+			}
 		}
 
 		UsePopSize = Ort.init( CurParams[ 0 ], CurParams[ 1 ]);

@@ -38,6 +38,8 @@ there are no competing minima in a function (or the true/global minimum is
 rogue and cannot be detected), this method in absolute majority of runs will
 return the same optimum.
 
+BITEOPT is a self-optimizing method.
+
 ## Comparison ##
 
 This "black-box" optimization method was tested on 450+ 1-14 dimensional
@@ -59,7 +61,7 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
 success rate is >93% while the average number of objective function
-evaluations is ~370.
+evaluations is ~380.
 
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of
@@ -113,7 +115,7 @@ fune-tuning from the user nor the author.
 ## CBiteOptDeep (biteopt.h) ##
 
 Deep optimization class. Based on an array of M CBiteOpt objects. This "deep"
-method pushes the newly-obtained solution to the next CBiteOpt object which
+method pushes the newly-obtained solution to the random CBiteOpt object which
 is then optimized. This method while increasing the convergence time is able
 to solve complex multi-modal functions.
 
@@ -328,13 +330,7 @@ increase average convergence time of the method, but in most cases won't
 impact method's ability to find a global solution. "Short-cuts" are used only
 in 5% of objective function evaluations.
 
-3. In some instances, the method uses resetting counters instead of direct
-probability evaluation. This was done to reduce method's overhead. In
-practice, resetting counters are equivalent to `if( getRndValue() <
-Probability )` constructs, and actually provide slightly better convergence
-properties, probably due to some "state automata" effect.
-
-4. The method uses LCG pseudo-random number generator due to its efficiency.
+3. The method uses LCG pseudo-random number generator due to its efficiency.
 The method was also tested with a more statistically-correct PRNG and the
 difference turned out to be negligible.
 

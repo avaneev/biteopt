@@ -13,11 +13,14 @@
 // https://people.sc.fsu.edu/~jburkardt/m_src/test_opt/test_opt.html
 // http://geocities.ws/eadorio/mvf.pdf
 
-#include <math.h>
+#include "../biteaux.h"
 
-#if !defined( sqr )
-	#define sqr( x ) (( x ) * ( x ))
-#endif // !defined( sqr )
+CBiteRnd fnrnd( 1000000000 );
+
+inline double sqr( const double x )
+{
+	return( x * x );
+}
 
 #if !defined( M_PI )
 	#define M_PI 3.14159265358979324
@@ -2688,7 +2691,7 @@ static double calcStochastic( const double* const x, const int N )
 
 	for( i = 0; i < N; i++ )
 	{
-		s += rnd.getRndValue()*fabs(x[i]-1.0/(i+1));
+		s += fnrnd.getRndValue()*fabs(x[i]-1.0/(i+1));
 	}
 
 	return( s );
@@ -2704,7 +2707,7 @@ static double calcXinSheYang01( const double* const x, const int N )
 
 	for( i = 0; i < N; i++ )
 	{
-		s += rnd.getRndValue()*pow(fabs(x[i]),i+1);
+		s += fnrnd.getRndValue()*pow(fabs(x[i]),i+1);
 	}
 
 	return( s );
@@ -4257,9 +4260,9 @@ const CTestFn* OptCorpusNDRotOfs[] = { &TestFnSchwefel220, &TestFnSchwefel221,
 	&TestFnYaoLiu09, &TestFnCosineMixture, &TestFnLevyMontalvo2,
 	&TestFnDropWave, &TestFnSalomon, &TestFnWhitley, &TestFnDixonPrice,
 	&TestFnPenalty01, &TestFnPenalty02, &TestFnPinter, &TestFnStretchedV,
-	&TestFnXinSheYang01, &TestFnHilbert, &TestTridiagonalMatrix,
-	&TestFnInvertedCosine, &TestFnSinusoidal, &TestFnLunacekBiRastrigin,
-	&TestSphericalSinc, &TestFnCigar, NULL };
+	&TestFnHilbert, &TestTridiagonalMatrix, &TestFnInvertedCosine,
+	&TestFnSinusoidal, &TestFnLunacekBiRastrigin, &TestSphericalSinc,
+	&TestFnCigar, NULL };
 
 // N-dimensional test corpus of functions that support rotation and offseting,
 // only "solvable" functions.
@@ -4276,8 +4279,7 @@ const CTestFn* OptCorpusNDRotOfsSol[] = { &TestFnSchwefel220,
 	&TestFnSchwefel01, &TestFnSchwefel02, &TestFnLevy03, &TestFnYaoLiu09,
 	&TestFnLevyMontalvo2, &TestFnCosineMixture, &TestFnLevyMontalvo2,
 	&TestFnPenalty01, &TestFnPenalty02, &TestFnPinter, &TestFnStretchedV,
-	&TestFnXinSheYang01, &TestFnHilbert, &TestTridiagonalMatrix,
-	&TestFnSinusoidal, NULL };
+	&TestFnHilbert, &TestTridiagonalMatrix, &TestFnSinusoidal, NULL };
 
 // Failing functions.
 

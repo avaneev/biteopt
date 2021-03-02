@@ -11,7 +11,7 @@ class CTestOpt : public CBiteOptDeep
 public:
 	CTestOpt()
 	{
-		updateDims( ::N, 5 );
+		updateDims( ::N, 6 );
 	}
 
 	virtual void getMinValues( double* const p ) const
@@ -65,7 +65,7 @@ int main()
 
 	int i;
 
-	for( i = 0; i < 100000; i++ )
+	for( i = 0; i < 200000; i++ )
 	{
 		opt.optimize( rnd );
 	}

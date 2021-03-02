@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.4
+ * @version 2021.5
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -118,7 +118,8 @@ public:
 	 * @param rnd Random number generator.
 	 * @param InitParams If not NULL, initial parameter vector, also used as
 	 * centroid.
-	 * @param InitRadius Initial radius, relative to the default value.
+	 * @param InitRadius Initial radius, multiplier relative to the default
+	 * sigma value.
 	 */
 
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL,
@@ -185,7 +186,7 @@ public:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				Params[ i ] = CentParams[ i ];
-				NewParams[ i ] = getRealValue( Params, i );
+				NewParams[ i ] = getRealValue( CentParams, i );
 			}
 		}
 		else
