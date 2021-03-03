@@ -69,7 +69,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ?
-			PopSize0 : 13 + aParamCount * 2.0 );
+			PopSize0 : 7 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -542,7 +542,7 @@ protected:
 		///<
 	uint64_t* IntParams; ///< Temporary integer value parameter buffer.
 		///<
-	CBiteOptHist< 3, 3, 2 > ParPopHist; ///< Parallel population histogram
+	CBiteOptHist< 3, 3, 1 > ParPopHist; ///< Parallel population histogram
 		///< (count must match ParPopCoun).
 		///<
 	CBiteOptHistBinary ParPopMHist; ///< Parallel population update
@@ -561,9 +561,9 @@ protected:
 	CBiteOptHist< 4, 4, 2 > MethodHist; ///< Population generator method
 		///< histogram.
 		///<
-	CBiteOptHist< 3, 4, 2 > DrawHist; ///< Method draw histogram.
+	CBiteOptHist< 3, 6, 1 > DrawHist; ///< Method draw histogram.
 		///<
-	CBiteOptHist< 3, 3, 1 > D3Hist; ///< Draw method 3's histogram.
+	CBiteOptHist< 3, 6, 1 > D3Hist; ///< Draw method 3's histogram.
 		///<
 	CBiteOptHistBinary Gen1AllpHist; ///< Generator method 1's Allp
 		///< histogram.

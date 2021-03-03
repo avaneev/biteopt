@@ -294,9 +294,9 @@ protected:
 		///< at centroid point is required.
 	CBiteOptHist< 3, 3, 1 > CentPowHist; ///< Centroid power factor histogram.
 		///<
-	CBiteOptHist< 3, 3, 1 > RadPowHist; ///< Radius power factor histogram.
+	CBiteOptHist< 3, 6, 1 > RadPowHist; ///< Radius power factor histogram.
 		///<
-	CBiteOptHist< 3, 5, 2 > EvalFacHist; ///< EvalFac histogram.
+	CBiteOptHist< 3, 3, 1 > EvalFacHist; ///< EvalFac histogram.
 		///<
 	int cpm; ///< Centroid power factor selector.
 		///<

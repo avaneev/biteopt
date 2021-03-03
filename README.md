@@ -52,7 +52,7 @@ the method is to provide fast solutions for computationally expensive
 This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
 evaluated): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp).
-This method was able to solve 77% of non-convex smooth problems in 10
+This method was able to solve 76% of non-convex smooth problems in 10
 attempts, 2500 iterations each. It comes 2nd (very close to the 1st) in the
 comparison on non-convex smooth problems (see Fig.9 in the paper). With a huge
 iteration budget (up to 1 million) this method solves 95% of problems.
@@ -62,7 +62,7 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
 success rate is >93% while the average number of objective function
-evaluations is ~410.
+evaluations is ~360.
 
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of
