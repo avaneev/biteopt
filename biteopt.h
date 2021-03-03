@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.5
+ * @version 2021.6
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -54,8 +54,6 @@ public:
 		, MantMultI( 1.0 / ( 1ULL << MantSize ))
 		, IntParams( NULL )
 	{
-		ParOpt.CentPow = 7.0;
-		ParOpt.RadPow = 18.0;
 	}
 
 	/**

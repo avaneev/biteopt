@@ -10,7 +10,7 @@
 
 #include "testfn.h"
 
-#define OPT_CLASS CBiteOpt//CBiteOptDeep//CSMAESOpt//CSpherOpt//CNelderMeadPlusOpt//CCMAESOpt//
+#define OPT_CLASS CBiteOpt//CBiteOptDeep//CSpherOpt//CSMAESOpt//CNelderMeadPlusOpt//CCMAESOpt//
 #define OPT_DIMS_PARAMS Dims
 //#define EVALBINS 1
 
@@ -348,8 +348,6 @@ public:
 		///<
 	CSumStats SumStats; ///< Summary statistics.
 		///<
-	double SuccessFunc; ///< Average Success func, available after run().
-		///<
 	double SuccessAt; ///< Average Success attempts, available after run().
 		///<
 	double AvgRMS; ///< Average RMS, available after run().
@@ -608,7 +606,6 @@ public:
 		}
 		#endif // defined( EVALBINS )
 
-		SuccessFunc = 100.0 * SumStats.ComplFuncs / FnCount;
 		SuccessAt = 100.0 * SumStats.ComplAttempts / SumStats.TotalAttempts;
 		AvgRMS = SumStats.SumRMS_l10n / SumStats.SumRMSCount;
 		AvgIt = SumStats.SumIt_l10n / SumStats.ComplAttempts;
@@ -629,7 +626,6 @@ public:
 				"iterations in successful attempts)\n", 100.0 *
 				SumStats.SumImprIters / SumStats.SumIters );
 
-			printf( "Func success: %.2f%%\n", SuccessFunc );
 			printf( "Attempts success: %.2f%%\n", SuccessAt );
 			printf( "AvgRMS_l10n: %.1f (avg log10(std.dev/N) of convergence time)\n",
 				AvgRMS );

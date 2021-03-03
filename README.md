@@ -38,7 +38,8 @@ there are no competing minima in a function (or the true/global minimum is
 rogue and cannot be detected), this method in absolute majority of runs will
 return the same optimum.
 
-BITEOPT is a self-optimizing method.
+BITEOPT is a self-optimizing method making it completely objective function-
+agnostic.
 
 ## Comparison ##
 
@@ -516,3 +517,5 @@ sampling, SpherOpt selects random points on a hyper-spheroid (with a bit of
 added jitter for lower dimensions). This makes the method very
 computationally-efficient, but at the same time provides immunity to
 coordinate axis rotations.
+
+This method uses the same self-optimization technique as the BiteOpt method.
