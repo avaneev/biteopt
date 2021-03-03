@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.6
+ * @version 2021.7
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -69,7 +69,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ?
-			PopSize0 : 13 + aParamCount * 2 );
+			PopSize0 : 13 + aParamCount * 2.0 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -169,6 +169,10 @@ public:
 
 		ParOpt.init( rnd, InitParams, InitRadius );
 
+		ParPopHist.reset();
+		ParPopMHist.reset();
+		SelParPopM = 0;
+
 		ScutHist.reset();
 		MethodHist.reset();
 		DrawHist.reset();
@@ -226,23 +230,32 @@ public:
 			}
 
 			NewCost = optcost( NewParams );
-			insertPopOrder( NewCost, InitEvalIndex, InitEvalIndex );
+			sortPop( NewCost, InitEvalIndex );
 			updateBestCost( NewCost, NewParams );
 
 			InitEvalIndex++;
 
 			if( InitEvalIndex == PopSize )
 			{
+				for( i = 0; i < ParPopCount; i++ )
+				{
+					ParPops[ i ].copy( *this );
+				}
+
 				DoInitEvals = false;
 			}
 
 			return( 0 );
 		}
 
+		const int SelParPop = ParPopHist.select( rnd );
+		UseParPop = &ParPops[ SelParPop ];
+		WasParPopUsed = false;
+
 		bool DoEval = true;
 		int SelMethod = -1;
-		int SelDraw = -1;
-		int SelD3 = -1;
+		int SelDraw;
+		int SelD3;
 
 		static const int ScutProbs[ 2 ] = {
 			(int) ( 0.03 * CBiteRnd :: getRawScale() ),
@@ -297,6 +310,7 @@ public:
 		{
 			SelScut = getBit( rnd );
 			SelDraw = DrawHist.select( rnd );
+			SelD3 = -1;
 
 			if( SelDraw == 0 )
 			{
@@ -377,14 +391,18 @@ public:
 		if( PushOpt != NULL && PushOpt != this &&
 			!PushOpt -> DoInitEvals )
 		{
-			PushOpt -> updatePop( NewCost, Params );
+			PushOpt -> updatePop( NewCost, Params, true );
 		}
 
-		const int sH = PopOrder[ PopSize1 ];
-
-		if( NewCost >= CurCosts[ sH ])
+		if( NewCost > CurCosts[ PopSize1 ])
 		{
 			// Upper bound cost constraint check failed, reject this solution.
+
+			if( WasParPopUsed )
+			{
+				ParPopHist.decr( SelParPop );
+				ParPopMHist.decr( SelParPopM );
+			}
 
 			ScutHist.decr( SelScut );
 
@@ -418,6 +436,12 @@ public:
 		}
 		else
 		{
+			if( WasParPopUsed )
+			{
+				ParPopHist.incr( SelParPop );
+				ParPopMHist.incr( SelParPopM );
+			}
+
 			ScutHist.incr( SelScut );
 
 			if( SelMethod >= 0 )
@@ -446,10 +470,47 @@ public:
 				}
 			}
 
-			updatePop( NewCost, Params, sH );
+			if( NewCost == CurCosts[ PopSize1 ])
+			{
+				StallCount++;
+			}
+			else
+			{
+				StallCount = 0;
+			}
 
-			StallCount = 0;
+			updatePop( NewCost, Params );
 		}
+
+		// Diverging populations technique.
+
+		SelParPopM = ParPopMHist.select( rnd );
+		double d = ParPops[ 0 ].getDistanceSqr( Params );
+		int p = 0;
+
+		for( i = 1; i < ParPopCount; i++ )
+		{
+			const double nd = ParPops[ i ].getDistanceSqr( Params );
+
+			if( SelParPopM == 0 )
+			{
+				if( nd > d )
+				{
+					d = nd;
+					p = i;
+				}
+			}
+			else
+			{
+				if( nd < d )
+				{
+					d = nd;
+					p = i;
+				}
+			}
+		}
+
+		ParPops[ p ].updatePop( NewCost, Params, true );
 
 		return( StallCount );
 	}
@@ -460,6 +521,8 @@ protected:
 		///<
 	static const uint64_t MantSizeMask = ( 1ULL << MantSize ) - 1; ///< Mask
 		///< that corresponds to mantissa.
+		///<
+	static const int ParPopCount = 3; ///< The number of parallel populations.
 		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
 		///<
@@ -473,16 +536,32 @@ protected:
 	int AllpProbs[ 2 ]; ///< Generator method 1's Allp probability range,
 		///< in raw scale.
 		///<
+	CBiteOptPop ParPops[ ParPopCount ]; ///< Parallel populations.
+		///<
 	double* Params; ///< Temporary parameter buffer.
 		///<
 	uint64_t* IntParams; ///< Temporary integer value parameter buffer.
+		///<
+	CBiteOptHist< 3, 3, 2 > ParPopHist; ///< Parallel population histogram
+		///< (count must match ParPopCoun).
+		///<
+	CBiteOptHistBinary ParPopMHist; ///< Parallel population update
+		///< method histogram.
+		///<
+	int SelParPopM; ///< Parallel population update method.
+		///<
+	CBiteOptPop* UseParPop; ///< Parallel population to use in some solution
+		///< generation methods.
+		///<
+	bool WasParPopUsed; ///< "True" if UseParPop was used in some solution
+		///< generation.
 		///<
 	CBiteOptHistBinary ScutHist; ///< Short-cut method's histogram.
 		///<
 	CBiteOptHist< 4, 4, 2 > MethodHist; ///< Population generator method
 		///< histogram.
 		///<
-	CBiteOptHist< 3, 3, 1 > DrawHist; ///< Method draw histogram.
+	CBiteOptHist< 3, 4, 2 > DrawHist; ///< Method draw histogram.
 		///<
 	CBiteOptHist< 3, 3, 1 > D3Hist; ///< Draw method 3's histogram.
 		///<
@@ -556,8 +635,9 @@ protected:
 
 	void generateSol1( CBiteRnd& rnd )
 	{
-		const double* const MinParams = getParamsOrdered( mpi );
-		memcpy( Params, MinParams, ParamCount * sizeof( MinParams[ 0 ]));
+		WasParPopUsed = true;
+		memcpy( Params, UseParPop -> getParamsOrdered( mpi ),
+			ParamCount * sizeof( Params[ 0 ]));
 
 		// Select a single random parameter or all parameters for further
 		// operations.
@@ -683,7 +763,9 @@ protected:
 
 	void generateSol3( CBiteRnd& rnd )
 	{
-		const double* const MinParams = getParamsOrdered( mpi );
+		WasParPopUsed = true;
+		const double* const MinParams = UseParPop -> getParamsOrdered( mpi );
+		const double* const cp = UseParPop -> getCentroid();
 		const int si1 = (int) ( mp2 * PopSize );
 		const double* const rp1 = getParamsOrdered( si1 );
 		int i;
@@ -693,7 +775,7 @@ protected:
 			const double m1 = getBit( rnd );
 			const double m2 = 1.0 - m1;
 
-			Params[ i ] = CentParams[ i ] * m1 +
+			Params[ i ] = cp[ i ] * m1 +
 				( MinParams[ i ] + ( MinParams[ i ] - rp1[ i ])) * m2;
 		}
 	}
@@ -749,8 +831,9 @@ protected:
 
 	void generateSol5( CBiteRnd& rnd )
 	{
+		WasParPopUsed = true;
 		const double* const CrossParams1 =
-			getParamsOrdered( (int) ( mp2 * PopSize ));
+			UseParPop -> getParamsOrdered( (int) ( mp2 * PopSize ));
 
 		const double p2 = rnd.getRndValue();
 		const double* const CrossParams2 =
@@ -763,7 +846,10 @@ protected:
 			// Produce a random bit mixing mask.
 
 			const uint64_t crpl = ( rnd.getUniformRaw() |
+				( (uint64_t) rnd.getUniformRaw() << rnd.getRawBitCount() )) &
+				( rnd.getUniformRaw() |
 				( (uint64_t) rnd.getUniformRaw() << rnd.getRawBitCount() ));
+				// Produce sparsely-random mask.
 
 			uint64_t v1 = (uint64_t) ( CrossParams1[ i ] * MantMult );
 			uint64_t v2 = (uint64_t) ( CrossParams2[ i ] * MantMult );
@@ -920,7 +1006,7 @@ public:
 
 		const int sc = CurOpt -> optimize( rnd, PushOpt );
 
-		if( CurOpt -> getBestCost() < BestOpt -> getBestCost() )
+		if( BestOpt -> getBestCost() >= CurOpt -> getBestCost() )
 		{
 			BestOpt = CurOpt;
 		}
@@ -1098,13 +1184,9 @@ inline void biteopt_minimize( const int N, biteopt_func f, void* data,
 			opt.optimize( rnd );
 		}
 
-		if( k == 0 || opt.getBestCost() < *minf )
+		if( k == 0 || opt.getBestCost() <= *minf )
 		{
-			for( i = 0; i < N; i++ )
-			{
-				x[ i ] = opt.getBestParams()[ i ];
-			}
-
+			memcpy( x, opt.getBestParams(), N * sizeof( x[ 0 ]));
 			*minf = opt.getBestCost();
 		}
 	}

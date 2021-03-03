@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.6
+ * @version 2021.7
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -236,7 +236,7 @@ public:
 
 		if( Count == 2 )
 		{
-			return( rv < Probs[ 0 ] ? 0 : 1 );
+			return( rv >= Probs[ 0 ]);
 		}
 
 		int i;
@@ -387,7 +387,6 @@ public:
 	CBiteOptPop()
 		: ParamCount( 0 )
 		, PopSize( 0 )
-		, PopOrder( NULL )
 		, CurParamsBuf( NULL )
 		, CurParams( NULL )
 		, CurCosts( NULL )
@@ -418,7 +417,6 @@ public:
 		PopSize1 = aPopSize - 1;
 		PopSizeI = 1.0 / aPopSize;
 
-		PopOrder = new int[ PopSize ];
 		CurParamsBuf = new double[( PopSize + 1 ) * ParamCount ];
 		CurParams = new double*[ PopSize + 1 ]; // Last element is temporary.
 		CurCosts = new double[ PopSize ];
@@ -439,7 +437,6 @@ public:
 
 	void deletePopBuffers()
 	{
-		delete[] PopOrder;
 		delete[] CurParamsBuf;
 		delete[] CurParams;
 		delete[] CurCosts;
@@ -461,13 +458,17 @@ public:
 			initPopBuffers( s.ParamCount, s.PopSize );
 		}
 
-		memcpy( PopOrder, s.PopOrder, PopSize * sizeof( s.PopOrder[ 0 ]));
-		memcpy( CurParamsBuf, s.CurParamsBuf, PopSize * ParamCount *
-			sizeof( s.CurParamsBuf[ 0 ]));
+		int i;
 
-		memcpy( CurCosts, s.CurCosts, PopSize * sizeof( s.CurCosts[ 0 ]));
+		for( i = 0; i < PopSize; i++ )
+		{
+			memcpy( CurParams[ i ], s.CurParams[ i ],
+				ParamCount * sizeof( CurParams[ i ][ 0 ]));
+		}
+
+		memcpy( CurCosts, s.CurCosts, PopSize * sizeof( CurCosts[ 0 ]));
 		memcpy( CentParams, s.CentParams, ParamCount *
-			sizeof( s.CentParams[ 0 ]));
+			sizeof( CentParams[ 0 ]));
 	}
 
 	/**
@@ -497,7 +498,7 @@ public:
 
 	const double* getParamsOrdered( const int i ) const
 	{
-		return( CurParams[ PopOrder[ i ]]);
+		return( CurParams[ i ]);
 	}
 
 	/**
@@ -522,32 +523,27 @@ public:
 	}
 
 	/**
-	 * Function replaces the highest-cost previous solution (sH), updates
-	 * centroid.
+	 * Function replaces the highest-cost previous solution, updates centroid.
 	 *
 	 * @param NewCost Cost of the new solution.
 	 * @param UpdParams New parameter values.
-	 * @param sH Index of vector to update. If equal to -1, the NewCost value
-	 * will be first compared to worst cost solution present in the
-	 * population.
-	 * @return If sH is not specified or negative the function returns "false"
-	 * if cost constraint is not met. "True" otherwise.
+	 * @param DoCostCheck "True" if the cost contraint should be checked.
+	 * Function returns "false" if the cost constraint was not met, "true"
+	 * otherwise.
 	 */
 
 	bool updatePop( const double NewCost, const double* const UpdParams,
-		int sH = -1 )
+		const bool DoCostCheck = false )
 	{
-		if( sH < 0 )
+		if( DoCostCheck )
 		{
-			sH = PopOrder[ PopSize1 ];
-
-			if( NewCost >= CurCosts[ sH ])
+			if( NewCost > CurCosts[ PopSize1 ])
 			{
 				return( false );
 			}
 		}
 
-		double* const rp = CurParams[ sH ];
+		double* const rp = CurParams[ PopSize1 ];
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
@@ -556,7 +552,7 @@ public:
 			rp[ i ] = UpdParams[ i ];
 		}
 
-		insertPopOrder( NewCost, sH, PopSize1 );
+		sortPop( NewCost, PopSize1 );
 
 		return( true );
 	}
@@ -570,12 +566,10 @@ protected:
 		///<
 	double PopSizeI; ///< = 1/PopSize.
 		///<
-	int* PopOrder; ///< The current solution vectors ordering,
-		///< ascending-sorted by cost.
-		///<
 	double* CurParamsBuf; ///< CurParams buffer.
 		///<
-	double** CurParams; ///< Current working parameter vectors.
+	double** CurParams; ///< Current working parameter vectors. Always kept
+		///< sorted in ascending cost order.
 		///<
 	double* CurCosts; ///< Best costs of current working parameter vectors.
 		///<
@@ -583,47 +577,33 @@ protected:
 		///<
 
 	/**
-	 * Function inserts the specified solution into the PopOrder
-	 * array at the appropriate offset, increasing the number of items by 1.
+	 * Function performs re-sorting of the population based on the cost of a
+	 * newly-added solution, and stores new cost.
 	 *
 	 * @param Cost Solution's cost.
-	 * @param f Solution's index.
-	 * @param ItemCount The current number of items in the array.
+	 * @param i Solution's index (usually, PopSize1).
 	 */
 
-	void insertPopOrder( const double Cost, const int f, const int ItemCount )
+	void sortPop( const double Cost, int i )
 	{
-		CurCosts[ f ] = Cost;
+		double* const InsertParams = CurParams[ i ];
 
-		// Perform binary search.
-
-		int z = 0;
-		int hi = ItemCount;
-
-		while( z < hi )
+		while( i > 0 )
 		{
-			int mid = ( z + hi ) >> 1;
+			const double c1 = CurCosts[ i - 1 ];
 
-			if( CurCosts[ PopOrder[ mid ]] >= Cost )
+			if( c1 < Cost )
 			{
-				hi = mid;
+				break;
 			}
-			else
-			{
-				z = mid + 1;
-			}
+
+			CurCosts[ i ] = c1;
+			CurParams[ i ] = CurParams[ i - 1 ];
+			i--;
 		}
 
-		// Insert element at the correct sorted position.
-
-		int i;
-
-		for( i = ItemCount; i > z; i-- )
-		{
-			PopOrder[ i ] = PopOrder[ i - 1 ];
-		}
-
-		PopOrder[ z ] = f;
+		CurCosts[ i ] = Cost;
+		CurParams[ i ] = InsertParams;
 	}
 };
 
@@ -827,7 +807,7 @@ protected:
 	void updateBestCost( const double NewCost, const double* const UpdParams,
 		const bool IsNormalized = false )
 	{
-		if( NewCost < BestCost )
+		if( NewCost <= BestCost )
 		{
 			BestCost = NewCost;
 
@@ -843,7 +823,7 @@ protected:
 			else
 			{
 				memcpy( BestParams, UpdParams,
-					ParamCount * sizeof( UpdParams[ 0 ]));
+					ParamCount * sizeof( BestParams[ 0 ]));
 			}
 		}
 	}
@@ -871,7 +851,7 @@ protected:
 	 * @return Wrapped parameter value.
 	 */
 
-	static double wrapParam( CBiteRnd& rnd, double v )
+	static double wrapParam( CBiteRnd& rnd, const double v )
 	{
 		if( v < 0.0 )
 		{
@@ -903,7 +883,7 @@ protected:
 
 	int getBit( CBiteRnd& rnd )
 	{
-		if( BitsLeft == 0 )
+		if( BitsLeft <= 0 )
 		{
 			BitPool = rnd.getUniformRaw();
 			BitsLeft = rnd.getRawBitCount() - 1;

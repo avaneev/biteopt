@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.6
+ * @version 2021.7
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -47,14 +47,12 @@ public:
 	double Jitter; ///< Solution sampling random jitter, improves convergence
 		///< at low dimensions. Usually, a fixed value.
 		///<
-	double EvalFac; ///< Evaluations factor. Usually, a fixed value.
-		///<
 
 	CSpherOpt()
-		: WBuf( NULL )
+		: WPopCent( NULL )
+		, WPopRad( NULL )
 	{
 		Jitter = 2.5;
-		EvalFac = 2.0;
 	}
 
 	/**
@@ -77,46 +75,8 @@ public:
 		deleteBuffers();
 		initBaseBuffers( aParamCount, aPopSize );
 
-		WBuf = new double[ PopSize * 6 ];
-		WPopCent[ 0 ] = &WBuf[ 0 ];
-		WPopCent[ 1 ] = &WBuf[ PopSize ];
-		WPopCent[ 2 ] = &WBuf[ PopSize * 2 ];
-		WPopRad[ 0 ] = &WBuf[ PopSize * 3 ];
-		WPopRad[ 1 ] = &WBuf[ PopSize * 4 ];
-		WPopRad[ 2 ] = &WBuf[ PopSize * 5 ];
-
-		double s1[ 3 ] = { 0.0 };
-		double s2[ 3 ] = { 0.0 };
-		int i;
-		int k;
-
-		for( i = 0; i < PopSize; i++ )
-		{
-			const double l = 1.0 - (double) i / ( PopSize * EvalFac );
-
-			static const double WCent[ 3 ] = { 5.0, 7.5, 10.0 };
-			static const double WRad[ 3 ] = { 16.0, 18.0, 20.0 };
-
-			for( k = 0; k < 3; k++ )
-			{
-				const double v1 = pow( l, WCent[ k ]);
-				WPopCent[ k ][ i ] = v1;
-				s1[ k ] += v1;
-
-				const double v2 = pow( l, WRad[ k ]);
-				WPopRad[ k ][ i ] = v2;
-				s2[ k ] += v2;
-			}
-		}
-
-		for( i = 0; i < PopSize; i++ )
-		{
-			for( k = 0; k < 3; k++ )
-			{
-				WPopCent[ k ][ i ] /= s1[ k ];
-				WPopRad[ k ][ i ] /= s2[ k ];
-			}
-		}
+		WPopCent = new double[ PopSize ];
+		WPopRad = new double[ PopSize ];
 
 		JitMult = 2.0 * Jitter / aParamCount;
 		JitOffs = 1.0 - JitMult * 0.5;
@@ -141,6 +101,7 @@ public:
 		resetCommonVars();
 		updateDiffValues();
 
+		EvalFac = 2.0;
 		Radius = 0.5 * InitRadius;
 		curpi = 0;
 		cure = 0;
@@ -172,8 +133,10 @@ public:
 
 		CentPowHist.reset();
 		RadPowHist.reset();
+		EvalFacHist.reset();
 		cpm = 0;
 		rpm = 0;
+		epm = 0;
 	}
 
 	/**
@@ -249,26 +212,24 @@ public:
 
 		if( OutParams != NULL )
 		{
-			memcpy( OutParams, Params, ParamCount * sizeof( Params[ 0 ]));
+			memcpy( OutParams, Params, ParamCount * sizeof( OutParams[ 0 ]));
 		}
 
 		updateBestCost( NewCost, NewParams );
 
 		if( curpi < PopSize )
 		{
-			insertPopOrder( NewCost, curpi, curpi );
+			sortPop( NewCost, curpi );
 			curpi++;
 		}
 		else
 		{
-			const int sH = PopOrder[ PopSize1 ];
-
-			if( NewCost < CurCosts[ sH ])
+			if( CurCosts[ PopSize1 ] >= NewCost )
 			{
-				memcpy( CurParams[ sH ], Params,
-					ParamCount * sizeof( Params[ 0 ]));
+				memcpy( CurParams[ PopSize1 ], Params,
+					ParamCount * sizeof( CurParams[ 0 ]));
 
-				insertPopOrder( NewCost, sH, PopSize1 );
+				sortPop( NewCost, PopSize1 );
 			}
 		}
 
@@ -286,6 +247,7 @@ public:
 
 				CentPowHist.incr( cpm );
 				RadPowHist.incr( rpm );
+				EvalFacHist.incr( epm );
 			}
 			else
 			{
@@ -293,10 +255,12 @@ public:
 
 				CentPowHist.decr( cpm );
 				RadPowHist.decr( rpm );
+				EvalFacHist.decr( epm );
 			}
 
 			cpm = CentPowHist.select( rnd );
 			rpm = RadPowHist.select( rnd );
+			epm = EvalFacHist.select( rnd );
 
 			AvgCost = 0.0;
 			curpi = 0;
@@ -309,15 +273,16 @@ public:
 	}
 
 protected:
-	double* WBuf; ///< Buffer for weighting coefficients.
+	double* WPopCent; ///< Weighting coefficients for centroid.
 		///<
-	double* WPopCent[ 3 ]; ///< Weighting coefficients for centroid.
-		///<
-	double* WPopRad[ 3 ]; ///< Weighting coefficients for radius.
+	double* WPopRad; ///< Weighting coefficients for radius.
 		///<
 	double JitMult; ///< Jitter multiplier.
 		///<
 	double JitOffs; ///< Jitter multiplier offset.
+		///<
+	double EvalFac; ///< Function evaluations factor, used for best solution
+		///< selection.
 		///<
 	double Radius; ///< Current radius.
 		///<
@@ -327,13 +292,17 @@ protected:
 		///<
 	bool DoCentEval; ///< "True" if an initial objective function evaluation
 		///< at centroid point is required.
-	CBiteOptHist< 3, 3, 2 > CentPowHist; ///< Centroid power factor histogram.
+	CBiteOptHist< 3, 3, 1 > CentPowHist; ///< Centroid power factor histogram.
 		///<
-	CBiteOptHist< 3, 3, 2 > RadPowHist; ///< Radius power factor histogram.
+	CBiteOptHist< 3, 3, 1 > RadPowHist; ///< Radius power factor histogram.
+		///<
+	CBiteOptHist< 3, 5, 2 > EvalFacHist; ///< EvalFac histogram.
 		///<
 	int cpm; ///< Centroid power factor selector.
 		///<
 	int rpm; ///< Radius power factor selector.
+		///<
+	int epm; ///< EvalFac selector.
 		///<
 
 	/**
@@ -344,7 +313,8 @@ protected:
 	{
 		CBiteOptBase :: deleteBuffers();
 
-		delete[] WBuf;
+		delete[] WPopCent;
+		delete[] WPopRad;
 	}
 
 	/**
@@ -353,22 +323,50 @@ protected:
 
 	void update()
 	{
-		const double* ip = CurParams[ PopOrder[ 0 ]];
-		double* const cp = CentParams;
-		const double* const wc = WPopCent[ cpm ];
-		double w = wc[ 0 ];
+		static const double WCent[ 3 ] = { 5.0, 7.5, 10.0 };
+		static const double WRad[ 3 ] = { 16.0, 18.0, 20.0 };
+		static const double EvalFacs[ 3 ] = { 2.0, 1.9, 1.8 };
+
+		const double CentFac = WCent[ cpm ];
+		const double RadFac = WRad[ rpm ];
+		EvalFac = EvalFacs[ epm ];
+
+		double s1 = 0.0;
+		double s2 = 0.0;
 		int i;
-		int j;
+
+		for( i = 0; i < PopSize; i++ )
+		{
+			const double l = 1.0 - i / ( PopSize * EvalFac );
+
+			const double v1 = pow( l, CentFac );
+			WPopCent[ i ] = v1;
+			s1 += v1;
+
+			const double v2 = pow( l, RadFac );
+			WPopRad[ i ] = v2;
+			s2 += v2;
+		}
+
+		s1 = 1.0 / s1;
+		s2 = 1.0 / s2;
+
+		const double* ip = CurParams[ 0 ];
+		double* const cp = CentParams;
+		const double* const wc = WPopCent;
+		double w = wc[ 0 ] * s1;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			cp[ i ] = ip[ i ] * w;
 		}
 
+		int j;
+
 		for( j = 1; j < PopSize; j++ )
 		{
-			ip = CurParams[ PopOrder[ j ]];
-			w = wc[ j ];
+			ip = CurParams[ j ];
+			w = wc[ j ] * s1;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -376,12 +374,12 @@ protected:
 			}
 		}
 
-		const double* const rc = WPopRad[ rpm ];
+		const double* const rc = WPopRad;
 		Radius = 0.0;
 
 		for( j = 0; j < PopSize; j++ )
 		{
-			ip = CurParams[ PopOrder[ j ]];
+			ip = CurParams[ j ];
 			double s = 0.0;
 
 			for( i = 0; i < ParamCount; i++ )
@@ -390,7 +388,7 @@ protected:
 				s += d * d;
 			}
 
-			Radius += s * rc[ j ];
+			Radius += s * rc[ j ] * s2;
 		}
 
 		Radius = sqrt( Radius );

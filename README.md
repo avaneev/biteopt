@@ -38,8 +38,8 @@ there are no competing minima in a function (or the true/global minimum is
 rogue and cannot be detected), this method in absolute majority of runs will
 return the same optimum.
 
-BITEOPT is a self-optimizing method making it completely objective function-
-agnostic.
+BITEOPT uses self-optimization techniques making it objective
+function-agnostic.
 
 ## Comparison ##
 
@@ -62,7 +62,7 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
 success rate is >93% while the average number of objective function
-evaluations is ~380.
+evaluations is ~410.
 
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of

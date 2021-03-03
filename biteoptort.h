@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.6
+ * @version 2021.7
  */
 
 #ifndef BITEOPTORT_INCLUDED
@@ -72,7 +72,6 @@ public:
 		, WPopCov( NULL )
 		, PopParamsBuf( NULL )
 		, PopParams( NULL )
-		, SortedParams( NULL )
 		, TmpParams( NULL )
 	{
 		CentPow = 6.0;
@@ -118,7 +117,6 @@ public:
 		WPopCov = new double[ PopSize ];
 		PopParamsBuf = new double[ ParamCount * PopSize ];
 		PopParams = new double*[ ParamCount ];
-		SortedParams = new double*[ PopSize ];
 		TmpParams = new double[ ParamCount ];
 
 		int i;
@@ -195,13 +193,12 @@ public:
 	/**
 	 * Function performs rotation matrix update.
 	 *
-	 * @param CurParams Population parameter vectors.
-	 * @param PopOrder Population ordering, used to obtain unordered
-	 * population indices.
+	 * @param CurParams Population parameter vectors, should be sorted in
+	 * ascending cost order.
 	 * @return Current population size.
 	 */
 
-	int update( double** const CurParams, const int* const PopOrder )
+	int update( double** const CurParams )
 	{
 		// Prepare PopParams (vector of per-parameter population deviations),
 		// later used to calculate weighted covariances, use current centroid
@@ -210,11 +207,6 @@ public:
 		int i;
 		int j;
 
-		for( i = 0; i < UsePopSize; i++ )
-		{
-			SortedParams[ i ] = CurParams[ PopOrder[ i ]]; // For fast access.
-		}
-
 		for( i = 0; i < ParamCount; i++ )
 		{
 			double* const op = PopParams[ i ];
@@ -222,7 +214,7 @@ public:
 
 			for( j = 0; j < UsePopSize; j++ )
 			{
-				op[ j ] = ( SortedParams[ j ][ i ] - c ) * WPopCov[ j ];
+				op[ j ] = ( CurParams[ j ][ i ] - c ) * WPopCov[ j ];
 			}
 		}
 
@@ -231,7 +223,7 @@ public:
 		memcpy( PrevCentParams, CentParams,
 			ParamCount * sizeof( PrevCentParams[ 0 ]));
 
-		calcCent();
+		calcCent( CurParams );
 
 		// Update covariance matrix, the left-handed triangle only. Uses leaky
 		// integrator averaging filter. "avgc" selects corner frequency
@@ -482,8 +474,6 @@ protected:
 	double** PopParams; ///< Population vectors per parameter (deviations,
 		///< weighted).
 		///<
-	double** SortedParams; ///< Temporary sorted parameter vectors.
-		///<
 	double* TmpParams; ///< Temporary parameter vector.
 		///<
 	double spc; ///< Distribution's sphericity coefficient. 1 - fully
@@ -507,7 +497,6 @@ protected:
 		delete[] WPopCov;
 		delete[] PopParamsBuf;
 		delete[] PopParams;
-		delete[] SortedParams;
 		delete[] TmpParams;
 	}
 
@@ -787,11 +776,11 @@ protected:
 
 	/**
 	 * Function calculates centroid vector of population, with weighting.
-	 * Requires SortedParams filled with pointers to ordered population
-	 * vectors.
+	 *
+	 * @param SortedParams Array of sorted population vectors.
 	 */
 
-	void calcCent()
+	void calcCent( double** const SortedParams )
 	{
 		const double* ip = SortedParams[ 0 ];
 		double w = WPopCent[ 0 ];

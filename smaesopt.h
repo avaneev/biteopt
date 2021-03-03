@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.6
+ * @version 2021.7
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -203,8 +203,8 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				OutParams[ i ] =
-					( Params[ i ] - MinValues[ i ]) * DiffValues[ i ];
+				OutParams[ i ] = ( Params[ i ] - MinValues[ i ]) *
+					DiffValues[ i ];
 			}
 		}
 
@@ -212,20 +212,19 @@ public:
 
 		if( curpi < UsePopSize )
 		{
-			insertPopOrder( NewCost, curpi, curpi );
+			sortPop( NewCost, curpi );
 			curpi++;
 		}
 		else
 		{
 			const int ps1 = UsePopSize - 1;
-			const int sH = PopOrder[ ps1 ];
 
-			if( NewCost < CurCosts[ sH ])
+			if( CurCosts[ ps1 ] >= NewCost )
 			{
-				memcpy( CurParams[ sH ], Params,
-					ParamCount * sizeof( Params[ 0 ]));
+				memcpy( CurParams[ ps1 ], Params,
+					ParamCount * sizeof( CurParams[ 0 ]));
 
-				insertPopOrder( NewCost, sH, ps1 );
+				sortPop( NewCost, ps1 );
 			}
 		}
 
@@ -249,7 +248,7 @@ public:
 			AvgCost = 0.0;
 			curpi = 0;
 			cure = 0;
-			UsePopSize = Ort.update( CurParams, PopOrder );
+			UsePopSize = Ort.update( CurParams );
 		}
 
 		return( StallCount );
