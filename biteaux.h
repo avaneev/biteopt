@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.7
+ * @version 2021.8
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -191,9 +191,11 @@ public:
 	/**
 	 * This function resets histogram, should be called before calling other
 	 * functions, including after object's construction.
+	 *
+	 * @param rnd PRNG object. Not used.
 	 */
 
-	void reset()
+	void reset( CBiteRnd& rnd )
 	{
 		memset( Hist, 0, sizeof( Hist ));
 		updateProbs();
@@ -238,18 +240,20 @@ public:
 		{
 			return( rv >= Probs[ 0 ]);
 		}
-
-		int i;
-
-		for( i = 1; i < Count; i++ )
+		else
 		{
-			if( rv >= Probs[ i - 1 ] && rv < Probs[ i ])
-			{
-				return( i );
-			}
-		}
+			int i;
 
-		return( 0 );
+			for( i = 1; i < Count; i++ )
+			{
+				if( rv >= Probs[ i - 1 ] && rv < Probs[ i ])
+				{
+					return( i );
+				}
+			}
+
+			return( 0 );
+		}
 	}
 
 	/**
@@ -327,14 +331,18 @@ class CBiteOptHistBinary
 {
 public:
 	/**
-	 * This function resets histogram, should be called before calling other
-	 * functions, including after object's construction.
+	 * This function resets histogram to a random state, should be called
+	 * before calling other functions, including after object's construction.
+	 *
+	 * @param rnd PRNG object.
 	 */
 
-	void reset()
+	void reset( CBiteRnd& rnd )
 	{
-		Hist[ 0 ] = 0;
-		Hist[ 1 ] = 0;
+		const int b = ( rnd.getUniformRaw() & 1 );
+
+		Hist[ 0 ] = b;
+		Hist[ 1 ] = 1 - b;
 	}
 
 	/**
@@ -415,7 +423,9 @@ public:
 		ParamCount = aParamCount;
 		PopSize = aPopSize;
 		PopSize1 = aPopSize - 1;
-		PopSizeI = 1.0 / aPopSize;
+		CurPopSize = aPopSize;
+		CurPopSize1 = aPopSize - 1;
+		NeedCentUpdate = false;
 
 		CurParamsBuf = new double[( PopSize + 1 ) * ParamCount ];
 		CurParams = new double*[ PopSize + 1 ]; // Last element is temporary.
@@ -458,17 +468,25 @@ public:
 			initPopBuffers( s.ParamCount, s.PopSize );
 		}
 
+		CurPopSize = s.CurPopSize;
+		CurPopSize1 = s.CurPopSize1;
+		NeedCentUpdate = s.NeedCentUpdate;
+
 		int i;
 
-		for( i = 0; i < PopSize; i++ )
+		for( i = 0; i < CurPopSize; i++ )
 		{
 			memcpy( CurParams[ i ], s.CurParams[ i ],
 				ParamCount * sizeof( CurParams[ i ][ 0 ]));
 		}
 
-		memcpy( CurCosts, s.CurCosts, PopSize * sizeof( CurCosts[ 0 ]));
-		memcpy( CentParams, s.CentParams, ParamCount *
-			sizeof( CentParams[ 0 ]));
+		memcpy( CurCosts, s.CurCosts, CurPopSize * sizeof( CurCosts[ 0 ]));
+
+		if( !NeedCentUpdate )
+		{
+			memcpy( CentParams, s.CentParams, ParamCount *
+				sizeof( CentParams[ 0 ]));
+		}
 	}
 
 	/**
@@ -481,7 +499,43 @@ public:
 	}
 
 	/**
-	 * Function returns pointer to the centroid vector.
+	 * Function recalculates centroid based on the current population size.
+	 * The NeedCentUpdate variable can be checked if centroid update is
+	 * needed. This function resets the NeedCentUpdate to "false".
+	 */
+
+	void updateCentroid()
+	{
+		resetCentroid();
+
+		double* const cp = CentParams;
+		int i;
+		int j;
+
+		for( j = 0; j < CurPopSize; j++ )
+		{
+			const double* const p = CurParams[ j ];
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				cp[ i ] += p[ i ];
+			}
+		}
+
+		const double m = 1.0 / CurPopSize;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			cp[ i ] *= m;
+		}
+
+		NeedCentUpdate = false;
+	}
+
+	/**
+	 * Function returns pointer to the centroid vector. The NeedUpdateCent
+	 * should be checked and and if it is equal to "true", the
+	 * updateCentroid() function called.
 	 */
 
 	const double* getCentroid() const
@@ -499,6 +553,15 @@ public:
 	const double* getParamsOrdered( const int i ) const
 	{
 		return( CurParams[ i ]);
+	}
+
+	/**
+	 * Function returns current population size.
+	 */
+
+	int getCurPopSize() const
+	{
+		return( CurPopSize );
 	}
 
 	/**
@@ -527,32 +590,45 @@ public:
 	 *
 	 * @param NewCost Cost of the new solution.
 	 * @param UpdParams New parameter values.
+	 * @param DoUpdateCentroid "True" if centroid should be updated using
+	 * running sum. This update is done for parallel populations.
 	 * @param DoCostCheck "True" if the cost contraint should be checked.
 	 * Function returns "false" if the cost constraint was not met, "true"
 	 * otherwise.
 	 */
 
 	bool updatePop( const double NewCost, const double* const UpdParams,
-		const bool DoCostCheck = false )
+		const bool DoUpdateCentroid, const bool DoCostCheck )
 	{
 		if( DoCostCheck )
 		{
-			if( NewCost > CurCosts[ PopSize1 ])
+			if( NewCost > CurCosts[ CurPopSize1 ])
 			{
 				return( false );
 			}
 		}
 
-		double* const rp = CurParams[ PopSize1 ];
-		int i;
+		double* const rp = CurParams[ CurPopSize1 ];
 
-		for( i = 0; i < ParamCount; i++ )
+		if( DoUpdateCentroid )
 		{
-			CentParams[ i ] += ( UpdParams[ i ] - rp[ i ]) * PopSizeI;
-			rp[ i ] = UpdParams[ i ];
+			double* const cp = CentParams;
+			const double m = 1.0 / CurPopSize;
+			int i;
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				cp[ i ] += ( UpdParams[ i ] - rp[ i ]) * m;
+				rp[ i ] = UpdParams[ i ];
+			}
+		}
+		else
+		{
+			memcpy( rp, UpdParams, ParamCount * sizeof( rp[ 0 ]));
+			NeedCentUpdate = true;
 		}
 
-		sortPop( NewCost, PopSize1 );
+		sortPop( NewCost, CurPopSize1 );
 
 		return( true );
 	}
@@ -560,11 +636,15 @@ public:
 protected:
 	int ParamCount; ///< The total number of internal parameter values in use.
 		///<
-	int PopSize; ///< The size of population in use.
+	int PopSize; ///< The size of population in use (maximal).
 		///<
 	int PopSize1; ///< = PopSize - 1.
 		///<
-	double PopSizeI; ///< = 1/PopSize.
+	int CurPopSize; ///< Current population size.
+		///<
+	int CurPopSize1; ///< = CurPopSize - 1.
+		///<
+	bool NeedCentUpdate; ///< "True" if centroid update is needed.
 		///<
 	double* CurParamsBuf; ///< CurParams buffer.
 		///<
@@ -581,7 +661,7 @@ protected:
 	 * newly-added solution, and stores new cost.
 	 *
 	 * @param Cost Solution's cost.
-	 * @param i Solution's index (usually, PopSize1).
+	 * @param i Solution's index (usually, CurPopSize1).
 	 */
 
 	void sortPop( const double Cost, int i )
@@ -722,8 +802,7 @@ protected:
 		///<
 
 	/**
-	 * Function initializes all common buffers, PopSize1, and PopSizeI
-	 * variables.
+	 * Function initializes all common buffers, and "PopSize" variables.
 	 *
 	 * @param aParamCount New parameter count.
 	 * @param aPopSize New population size. If <= 0, population buffers will
@@ -741,7 +820,8 @@ protected:
 			ParamCount = aParamCount;
 			PopSize = 0;
 			PopSize1 = 0;
-			PopSizeI = 0.0;
+			CurPopSize = 0;
+			CurPopSize1 = 0;
 		}
 
 		MinValues = new double[ ParamCount ];
@@ -772,6 +852,9 @@ protected:
 
 	void resetCommonVars()
 	{
+		CurPopSize = PopSize;
+		CurPopSize1 = PopSize1;
+		NeedCentUpdate = false;
 		BestCost = 1e300;
 		StallCount = 0;
 		BitsLeft = 0;

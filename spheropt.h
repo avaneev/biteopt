@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.7
+ * @version 2021.8
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -131,12 +131,12 @@ public:
 			DoCentEval = true;
 		}
 
-		CentPowHist.reset();
-		RadPowHist.reset();
-		EvalFacHist.reset();
-		cpm = 0;
-		rpm = 0;
-		epm = 0;
+		CentPowHist.reset( rnd );
+		RadPowHist.reset( rnd );
+		EvalFacHist.reset( rnd );
+		cpm = CentPowHist.select( rnd );
+		rpm = RadPowHist.select( rnd );
+		epm = EvalFacHist.select( rnd );
 	}
 
 	/**
@@ -224,12 +224,12 @@ public:
 		}
 		else
 		{
-			if( CurCosts[ PopSize1 ] >= NewCost )
+			if( NewCost <= CurCosts[ CurPopSize1 ])
 			{
-				memcpy( CurParams[ PopSize1 ], Params,
+				memcpy( CurParams[ CurPopSize1 ], Params,
 					ParamCount * sizeof( CurParams[ 0 ]));
 
-				sortPop( NewCost, PopSize1 );
+				sortPop( NewCost, CurPopSize1 );
 			}
 		}
 

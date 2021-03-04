@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.7
+ * @version 2021.8
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -219,7 +219,7 @@ public:
 		{
 			const int ps1 = UsePopSize - 1;
 
-			if( CurCosts[ ps1 ] >= NewCost )
+			if( NewCost <= CurCosts[ ps1 ])
 			{
 				memcpy( CurParams[ ps1 ], Params,
 					ParamCount * sizeof( CurParams[ 0 ]));
