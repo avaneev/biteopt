@@ -35,7 +35,9 @@
 
 #include "spheropt.h"
 
-#define BITEOPT_POPCTL 0 // Set to 1 to enable dynamic population control.
+#ifndef BITEOPT_POPCTL
+	#define BITEOPT_POPCTL 1 // Set to 1 to enable dynamic population control.
+#endif // BITEOPT_POPCTL
 
 /**
  * BiteOpt optimization class. Implements a stochastic non-linear
@@ -71,7 +73,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			7 + aParamCount * 3 );
+			10 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -411,10 +413,6 @@ public:
 				}
 			}
 
-			#if BITEOPT_POPCTL
-			PopChangeHist.decr( PopChange );
-			#endif // BITEOPT_POPCTL
-
 			ScutHist.decr( SelScut );
 
 			if( SelMethod >= 0 )
@@ -448,23 +446,34 @@ public:
 			#if BITEOPT_POPCTL
 			// Increase population size on fail.
 
-			if( PopChange == 1 && CurPopSize < PopSize )
+			PopChangeHist.decr( PopChange );
+
+			if( PopChange == 1 )
 			{
-				const double r = rnd.getRndValue();
-				const double* const rp = CurParams[ CurPopSize1 -
-					(int) ( r * r * CurPopSize )];
+				if( CurPopSize < PopSize )
+				{
+					const double r = rnd.getRndValue();
+					const double* const rp = CurParams[ CurPopSize1 -
+						(int) ( r * r * CurPopSize )];
 
-				CurCosts[ CurPopSize ] = CurCosts[ CurPopSize1 ];
-				memcpy( CurParams[ CurPopSize ], rp, ParamCount *
-					sizeof( CurParams[ CurPopSize ][ 0 ]));
+					CurCosts[ CurPopSize ] = CurCosts[ CurPopSize1 ];
+					memcpy( CurParams[ CurPopSize ], rp, ParamCount *
+						sizeof( CurParams[ CurPopSize ][ 0 ]));
 
-				CurPopSize++;
-				CurPopSize1++;
-				NeedCentUpdate = true;
+					CurPopSize++;
+					CurPopSize1++;
+					NeedCentUpdate = true;
+
+					PopChange = PopChangeHist.select( rnd );
+				}
+				else
+				{
+					PopChange = getBit( rnd );
+				}
 			}
 			else
 			{
-				PopChange = getBit( rnd );
+				PopChange = PopChangeHist.select( rnd );
 			}
 			#endif // BITEOPT_POPCTL
 		}
@@ -479,10 +488,6 @@ public:
 					ParPopHist.incr( SelParPop );
 				}
 			}
-
-			#if BITEOPT_POPCTL
-			PopChangeHist.incr( PopChange );
-			#endif // BITEOPT_POPCTL
 
 			ScutHist.incr( SelScut );
 
@@ -536,15 +541,26 @@ public:
 			#if BITEOPT_POPCTL
 			// Decrease population size on success.
 
-			if( PopChange == 0 && CurPopSize > PopSize / 2 )
+			PopChangeHist.incr( PopChange );
+
+			if( PopChange == 0 )
 			{
-				CurPopSize--;
-				CurPopSize1--;
-				NeedCentUpdate = true;
+				if( CurPopSize > PopSize / 2 )
+				{
+					CurPopSize--;
+					CurPopSize1--;
+					NeedCentUpdate = true;
+
+					PopChange = PopChangeHist.select( rnd );
+				}
+				else
+				{
+					PopChange = getBit( rnd );
+				}
 			}
 			else
 			{
-				PopChange = getBit( rnd );
+				PopChange = PopChangeHist.select( rnd );
 			}
 			#endif // BITEOPT_POPCTL
 		}
@@ -556,10 +572,6 @@ public:
 			const int p = getMaxDistancePop( Params, rnd );
 			ParPops[ p ].updatePop( NewCost, Params, true, true );
 		}
-
-		#if BITEOPT_POPCTL
-		PopChange = PopChangeHist.select( rnd );
-		#endif // BITEOPT_POPCTL
 
 		CentUpdateCtr++;
 
@@ -613,7 +625,7 @@ protected:
 		///< not selected.
 	int SelParPop; ///< Selected paralell population.
 		///<
-	CBiteOptHist< 2, 1, 1 > PopChangeHist; ///< Population size change
+	CBiteOptHist< 2, 3, 5 > PopChangeHist; ///< Population size change
 		///< histogram.
 		///<
 	int PopChange; ///< Population change: 0 - increase, 1 - decrease.
