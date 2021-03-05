@@ -281,40 +281,16 @@ public:
 			const double r = rnd.getRndValue();
 			const double r2 = r * r;
 
-			if( rnd.getBit() )
+			// "Same-value parameter vector" short-cut.
+
+			const int si = (int) ( r2 * r2 * CurPopSize );
+			const double* const rp = getParamsOrdered( si );
+
+			const double v = getRealValue( rp, i );
+
+			for( i = 0; i < ParamCount; i++ )
 			{
-				// "Centroid offset" short-cut.
-
-				const int si = (int) ( r2 * r2 * CurPopSize );
-				const double* const rp = getParamsOrdered( si );
-
-				if( NeedCentUpdate )
-				{
-					updateCentroid();
-				}
-
-				const double v = getRealValue( rp, i ) -
-					getRealValue( getCentroid(), i );
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] = ( getRealValue( rp, i ) - v -
-						MinValues[ i ]) / DiffValues[ i ];
-				}
-			}
-			else
-			{
-				// "Same-value parameter vector" short-cut.
-
-				const int si = (int) ( r * r2 * CurPopSize );
-				const double* const rp = getParamsOrdered( si );
-
-				const double v = getRealValue( rp, i );
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] = ( v - MinValues[ i ]) / DiffValues[ i ];
-				}
+				Params[ i ] = ( v - MinValues[ i ]) / DiffValues[ i ];
 			}
 		}
 		else
@@ -1157,7 +1133,7 @@ public:
 			while( true )
 			{
 				const double r = rnd.getRndValue();
-				PushOpt = Opts[ (int) ( r * OptCount )];
+				PushOpt = Opts[ (int) ( r * r * OptCount )];
 
 				if( PushOpt != CurOpt )
 				{
