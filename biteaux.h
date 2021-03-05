@@ -183,32 +183,6 @@ public:
 		}
 	}
 
-	/**
-	 * Function returns the next 2 random bits.
-	 */
-
-	int getBits2()
-	{
-		if( BitsLeft < 2 )
-		{
-			BitPool = getUniformRaw();
-			BitsLeft = getRawBitCount() - 2;
-
-			const int b = ( BitPool & 3 );
-			BitPool >>= 2;
-
-			return( b );
-		}
-		else
-		{
-			const int b = ( BitPool & 3 );
-			BitPool >>= 2;
-			BitsLeft -= 2;
-
-			return( b );
-		}
-	}
-
 private:
 	uint64_t seed; ///< The current random seed value.
 		///<
@@ -376,11 +350,6 @@ public:
 		if( Count == 2 )
 		{
 			Sel = rnd.getBit();
-		}
-		else
-		if( Count == 4 )
-		{
-			Sel = rnd.getBits2();
 		}
 		else
 		{
