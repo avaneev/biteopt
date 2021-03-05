@@ -8,36 +8,18 @@
 // RjC - minimal objective function value detected in all rejected attempts.
 // PowerSum_10 - the name of the test function and dimensionality.
 
-#include <stdio.h>
 #include "tester.h"
-
-#if defined( _WIN32 )
-	#include <windows.h>
-	#define USEPERF 1
-#endif // defined( _WIN32 )
+#include "testfn.h"
 
 int main()
 {
 	CTester Tester;
 
-	Tester.init( 0.01, 15, 70000, true );
+	Tester.init( 0.01, 26, 170000, true );
 //	Tester.addCorpus( 14, OptCorpusND, true, false );
+	Tester.addCorpus( 14, OptCorpusNDRotOfs, true, true );
 	Tester.addCorpus( 14, OptCorpusNDRotOfs, true, false );
 //	Tester.addCorpus( 14, OptCorpusNDRotOfsSol, true, true );
 
-	#if USEPERF
-	LARGE_INTEGER Freq;
-	QueryPerformanceFrequency( &Freq );
-	LARGE_INTEGER t1;
-	QueryPerformanceCounter( &t1 );
-	#endif // USEPERF
-
 	Tester.run();
-
-	#if USEPERF
-	LARGE_INTEGER t2;
-	QueryPerformanceCounter( &t2 );
-	printf("time: %f s\n", ( t2.QuadPart - t1.QuadPart ) /
-		(double) Freq.QuadPart );
-	#endif // USEPERF
 }

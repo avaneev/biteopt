@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.8
+ * @version 2021.9
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -75,8 +75,8 @@ public:
 		deleteBuffers();
 		initBaseBuffers( aParamCount, aPopSize );
 
-		WPopCent = new double[ PopSize ];
-		WPopRad = new double[ PopSize ];
+		WPopCent = new double[ aPopSize ];
+		WPopRad = new double[ aPopSize ];
 
 		JitMult = 2.0 * Jitter / aParamCount;
 		JitOffs = 1.0 - JitMult * 0.5;
@@ -134,9 +134,7 @@ public:
 		CentPowHist.reset( rnd );
 		RadPowHist.reset( rnd );
 		EvalFacHist.reset( rnd );
-		cpm = CentPowHist.select( rnd );
-		rpm = RadPowHist.select( rnd );
-		epm = EvalFacHist.select( rnd );
+		PopChangeHist.reset( rnd );
 	}
 
 	/**
@@ -217,7 +215,7 @@ public:
 
 		updateBestCost( NewCost, NewParams );
 
-		if( curpi < PopSize )
+		if( curpi < CurPopSize )
 		{
 			sortPop( NewCost, curpi );
 			curpi++;
@@ -236,37 +234,71 @@ public:
 		AvgCost += NewCost;
 		cure++;
 
-		if( cure >= PopSize * EvalFac )
+		if( cure >= CurPopSize * EvalFac )
 		{
+			bool DoPopIncr;
 			AvgCost /= cure;
 
 			if( AvgCost < HiBound )
 			{
 				HiBound = AvgCost;
 				StallCount = 0;
+				DoPopIncr = true;
 
-				CentPowHist.incr( cpm );
-				RadPowHist.incr( rpm );
-				EvalFacHist.incr( epm );
+				applyHistsIncr();
 			}
 			else
 			{
 				StallCount += cure;
+				DoPopIncr = false;
 
-				CentPowHist.decr( cpm );
-				RadPowHist.decr( rpm );
-				EvalFacHist.decr( epm );
+				applyHistsDecr();
 			}
-
-			cpm = CentPowHist.select( rnd );
-			rpm = RadPowHist.select( rnd );
-			epm = EvalFacHist.select( rnd );
 
 			AvgCost = 0.0;
 			curpi = 0;
 			cure = 0;
 
-			update();
+			update( rnd );
+
+			// Increase population size on fail.
+
+			PopChange = select( PopChangeHist, rnd );
+
+			if( DoPopIncr )
+			{
+				// Increase population size on fail.
+
+				if( PopChange == 1 )
+				{
+					if( CurPopSize < PopSize )
+					{
+						CurPopSize++;
+						CurPopSize1++;
+					}
+					else
+					{
+						unselect( PopChangeHist, rnd );
+					}
+				}
+			}
+			else
+			{
+				// Decrease population size on success.
+
+				if( PopChange == 0 )
+				{
+					if( CurPopSize > PopSize / 2 )
+					{
+						CurPopSize--;
+						CurPopSize1--;
+					}
+					else
+					{
+						unselect( PopChangeHist, rnd );
+					}
+				}
+			}
 		}
 
 		return( StallCount );
@@ -292,17 +324,17 @@ protected:
 		///<
 	bool DoCentEval; ///< "True" if an initial objective function evaluation
 		///< at centroid point is required.
-	CBiteOptHist< 3, 3, 1 > CentPowHist; ///< Centroid power factor histogram.
 		///<
-	CBiteOptHist< 3, 6, 1 > RadPowHist; ///< Radius power factor histogram.
+	CBiteOptHist< 4, 4, 1 > CentPowHist; ///< Centroid power factor histogram.
+		///<
+	CBiteOptHist< 4, 4, 1 > RadPowHist; ///< Radius power factor histogram.
 		///<
 	CBiteOptHist< 3, 3, 1 > EvalFacHist; ///< EvalFac histogram.
 		///<
-	int cpm; ///< Centroid power factor selector.
+	CBiteOptHist< 2, 2, 4 > PopChangeHist; ///< Population size change
+		///< histogram.
 		///<
-	int rpm; ///< Radius power factor selector.
-		///<
-	int epm; ///< EvalFac selector.
+	int PopChange; ///< Population change: 0 - increase, 1 - decrease.
 		///<
 
 	/**
@@ -319,25 +351,27 @@ protected:
 
 	/**
 	 * Function updates centroid and radius.
+	 *
+	 * @param rnd PRNG object.
 	 */
 
-	void update()
+	void update( CBiteRnd& rnd )
 	{
-		static const double WCent[ 3 ] = { 5.0, 7.5, 10.0 };
-		static const double WRad[ 3 ] = { 16.0, 18.0, 20.0 };
+		static const double WCent[ 4 ] = { 4.5, 6.0, 7.5, 10.0 };
+		static const double WRad[ 4 ] = { 14.0, 16.0, 18.0, 20.0 };
 		static const double EvalFacs[ 3 ] = { 2.0, 1.9, 1.8 };
 
-		const double CentFac = WCent[ cpm ];
-		const double RadFac = WRad[ rpm ];
-		EvalFac = EvalFacs[ epm ];
+		const double CentFac = WCent[ CentPowHist.select( rnd )];
+		const double RadFac = WRad[ RadPowHist.select( rnd )];
+		EvalFac = EvalFacs[ EvalFacHist.select( rnd )];
 
 		double s1 = 0.0;
 		double s2 = 0.0;
 		int i;
 
-		for( i = 0; i < PopSize; i++ )
+		for( i = 0; i < CurPopSize; i++ )
 		{
-			const double l = 1.0 - i / ( PopSize * EvalFac );
+			const double l = 1.0 - i / ( CurPopSize * EvalFac );
 
 			const double v1 = pow( l, CentFac );
 			WPopCent[ i ] = v1;
@@ -363,7 +397,7 @@ protected:
 
 		int j;
 
-		for( j = 1; j < PopSize; j++ )
+		for( j = 1; j < CurPopSize; j++ )
 		{
 			ip = CurParams[ j ];
 			w = wc[ j ] * s1;
@@ -377,7 +411,7 @@ protected:
 		const double* const rc = WPopRad;
 		Radius = 0.0;
 
-		for( j = 0; j < PopSize; j++ )
+		for( j = 0; j < CurPopSize; j++ )
 		{
 			ip = CurParams[ j ];
 			double s = 0.0;

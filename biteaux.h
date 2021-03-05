@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.8
+ * @version 2021.9
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -52,12 +52,21 @@ class CBiteRnd
 {
 public:
 	/**
+	 * Default constructor, calls the init() function.
+	 */
+
+	CBiteRnd()
+	{
+		init( 1 );
+	}
+
+	/**
 	 * Constructor, calls the init() function.
 	 *
 	 * @param NewSeed Random seed value.
 	 */
 
-	CBiteRnd( const int NewSeed = 1 )
+	CBiteRnd( const int NewSeed )
 	{
 		init( NewSeed );
 	}
@@ -70,6 +79,7 @@ public:
 
 	void init( const int NewSeed )
 	{
+		BitsLeft = 0;
 		seed = (uint64_t) NewSeed;
 
 		// Skip first values to make PRNG "settle down".
@@ -146,8 +156,65 @@ public:
 		return( v1 - v2 );
 	}
 
+	/**
+	 * Function returns the next random bit, usually used for 50% probability
+	 * evaluations efficiently.
+	 */
+
+	int getBit()
+	{
+		if( BitsLeft == 0 )
+		{
+			BitPool = getUniformRaw();
+			BitsLeft = getRawBitCount() - 1;
+
+			const int b = ( BitPool & 1 );
+			BitPool >>= 1;
+
+			return( b );
+		}
+		else
+		{
+			const int b = ( BitPool & 1 );
+			BitPool >>= 1;
+			BitsLeft--;
+
+			return( b );
+		}
+	}
+
+	/**
+	 * Function returns the next 2 random bits.
+	 */
+
+	int getBits2()
+	{
+		if( BitsLeft < 2 )
+		{
+			BitPool = getUniformRaw();
+			BitsLeft = getRawBitCount() - 2;
+
+			const int b = ( BitPool & 3 );
+			BitPool >>= 2;
+
+			return( b );
+		}
+		else
+		{
+			const int b = ( BitPool & 3 );
+			BitPool >>= 2;
+			BitsLeft -= 2;
+
+			return( b );
+		}
+	}
+
 private:
 	uint64_t seed; ///< The current random seed value.
+		///<
+	int BitPool; ///< Bit pool.
+		///<
+	int BitsLeft; ///< The number of bits left in the bit pool.
 		///<
 
 	/**
@@ -158,6 +225,33 @@ private:
 	{
 		seed = 500009 * seed + 300119;
 	}
+};
+
+/**
+ * Base histogram class.
+ */
+
+class CBiteOptHistBase
+{
+public:
+	/**
+	 * This function should be called when a certain choice is successful.
+	 * This function should only be called after a prior select() calls.
+	 */
+
+	virtual void incr() = 0;
+
+	/**
+	 * This function should be called when a certain choice is a failure.
+	 * This function should only be called after a prior select() calls.
+	 */
+
+	virtual void decr() = 0;
+
+protected:
+	int Sel; ///< The latest selected choice. Available only after the
+		///< select() function calls.
+		///<
 };
 
 /**
@@ -174,12 +268,12 @@ private:
  * choices. Should be usually equal to Count, but can be set up to Count * 2
  * if a certain choice is likely to be effective most of the time.
  * @tparam IncrDecr Histogram increment (on success) or decrement
- * (on failure). Usually equal to 1, but a higher value can be used if a steep
- * momentary probability change of a certain choice is effective.
+ * (on failure). Usually equals to 1, but a higher value can be used if a
+ * steep momentary probability change of a certain choice is effective.
  */
 
 template< int Count, int Divisor, int IncrDecr >
-class CBiteOptHist
+class CBiteOptHist : virtual public CBiteOptHistBase
 {
 public:
 	CBiteOptHist()
@@ -201,44 +295,34 @@ public:
 		updateProbs();
 	}
 
-	/**
-	 * This function should be called when a certain choice is successful.
-	 *
-	 * @param Index Choice index. Should be in the Count range.
-	 */
-
-	void incr( const int Index )
+	virtual void incr()
 	{
-		Hist[ Index ] += IncrDecr;
+		Hist[ Sel ] += IncrDecr;
 		updateProbs();
 	}
 
-	/**
-	 * This function should be called when a certain choice is a failure.
-	 *
-	 * @param Index Choice index. Should be in the Count range.
-	 */
-
-	void decr( const int Index )
+	virtual void decr()
 	{
-		Hist[ Index ] -= IncrDecr;
+		Hist[ Sel ] -= IncrDecr;
 		updateProbs();
 	}
 
 	/**
 	 * Function produces a random choice index based on the current histogram
-	 * state.
+	 * state. Note that "select" functions can only be called once for a given
+	 * histogram during the optimize() function call.
 	 *
 	 * @param rnd PRNG object.
 	 */
 
-	int select( CBiteRnd& rnd ) const
+	int select( CBiteRnd& rnd )
 	{
 		const double rv = rnd.getRndValue() * ProbSum;
 
 		if( Count == 2 )
 		{
-			return( rv >= Probs[ 0 ]);
+			Sel = ( rv >= Probs[ 0 ]);
+			return( Sel );
 		}
 		else
 		{
@@ -246,25 +330,62 @@ public:
 
 			for( i = 1; i < Count; i++ )
 			{
-				if( rv >= Probs[ i - 1 ] && rv < Probs[ i ])
+				if( rv >= Probs[ i - 1 ] && rv <= Probs[ i ])
 				{
+					Sel = i;
 					return( i );
 				}
 			}
 
+			Sel = 0;
 			return( 0 );
 		}
 	}
 
 	/**
-	 * Function returns a uniformly-distributed choice index.
+	 * Function makes a uniformly-distributed choice.
 	 *
 	 * @param rnd PRNG object.
 	 */
 
-	int selectRandom( CBiteRnd& rnd ) const
+	int selectRandom( CBiteRnd& rnd )
 	{
-		return( (int) ( rnd.getUniformRaw() * rcm ));
+		Sel = (int) ( rnd.getUniformRaw() * rcm );
+		return( Sel );
+	}
+
+	/**
+	 * Function forces a specified choice.
+	 *
+	 * @param s Choice index, must be in Count range.
+	 */
+
+	int selectForce( const int s )
+	{
+		Sel = s;
+		return( s );
+	}
+
+	/**
+	 * Function "unselects" a previously selected choice so that the choice on
+	 * either the incr() or decr() call is randomized.
+	 */
+
+	void unselect( CBiteRnd& rnd )
+	{
+		if( Count == 2 )
+		{
+			Sel = rnd.getBit();
+		}
+		else
+		if( Count == 4 )
+		{
+			Sel = rnd.getBits2();
+		}
+		else
+		{
+			Sel = (int) ( rnd.getUniformRaw() * rcm );
+		}
 	}
 
 protected:
@@ -327,7 +448,7 @@ protected:
  * realise.
  */
 
-class CBiteOptHistBinary
+class CBiteOptHistBinary : virtual public CBiteOptHistBase
 {
 public:
 	/**
@@ -339,7 +460,7 @@ public:
 
 	void reset( CBiteRnd& rnd )
 	{
-		const int b = ( rnd.getUniformRaw() & 1 );
+		const int b = rnd.getBit();
 
 		Hist[ 0 ] = b;
 		Hist[ 1 ] = 1 - b;
@@ -351,9 +472,9 @@ public:
 	 * @param Index Choice index. Should be equal to 0 or 1.
 	 */
 
-	void incr( const int Index )
+	virtual void incr()
 	{
-		Hist[ Index ]++;
+		Hist[ Sel ]++;
 	}
 
 	/**
@@ -362,9 +483,9 @@ public:
 	 * @param Index Choice index. Should be equal to 0 or 1.
 	 */
 
-	void decr( const int Index )
+	virtual void decr()
 	{
-		Hist[ Index ]--;
+		Hist[ Sel ]--;
 	}
 
 	/**
@@ -374,9 +495,20 @@ public:
 	 * @param rnd PRNG object. Not used.
 	 */
 
-	int select( CBiteRnd& rnd ) const
+	int select( CBiteRnd& rnd )
 	{
-		return( Hist[ 1 ] > Hist[ 0 ]);
+		Sel = ( Hist[ 1 ] > Hist[ 0 ]);
+		return( Sel );
+	}
+
+	/**
+	 * Function "unselects" a previously selected choice so that the choice on
+	 * either incr() or decr() call is randomized.
+	 */
+
+	void unselect( CBiteRnd& rnd )
+	{
+		Sel = rnd.getBit();
 	}
 
 protected:
@@ -402,6 +534,12 @@ public:
 	{
 	}
 
+	CBiteOptPop( const CBiteOptPop& s )
+	{
+		initPopBuffers( s.ParamCount, s.PopSize );
+		copy( s );
+	}
+
 	~CBiteOptPop()
 	{
 		deletePopBuffers();
@@ -409,8 +547,7 @@ public:
 
 	/**
 	 * Function initializes population storage buffers, include 1 vector for
-	 * temporary use. This function can only be called after the construction
-	 * of *this object, or after the deletePopBuffers() function call.
+	 * temporary use.
 	 *
 	 * @param aParamCount New parameter count.
 	 * @param aPopSize New population size.
@@ -438,19 +575,6 @@ public:
 		{
 			CurParams[ i ] = CurParamsBuf + i * ParamCount;
 		}
-	}
-
-	/**
-	 * Function deletes buffers previously allocated via the initPopBuffers()
-	 * function.
-	 */
-
-	void deletePopBuffers()
-	{
-		delete[] CurParamsBuf;
-		delete[] CurParams;
-		delete[] CurCosts;
-		delete[] CentParams;
 	}
 
 	/**
@@ -685,6 +809,20 @@ protected:
 		CurCosts[ i ] = Cost;
 		CurParams[ i ] = InsertParams;
 	}
+
+private:
+	/**
+	 * Function deletes buffers previously allocated via the initPopBuffers()
+	 * function.
+	 */
+
+	void deletePopBuffers()
+	{
+		delete[] CurParamsBuf;
+		delete[] CurParams;
+		delete[] CurCosts;
+		delete[] CentParams;
+	}
 };
 
 /**
@@ -789,16 +927,20 @@ protected:
 		///<
 	int StallCount; ///< The number of iterations without improvement.
 		///<
-	int BitPool; ///< Bit pool.
-		///<
-	int BitsLeft; ///< The number of bits left in the bit pool. This variable
-		///< should be reset to 0 on each optimizer's init() function call.
-		///<
 	double HiBound; ///< Higher cost bound, for StallCount estimation. May not
 		///< be used by the optimizer.
 		///<
 	double AvgCost; ///< Average cost in the latest batch. May not be used by
 		///< the optimizer.
+		///<
+	static const int MaxApplyHists = 16; /// The maximal number of histograms
+		///< that can be used during the optimize() function call.
+		///<
+	CBiteOptHistBase* ApplyHists[ MaxApplyHists ]; ///< Histograms used in
+		///< "selects" during the optimize() function call.
+		///<
+	int ApplyHistsCount; ///< The number of "selects" used during the
+		///< optimize() function call.
 		///<
 
 	/**
@@ -857,9 +999,9 @@ protected:
 		NeedCentUpdate = false;
 		BestCost = 1e300;
 		StallCount = 0;
-		BitsLeft = 0;
 		HiBound = 1e300;
 		AvgCost = 0.0;
+		ApplyHistsCount = 0;
 	}
 
 	/**
@@ -960,55 +1102,119 @@ protected:
 	}
 
 	/**
-	 * Function returns the next random bit, usually used for 50% probability
-	 * evaluations efficiently.
+	 * Function performs choice selection based on the specified histogram,
+	 * and adds the histogram to apply list.
+	 *
+	 * @param Hist Histogram.
+	 * @param rnd PRNG object.
 	 */
 
-	int getBit( CBiteRnd& rnd )
+	template< class T >
+	int select( T& Hist, CBiteRnd& rnd )
 	{
-		if( BitsLeft <= 0 )
+		ApplyHists[ ApplyHistsCount ] = &Hist;
+		ApplyHistsCount++;
+
+		return( Hist.select( rnd ));
+	}
+
+	/**
+	 * Function performs random choice selection based on histogram's choice
+	 * count, and adds the histogram to apply list.
+	 *
+	 * @param Hist Histogram.
+	 * @param rnd PRNG object.
+	 */
+
+	template< class T >
+	int selectRandom( T& Hist, CBiteRnd& rnd )
+	{
+		ApplyHists[ ApplyHistsCount ] = &Hist;
+		ApplyHistsCount++;
+
+		return( Hist.selectRandom( rnd ));
+	}
+
+	/**
+	 * Function forces a specified choice selection to the histogram, and adds
+	 * the histogram to apply list.
+	 *
+	 * @param Hist Histogram.
+	 * @param s Choice index. Will be returned unchanged.
+	 */
+
+	template< class T >
+	int selectForce( T& Hist, const int s )
+	{
+		ApplyHists[ ApplyHistsCount ] = &Hist;
+		ApplyHistsCount++;
+
+		return( Hist.selectForce( s ));
+	}
+
+	/**
+	 * Function performs choice selection based on the specified histogram,
+	 * and adds the histogram to apply list. Specialized for binary
+	 * histograms.
+	 *
+	 * @param Hist Histogram.
+	 * @param rnd PRNG object.
+	 */
+
+	int select( CBiteOptHistBinary& Hist, CBiteRnd& rnd )
+	{
+		ApplyHists[ ApplyHistsCount ] = &Hist;
+		ApplyHistsCount++;
+
+		return( Hist.select( rnd ));
+	}
+
+	/**
+	 * Function "unselects" a previously selected choice in the specified
+	 * histogram so that the choice on either the applyHistsIncr() or
+	 * applyHistsDecr() call is randomized.
+	 *
+	 * @param Hist Histogram.
+	 * @param rnd PRNG object.
+	 */
+
+	template< class T >
+	void unselect( T& Hist, CBiteRnd& rnd )
+	{
+		Hist.unselect( rnd );
+	}
+
+	/**
+	 * Function applies histogram increments on optimization success.
+	 */
+
+	void applyHistsIncr()
+	{
+		const int c = ApplyHistsCount;
+		ApplyHistsCount = 0;
+
+		int i;
+
+		for( i = 0; i < c; i++ )
 		{
-			BitPool = rnd.getUniformRaw();
-			BitsLeft = rnd.getRawBitCount() - 1;
-
-			const int b = ( BitPool & 1 );
-			BitPool >>= 1;
-
-			return( b );
-		}
-		else
-		{
-			const int b = ( BitPool & 1 );
-			BitPool >>= 1;
-			BitsLeft--;
-
-			return( b );
+			ApplyHists[ i ] -> incr();
 		}
 	}
 
 	/**
-	 * Function returns the next 2 random bits.
+	 * Function applies histogram decrements on optimization fail.
 	 */
 
-	int getBits2( CBiteRnd& rnd )
+	void applyHistsDecr()
 	{
-		if( BitsLeft < 2 )
+		const int c = ApplyHistsCount;
+		ApplyHistsCount = 0;
+
+		int i;
+
+		for( i = 0; i < c; i++ )
 		{
-			BitPool = rnd.getUniformRaw();
-			BitsLeft = rnd.getRawBitCount() - 2;
-
-			const int b = ( BitPool & 3 );
-			BitPool >>= 2;
-
-			return( b );
-		}
-		else
-		{
-			const int b = ( BitPool & 3 );
-			BitPool >>= 2;
-			BitsLeft -= 2;
-
-			return( b );
+			ApplyHists[ i ] -> decr();
 		}
 	}
 

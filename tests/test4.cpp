@@ -8,8 +8,8 @@
 // RjC - minimal objective function value detected in all rejected attempts.
 // PowerSum_10 - the name of the test function and dimensionality.
 
-#include <stdio.h>
 #include "tester.h"
+#include "testfn.h"
 
 int main()
 {

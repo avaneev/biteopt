@@ -1,5 +1,8 @@
 //$ nocpp
 
+#ifndef TESTFN_INCLUDED
+#define TESTFN_INCLUDED
+
 // Global optimization test functions.
 //
 // Sources:
@@ -13,44 +16,7 @@
 // https://people.sc.fsu.edu/~jburkardt/m_src/test_opt/test_opt.html
 // http://geocities.ws/eadorio/mvf.pdf
 
-#include "../biteaux.h"
-
-CBiteRnd fnrnd( 1000000000 );
-
-inline double sqr( const double x )
-{
-	return( x * x );
-}
-
-#if !defined( M_PI )
-	#define M_PI 3.14159265358979324
-#endif // !defined( M_PI )
-
-template< class T >
-inline T roundf( const T d )
-{
-	return( d < 0.0 ? -floor( (T) 0.5 - d ) : floor( d + (T) 0.5 ));
-}
-
-/**
- * Structure holds details about test function.
- */
-
-struct CTestFn
-{
-	const char* Name; ///< Function's name.
-	int Dims; ///< The number of dimensions, 0 - unlimited.
-	double RangeMin; ///< Dimensions range min.
-	double RangeMax; ///< Dimensions range max.
-	double OptValue; ///< Optimal value.
-
-	double (*CalcFunc)( const double* const x, const int N ); ///< Calculation
-		///< function.
-
-	double (*ParamFunc)( double* const minv, double* const maxv,
-		const int N ); ///< Range and optimal value function, can be NULL.
-		///<
-};
+#include "tester_types.h"
 
 static double calcThreeHumpCamel( const double* const x, const int N )
 {
@@ -618,8 +584,8 @@ static double calcWeierstrass( const double* const x, const int N )
 	return( s );
 }
 
-static double calcWeierstrass_p( double* const minv, double* const maxv,
-	const int N )
+static void calcWeierstrass_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	double x[ N ];
 	int i;
@@ -631,7 +597,7 @@ static double calcWeierstrass_p( double* const minv, double* const maxv,
 		x[ i ] = 0.0;
 	}
 
-	return( calcWeierstrass( x, N ));
+	*optv = calcWeierstrass( x, N );
 }
 
 static const CTestFn TestFnWeierstrass = { "Weierstrass", 0, 0.0, 0.0, 0.0,
@@ -1337,18 +1303,17 @@ static double calcAdjiman( const double* const x, const int N )
 	return( cos(x[0])*sin(x[1])-x[0]/(sqr(x[1])+1.0) );
 }
 
-static double calcAdjiman_p( double* const minv, double* const maxv,
-	const int N )
+static void calcAdjiman_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	minv[ 0 ] = -1.0;
 	maxv[ 0 ] = 2.0;
 	minv[ 1 ] = -1.0;
 	maxv[ 1 ] = 1.0;
-	return( -2.0218067833598 );
 }
 
-static const CTestFn TestFnAdjiman = { "Adjiman", 2, 0.0, 0.0, 0.0,
-	&calcAdjiman, &calcAdjiman_p };
+static const CTestFn TestFnAdjiman = { "Adjiman", 2, 0.0, 0.0,
+	-2.0218067833598, &calcAdjiman, &calcAdjiman_p };
 
 static double calcAlpine2( const double* const x, const int N )
 {
@@ -1363,8 +1328,8 @@ static double calcAlpine2( const double* const x, const int N )
 	return( -s );
 }
 
-static double calcAlpine2_p( double* const minv, double* const maxv,
-	const int N )
+static void calcAlpine2_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	int i;
 
@@ -1374,7 +1339,7 @@ static double calcAlpine2_p( double* const minv, double* const maxv,
 		maxv[ i ] = 10.0;
 	}
 
-	return( -pow( 2.80813118, (double) N ));
+	*optv = -pow( 2.80813118, (double) N );
 }
 
 static const CTestFn TestFnAlpine2 = { "Alpine2", 0, 0.0, 0.0, 0.0,
@@ -1385,14 +1350,13 @@ static double calcBukin2( const double* const x, const int N )
 	return( 100.0*sqr(x[1]-0.01*sqr(x[0])+1.0)+0.01*sqr(x[0]+10.0) );
 }
 
-static double calcBukin2_p( double* const minv, double* const maxv,
-	const int N )
+static void calcBukin2_p( double* const minv, double* const maxv, const int N,
+	double* const optv )
 {
 	minv[ 0 ] = -15.0;
 	maxv[ 0 ] = -5.0;
 	minv[ 1 ] = -3.0;
 	maxv[ 1 ] = 3.0;
-	return( 0.0 );
 }
 
 static const CTestFn TestFnBukin2 = { "Bukin2", 2, 0.0, 0.0, 0.0, &calcBukin2,
@@ -1403,14 +1367,13 @@ static double calcBukin4( const double* const x, const int N )
 	return( 100.0*sqr(x[1])+0.01*fabs(x[0]+10.0) );
 }
 
-static double calcBukin4_p( double* const minv, double* const maxv,
-	const int N )
+static void calcBukin4_p( double* const minv, double* const maxv, const int N,
+	double* const optv )
 {
 	minv[ 0 ] = -15.0;
 	maxv[ 0 ] = -5.0;
 	minv[ 1 ] = -3.0;
 	maxv[ 1 ] = 3.0;
-	return( 0.0 );
 }
 
 static const CTestFn TestFnBukin4 = { "Bukin4", 2, 0.0, 0.0, 0.0, &calcBukin4,
@@ -1421,14 +1384,13 @@ static double calcBukin6( const double* const x, const int N )
 	return( 100.0*sqrt(fabs(x[1]-0.01*sqr(x[0])))+0.01*fabs(x[0]+10.0) );
 }
 
-static double calcBukin6_p( double* const minv, double* const maxv,
-	const int N )
+static void calcBukin6_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	minv[ 0 ] = -15.0;
 	maxv[ 0 ] = -5.0;
 	minv[ 1 ] = -3.0;
 	maxv[ 1 ] = 3.0;
-	return( 0.0 );
 }
 
 static const CTestFn TestFnBukin6 = { "Bukin6", 2, 0.0, 0.0, 0.0, &calcBukin6,
@@ -1447,8 +1409,8 @@ static double calcStyblinskiTang( const double* const x, const int N )
 	return( 0.5*s );
 }
 
-static double calcStyblinskiTang_p( double* const minv, double* const maxv,
-	const int N )
+static void calcStyblinskiTang_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	int i;
 
@@ -1458,7 +1420,7 @@ static double calcStyblinskiTang_p( double* const minv, double* const maxv,
 		maxv[ i ] = 10.0;
 	}
 
-	return( -39.1661657037714*N );
+	*optv = -39.1661657037714*N;
 }
 
 static const CTestFn TestFnStyblinskiTang = { "StyblinskiTang", 0, 0.0, 0.0,
@@ -1469,18 +1431,17 @@ static double calcMcCormick( const double* const x, const int N )
 	return( sin(x[0]+x[1])+sqr(x[0]-x[1])-1.5*x[0]+2.5*x[1]+1.0 );
 }
 
-static double calcMcCormick_p( double* const minv, double* const maxv,
-	const int N )
+static void calcMcCormick_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	minv[ 0 ] = -1.5;
 	maxv[ 0 ] = 4.0;
 	minv[ 1 ] = -3.0;
 	maxv[ 1 ] = 3.0;
-	return( -1.9132229549810 );
 }
 
-static const CTestFn TestFnMcCormick = { "McCormick", 2, 0.0, 0.0, 0.0,
-	&calcMcCormick, &calcMcCormick_p };
+static const CTestFn TestFnMcCormick = { "McCormick", 2, 0.0, 0.0,
+	-1.9132229549810, &calcMcCormick, &calcMcCormick_p };
 
 static double calcHimmelblau( const double* const x, const int N )
 {
@@ -1523,8 +1484,8 @@ static double calcBoxBettsExpQuadSum( const double* const x, const int N )
 	return( s );
 }
 
-static double calcBoxBettsExpQuadSum_p( double* const minv, double* const maxv,
-	const int N )
+static void calcBoxBettsExpQuadSum_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	minv[ 0 ] = 0.9;
 	maxv[ 0 ] = 1.2;
@@ -1532,7 +1493,6 @@ static double calcBoxBettsExpQuadSum_p( double* const minv, double* const maxv,
 	maxv[ 1 ] = 11.2;
 	minv[ 2 ] = 0.9;
 	maxv[ 2 ] = 1.2;
-	return( 0.0 );
 }
 
 static const CTestFn TestFnBoxBettsExpQuadSum = { "BoxBettsExpQuadSum", 3,
@@ -1740,18 +1700,17 @@ static double calcUrsemWaves( const double* const x, const int N )
 		4.7*cos(3.0*x[0]-sqr(x[1])*(2.0+x[0]))*sin(2.5*M_PI*x[0]) );
 }
 
-static double calcUrsemWaves_p( double* const minv, double* const maxv,
-	const int N )
+static void calcUrsemWaves_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	minv[ 0 ] = -0.9;
 	maxv[ 0 ] = 1.2;
 	minv[ 1 ] = -1.2;
 	maxv[ 1 ] = 1.2;
-	return( -7.3069987313245 );
 }
 
-static const CTestFn TestFnUrsemWaves = { "UrsemWaves", 2, 0.0, 0.0, 0.0,
-	&calcUrsemWaves, &calcUrsemWaves_p };
+static const CTestFn TestFnUrsemWaves = { "UrsemWaves", 2, 0.0, 0.0,
+	-7.3069987313245, &calcUrsemWaves, &calcUrsemWaves_p };
 
 static double calcGulfResearchProblem( const double* const x, const int N )
 {
@@ -1768,8 +1727,8 @@ static double calcGulfResearchProblem( const double* const x, const int N )
 	return( s );
 }
 
-static double calcGulfResearchProblem_p( double* const minv,
-	double* const maxv, const int N )
+static void calcGulfResearchProblem_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	minv[ 0 ] = 0.1;
 	maxv[ 0 ] = 100.0;
@@ -1777,7 +1736,6 @@ static double calcGulfResearchProblem_p( double* const minv,
 	maxv[ 1 ] = 25.6;
 	minv[ 2 ] = 0.0;
 	maxv[ 2 ] = 5.0;
-	return( 0.0 );
 }
 
 static const CTestFn TestFnGulfResearchProblem = { "GulfRsrchProblem", 3,
@@ -2277,18 +2235,17 @@ static double calcUrsem01( const double* const x, const int N )
 	return( -sin(2.0*x[0]-0.5*M_PI)-3.0*cos(x[1])-0.5*x[0] );
 }
 
-static double calcUrsem01_p( double* const minv, double* const maxv,
-	const int N )
+static void calcUrsem01_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	minv[ 0 ] = -2.5;
 	maxv[ 0 ] = 3.0;
 	minv[ 1 ] = -2.0;
 	maxv[ 1 ] = 2.0;
-	return( -4.8168140637348 );
 }
 
-static const CTestFn TestFnUrsem01 = { "Ursem01", 2, 0.0, 0.0, 0.0,
-	&calcUrsem01, &calcUrsem01_p };
+static const CTestFn TestFnUrsem01 = { "Ursem01", 2, 0.0, 0.0,
+	-4.8168140637348, &calcUrsem01, &calcUrsem01_p };
 
 static double calcQuadratic( const double* const x, const int N )
 {
@@ -2791,17 +2748,16 @@ static double calcUrsem03( const double* const x, const int N )
 		(2.0-fabs(x[1]))/2.0*(3.0-fabs(x[1]))/2.0 );
 }
 
-static double calcUrsem03_p( double* const minv, double* const maxv,
-	const int N )
+static void calcUrsem03_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	minv[ 0 ] = -2.0;
 	maxv[ 0 ] = 2.0;
 	minv[ 1 ] = -1.5;
 	maxv[ 1 ] = 1.5;
-	return( -3.0 );
 }
 
-static const CTestFn TestFnUrsem03 = { "Ursem03", 2, 0.0, 0.0, 0.0,
+static const CTestFn TestFnUrsem03 = { "Ursem03", 2, 0.0, 0.0, -3.0,
 	&calcUrsem03, &calcUrsem03_p };
 
 static double calcMishra08( const double* const x, const int N )
@@ -2850,8 +2806,8 @@ static double calcCosineMixture( const double* const x, const int N )
 	return( -0.1*s1+s2 );
 }
 
-static double calcCosineMixture_p( double* const minv, double* const maxv,
-	const int N )
+static void calcCosineMixture_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	int i;
 
@@ -2861,7 +2817,7 @@ static double calcCosineMixture_p( double* const minv, double* const maxv,
 		maxv[ i ] = 1.0;
 	}
 
-	return( -0.1*N );
+	*optv = -0.1*N;
 }
 
 static const CTestFn TestFnCosineMixture = { "CosineMixture", 0, 0.0, 0.0,
@@ -3039,8 +2995,8 @@ static double calcRana( const double* const x, const int N )
 	return( s );
 }
 
-static double calcRana_p( double* const minv, double* const maxv,
-	const int N )
+static void calcRana_p( double* const minv, double* const maxv, const int N,
+	double* const optv )
 {
 	double x[ N ];
 	int i;
@@ -3052,7 +3008,7 @@ static double calcRana_p( double* const minv, double* const maxv,
 		x[ i ] = -500.0;
 	}
 
-	return( calcRana( x, N ));
+	*optv = calcRana( x, N );
 }
 
 static const CTestFn TestFnRana = { "Rana", 0, 0.0, 0.0, 0.0, &calcRana,
@@ -3157,18 +3113,17 @@ static double calcMullerBrown( const double* const x, const int N )
 	return( s );
 }
 
-static double calcMullerBrown_p( double* const minv, double* const maxv,
-	const int N )
+static void calcMullerBrown_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	minv[ 0 ] = -1.5;
 	maxv[ 0 ] = 1.0;
 	minv[ 1 ] = -0.5;
 	maxv[ 1 ] = 2.5;
-	return( -146.6995172099541 );
 }
 
 static const CTestFn TestFnMullerBrown = { "MullerBrown", 2, 0.0, 0.0,
-	0.0, &calcMullerBrown, &calcMullerBrown_p };
+	-146.6995172099541, &calcMullerBrown, &calcMullerBrown_p };
 
 static double calcCorana( const double* const x, const int N )
 {
@@ -3217,8 +3172,8 @@ static double calcBrad( const double* const x, const int N )
 	return( s );
 }
 
-static double calcBrad_p( double* const minv, double* const maxv,
-	const int N )
+static void calcBrad_p( double* const minv, double* const maxv, const int N,
+	double* const optv )
 {
 	minv[ 0 ] = -0.25;
 	maxv[ 0 ] = 0.25;
@@ -3226,11 +3181,10 @@ static double calcBrad_p( double* const minv, double* const maxv,
 	maxv[ 1 ] = 2.5;
 	minv[ 2 ] = 0.01;
 	maxv[ 2 ] = 2.5;
-	return( 6.9352280697052 );
 }
 
 static const CTestFn TestFnBrad = { "Brad", 3, 0.0, 0.0,
-	0.0, &calcBrad, &calcBrad_p };
+	6.9352280697052, &calcBrad, &calcBrad_p };
 
 static double calcLennardJones( const double* const x, const int N )
 {
@@ -3316,8 +3270,8 @@ static double calcPermFunction01( const double* const x, const int N )
 	return( s1 );
 }
 
-static double calcPermFunction01_p( double* const minv, double* const maxv,
-	const int N )
+static void calcPermFunction01_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	int i;
 
@@ -3326,8 +3280,6 @@ static double calcPermFunction01_p( double* const minv, double* const maxv,
 		minv[ i ] = -N;
 		maxv[ i ] = N + 1;
 	}
-
-	return( 0.0 );
 }
 
 static const CTestFn TestFnPermFunction01 = { "PermFunction01", 2, 0.0, 0.0,
@@ -3356,8 +3308,8 @@ static double calcPermFunction02( const double* const x, const int N )
 	return( s1 );
 }
 
-static double calcPermFunction02_p( double* const minv, double* const maxv,
-	const int N )
+static void calcPermFunction02_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	int i;
 
@@ -3366,8 +3318,6 @@ static double calcPermFunction02_p( double* const minv, double* const maxv,
 		minv[ i ] = -N;
 		maxv[ i ] = N + 1;
 	}
-
-	return( 0.0 );
 }
 
 static const CTestFn TestFnPermFunction02 = { "PermFunction02", 2, 0.0, 0.0,
@@ -3741,8 +3691,8 @@ static double calcTridiagonalMatrix( const double* const x, const int N )
 	return( s - 2.0*x[0] );
 }
 
-static double calcTridiagonalMatrix_p( double* const minv, double* const maxv,
-	const int N )
+static void calcTridiagonalMatrix_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	int i;
 
@@ -3752,7 +3702,7 @@ static double calcTridiagonalMatrix_p( double* const minv, double* const maxv,
 		maxv[ i ] = N * 2.0;
 	}
 
-	return( -N );
+	*optv = -N;
 }
 
 static const CTestFn TestTridiagonalMatrix = { "TridiagonalMatrix", 0,
@@ -3804,8 +3754,8 @@ static double calcCola( const double* const x, const int N )
 	return( s );
 }
 
-static double calcCola_p( double* const minv, double* const maxv,
-	const int N )
+static void calcCola_p( double* const minv, double* const maxv, const int N,
+	double* const optv )
 {
 	minv[ 0 ] = 0.0;
 	maxv[ 0 ] = 4.0;
@@ -3816,12 +3766,10 @@ static double calcCola_p( double* const minv, double* const maxv,
 		minv[ i ] = -4.0;
 		maxv[ i ] = 4.0;
 	}
-
-	return( 11.7463902756603 );
 }
 
-static const CTestFn TestFnCola = { "Cola", 17, 0.0, 0.0, 0.0, &calcCola,
-	&calcCola_p };
+static const CTestFn TestFnCola = { "Cola", 17, 0.0, 0.0, 11.7463902756603,
+	&calcCola, &calcCola_p };
 
 static double calcRipple01( const double* const x, const int N )
 {
@@ -4000,8 +3948,8 @@ static double calcOsborne( const double* const x, const int N )
 	return( s );
 }
 
-static double calcOsborne_p( double* const minv, double* const maxv,
-	const int N )
+static void calcOsborne_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	minv[ 0 ] = 0.0;
 	maxv[ 0 ] = 3.0;
@@ -4013,12 +3961,10 @@ static double calcOsborne_p( double* const minv, double* const maxv,
 	maxv[ 3 ] = 3.0;
 	minv[ 4 ] = 0.0;
 	maxv[ 4 ] = 3.0;
-
-	return( 0.0000546489470 );
 }
 
-static const CTestFn TestFnOsborne = { "Osborne", 5, 0.0, 0.0, 0.0,
-	&calcOsborne, &calcOsborne_p };
+static const CTestFn TestFnOsborne = { "Osborne", 5, 0.0, 0.0,
+	0.0000546489470, &calcOsborne, &calcOsborne_p };
 
 static double calcSimpleton( const double* const x, const int N )
 {
@@ -4097,8 +4043,8 @@ static double calcInvertedCosine( const double* const x, const int N )
 	return( -s );
 }
 
-static double calcInvertedCosine_p( double* const minv, double* const maxv,
-	const int N )
+static void calcInvertedCosine_p( double* const minv, double* const maxv,
+	const int N, double* const optv )
 {
 	int i;
 
@@ -4108,7 +4054,7 @@ static double calcInvertedCosine_p( double* const minv, double* const maxv,
 		maxv[ i ] = 5.0;
 	}
 
-	return( -N + 1 );
+	*optv = -N + 1;
 }
 
 static const CTestFn TestFnInvertedCosine = { "InvertedCosine", 0, 0.0, 0.0,
@@ -4365,3 +4311,5 @@ const CTestFn* TestCorpusAll[] = { &TestFnTripod, &TestFnXor,
 	&TestTridiagonalMatrix, &TestFnRipple25, &TestFnSargan, &TestFnFriedman,
 	&TestFnF2, &TestFnInvertedCosine, &TestFnSinusoidal,
 	&TestFnLunacekBiSphere, &TestSphericalSinc, &TestFnCigar, NULL };
+
+#endif // TESTFN_INCLUDED

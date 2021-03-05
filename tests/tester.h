@@ -2,16 +2,16 @@
 
 #include <conio.h>
 #include <stdio.h>
+#include "tester_types.h"
 #include "../biteopt.h"
 #include "../spheropt.h"
 #include "../smaesopt.h"
 //#include "../other/nmpopt.h"
 //#include "../other/ccmaes.h"
 
-#include "testfn.h"
-
-#define OPT_CLASS CBiteOpt//CBiteOptDeep//CSpherOpt//CSMAESOpt//CNelderMeadPlusOpt//CCMAESOpt//
-#define OPT_DIMS_PARAMS Dims
+#define OPT_CLASS CBiteOpt//CSpherOpt//CSMAESOpt//CNelderMeadPlusOpt//CBiteOptDeep//CCMAESOpt//
+#define OPT_DIMS_PARAMS Dims // updateDims() parameters.
+//#define OPT_PLATEAU_MUL 64 // Comment out to disable plateau check.
 //#define EVALBINS 1
 
 #if 0
@@ -22,6 +22,11 @@
 #else // OPT_THREADS
 	#define OPT_THREADS 0
 #endif // OPT_THREADS
+
+#if defined( _WIN32 )
+	#include <windows.h>
+	#define OPT_PERF
+#endif // defined( _WIN32 )
 
 /**
  * Summary optimization statistics class.
@@ -273,7 +278,9 @@ public:
 
 		while( true )
 		{
-			if( optimize( rnd ) == 0 )
+			const int sc = optimize( rnd );
+
+			if( sc == 0 )
 			{
 				ImprIters++;
 			}
@@ -307,7 +314,11 @@ public:
 
 			PrevCost = getBestCost() - optv;
 
+			#if defined( OPT_PLATEAU_MUL )
+			if( sc > Dims * OPT_PLATEAU_MUL || i == MaxIters )
+			#else // defined( OPT_PLATEAU_MUL )
 			if( i == MaxIters )
+			#endif // defined( OPT_PLATEAU_MUL )
 			{
 				#if OPT_THREADS
 					VOXSYNC( StatsSync );
@@ -353,6 +364,8 @@ public:
 	double AvgRMS; ///< Average RMS, available after run().
 		///<
 	double AvgIt; ///< Average Iters, available after run().
+		///<
+	double AvgIt_l10n; ///< Average Iters/ln(10), available after run().
 		///<
 	double AvgRjCost; ///< Average reject cost, available after run().
 		///<
@@ -420,6 +433,13 @@ public:
 
 	void run()
 	{
+		#if defined( OPT_PERF )
+		LARGE_INTEGER Freq;
+		QueryPerformanceFrequency( &Freq );
+		LARGE_INTEGER t1;
+		QueryPerformanceCounter( &t1 );
+		#endif // defined( OPT_PERF )
+
 		SumStats.clear();
 		SumStats.TotalAttempts = FnCount * IterCount;
 
@@ -465,11 +485,12 @@ public:
 				opt -> Index = j;
 				opt -> Iters = Iters;
 				opt -> rnd.init( k + j * 10000 );
+				opt -> optv = opt -> fn -> OptValue;
 
 				if( opt -> fn -> ParamFunc != NULL )
 				{
-					opt -> optv = (*opt -> fn -> ParamFunc)(
-						opt -> minv, opt -> maxv, Dims );
+					(*opt -> fn -> ParamFunc)( opt -> minv, opt -> maxv, Dims,
+						&opt -> optv );
 				}
 				else
 				{
@@ -478,8 +499,6 @@ public:
 						opt -> minv[ i ] = opt -> fn -> RangeMin;
 						opt -> maxv[ i ] = opt -> fn -> RangeMax;
 					}
-
-					opt -> optv = opt -> fn -> OptValue;
 				}
 
 				if( fndata -> DoRandomize )
@@ -606,9 +625,11 @@ public:
 		}
 		#endif // defined( EVALBINS )
 
+		const double SuccessFn = 100.0 * SumStats.ComplFuncs / FnCount;
 		SuccessAt = 100.0 * SumStats.ComplAttempts / SumStats.TotalAttempts;
 		AvgRMS = SumStats.SumRMS_l10n / SumStats.SumRMSCount;
-		AvgIt = SumStats.SumIt_l10n / SumStats.ComplAttempts;
+		AvgIt = (double) SumStats.SumIters / SumStats.ComplAttempts;
+		AvgIt_l10n = SumStats.SumIt_l10n / SumStats.ComplAttempts;
 		AvgRjCost = SumStats.SumRjCost * FnCount / SumStats.TotalAttempts;
 
 		if( DoPrint )
@@ -626,14 +647,25 @@ public:
 				"iterations in successful attempts)\n", 100.0 *
 				SumStats.SumImprIters / SumStats.SumIters );
 
+			printf( "Func success: %.2f%%\n", SuccessFn );
 			printf( "Attempts success: %.2f%%\n", SuccessAt );
+			printf( "AvgIt: %.3f (avg iterations across all successful "
+				"attempts)\n", AvgIt );
+
+			printf( "AvgIt_l10n: %.3f (avg log10(it/N) across all successful "
+				"attempts)\n", AvgIt_l10n );
+
 			printf( "AvgRMS_l10n: %.1f (avg log10(std.dev/N) of convergence time)\n",
 				AvgRMS );
 
-			printf( "AvgIt_l10n: %.3f (avg log10(it/N) across all successful "
-				"attempts)\n", AvgIt );
-
 			printf( "AvgRjCost: %.6f (avg reject cost)\n", AvgRjCost );
+
+			#if defined( OPT_PERF )
+			LARGE_INTEGER t2;
+			QueryPerformanceCounter( &t2 );
+			printf("time: %.3f s\n", ( t2.QuadPart - t1.QuadPart ) /
+				(double) Freq.QuadPart );
+			#endif // defined( OPT_PERF )
 		}
 
 		delete[] Iters;
