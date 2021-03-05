@@ -43,7 +43,7 @@ function-agnostic.
 
 ## Comparison ##
 
-This "black-box" optimization method was tested on 450+ 1-14 dimensional
+This "black-box" optimization method was tested on 500+ 1-56 dimensional
 optimization problems and performed well, and it successfully solves even
 600-dimensional test problems found in some textbooks. But the main focus of
 the method is to provide fast solutions for computationally expensive
@@ -62,7 +62,7 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
 success rate is >93% while the average number of objective function
-evaluations is ~370.
+evaluations is ~360.
 
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of
