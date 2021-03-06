@@ -42,9 +42,9 @@ BITEOPT uses self-optimization techniques making it objective
 function-agnostic.
 
 It is important to note that compiler and the way it arranges mathematical
-instructions measurably affect performance of the latest version of BiteOpt.
-LLVM provides the intendend performance while with Intel C++ Compiler 2019.0
-BiteOpt's performance is measurably lower.
+instructions measurably affects convergence performance of the latest version
+of BiteOpt. LLVM provides the intendend performance while with Intel C++
+Compiler 2019.0 BiteOpt's performance is measurably lower.
 
 ## Comparison ##
 
