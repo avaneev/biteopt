@@ -155,7 +155,7 @@ public:
 
 		y[ curx ] = optcost( Params );
 
-		if( !WasBestCostSet || y[ curx ] < BestCost )
+		if( !WasBestCostSet || y[ curx ] <= BestCost )
 		{
 			WasBestCostSet = true;
 			BestCost = y[ curx ];

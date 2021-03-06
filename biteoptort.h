@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.9
+ * @version 2021.10
  */
 
 #ifndef BITEOPTORT_INCLUDED
@@ -41,8 +41,20 @@
  * weighting to population.
  */
 
-class CBiteOptOrt
+class CBiteOptOrt : virtual public CBiteOptPop
 {
+private:
+	CBiteOptOrt( const CBiteOptOrt& )
+	{
+		// Copy-construction unsupported.
+	}
+
+	CBiteOptOrt& operator = ( const CBiteOptOrt& )
+	{
+		// Copying unsupported.
+		return( *this );
+	}
+
 public:
 	double CentPow; ///< Centroid weighting power coefficient.
 		///<
@@ -58,21 +70,15 @@ public:
 		///<
 
 	CBiteOptOrt()
-		: ParamCount( 0 )
-		, PopSize( 0 )
-		, CovParamsBuf( NULL )
+		: CovParamsBuf( NULL )
 		, CovParams( NULL )
 		, BParamsBuf( NULL )
 		, BParams( NULL )
 		, DParams( NULL )
 		, DParamsN( NULL )
-		, CentParams( NULL )
 		, PrevCentParams( NULL )
 		, WPopCent( NULL )
 		, WPopCov( NULL )
-		, PopParamsBuf( NULL )
-		, PopParams( NULL )
-		, TmpParams( NULL )
 	{
 		CentPow = 6.0;
 		CovUpdSlow = 5.0;
@@ -100,40 +106,18 @@ public:
 			return;
 		}
 
-		deleteBuffers();
+		initBuffers( aParamCount, aPopSize );
 
-		ParamCount = aParamCount;
-		PopSize = aPopSize;
 		EvalFac = aEvalFac;
-		CovParamsBuf = new double[ ParamCount * ParamCount ];
-		CovParams = new double*[ ParamCount ];
-		BParamsBuf = new double[ ParamCount * ParamCount ];
-		BParams = new double*[ ParamCount ];
-		DParams = new double[ ParamCount ];
-		DParamsN = new double[ ParamCount ];
-		CentParams = new double[ ParamCount ];
-		PrevCentParams = new double[ ParamCount ];
-		WPopCent = new double[ PopSize ];
-		WPopCov = new double[ PopSize ];
-		PopParamsBuf = new double[ ParamCount * PopSize ];
-		PopParams = new double*[ ParamCount ];
-		TmpParams = new double[ ParamCount ];
-
-		int i;
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			CovParams[ i ] = CovParamsBuf + i * ParamCount;
-			BParams[ i ] = BParamsBuf + i * ParamCount;
-			PopParams[ i ] = PopParamsBuf + i * PopSize;
-		}
 	}
 
 	/**
 	 * Function updates centroid and covariance estimation weights.
+	 *
+	 * @param UsePopSize Population size to use.
 	 */
 
-	void updateWeights()
+	void updateWeights( const int UsePopSize )
 	{
 		// Calculate weights for centroid and covariance calculation.
 
@@ -159,11 +143,10 @@ public:
 	 * specified initial centroid and sigma.
 	 *
 	 * @param InitCent Initial centroids per parameter (NULL for origin).
-	 * @param InitSigma Initial sigmas per parameter (NULL for 0.5).
-	 * @return Population size to use.
+	 * @param InitSigma Initial sigmas per parameter (NULL for 0.25).
 	 */
 
-	int init( const double* const InitCent = NULL,
+	void init( const double* const InitCent = NULL,
 		const double* const InitSigma = NULL )
 	{
 		memset( CovParamsBuf, 0, ParamCount * ParamCount *
@@ -184,22 +167,20 @@ public:
 		}
 
 		spc = 0.0;
-		UsePopSize = PopSize;
-		updateWeights();
-
-		return( UsePopSize );
+		updateWeights( PopSize );
 	}
 
 	/**
 	 * Function performs rotation matrix update.
 	 *
-	 * @param CurParams Population parameter vectors, should be sorted in
-	 * ascending cost order.
-	 * @return Current population size.
+	 * @param ExtPop External population.
 	 */
 
-	int update( double** const CurParams )
+	void update( const CBiteOptPop& ExtPop )
 	{
+		const int UsePopSize = ExtPop.getCurPopSize();
+		const double** const ExtParams = ExtPop.getPopParams();
+
 		// Prepare PopParams (vector of per-parameter population deviations),
 		// later used to calculate weighted covariances, use current centroid
 		// vector.
@@ -214,7 +195,7 @@ public:
 
 			for( j = 0; j < UsePopSize; j++ )
 			{
-				op[ j ] = ( CurParams[ j ][ i ] - c ) * WPopCov[ j ];
+				op[ j ] = ( ExtParams[ j ][ i ] - c ) * WPopCov[ j ];
 			}
 		}
 
@@ -223,7 +204,7 @@ public:
 		memcpy( PrevCentParams, CentParams,
 			ParamCount * sizeof( PrevCentParams[ 0 ]));
 
-		calcCent( CurParams );
+		calcCent( ExtParams, UsePopSize );
 
 		// Update covariance matrix, the left-handed triangle only. Uses leaky
 		// integrator averaging filter. "avgc" selects corner frequency
@@ -248,7 +229,9 @@ public:
 
 			for( i = 0; i <= j; i++ )
 			{
-				const double cov = dotp( PopParams[ j ], PopParams[ i ]);
+				const double cov = dotp( PopParams[ j ], PopParams[ i ],
+					UsePopSize );
+
 				cp[ i ] += ( cov - cp[ i ]) * avgc;
 			}
 		}
@@ -311,8 +294,6 @@ public:
 			DParams[ i ] *= m;
 			DParamsN[ i ] *= m;
 		}
-
-		return( UsePopSize );
 	}
 
 	/**
@@ -439,14 +420,6 @@ public:
 	}
 
 protected:
-	int ParamCount; ///< The number of parameters in parameter vector.
-		///<
-	int PopSize; ///< Population size (max).
-		///<
-	double EvalFac; ///< Function evaluations factor.
-		///<
-	int UsePopSize; ///< Current population size.
-		///<
 	double* CovParamsBuf; ///< CovParams buffer.
 		///<
 	double** CovParams; ///< Covariance matrix.
@@ -459,8 +432,6 @@ protected:
 		///<
 	double* DParamsN; ///< Std. deviations vector, for negative values.
 		///<
-	double* CentParams; ///< Centroid vector, weighted.
-		///<
 	double* PrevCentParams; ///< Previous centroid vector.
 		///<
 	double* WPopCent; ///< Weighting coefficients for ordered population, for
@@ -469,35 +440,52 @@ protected:
 	double* WPopCov; ///< Weighting coefficients for covariance calculation,
 		///< squared.
 		///<
-	double* PopParamsBuf; ///< PopParams buffer.
-		///<
-	double** PopParams; ///< Population vectors per parameter (deviations,
-		///< weighted).
-		///<
 	double* TmpParams; ///< Temporary parameter vector.
+		///<
+	double EvalFac; ///< Function evaluations factor.
 		///<
 	double spc; ///< Distribution's sphericity coefficient. 1 - fully
 		///< spherical.
 
-	/**
-	 * Function deletes previously allocated buffers.
-	 */
-
-	void deleteBuffers()
+	virtual void initBuffers( const int aParamCount, const int aPopSize )
 	{
+		CBiteOptPop :: initBuffers( aParamCount, aPopSize );
+
+		CovParamsBuf = new double[ aParamCount * aParamCount ];
+		CovParams = new double*[ aParamCount ];
+		BParamsBuf = new double[ aParamCount * aParamCount ];
+		BParams = new double*[ aParamCount ];
+		DParams = new double[ aParamCount ];
+		DParamsN = new double[ aParamCount ];
+		PrevCentParams = new double[ aParamCount ];
+		WPopCent = new double[ aPopSize ];
+		WPopCov = new double[ aPopSize ];
+		TmpParams = PopParams[ aPopSize ];
+
+		int i;
+
+		for( i = 0; i < aParamCount; i++ )
+		{
+			CovParams[ i ] = CovParamsBuf + i * aParamCount;
+			BParams[ i ] = BParamsBuf + i * aParamCount;
+			PopParams[ i ] = PopParamsBuf + i * aPopSize; // Rearrange
+				// population vectors.
+		}
+	}
+
+	virtual void deleteBuffers()
+	{
+		CBiteOptPop :: deleteBuffers();
+
 		delete[] CovParamsBuf;
 		delete[] CovParams;
 		delete[] BParamsBuf;
 		delete[] BParams;
 		delete[] DParams;
 		delete[] DParamsN;
-		delete[] CentParams;
 		delete[] PrevCentParams;
 		delete[] WPopCent;
 		delete[] WPopCov;
-		delete[] PopParamsBuf;
-		delete[] PopParams;
-		delete[] TmpParams;
 	}
 
 	/**
@@ -778,9 +766,10 @@ protected:
 	 * Function calculates centroid vector of population, with weighting.
 	 *
 	 * @param SortedParams Array of sorted population vectors.
+	 * @param UsePopSize Population size to use.
 	 */
 
-	void calcCent( double** const SortedParams )
+	void calcCent( const double** const SortedParams, const int UsePopSize )
 	{
 		const double* ip = SortedParams[ 0 ];
 		double w = WPopCent[ 0 ];
@@ -811,14 +800,16 @@ protected:
 	 *
 	 * @param p1 Parameter A's population vector.
 	 * @param p2 Parameter B's population vector.
+	 * @param c Element count.
 	 */
 
-	double dotp( const double* const p1, const double* const p2 ) const
+	double dotp( const double* const p1, const double* const p2,
+		const int c ) const
 	{
 		double s = 0.0;
 		int i;
 
-		for( i = 0; i < UsePopSize; i++ )
+		for( i = 0; i < c; i++ )
 		{
 			s += p1[ i ] * p2[ i ];
 		}

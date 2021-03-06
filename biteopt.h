@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.9
+ * @version 2021.10
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -80,11 +80,9 @@ public:
 			return;
 		}
 
-		deleteBuffers();
-		initBaseBuffers( aParamCount, aPopSize );
+		initBuffers( aParamCount, aPopSize );
 
-		IntParams = new uint64_t[ aParamCount ];
-		Params = CurParams[ aPopSize ];
+		Params = PopParams[ aPopSize ];
 
 		ParOpt.Owner = this;
 		ParOpt.updateDims( aParamCount );
@@ -123,7 +121,7 @@ public:
 
 			for( j = 0; j < PopSize; j++ )
 			{
-				double* const p = CurParams[ j ];
+				double* const p = PopParams[ j ];
 
 				for( i = 0; i < ParamCount; i++ )
 				{
@@ -137,7 +135,7 @@ public:
 		}
 		else
 		{
-			double* const p0 = CurParams[ 0 ];
+			double* const p0 = PopParams[ 0 ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -150,7 +148,7 @@ public:
 
 			for( j = 1; j < PopSize; j++ )
 			{
-				double* const p = CurParams[ j ];
+				double* const p = PopParams[ j ];
 
 				for( i = 0; i < ParamCount; i++ )
 				{
@@ -233,7 +231,7 @@ public:
 
 		if( DoInitEvals )
 		{
-			const double* const p = CurParams[ InitEvalIndex ];
+			const double* const p = PopParams[ InitEvalIndex ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -296,6 +294,7 @@ public:
 		else
 		{
 			unselect( ScutHist, rnd );
+
 			const int SelDraw = select( DrawHist, rnd );
 
 			if( SelDraw == 0 )
@@ -368,11 +367,12 @@ public:
 			updateBestCost( NewCost, Params, true );
 		}
 
-		if( NewCost > CurCosts[ CurPopSize1 ])
+		if( NewCost > PopCosts[ CurPopSize1 ])
 		{
 			// Upper bound cost constraint check failed, reject this solution.
 
 			applyHistsDecr();
+
 			PrevSelMethod = MethodHist.selectRandom( rnd );
 
 			StallCount++;
@@ -380,19 +380,19 @@ public:
 			#if BITEOPT_POPCTL
 			// Increase population size on fail.
 
-			PopChange = select( PopChangeHist, rnd );
+			const int PopChange = select( PopChangeHist, rnd );
 
 			if( PopChange == 1 )
 			{
 				if( CurPopSize < PopSize )
 				{
 					const double r = rnd.getRndValue();
-					const double* const rp = CurParams[ CurPopSize1 -
+					const double* const rp = PopParams[ CurPopSize1 -
 						(int) ( r * r * CurPopSize )];
 
-					CurCosts[ CurPopSize ] = CurCosts[ CurPopSize1 ];
-					memcpy( CurParams[ CurPopSize ], rp, ParamCount *
-						sizeof( CurParams[ CurPopSize ][ 0 ]));
+					PopCosts[ CurPopSize ] = PopCosts[ CurPopSize1 ];
+					memcpy( PopParams[ CurPopSize ], rp, ParamCount *
+						sizeof( PopParams[ CurPopSize ][ 0 ]));
 
 					CurPopSize++;
 					CurPopSize1++;
@@ -414,7 +414,7 @@ public:
 				PrevSelMethod = SelMethod;
 			}
 
-			if( NewCost == CurCosts[ CurPopSize1 ])
+			if( NewCost == PopCosts[ CurPopSize1 ])
 			{
 				StallCount++;
 			}
@@ -438,7 +438,7 @@ public:
 			#if BITEOPT_POPCTL
 			// Decrease population size on success.
 
-			PopChange = select( PopChangeHist, rnd );
+			const int PopChange = select( PopChangeHist, rnd );
 
 			if( PopChange == 0 )
 			{
@@ -466,8 +466,11 @@ public:
 
 		CentUpdateCtr++;
 
-		if( CentUpdateCtr >= CurPopSize * 8 )
+		if( CentUpdateCtr >= CurPopSize * 32 )
 		{
+			// Update centroids of parallel populations that use running
+			// average to reduce error accumulation.
+
 			CentUpdateCtr = 0;
 
 			for( i = 0; i < ParPopCount; i++ )
@@ -514,8 +517,6 @@ protected:
 		///<
 	CBiteOptHist< 2, 2, 4 > PopChangeHist; ///< Population size change
 		///< histogram.
-		///<
-	int PopChange; ///< Population change: 0 - increase, 1 - decrease.
 		///<
 	CBiteOptHistBinary ScutHist; ///< Short-cut method's histogram.
 		///<
@@ -578,6 +579,13 @@ protected:
 
 	CParOpt ParOpt; ///< Parallel optimizer.
 		///<
+
+	virtual void initBuffers( const int aParamCount, const int aPopSize )
+	{
+		CBiteOptBase :: initBuffers( aParamCount, aPopSize );
+
+		IntParams = new uint64_t[ aParamCount ];
+	}
 
 	virtual void deleteBuffers()
 	{

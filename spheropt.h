@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.9
+ * @version 2021.10
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -72,11 +72,7 @@ public:
 			return;
 		}
 
-		deleteBuffers();
-		initBaseBuffers( aParamCount, aPopSize );
-
-		WPopCent = new double[ aPopSize ];
-		WPopRad = new double[ aPopSize ];
+		initBuffers( aParamCount, aPopSize );
 
 		JitMult = 2.0 * Jitter / aParamCount;
 		JitOffs = 1.0 - JitMult * 0.5;
@@ -106,8 +102,7 @@ public:
 		curpi = 0;
 		cure = 0;
 
-		// Provide initial centroid and sigma (CurParams is used temporarily,
-		// otherwise initially undefined).
+		// Provide initial centroid and sigma.
 
 		int i;
 
@@ -152,7 +147,7 @@ public:
 	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
 		double* const OutParams = NULL )
 	{
-		double* const Params = CurParams[ curpi ];
+		double* const Params = PopParams[ curpi ];
 		int i;
 
 		if( DoCentEval )
@@ -222,10 +217,10 @@ public:
 		}
 		else
 		{
-			if( NewCost <= CurCosts[ CurPopSize1 ])
+			if( NewCost <= PopCosts[ CurPopSize1 ])
 			{
-				memcpy( CurParams[ CurPopSize1 ], Params,
-					ParamCount * sizeof( CurParams[ 0 ]));
+				memcpy( PopParams[ CurPopSize1 ], Params,
+					ParamCount * sizeof( PopParams[ 0 ][ 0 ]));
 
 				sortPop( NewCost, CurPopSize1 );
 			}
@@ -263,7 +258,7 @@ public:
 
 			// Increase population size on fail.
 
-			PopChange = select( PopChangeHist, rnd );
+			const int PopChange = select( PopChangeHist, rnd );
 
 			if( DoPopIncr )
 			{
@@ -334,12 +329,14 @@ protected:
 	CBiteOptHist< 2, 2, 4 > PopChangeHist; ///< Population size change
 		///< histogram.
 		///<
-	int PopChange; ///< Population change: 0 - increase, 1 - decrease.
-		///<
 
-	/**
-	 * Function deletes previously allocated buffers.
-	 */
+	virtual void initBuffers( const int aParamCount, const int aPopSize )
+	{
+		CBiteOptBase :: initBuffers( aParamCount, aPopSize );
+
+		WPopCent = new double[ aPopSize ];
+		WPopRad = new double[ aPopSize ];
+	}
 
 	virtual void deleteBuffers()
 	{
@@ -385,7 +382,7 @@ protected:
 		s1 = 1.0 / s1;
 		s2 = 1.0 / s2;
 
-		const double* ip = CurParams[ 0 ];
+		const double* ip = PopParams[ 0 ];
 		double* const cp = CentParams;
 		const double* const wc = WPopCent;
 		double w = wc[ 0 ] * s1;
@@ -399,7 +396,7 @@ protected:
 
 		for( j = 1; j < CurPopSize; j++ )
 		{
-			ip = CurParams[ j ];
+			ip = PopParams[ j ];
 			w = wc[ j ] * s1;
 
 			for( i = 0; i < ParamCount; i++ )
@@ -413,7 +410,7 @@ protected:
 
 		for( j = 0; j < CurPopSize; j++ )
 		{
-			ip = CurParams[ j ];
+			ip = PopParams[ j ];
 			double s = 0.0;
 
 			for( i = 0; i < ParamCount; i++ )

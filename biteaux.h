@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.9
+ * @version 2021.10
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -115,7 +115,9 @@ public:
 
 	inline static double getRawScaleInv()
 	{
-		return( 9.31322574615478516e-10 );
+		static const double m = 0.5 / ( 1ULL << ( getRawBitCount() - 1 ));
+
+		return( m );
 	}
 
 	/**
@@ -291,29 +293,20 @@ public:
 
 	int select( CBiteRnd& rnd )
 	{
-		const double rv = rnd.getRndValue() * ProbSum;
+		const double rv = rnd.getUniformRaw() * ProbSum;
+		int i;
 
-		if( Count == 2 )
+		for( i = 0; i < Count - 1; i++ )
 		{
-			Sel = ( rv >= Probs[ 0 ]);
-			return( Sel );
-		}
-		else
-		{
-			int i;
-
-			for( i = 1; i < Count; i++ )
+			if( rv < Probs[ i ])
 			{
-				if( rv >= Probs[ i - 1 ] && rv <= Probs[ i ])
-				{
-					Sel = i;
-					return( i );
-				}
+				Sel = i;
+				return( i );
 			}
-
-			Sel = 0;
-			return( 0 );
 		}
+
+		Sel = Count - 1;
+		return( Count - 1 );
 	}
 
 	/**
@@ -406,6 +399,8 @@ protected:
 			Probs[ i ] = v;
 			ProbSum = v;
 		}
+
+		ProbSum *= CBiteRnd :: getRawScaleInv();
 	}
 };
 
@@ -496,54 +491,32 @@ public:
 	CBiteOptPop()
 		: ParamCount( 0 )
 		, PopSize( 0 )
-		, CurParamsBuf( NULL )
-		, CurParams( NULL )
-		, CurCosts( NULL )
+		, PopParamsBuf( NULL )
+		, PopParams( NULL )
+		, PopCosts( NULL )
 		, CentParams( NULL )
 	{
 	}
 
 	CBiteOptPop( const CBiteOptPop& s )
+		: PopParamsBuf( NULL )
+		, PopParams( NULL )
+		, PopCosts( NULL )
+		, CentParams( NULL )
 	{
-		initPopBuffers( s.ParamCount, s.PopSize );
+		initBuffers( s.ParamCount, s.PopSize );
 		copy( s );
 	}
 
-	~CBiteOptPop()
+	virtual ~CBiteOptPop()
 	{
-		deletePopBuffers();
+		deleteBuffers();
 	}
 
-	/**
-	 * Function initializes population storage buffers, include 1 vector for
-	 * temporary use.
-	 *
-	 * @param aParamCount New parameter count.
-	 * @param aPopSize New population size.
-	 */
-
-	void initPopBuffers( const int aParamCount, const int aPopSize )
+	CBiteOptPop& operator = ( const CBiteOptPop& s )
 	{
-		deletePopBuffers();
-
-		ParamCount = aParamCount;
-		PopSize = aPopSize;
-		PopSize1 = aPopSize - 1;
-		CurPopSize = aPopSize;
-		CurPopSize1 = aPopSize - 1;
-		NeedCentUpdate = false;
-
-		CurParamsBuf = new double[( PopSize + 1 ) * ParamCount ];
-		CurParams = new double*[ PopSize + 1 ]; // Last element is temporary.
-		CurCosts = new double[ PopSize ];
-		CentParams = new double[ ParamCount ];
-
-		int i;
-
-		for( i = 0; i <= PopSize; i++ )
-		{
-			CurParams[ i ] = CurParamsBuf + i * ParamCount;
-		}
+		copy( s );
+		return( *this );
 	}
 
 	/**
@@ -558,7 +531,7 @@ public:
 	{
 		if( ParamCount != s.ParamCount || PopSize != s.PopSize )
 		{
-			initPopBuffers( s.ParamCount, s.PopSize );
+			initBuffers( s.ParamCount, s.PopSize );
 		}
 
 		CurPopSize = s.CurPopSize;
@@ -569,11 +542,11 @@ public:
 
 		for( i = 0; i < CurPopSize; i++ )
 		{
-			memcpy( CurParams[ i ], s.CurParams[ i ],
-				ParamCount * sizeof( CurParams[ i ][ 0 ]));
+			memcpy( PopParams[ i ], s.PopParams[ i ],
+				ParamCount * sizeof( PopParams[ i ][ 0 ]));
 		}
 
-		memcpy( CurCosts, s.CurCosts, CurPopSize * sizeof( CurCosts[ 0 ]));
+		memcpy( PopCosts, s.PopCosts, CurPopSize * sizeof( PopCosts[ 0 ]));
 
 		if( !NeedCentUpdate )
 		{
@@ -607,7 +580,7 @@ public:
 
 		for( j = 0; j < CurPopSize; j++ )
 		{
-			const double* const p = CurParams[ j ];
+			const double* const p = PopParams[ j ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -645,7 +618,17 @@ public:
 
 	const double* getParamsOrdered( const int i ) const
 	{
-		return( CurParams[ i ]);
+		return( PopParams[ i ]);
+	}
+
+	/**
+	 * Function returns a pointer to array of population vector pointers,
+	 * which are sorted in the ascending cost order.
+	 */
+
+	const double** getPopParams() const
+	{
+		return( (const double**) PopParams );
 	}
 
 	/**
@@ -695,13 +678,13 @@ public:
 	{
 		if( DoCostCheck )
 		{
-			if( NewCost > CurCosts[ CurPopSize1 ])
+			if( NewCost > PopCosts[ CurPopSize1 ])
 			{
 				return( false );
 			}
 		}
 
-		double* const rp = CurParams[ CurPopSize1 ];
+		double* const rp = PopParams[ CurPopSize1 ];
 
 		if( DoUpdateCentroid )
 		{
@@ -739,15 +722,66 @@ protected:
 		///<
 	bool NeedCentUpdate; ///< "True" if centroid update is needed.
 		///<
-	double* CurParamsBuf; ///< CurParams buffer.
+	double* PopParamsBuf; ///< Buffer for all PopParams vectors.
 		///<
-	double** CurParams; ///< Current working parameter vectors. Always kept
-		///< sorted in ascending cost order.
+	double** PopParams; ///< Population parameter vectors. Always kept sorted
+		///< in ascending cost order.
 		///<
-	double* CurCosts; ///< Best costs of current working parameter vectors.
+	double* PopCosts; ///< Costs of population parameter vectors, sorting
+		///< order corresponds to PopParams.
 		///<
 	double* CentParams; ///< Centroid of the current parameter vectors.
 		///<
+
+	/**
+	 * Function initializes all common buffers, and "PopSize" variables. This
+	 * function should be called when population's dimensions were changed.
+	 * This function calls the deleteBuffers() function to release any
+	 * derived classes' allocated buffers. Allocates an additional vector for
+	 * temporary use, which is at the same the last vector in the PopParams
+	 * array. Derived classes should call this function of the base class.
+	 *
+	 * @param aParamCount New parameter count.
+	 * @param aPopSize New population size. If <= 0, population buffers will
+	 * not be allocated.
+	 */
+
+	virtual void initBuffers( const int aParamCount, const int aPopSize )
+	{
+		deleteBuffers();
+
+		ParamCount = aParamCount;
+		PopSize = aPopSize;
+		PopSize1 = aPopSize - 1;
+		CurPopSize = aPopSize;
+		CurPopSize1 = aPopSize - 1;
+		NeedCentUpdate = false;
+
+		PopParamsBuf = new double[( PopSize + 1 ) * ParamCount ];
+		PopParams = new double*[ PopSize + 1 ]; // Last element is temporary.
+		PopCosts = new double[ PopSize ];
+		CentParams = new double[ ParamCount ];
+
+		int i;
+
+		for( i = 0; i <= PopSize; i++ )
+		{
+			PopParams[ i ] = PopParamsBuf + i * ParamCount;
+		}
+	}
+
+	/**
+	 * Function deletes buffers previously allocated via the initBuffers()
+	 * function. Derived classes should call this function of the base class.
+	 */
+
+	virtual void deleteBuffers()
+	{
+		delete[] PopParamsBuf;
+		delete[] PopParams;
+		delete[] PopCosts;
+		delete[] CentParams;
+	}
 
 	/**
 	 * Function performs re-sorting of the population based on the cost of a
@@ -759,38 +793,24 @@ protected:
 
 	void sortPop( const double Cost, int i )
 	{
-		double* const InsertParams = CurParams[ i ];
+		double* const InsertParams = PopParams[ i ];
 
 		while( i > 0 )
 		{
-			const double c1 = CurCosts[ i - 1 ];
+			const double c1 = PopCosts[ i - 1 ];
 
 			if( c1 < Cost )
 			{
 				break;
 			}
 
-			CurCosts[ i ] = c1;
-			CurParams[ i ] = CurParams[ i - 1 ];
+			PopCosts[ i ] = c1;
+			PopParams[ i ] = PopParams[ i - 1 ];
 			i--;
 		}
 
-		CurCosts[ i ] = Cost;
-		CurParams[ i ] = InsertParams;
-	}
-
-private:
-	/**
-	 * Function deletes buffers previously allocated via the initPopBuffers()
-	 * function.
-	 */
-
-	void deletePopBuffers()
-	{
-		delete[] CurParamsBuf;
-		delete[] CurParams;
-		delete[] CurCosts;
-		delete[] CentParams;
+		PopCosts[ i ] = Cost;
+		PopParams[ i ] = InsertParams;
 	}
 };
 
@@ -855,6 +875,18 @@ public:
 
 class CBiteOptBase : public CBiteOptInterface, virtual protected CBiteOptPop
 {
+private:
+	CBiteOptBase( const CBiteOptBase& )
+	{
+		// Copy-construction unsupported.
+	}
+
+	CBiteOptBase& operator = ( const CBiteOptBase& )
+	{
+		// Copying unsupported.
+		return( *this );
+	}
+
 public:
 	CBiteOptBase()
 		: MinValues( NULL )
@@ -863,11 +895,6 @@ public:
 		, NewParams( NULL )
 		, BestParams( NULL )
 	{
-	}
-
-	virtual ~CBiteOptBase()
-	{
-		deleteBuffers();
 	}
 
 	virtual const double* getBestParams() const
@@ -912,28 +939,9 @@ protected:
 		///< optimize() function call.
 		///<
 
-	/**
-	 * Function initializes all common buffers, and "PopSize" variables.
-	 *
-	 * @param aParamCount New parameter count.
-	 * @param aPopSize New population size. If <= 0, population buffers will
-	 * not be allocated.
-	 */
-
-	void initBaseBuffers( const int aParamCount, const int aPopSize )
+	virtual void initBuffers( const int aParamCount, const int aPopSize )
 	{
-		if( aPopSize > 0 )
-		{
-			initPopBuffers( aParamCount, aPopSize );
-		}
-		else
-		{
-			ParamCount = aParamCount;
-			PopSize = 0;
-			PopSize1 = 0;
-			CurPopSize = 0;
-			CurPopSize1 = 0;
-		}
+		CBiteOptPop :: initBuffers( aParamCount, aPopSize );
 
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
@@ -942,12 +950,10 @@ protected:
 		BestParams = new double[ ParamCount ];
 	}
 
-	/**
-	 * Function deletes previously allocated buffers.
-	 */
-
 	virtual void deleteBuffers()
 	{
+		CBiteOptPop :: deleteBuffers();
+
 		delete[] MinValues;
 		delete[] MaxValues;
 		delete[] DiffValues;

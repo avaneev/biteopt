@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.7
+ * @version 2021.10
  */
 
 #ifndef NMPOPT_INCLUDED
@@ -71,14 +71,14 @@ public:
 		N = aParamCount * Z;
 		M = N + 1;
 
-		initBaseBuffers( N, M );
+		initBuffers( N, M );
 
 		ParamCount0 = aParamCount;
 		M1m = 1.0 / ( M - 1 );
-		x = CurParams;
-		y = CurCosts;
+		x = PopParams;
+		y = PopCosts;
 		x0 = CentParams;
-		x1 = CurParams[ M ];
+		x1 = PopParams[ M ];
 		x2 = new double[ N ];
 	}
 
@@ -198,10 +198,10 @@ public:
 
 		StallCount++;
 
-		const double alpha = 1.0; // Reflection coeff.
-		const double gamma = 2.0; // Expansion coeff.
-		const double rho = -0.5; // Contraction coeff.
-		const double sigma = 0.5; // Reduction coeff.
+		static const double alpha = 1.0; // Reflection coeff.
+		static const double gamma = 2.0; // Expansion coeff.
+		static const double rho = -0.5; // Contraction coeff.
+		static const double sigma = 0.5; // Reduction coeff.
 
 		double* const xH = x[ xhi ]; // Highest cost parameter vector.
 

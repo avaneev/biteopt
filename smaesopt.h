@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.9
+ * @version 2021.10
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -62,8 +62,7 @@ public:
 			return;
 		}
 
-		deleteBuffers();
-		initBaseBuffers( aParamCount, aPopSize );
+		initBuffers( aParamCount, aPopSize );
 
 		EvalFac = 2.0;
 
@@ -91,7 +90,7 @@ public:
 		curpi = 0;
 		cure = 0;
 
-		// Provide initial centroid and sigma (CurParams is used here
+		// Provide initial centroid and sigma (PopParams is used here
 		// temporarily, otherwise initially undefined).
 
 		const double sd = 0.25 * InitRadius;
@@ -101,11 +100,11 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				CurParams[ 0 ][ i ] =
+				PopParams[ 0 ][ i ] =
 					( MinValues[ i ] + MaxValues[ i ]) * 0.5;
 
 				const double d = MaxValues[ i ] - MinValues[ i ];
-				CurParams[ 1 ][ i ] = fabs( d ) * sd;
+				PopParams[ 1 ][ i ] = fabs( d ) * sd;
 				DiffValues[ i ] = 1.0 / d;
 			}
 		}
@@ -113,14 +112,14 @@ public:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				CurParams[ 0 ][ i ] = InitParams[ i ];
+				PopParams[ 0 ][ i ] = InitParams[ i ];
 				const double d = MaxValues[ i ] - MinValues[ i ];
-				CurParams[ 1 ][ i ] = fabs( d ) * sd;
+				PopParams[ 1 ][ i ] = fabs( d ) * sd;
 				DiffValues[ i ] = 1.0 / d;
 			}
 		}
 
-		UsePopSize = Ort.init( CurParams[ 0 ], CurParams[ 1 ]);
+		Ort.init( PopParams[ 0 ], PopParams[ 1 ]);
 	}
 
 	/**
@@ -187,7 +186,7 @@ public:
 	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
 		double* const OutParams = NULL )
 	{
-		double* const Params = CurParams[ curpi ];
+		double* const Params = PopParams[ curpi ];
 		int i;
 
 		sample( rnd, Params );
@@ -210,28 +209,26 @@ public:
 
 		updateBestCost( NewCost, Params );
 
-		if( curpi < UsePopSize )
+		if( curpi < CurPopSize )
 		{
 			sortPop( NewCost, curpi );
 			curpi++;
 		}
 		else
 		{
-			const int ps1 = UsePopSize - 1;
-
-			if( NewCost <= CurCosts[ ps1 ])
+			if( NewCost <= PopCosts[ CurPopSize1 ])
 			{
-				memcpy( CurParams[ ps1 ], Params,
-					ParamCount * sizeof( CurParams[ 0 ]));
+				memcpy( PopParams[ CurPopSize1 ], Params,
+					ParamCount * sizeof( PopParams[ 0 ][ 0 ]));
 
-				sortPop( NewCost, ps1 );
+				sortPop( NewCost, CurPopSize1 );
 			}
 		}
 
 		AvgCost += NewCost;
 		cure++;
 
-		if( cure >= UsePopSize * EvalFac )
+		if( cure >= CurPopSize * EvalFac )
 		{
 			AvgCost /= cure;
 
@@ -248,23 +245,22 @@ public:
 			AvgCost = 0.0;
 			curpi = 0;
 			cure = 0;
-			UsePopSize = Ort.update( CurParams );
+			Ort.update( *this );
 		}
 
 		return( StallCount );
 	}
 
 protected:
-	int UsePopSize; ///< Current population size.
-		///<
 	double EvalFac; ///< Function evalutions factor.
 		///<
 	CBiteOptOrt Ort; ///< Rotation vector and orthogonalization calculator.
 		///<
 	int curpi; ///< Current parameter index.
 		///<
-	int cure; ///< Current evaluation index, equals UsePopSize if population
-		///< distribution needs to be updated.
+	int cure; ///< Current evaluation index, greater or equal to
+		///< CurPopSize * EvalFac if population distribution needs to be
+		///< updated.
 		///<
 
 	/**
