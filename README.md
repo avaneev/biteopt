@@ -41,6 +41,11 @@ return the same optimum.
 BITEOPT uses self-optimization techniques making it objective
 function-agnostic.
 
+It is important to note that compiler and the way it arranges mathematical
+instructions measurably affect performance of the latest version of BiteOpt.
+LLVM provides the intendend performance while with Intel C++ Compiler 2019.0
+BiteOpt's performance is measurably lower.
+
 ## Comparison ##
 
 This "black-box" optimization method was tested on 500+ 1-56 dimensional
