@@ -466,7 +466,7 @@ public:
 
 		CentUpdateCtr++;
 
-		if( CentUpdateCtr >= CurPopSize * 4 )
+		if( CentUpdateCtr >= CurPopSize * 8 )
 		{
 			CentUpdateCtr = 0;
 
