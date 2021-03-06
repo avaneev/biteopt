@@ -55,13 +55,13 @@ evaluated): [Comparison of derivative-free optimization algorithms](http://archi
 This method was able to solve 76% of non-convex smooth problems in 10
 attempts, 2500 iterations each. It comes 2nd (very close to the 1st) in the
 comparison on non-convex smooth problems (see Fig.9 in the paper). With a huge
-iteration budget (up to 1 million) this method solves 95% of problems.
+iteration budget (up to 1 million) this method solves 96% of problems.
 
 On a comparable test function suite and conditions outlined at this page:
 [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
-success rate is >93% while the average number of objective function
+attempt success rate is >93% while the average number of objective function
 evaluations is ~360.
 
 At least in these comparisons, this method performs better than plain
@@ -126,12 +126,13 @@ and that have a large iteration budget. Tests have shown that on smooth
 functions that have many strongly competing minima this "deep" method
 considerably increases the chance to find a global solution relative to the
 CBiteOpt class, but still requires several runs at different random seeds.
-When using this method, the iteration budget increases but the number of
-required optimization attempts usually decreases. In practice, it is not
-always possible to predict the convergence time increase of the CBiteOptDeep
-class, but increase does correlate to its M parameter. For some complex
-functions the use of CBiteOptDeep even decreases convergence time. For sure,
-CBiteOptDeep class often produces better solutions than the CBiteOpt class.
+When using this method, the required iteration budget usually increases by
+a factor of `M^0.5`, but the number of required optimization attempts usually
+decreases. In practice, it is not always possible to predict the convergence
+time increase of the CBiteOptDeep class, but increase does correlate to its M
+parameter. For some complex functions the use of CBiteOptDeep even decreases
+convergence time. For sure, CBiteOptDeep class often produces better solutions
+than the CBiteOpt class.
 
 ## Notes ##
 
@@ -155,7 +156,7 @@ precision.
 Each run may generate an equally-usable candidate solution (not necessarily
 having the least cost), in practice the researcher may select solution from
 any run based on his/her own considerations. In this light, it may be
-incorrect to assume that least-performing runs are "wasted", in practice
+incorrect to assume that least-performing runs are "wasted". In practice,
 least-performing runs may give more acceptable parameter values within the
 search space in comparison to the best-performing runs.
 
