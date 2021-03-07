@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.10
+ * @version 2021.11
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -211,6 +211,21 @@ class CBiteOptHistBase
 {
 public:
 	/**
+	 * This function resets histogram, should be called before calling other
+	 * functions, including after object's construction.
+	 *
+	 * @param rnd PRNG object. Not used.
+	 */
+
+	virtual void reset( CBiteRnd& rnd ) = 0;
+
+	/**
+	 * An auxiliary function that returns histogram's choice count.
+	 */
+
+	virtual int getChoiceCount() const = 0;
+
+	/**
 	 * This function should be called when a certain choice is successful.
 	 * This function should only be called after a prior select() calls.
 	 */
@@ -223,6 +238,15 @@ public:
 	 */
 
 	virtual void decr() = 0;
+
+	/**
+	 * Function returns the latest made choice index.
+	 */
+
+	int getSel() const
+	{
+		return( Sel );
+	}
 
 protected:
 	int Sel; ///< The latest selected choice. Available only after the
@@ -258,17 +282,15 @@ public:
 	{
 	}
 
-	/**
-	 * This function resets histogram, should be called before calling other
-	 * functions, including after object's construction.
-	 *
-	 * @param rnd PRNG object. Not used.
-	 */
-
-	void reset( CBiteRnd& rnd )
+	virtual void reset( CBiteRnd& rnd )
 	{
 		memset( Hist, 0, sizeof( Hist ));
 		updateProbs();
+	}
+
+	virtual int getChoiceCount() const
+	{
+		return( Count );
 	}
 
 	virtual void incr()
@@ -415,19 +437,17 @@ protected:
 class CBiteOptHistBinary : virtual public CBiteOptHistBase
 {
 public:
-	/**
-	 * This function resets histogram to a random state, should be called
-	 * before calling other functions, including after object's construction.
-	 *
-	 * @param rnd PRNG object.
-	 */
-
-	void reset( CBiteRnd& rnd )
+	virtual void reset( CBiteRnd& rnd )
 	{
 		const int b = rnd.getBit();
 
 		Hist[ 0 ] = b;
 		Hist[ 1 ] = 1 - b;
+	}
+
+	virtual int getChoiceCount() const
+	{
+		return( 2 );
 	}
 
 	/**
@@ -495,6 +515,8 @@ public:
 		, PopParams( NULL )
 		, PopCosts( NULL )
 		, CentParams( NULL )
+		, SparsePopParams( NULL )
+		, SparsePopSize( -1 )
 	{
 	}
 
@@ -709,6 +731,123 @@ public:
 		return( true );
 	}
 
+	/**
+	 * Function increases current population size, and updates the required
+	 * variables. This function can only be called if CurPopSize is less than
+	 * PopSize.
+	 *
+	 * @param CopyVec If >=, a parameter vector with this index will be copied
+	 * to the newly-added vector. The maximal population cost will be copied
+	 * as well.
+	 */
+
+	void incrCurPopSize( const int CopyVec = -1 )
+	{
+		if( CopyVec >= 0 )
+		{
+			PopCosts[ CurPopSize ] = PopCosts[ CurPopSize1 ];
+			memcpy( PopParams[ CurPopSize ], PopParams[ CopyVec ],
+				ParamCount * sizeof( PopParams[ CurPopSize ][ 0 ]));
+		}
+
+		CurPopSize++;
+		CurPopSize1++;
+		NeedCentUpdate = true;
+		SparsePopSize = -1;
+	}
+
+	/**
+	 * Function decreases current population size, and updates the required
+	 * variables.
+	 */
+
+	void decrCurPopSize()
+	{
+		CurPopSize--;
+		CurPopSize1--;
+		NeedCentUpdate = true;
+		SparsePopSize = -1;
+	}
+
+	/**
+	 * Function returns an array of "sparsified" population vectors based on
+	 * cost differences. Working with "sparsified" population increases
+	 * probability of generation of acceptable solutions for some methods.
+	 * Sparsification usually reduces population size by a factor of 2 (at
+	 * rf=1).
+	 *
+	 * @param[out] Size Resulting population size.
+	 * @param rf "Reduction factor". 1.0 usualy produces halving, 2.0 -
+	 * reduces more, 0.5 - reduces less.
+	 */
+
+	const double** getSparsePopParams( int& Size, const double rf )
+	{
+		if( SparsePopSize >= 0 && SparseRF == rf )
+		{
+			Size = SparsePopSize;
+			return( (const double**) SparsePopParams );
+		}
+
+		SparseRF = rf;
+
+		const double* const p = PopCosts;
+		double s = 0.0;
+		int i;
+
+		for( i = 0; i < CurPopSize1; i++ )
+		{
+			s += p[ i + 1 ] - p[ i ];
+		}
+
+		if( s <= 0.0 )
+		{
+			memcpy( SparsePopParams, PopParams, CurPopSize *
+				sizeof( SparsePopParams[ 0 ]));
+
+			SparsePopSize = CurPopSize;
+			Size = CurPopSize;
+			return( (const double**) SparsePopParams );
+		}
+
+		s /= CurPopSize1 * rf;
+
+		SparsePopParams[ 0 ] = PopParams[ 0 ];
+		int c = 1;
+		double pc = p[ 0 ];
+
+		for( i = 1; i < CurPopSize; i++ )
+		{
+			if( p[ i ] - pc > s )
+			{
+				SparsePopParams[ c ] = PopParams[ i ];
+				c++;
+				pc = p[ i ];
+			}
+		}
+
+		const int MinSize = 5;
+
+		if( c < MinSize )
+		{
+			i = CurPopSize + c - MinSize;
+
+			if( i >= 0 )
+			{
+				while( c < MinSize )
+				{
+					SparsePopParams[ c ] = PopParams[ i ];
+					c++;
+					i++;
+				}
+			}
+		}
+
+		SparsePopSize = c;
+		Size = c;
+		return( (const double**) SparsePopParams );
+	}
+
 protected:
 	int ParamCount; ///< The total number of internal parameter values in use.
 		///<
@@ -731,6 +870,15 @@ protected:
 		///< order corresponds to PopParams.
 		///<
 	double* CentParams; ///< Centroid of the current parameter vectors.
+		///<
+	double** SparsePopParams; ///< Pointers to "sparsified" population
+		///< parameter vectors.
+		///<
+	int SparsePopSize; ///< The number of valid elements in the
+		///< SparsePopParams array. -1 if unavailable. Reset to -1 in the
+		///< sortPop() function or on population size changes.
+		///<
+	double SparseRF; ///< "Reduction factor" used to produce SparsePopParams.
 		///<
 
 	/**
@@ -761,6 +909,7 @@ protected:
 		PopParams = new double*[ PopSize + 1 ]; // Last element is temporary.
 		PopCosts = new double[ PopSize ];
 		CentParams = new double[ ParamCount ];
+		SparsePopParams = new double*[ PopSize ];
 
 		int i;
 
@@ -781,6 +930,7 @@ protected:
 		delete[] PopParams;
 		delete[] PopCosts;
 		delete[] CentParams;
+		delete[] SparsePopParams;
 	}
 
 	/**
@@ -811,6 +961,63 @@ protected:
 
 		PopCosts[ i ] = Cost;
 		PopParams[ i ] = InsertParams;
+		SparsePopSize = -1;
+	}
+};
+
+/**
+ * Population class that embeds a dynamically-allocated parallel population
+ * objects.
+ */
+
+class CBiteOptParPops : virtual public CBiteOptPop
+{
+public:
+	CBiteOptParPops()
+		: ParPopCount( 0 )
+	{
+		memset( ParPops, 0, sizeof( ParPops ));
+	}
+
+protected:
+	static const int MaxParPopCount = 8; ///< The maximal number of parallel
+		///< population supported.
+		///<
+	CBiteOptPop* ParPops[ MaxParPopCount ]; ///< Parallel population orbiting
+		///< *this population.
+		///<
+	int ParPopCount; ///< Parallel population count. This variable should be
+		///< set before the initBuffers() function is called. It should not
+		///< be changed later.
+		///<
+
+	virtual void initBuffers( const int aParamCount, const int aPopSize )
+	{
+		CBiteOptPop :: initBuffers( aParamCount, aPopSize );
+
+		if( ParPopCount > MaxParPopCount )
+		{
+			ParPopCount = MaxParPopCount;
+		}
+
+		int i;
+
+		for( i = 0; i < ParPopCount; i++ )
+		{
+			ParPops[ i ] = new CBiteOptPop();
+		}
+	}
+
+	virtual void deleteBuffers()
+	{
+		CBiteOptPop :: deleteBuffers();
+
+		int i;
+
+		for( i = 0; i < ParPopCount; i++ )
+		{
+			delete ParPops[ i ];
+		}
 	}
 };
 
@@ -873,7 +1080,8 @@ public:
  * The base class for optimizers of the "biteopt" project.
  */
 
-class CBiteOptBase : public CBiteOptInterface, virtual protected CBiteOptPop
+class CBiteOptBase : public CBiteOptInterface,
+	virtual protected CBiteOptParPops
 {
 private:
 	CBiteOptBase( const CBiteOptBase& )
@@ -941,7 +1149,7 @@ protected:
 
 	virtual void initBuffers( const int aParamCount, const int aPopSize )
 	{
-		CBiteOptPop :: initBuffers( aParamCount, aPopSize );
+		CBiteOptParPops :: initBuffers( aParamCount, aPopSize );
 
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
@@ -952,7 +1160,7 @@ protected:
 
 	virtual void deleteBuffers()
 	{
-		CBiteOptPop :: deleteBuffers();
+		CBiteOptParPops :: deleteBuffers();
 
 		delete[] MinValues;
 		delete[] MaxValues;

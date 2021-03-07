@@ -11,6 +11,8 @@
 class CTestOpt : public CBiteOpt
 {
 public:
+	int con_notmet;
+
 	CTestOpt()
 	{
 		updateDims( 13 );
@@ -50,9 +52,13 @@ public:
 		p[ 12 ] = 1.0;
 	}
 
-	static double penalty( const double v )
+	void penalty( double& pn, const double v )
 	{
-		return( v <= 0.0 ? 0.0 : 100000 + v * 9999 );
+		if( v > 1e-8 )
+		{
+			pn = pn * 1.30 + ( v + v * v + v * v * v ) * 1e4;
+			con_notmet++;
+		}
 	}
 
 	virtual double optcost( const double* const p )
@@ -75,15 +81,23 @@ public:
 
 		double cost = 5.0*s1-5.0*s2-s3;
 
-		cost += penalty( 2.0*p[0]+2.0*p[1]+p[9]+p[10]-10.0 );
-		cost += penalty( 2.0*p[0]+2.0*p[2]+p[9]+p[11]-10.0 );
-		cost += penalty( 2.0*p[1]+2.0*p[2]+p[10]+p[11]-10.0 );
-		cost += penalty( -8.0*p[0]+p[9] );
-		cost += penalty( -8.0*p[1]+p[10] );
-		cost += penalty( -8.0*p[2]+p[11] );
-		cost += penalty( -2.0*p[3]-p[4]+p[9] );
-		cost += penalty( -2.0*p[5]-p[6]+p[10] );
-		cost += penalty( -2.0*p[7]-p[8]+p[11] );
+		con_notmet = 0;
+		double pn = 0.0;
+
+		penalty( pn, 2.0*p[0]+2.0*p[1]+p[9]+p[10]-10.0 );
+		penalty( pn, 2.0*p[0]+2.0*p[2]+p[9]+p[11]-10.0 );
+		penalty( pn, 2.0*p[1]+2.0*p[2]+p[10]+p[11]-10.0 );
+		penalty( pn, -8.0*p[0]+p[9] );
+		penalty( pn, -8.0*p[1]+p[10] );
+		penalty( pn, -8.0*p[2]+p[11] );
+		penalty( pn, -2.0*p[3]-p[4]+p[9] );
+		penalty( pn, -2.0*p[5]-p[6]+p[10] );
+		penalty( pn, -2.0*p[7]-p[8]+p[11] );
+
+		if( con_notmet > 0 )
+		{
+			cost += pn;
+		}
 
 		return( cost );
 	}
@@ -109,8 +123,11 @@ int main()
 		}
 	}
 
+	const double minf = opt.optcost( opt.getBestParams() );
+
 	printf( "IterCount: %i\n", i );
-	printf( "BestCost: %f\n", opt.getBestCost() );
+	printf( "BestCost: %f\n", minf );
+	printf( "Constraints not met: %i\n", opt.con_notmet );
 
 	for( i = 0; i < 13; i++ )
 	{

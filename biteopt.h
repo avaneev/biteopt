@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.10
+ * @version 2021.11
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -58,6 +58,76 @@ public:
 		, MantMultI( 1.0 / ( 1ULL << MantSize ))
 		, IntParams( NULL )
 	{
+		Hists[ 0 ] = &ParPopHist[ 0 ];
+		Hists[ 1 ] = &ParPopHist[ 1 ];
+		Hists[ 2 ] = &ParPopHist[ 2 ];
+		Hists[ 3 ] = &ParPopPHist[ 0 ];
+		Hists[ 4 ] = &ParPopPHist[ 1 ];
+		Hists[ 5 ] = &ParPopPHist[ 2 ];
+		Hists[ 6 ] = &ActParPopHist;
+		Hists[ 7 ] = &PopChangeHist;
+		Hists[ 8 ] = &ScutHist;
+		Hists[ 9 ] = &MethodHist;
+		Hists[ 10 ] = &DrawHist;
+		Hists[ 11 ] = &D3Hist;
+		Hists[ 12 ] = &D3BHist;
+		Hists[ 13 ] = &MinSolPHist[ 0 ];
+		Hists[ 14 ] = &MinSolPHist[ 1 ];
+		Hists[ 15 ] = &MinSolPHist[ 2 ];
+		Hists[ 16 ] = &MinSolHist[ 0 ];
+		Hists[ 17 ] = &MinSolHist[ 1 ];
+		Hists[ 18 ] = &MinSolHist[ 2 ];
+		Hists[ 19 ] = &Gen1AllpHist;
+		Hists[ 20 ] = &Gen1CentHist;
+		Hists[ 21 ] = &Gen1SpanHist;
+		Hists[ 22 ] = &Gen4RedFacHist;
+	}
+
+	static const int HistCount = 23; ///< The number of histograms in use.
+		///<
+
+	/**
+	 * Function returns a pointer to an array of histograms.
+	 */
+
+	const CBiteOptHistBase** getHists() const
+	{
+		return( (const CBiteOptHistBase**) Hists );
+	}
+
+	/**
+	 * Function returns a pointer to an array of histogram names.
+	 */
+
+	static const char** getHistNames()
+	{
+		static const char* HistNames[] = {
+			"ParPopHist[ 0 ]",
+			"ParPopHist[ 1 ]",
+			"ParPopHist[ 2 ]",
+			"ParPopPHist[ 0 ]",
+			"ParPopPHist[ 1 ]",
+			"ParPopPHist[ 2 ]",
+			"ActParPopHist",
+			"PopChangeHist",
+			"ScutHist",
+			"MethodHist",
+			"DrawHist",
+			"D3Hist",
+			"D3BHist",
+			"MinSolPHist[ 0 ]",
+			"MinSolPHist[ 1 ]",
+			"MinSolPHist[ 2 ]",
+			"MinSolHist[ 0 ]",
+			"MinSolHist[ 1 ]",
+			"MinSolHist[ 2 ]",
+			"Gen1AllpHist",
+			"Gen1CentHist",
+			"Gen1SpanHist",
+			"Gen4RedFacHist"
+		};
+
+		return( HistNames );
 	}
 
 	/**
@@ -73,13 +143,14 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			6 + aParamCount * 4 );
+			12 + aParamCount * 4 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
 			return;
 		}
 
+		ParPopCount = 4;
 		initBuffers( aParamCount, aPopSize );
 
 		Params = PopParams[ aPopSize ];
@@ -173,22 +244,10 @@ public:
 
 		ParOpt.init( rnd, InitParams, InitRadius );
 
-		ParPopHist.reset( rnd );
-		ParPopPHist.reset( rnd );
-		PopChangeHist.reset( rnd );
-		ScutHist.reset( rnd );
-		MethodHist.reset( rnd );
-		DrawHist.reset( rnd );
-		D3Hist.reset( rnd );
-		MinSolPHist[ 0 ].reset( rnd );
-		MinSolPHist[ 1 ].reset( rnd );
-		MinSolPHist[ 2 ].reset( rnd );
-		MinSolHist[ 0 ].reset( rnd );
-		MinSolHist[ 1 ].reset( rnd );
-		MinSolHist[ 2 ].reset( rnd );
-		Gen1AllpHist.reset( rnd );
-		Gen1CentHist.reset( rnd );
-		Gen1SpanHist.reset( rnd );
+		for( i = 0; i < HistCount; i++ )
+		{
+			Hists[ i ] -> reset( rnd );
+		}
 
 		const double AllpProbDamp = ( ParamCount < 3 ? 1.0 :
 			2.0 / ParamCount ); // Allp probability damping. Applied for
@@ -248,7 +307,7 @@ public:
 			{
 				for( i = 0; i < ParPopCount; i++ )
 				{
-					ParPops[ i ].copy( *this );
+					ParPops[ i ] -> copy( *this );
 				}
 
 				DoInitEvals = false;
@@ -328,14 +387,12 @@ public:
 			}
 			else
 			{
-				const int SelD3 = select( D3Hist, rnd );
-
-				if( SelD3 == 0 )
+				if( select( D3Hist, rnd ))
 				{
 					generateSol3( rnd );
 				}
 				else
-				if( SelD3 == 1 )
+				if( select( D3BHist, rnd ))
 				{
 					generateSol4( rnd );
 				}
@@ -380,27 +437,16 @@ public:
 			#if BITEOPT_POPCTL
 			// Increase population size on fail.
 
-			const int PopChange = select( PopChangeHist, rnd );
-
-			if( PopChange == 1 )
+			if( CurPopSize < PopSize )
 			{
-				if( CurPopSize < PopSize )
+				const int PopChange = select( PopChangeHist, rnd );
+
+				if( PopChange == 1 )
 				{
 					const double r = rnd.getRndValue();
-					const double* const rp = PopParams[ CurPopSize1 -
-						(int) ( r * r * CurPopSize )];
 
-					PopCosts[ CurPopSize ] = PopCosts[ CurPopSize1 ];
-					memcpy( PopParams[ CurPopSize ], rp, ParamCount *
-						sizeof( PopParams[ CurPopSize ][ 0 ]));
-
-					CurPopSize++;
-					CurPopSize1++;
-					NeedCentUpdate = true;
-				}
-				else
-				{
-					unselect( PopChangeHist, rnd );
+					incrCurPopSize( CurPopSize1 -
+						(int) ( r * r * CurPopSize ));
 				}
 			}
 			#endif // BITEOPT_POPCTL
@@ -431,26 +477,20 @@ public:
 				PushOpt -> updatePop( NewCost, Params, false, true );
 
 				const int p = PushOpt -> getMaxDistancePop( Params, rnd );
-				PushOpt -> ParPops[ p ].updatePop( NewCost, Params, true,
+				PushOpt -> ParPops[ p ] -> updatePop( NewCost, Params, true,
 					true );
 			}
 
 			#if BITEOPT_POPCTL
 			// Decrease population size on success.
 
-			const int PopChange = select( PopChangeHist, rnd );
-
-			if( PopChange == 0 )
+			if( CurPopSize > PopSize / 3 )
 			{
-				if( CurPopSize > PopSize / 3 )
+				const int PopChange = select( PopChangeHist, rnd );
+
+				if( PopChange == 0 )
 				{
-					CurPopSize--;
-					CurPopSize1--;
-					NeedCentUpdate = true;
-				}
-				else
-				{
-					unselect( PopChangeHist, rnd );
+					decrCurPopSize();
 				}
 			}
 			#endif // BITEOPT_POPCTL
@@ -458,11 +498,8 @@ public:
 
 		// Diverging populations technique.
 
-		if( PushOpt == NULL )
-		{
-			const int p = getMaxDistancePop( Params, rnd );
-			ParPops[ p ].updatePop( NewCost, Params, true, true );
-		}
+		const int p = getMaxDistancePop( Params, rnd );
+		ParPops[ p ] -> updatePop( NewCost, Params, true, true );
 
 		CentUpdateCtr++;
 
@@ -475,7 +512,7 @@ public:
 
 			for( i = 0; i < ParPopCount; i++ )
 			{
-				ParPops[ i ].updateCentroid();
+				ParPops[ i ] -> updateCentroid();
 			}
 		}
 
@@ -489,8 +526,6 @@ protected:
 	static const uint64_t MantSizeMask = ( 1ULL << MantSize ) - 1; ///< Mask
 		///< that corresponds to mantissa.
 		///<
-	static const int ParPopCount = 4; ///< The number of parallel populations.
-		///<
 	double MantMult; ///< Mantissa multiplier (1 << MantSize).
 		///<
 	double MantMultI; ///< =1/MantMult.
@@ -503,17 +538,18 @@ protected:
 	int AllpProbs[ 2 ]; ///< Generator method 1's Allp probability range,
 		///< in raw scale.
 		///<
-	CBiteOptPop ParPops[ ParPopCount ]; ///< Parallel populations.
-		///<
 	double* Params; ///< Temporary parameter buffer.
 		///<
 	uint64_t* IntParams; ///< Temporary integer value parameter buffer.
 		///<
-	CBiteOptHist< 4, 4, 1 > ParPopHist; ///< Parallel population histogram
-		///< (count must match ParPopCount).
+	CBiteOptHist< 4, 4, 1 > ParPopHist[ 3 ]; ///< Parallel population
+		///< histograms for solution generators.
 		///<
-	CBiteOptHist< 2, 4, 1 > ParPopPHist; ///< Parallel population use
-		///< probability histogram.
+	CBiteOptHist< 2, 2, 1 > ParPopPHist[ 3 ]; ///< Parallel population use
+		///< probability histograms for solution generators.
+		///<
+	CBiteOptHist< 4, 4, 1 > ActParPopHist; ///< Active parallel population
+		///< histogram (counts depend on the required variation).
 		///<
 	CBiteOptHist< 2, 2, 4 > PopChangeHist; ///< Population size change
 		///< histogram.
@@ -525,12 +561,14 @@ protected:
 		///<
 	CBiteOptHist< 3, 3, 1 > DrawHist; ///< Method draw histogram.
 		///<
-	CBiteOptHist< 3, 3, 1 > D3Hist; ///< Draw method 3's histogram.
+	CBiteOptHist< 2, 2, 1 > D3Hist; ///< Draw method 3's histogram.
 		///<
-	CBiteOptHist< 3, 3, 1 > MinSolPHist[ 3 ]; ///< Index of least-cost
+	CBiteOptHist< 2, 2, 1 > D3BHist; ///< Draw method 3's histogram B.
+		///<
+	CBiteOptHist< 4, 4, 1 > MinSolPHist[ 3 ]; ///< Index of least-cost
 		///< population size power factor.
 		///<
-	CBiteOptHist< 3, 3, 1 > MinSolHist[ 3 ]; ///< Index of least-cost
+	CBiteOptHist< 4, 4, 1 > MinSolHist[ 3 ]; ///< Index of least-cost
 		///< population size.
 		///<
 	CBiteOptHistBinary Gen1AllpHist; ///< Generator method 1's Allp
@@ -539,8 +577,10 @@ protected:
 	CBiteOptHistBinary Gen1CentHist; ///< Generator method 1's Cent
 		///< histogram.
 		///<
-	CBiteOptHist< 3, 6, 1 > Gen1SpanHist; ///< Generator method 1's Cent
+	CBiteOptHist< 4, 4, 1 > Gen1SpanHist; ///< Generator method 1's Cent
 		///< histogram.
+		///<
+	CBiteOptHist< 2, 2, 1 > Gen4RedFacHist; ///< Generator method 4's RedFac histogram.
 		///<
 	int PrevSelMethod; ///< Previously successfully used method; contains
 		///< random method index if optimization was not successful.
@@ -550,6 +590,9 @@ protected:
 	int InitEvalIndex; ///< Current initial population index.
 		///<
 	int CentUpdateCtr; ///< Centroid update counter.
+		///<
+	CBiteOptHistBase* Hists[ 32 ]; ///< Pointers to histogram objects, for
+		///< indexed access in some cases.
 		///<
 
 	/**
@@ -603,20 +646,21 @@ protected:
 	 * @param rnd PRNG object.
 	 */
 
-	int getMaxDistancePop( const double* const p, CBiteRnd& rnd ) const
+	int getMaxDistancePop( const double* const p, CBiteRnd& rnd )
 	{
 		const int MaxPops = 4;
 		double s[ MaxPops ];
 		memset( s, 0, sizeof( s ));
 
+		const int ppc = ParPopCount;
 		int i;
 
-		if( ParPopCount == 4 )
+		if( ppc == 4 )
 		{
-			const double* const c0 = ParPops[ 0 ].getCentroid();
-			const double* const c1 = ParPops[ 1 ].getCentroid();
-			const double* const c2 = ParPops[ 2 ].getCentroid();
-			const double* const c3 = ParPops[ 3 ].getCentroid();
+			const double* const c0 = ParPops[ 0 ] -> getCentroid();
+			const double* const c1 = ParPops[ 1 ] -> getCentroid();
+			const double* const c2 = ParPops[ 2 ] -> getCentroid();
+			const double* const c3 = ParPops[ 3 ] -> getCentroid();
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -632,11 +676,11 @@ protected:
 			}
 		}
 		else
-		if( ParPopCount == 3 )
+		if( ppc == 3 )
 		{
-			const double* const c0 = ParPops[ 0 ].getCentroid();
-			const double* const c1 = ParPops[ 1 ].getCentroid();
-			const double* const c2 = ParPops[ 2 ].getCentroid();
+			const double* const c0 = ParPops[ 0 ] -> getCentroid();
+			const double* const c1 = ParPops[ 1 ] -> getCentroid();
+			const double* const c2 = ParPops[ 2 ] -> getCentroid();
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -650,10 +694,10 @@ protected:
 			}
 		}
 		else
-		if( ParPopCount == 2 )
+		if( ppc == 2 )
 		{
-			const double* const c0 = ParPops[ 0 ].getCentroid();
-			const double* const c1 = ParPops[ 1 ].getCentroid();
+			const double* const c0 = ParPops[ 0 ] -> getCentroid();
+			const double* const c1 = ParPops[ 1 ] -> getCentroid();
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -665,29 +709,19 @@ protected:
 			}
 		}
 
-		int eqp[ MaxPops ];
-		eqp[ 0 ] = 0;
-		int eqc = 1;
-		double d = s[ 0 ];
+		int pp = 0;
+		double d = s[ pp ];
 
-		for( i = 1; i < ParPopCount; i++ )
+		for( i = 1; i < ppc; i++ )
 		{
-			if( s[ i ] == d )
+			if( s[ i ] >= d )
 			{
-				eqp[ eqc ] = i;
-				eqc++;
-			}
-			else
-			if( s[ i ] > d )
-			{
+				pp = i;
 				d = s[ i ];
-				eqp[ 0 ] = i;
-				eqc = 1;
 			}
 		}
 
-		return( eqc == 1 ? eqp[ 0 ] :
-			eqp[ (int) ( rnd.getRndValue() * eqc )]);
+		return( pp );
 	}
 
 	/**
@@ -695,30 +729,16 @@ protected:
 	 * With certain probability, *this object's own population will be
 	 * returned instead of parallel population.
 	 *
+	 * @param gi Solution generator index (0-2).
 	 * @param rnd PRNG object.
-	 * @param UseProb Use probability condition. If "false", parallel
-	 * population will be returned unconditionally, otherwise *this population
-	 * may be returned.
 	 */
 
-	const CBiteOptPop& selectParPop( CBiteRnd& rnd, const bool UseProb )
+	CBiteOptPop& selectParPop( const int gi, CBiteRnd& rnd )
 	{
-		if( !UseProb )
+		if( select( ParPopPHist[ gi ], rnd ))
 		{
-			return( ParPops[ select( ParPopHist, rnd )]);
+			return( *ParPops[ select( ParPopHist[ gi ], rnd )]);
 		}
-
-		static const int ParPopProbs[ 2 ] = {
-			(int) ( 0.5 * CBiteRnd :: getRawScale() ),
-			(int) ( 0.95 * CBiteRnd :: getRawScale() )
-		}; // Parallel population use probability range, in raw scale.
-
-		if( rnd.getUniformRaw() < ParPopProbs[ ParPopPHist.select( rnd )])
-		{
-			return( ParPops[ ParPopHist.select( rnd )]);
-		}
-
-		ParPopPHist.unselect( rnd );
 
 		return( *this );
 	}
@@ -727,32 +747,20 @@ protected:
 	 * Function returns a dynamically-selected minimal population index, used
 	 * in some solution generation methods.
 	 *
-	 * @param gi Solution generator index (0-1).
+	 * @param gi Solution generator index (0-2).
 	 * @param rnd PRNG object.
 	 * @param ps Population size.
 	 */
 
 	int getMinSolIndex( const int gi, CBiteRnd& rnd, const int ps )
 	{
-		static const double pp[ 3 ] = { 0.125, 0.25, 0.5 };
+		static const double pp[ 4 ] = { 0.05, 0.125, 0.25, 0.5 };
 		const double r = ps * pow( rnd.getRndValue(),
 			ps * pp[ select( MinSolPHist[ gi ], rnd )]);
 
-		const int SelPopSize = select( MinSolHist[ gi ], rnd );
+		static const double rm[ 4 ] = { 0.0, 0.125, 0.25, 0.5 };
 
-		if( SelPopSize == 0 )
-		{
-			return( (int) ( r * 0.125 ));
-		}
-		else
-		if( SelPopSize == 1 )
-		{
-			return( (int) ( r * 0.25 ));
-		}
-		else
-		{
-			return( (int) ( r * 0.5 ));
-		}
+		return( (int) ( r * rm[ select( MinSolHist[ gi ], rnd )]));
 	}
 
 	/**
@@ -763,7 +771,7 @@ protected:
 
 	void generateSol1( CBiteRnd& rnd )
 	{
-		const CBiteOptPop& ParPop = selectParPop( rnd, true );
+		const CBiteOptPop& ParPop = selectParPop( 0, rnd );
 
 		memcpy( Params, ParPop.getParamsOrdered(
 			getMinSolIndex( 0, rnd, ParPop.getCurPopSize() )),
@@ -813,16 +821,12 @@ protected:
 			Params[ i ] = v0 * MantMultI;
 		}
 
-		static const int CentProbs[ 2 ] = {
-			(int) ( 0.4 * CBiteRnd :: getRawScale() ),
-			(int) ( 0.95 * CBiteRnd :: getRawScale() )
-		}; // "Centroid move" probability range.
-
-		if( rnd.getUniformRaw() < CentProbs[ select( Gen1CentHist, rnd )])
+		if( select( Gen1CentHist, rnd ))
 		{
 			// Random move around random previous solution vector.
 
-			static const double SpanMults[ 3 ] = {
+			static const double SpanMults[ 4 ] = {
+				0.5,
 				1.5 * CBiteRnd :: getRawScaleInv(),
 				2.0 * CBiteRnd :: getRawScaleInv(),
 				2.5 * CBiteRnd :: getRawScaleInv()
@@ -841,10 +845,6 @@ protected:
 				Params[ i ] -= ( Params[ i ] - rp2[ i ]) * m1;
 				Params[ i ] -= ( Params[ i ] - rp2[ i ]) * m2;
 			}
-		}
-		else
-		{
-			unselect( Gen1CentHist, rnd );
 		}
 	}
 
@@ -895,20 +895,15 @@ protected:
 
 	void generateSol3( CBiteRnd& rnd )
 	{
-		const CBiteOptPop& ParPop = selectParPop( rnd, true );
-
-		if( &ParPop == this )
+		if( NeedCentUpdate )
 		{
-			if( NeedCentUpdate )
-			{
-				updateCentroid();
-			}
+			updateCentroid();
 		}
 
-		const double* const MinParams = ParPop.getParamsOrdered(
-			getMinSolIndex( 2, rnd, ParPop.getCurPopSize() ));
+		const double* const MinParams = getParamsOrdered(
+			getMinSolIndex( 2, rnd, CurPopSize ));
 
-		const double* const cp = ParPop.getCentroid();
+		const double* const cp = getCentroid();
 
 		const double r1 = rnd.getRndValue();
 		const int si1 = (int) ( r1 * r1 * CurPopSize );
@@ -934,7 +929,49 @@ protected:
 
 	void generateSol4( CBiteRnd& rnd )
 	{
-		const CBiteOptPop& ParPop = selectParPop( rnd, true );
+		CBiteOptPop& ParPop = selectParPop( 1, rnd );
+
+		static const double RedFacs[ 2 ] = { 0.5, 2.0 };
+
+		const double rf = RedFacs[ select( Gen4RedFacHist, rnd )];
+		int UseSize;
+		const double** const UseParams = ParPop.getSparsePopParams(
+			UseSize, rf );
+
+		int i;
+		int k;
+
+		for( k = 0; k < 7; k++ )
+		{
+			const double r1 = rnd.getRndValue();
+			const int si1 = (int) ( r1 * r1 * UseSize );
+			const double* const rp1 = UseParams[ si1 ];
+
+			if( k == 0 )
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					IntParams[ i ] = (uint64_t) ( rp1[ i ] * MantMult );
+				}
+			}
+			else
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					IntParams[ i ] ^= (uint64_t) ( rp1[ i ] * MantMult );
+				}
+			}
+		}
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			Params[ i ] = IntParams[ i ] * MantMultI;
+		}
+	}
+
+	void generateSol4_( CBiteRnd& rnd )
+	{
+		const CBiteOptPop& ParPop = selectParPop( 1, rnd );
 
 		int i;
 		int k;
@@ -978,7 +1015,7 @@ protected:
 
 	void generateSol5( CBiteRnd& rnd )
 	{
-		const CBiteOptPop& ParPop = selectParPop( rnd, false );
+		const CBiteOptPop& ParPop = selectParPop( 2, rnd );
 
 		const double r1 = rnd.getRndValue();
 		const double* const CrossParams1 = ParPop.getParamsOrdered(
@@ -1140,8 +1177,7 @@ public:
 		{
 			while( true )
 			{
-				const double r = rnd.getRndValue();
-				PushOpt = Opts[ (int) ( r * r * OptCount )];
+				PushOpt = Opts[ (int) ( rnd.getRndValue() * OptCount )];
 
 				if( PushOpt != CurOpt )
 				{

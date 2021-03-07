@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.10
+ * @version 2021.11
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -258,22 +258,17 @@ public:
 
 			// Increase population size on fail.
 
-			const int PopChange = select( PopChangeHist, rnd );
-
 			if( DoPopIncr )
 			{
 				// Increase population size on fail.
 
-				if( PopChange == 1 )
+				if( CurPopSize < PopSize )
 				{
-					if( CurPopSize < PopSize )
+					const int PopChange = select( PopChangeHist, rnd );
+
+					if( PopChange == 1 )
 					{
-						CurPopSize++;
-						CurPopSize1++;
-					}
-					else
-					{
-						unselect( PopChangeHist, rnd );
+						incrCurPopSize();
 					}
 				}
 			}
@@ -281,16 +276,13 @@ public:
 			{
 				// Decrease population size on success.
 
-				if( PopChange == 0 )
+				if( CurPopSize > PopSize / 2 )
 				{
-					if( CurPopSize > PopSize / 2 )
+					const int PopChange = select( PopChangeHist, rnd );
+
+					if( PopChange == 0 )
 					{
-						CurPopSize--;
-						CurPopSize1--;
-					}
-					else
-					{
-						unselect( PopChangeHist, rnd );
+						decrCurPopSize();
 					}
 				}
 			}

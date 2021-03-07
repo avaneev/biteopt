@@ -21,6 +21,8 @@ inline double applyRound( double v )
 class CTestOpt : public CBiteOptDeep
 {
 public:
+	int con_notmet;
+
 	virtual void getMinValues( double* const p ) const
 	{
 		int i;
@@ -41,9 +43,13 @@ public:
 		}
 	}
 
-	static double penalty( const double v )
+	void penalty( double& pn, const double v )
 	{
-		return( v <= 0.0001 ? 0.0 : 100000 + v * 9999 );
+		if( v > 1e-4 )
+		{
+			pn = pn * 1.30 + ( v + v * v ) * 1e4;
+			con_notmet++;
+		}
 	}
 
 	virtual double optcost( const double* const p0 )
@@ -60,14 +66,22 @@ public:
 			4*sqr(p[3]-5)+sqr(p[4]-3)+2*sqr(p[5]-1)+5*sqr(p[6])+
 			7*sqr(p[7]-11)+2*sqr(p[8]-10)+sqr(p[9]-7)+45;
 
-		cost += penalty( 4*p[0]+5*p[1]-3*p[6]+9*p[7]-105 );
-		cost += penalty( 10*p[0]-8*p[1]-17*p[6]+2*p[7] );
-		cost += penalty( -8*p[0]+2*p[1]+5*p[8]-2*p[9]-12 );
-		cost += penalty( 3*sqr(p[0]-2)+4*sqr(p[1]-3)+2*sqr(p[2])-7*p[3]-120 );
-		cost += penalty( 5*sqr(p[0])+8*p[1]+sqr(p[2]-6)-2*p[3]-40 );
-		cost += penalty( 0.5*sqr(p[0]-8)+2*sqr(p[1]-4)+3*sqr(p[4])-p[5]-30 );
-		cost += penalty( sqr(p[0])+2*sqr(p[1]-2)-2*p[0]*p[1]+14*p[4]-6*p[5] );
-		cost += penalty( -3*p[0]+6*p[1]+12*sqr(p[8]-8)-7*p[9] );
+		con_notmet = 0;
+		double pn = 0.0;
+
+		penalty( pn, 4*p[0]+5*p[1]-3*p[6]+9*p[7]-105 );
+		penalty( pn, 10*p[0]-8*p[1]-17*p[6]+2*p[7] );
+		penalty( pn, -8*p[0]+2*p[1]+5*p[8]-2*p[9]-12 );
+		penalty( pn, 3*sqr(p[0]-2)+4*sqr(p[1]-3)+2*sqr(p[2])-7*p[3]-120 );
+		penalty( pn, 5*sqr(p[0])+8*p[1]+sqr(p[2]-6)-2*p[3]-40 );
+		penalty( pn, 0.5*sqr(p[0]-8)+2*sqr(p[1]-4)+3*sqr(p[4])-p[5]-30 );
+		penalty( pn, sqr(p[0])+2*sqr(p[1]-2)-2*p[0]*p[1]+14*p[4]-6*p[5] );
+		penalty( pn, -3*p[0]+6*p[1]+12*sqr(p[8]-8)-7*p[9] );
+
+		if( con_notmet > 0 )
+		{
+			cost += pn;
+		}
 
 		return( cost );
 	}
@@ -89,7 +103,10 @@ int main()
 		opt.optimize( rnd );
 	}
 
-	printf( "BestCost: %f\n", opt.getBestCost() );
+	const double minf = opt.optcost( opt.getBestParams() );
+
+	printf( "BestCost: %f\n", minf );
+	printf( "Constraints not met: %i\n", opt.con_notmet );
 
 	for( i = 0; i < N; i++ )
 	{

@@ -9,10 +9,11 @@
 //#include "../other/nmpopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CSpherOpt//CSMAESOpt//CNelderMeadPlusOpt//CBiteOptDeep//CCMAESOpt//
+#define OPT_CLASS CBiteOpt//CSpherOpt//CCMAESOpt//CNelderMeadPlusOpt//CSMAESOpt//CBiteOptDeep//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
 //#define OPT_PLATEAU_MUL 64 // Comment out to disable plateau check.
 //#define EVALBINS 1
+#define OPT_STATS 0 // Set to 1 to enable histogram statistics output.
 
 #if 0
 	#define OPT_THREADS 1
@@ -67,6 +68,16 @@ public:
 		double RMSSpan;
 	#endif // defined( EVALBINS )
 
+	#if OPT_STATS
+		double SumAvgSels[ CBiteOpt :: HistCount ]; ///< Sum of average
+			///< histogram choices over all successful attempts.
+			///<
+		double SumDevSels[ CBiteOpt :: HistCount ]; ///< Sum of average
+			///< histogram choice deviations (squared) over all successful
+			///< attempts.
+			///<
+	#endif // OPT_STATS
+
 	void clear()
 	{
 		SumIt_l10n = 0.0;
@@ -90,6 +101,11 @@ public:
 		}
 
 		#endif // defined( EVALBINS )
+
+		#if OPT_STATS
+		memset( SumAvgSels, 0, sizeof( SumAvgSels ));
+		memset( SumDevSels, 0, sizeof( SumDevSels ));
+		#endif // OPT_STATS
 	}
 };
 
@@ -176,6 +192,16 @@ public:
 		///< shift and scale randomizations will be applied.
 		///<
 
+	#if OPT_STATS
+	int SumSels[ CBiteOpt :: HistCount ]; ///< Sum of histogram choices.
+		///<
+	int* Sels[ CBiteOpt :: HistCount ]; ///< Histogram choices at each
+		///< optimization step.
+		///<
+	int SelAlloc; ///< The number of items allocated in each Sels element.
+		///<
+	#endif // OPT_STATS
+
 	CTestOpt()
 		: minv( NULL )
 		, maxv( NULL )
@@ -183,7 +209,13 @@ public:
 		, signs( NULL )
 		, tp( NULL )
 		, tp2( NULL )
+	#if OPT_STATS
+		, SelAlloc( 0 )
+	#endif // OPT_STATS
 	{
+		#if OPT_STATS
+		memset( Sels, 0, sizeof( Sels ));
+		#endif // OPT_STATS
 	}
 
 	virtual ~CTestOpt()
@@ -194,6 +226,15 @@ public:
 		delete[] signs;
 		delete[] tp;
 		delete[] tp2;
+
+		#if OPT_STATS
+		int i;
+
+		for( i = 0; i < CBiteOpt :: HistCount; i++ )
+		{
+			delete[] Sels[ i ];
+		}
+		#endif // OPT_STATS
 	}
 
 	void updateDims( const int aDims )
@@ -268,8 +309,42 @@ public:
 		return( (*fn -> CalcFunc)( tp, Dims ));
 	}
 
+	#if OPT_STATS
+	double calcDevSel( const int h, const int c, const double avg )
+	{
+		int* const s = Sels[ h ];
+		double sd = 0.0;
+		int i;
+
+		for( i = 0; i < c; i++ )
+		{
+			const double d = s[ i ] - avg;
+			sd += d * d;
+		}
+
+		return( sd / c );
+	}
+	#endif // OPT_STATS
+
 	void performOpt()
 	{
+		#if OPT_STATS
+		int k;
+
+		if( SelAlloc < MaxIters )
+		{
+			SelAlloc = MaxIters;
+
+			for( k = 0; k < CBiteOpt :: HistCount; k++ )
+			{
+				delete[] Sels[ k ];
+				Sels[ k ] = new int[ MaxIters ];
+			}
+		}
+
+		memset( SumSels, 0, sizeof( SumSels ));
+		#endif // OPT_STATS
+
 		init( rnd );
 
 		int i = 0;
@@ -280,6 +355,17 @@ public:
 		{
 			const int sc = optimize( rnd );
 
+			#if OPT_STATS
+				const CBiteOptHistBase** const h = getHists();
+
+				for( k = 0; k < CBiteOpt :: HistCount; k++ )
+				{
+					const int s = h[ k ] -> getSel();
+					Sels[ k ][ i ] = s;
+					SumSels[ k ] += s;
+				}
+			#endif // OPT_STATS
+
 			if( sc == 0 )
 			{
 				ImprIters++;
@@ -289,6 +375,16 @@ public:
 
 			if( getBestCost() - optv < CostThreshold )
 			{
+				#if OPT_STATS
+				double DevSels[ CBiteOpt :: HistCount ];
+
+				for( k = 0; k < CBiteOpt :: HistCount; k++ )
+				{
+					DevSels[ k ] = calcDevSel( k, i,
+						(double) SumSels[ k ] / i );
+				}
+				#endif // OPT_STATS
+
 				#if OPT_THREADS
 					VOXSYNC( StatsSync );
 				#endif // OPT_THREADS
@@ -308,6 +404,14 @@ public:
 					log( 10.0 );
 
 				SumStats -> SumRjCost += PrevCost;
+
+				#if OPT_STATS
+				for( k = 0; k < CBiteOpt :: HistCount; k++ )
+				{
+					SumStats -> SumAvgSels[ k ] += (double) SumSels[ k ] / i;
+					SumStats -> SumDevSels[ k ] += DevSels[ k ];
+				}
+				#endif // OPT_STATS
 
 				break;
 			}
@@ -666,6 +770,28 @@ public:
 			printf("time: %.3f s\n", ( t2.QuadPart - t1.QuadPart ) /
 				(double) Freq.QuadPart );
 			#endif // defined( OPT_PERF )
+
+			#if OPT_STATS
+			const CBiteOptHistBase** const h = opt -> getHists();
+			const char** const hnames = opt -> getHistNames();
+
+			for( k = 0; k < CBiteOpt :: HistCount; k++ )
+			{
+				const int cc = h[ k ] -> getChoiceCount();
+				const double avg = SumStats.SumAvgSels[ k ] /
+					SumStats.ComplAttempts;
+
+				const double std = 2.0 * sqrt( SumStats.SumDevSels[ k ] /
+					SumStats.ComplAttempts );
+
+				const double bias = 1.0 / cc;
+				const double v0 = ( avg + bias - std ) / cc;
+				const double v1 = ( avg + bias + std ) / cc;
+
+				printf( "%6.3f\t%6.3f\t%i\t%s\n",
+					v0, v1, cc, hnames[ k ]);
+			}
+			#endif // OPT_THREADS
 		}
 
 		delete[] Iters;

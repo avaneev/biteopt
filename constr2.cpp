@@ -9,10 +9,7 @@ const int N = 4;
 class CTestOpt : public CBiteOptDeep
 {
 public:
-	CTestOpt()
-	{
-		updateDims( ::N, 6 );
-	}
+	int con_notmet;
 
 	virtual void getMinValues( double* const p ) const
 	{
@@ -30,14 +27,24 @@ public:
 		p[ 3 ] = 0.55;
 	}
 
-	static double penalty( const double v )
+	void penalty( double& pn, const double v )
 	{
-		return( v <= 0.0 ? 0.0 : 100000 + v * 9999 );
+		if( v > 1e-8 )
+		{
+			pn = pn * 1.30 + ( v + v * v + v * v * v ) * 1e4;
+			con_notmet++;
+		}
 	}
 
-	static double penalty0( const double v )
+	void penalty0( double& pn, double v )
 	{
-		return( fabs( v ) <= 0.0001 ? 0.0 : 100000 + fabs( v ) * 9999 );
+		v = fabs( v );
+
+		if( v > 1e-8 )
+		{
+			pn = pn * 1.25 + ( v + v * v ) * 1e4;
+			con_notmet++;
+		}
 	}
 
 	virtual double optcost( const double* const p )
@@ -45,11 +52,19 @@ public:
 		double cost = 3.0*p[1]+1e-6*pow(p[0],3.0)+2.0*p[1]+
 			2e-6/3.0*pow(p[1],3.0);
 
-		cost += penalty( p[2]-p[3]-0.55 );
-		cost += penalty( p[3]-p[2]-0.55 );
-		cost += penalty0( 1000*(sin(-p[2]-0.25)+sin(-p[3]-0.25))+894.8-p[0] );
-		cost += penalty0( 1000*(sin(p[2]-0.25)+sin(p[2]-p[3]-0.25))+894.8-p[1] );
-		cost += penalty0( 1000*(sin(p[3]-0.25)+sin(p[3]-p[2]-0.25))+1294.8 );
+		con_notmet = 0;
+		double pn = 0.0;
+
+		penalty( pn, p[2]-p[3]-0.55 );
+		penalty( pn, p[3]-p[2]-0.55 );
+		penalty0( pn, 1000*(sin(-p[2]-0.25)+sin(-p[3]-0.25))+894.8-p[0] );
+		penalty0( pn, 1000*(sin(p[2]-0.25)+sin(p[2]-p[3]-0.25))+894.8-p[1] );
+		penalty0( pn, 1000*(sin(p[3]-0.25)+sin(p[3]-p[2]-0.25))+1294.8 );
+
+		if( con_notmet > 0 )
+		{
+			cost += pn;
+		}
 
 		return( cost );
 	}
@@ -61,6 +76,7 @@ int main()
 	rnd.init( 1 ); // Needs to be seeded with different values on each run.
 
 	CTestOpt opt;
+	opt.updateDims( N, 6 );
 	opt.init( rnd );
 
 	int i;
@@ -70,7 +86,10 @@ int main()
 		opt.optimize( rnd );
 	}
 
-	printf( "BestCost: %f\n", opt.getBestCost() );
+	const double minf = opt.optcost( opt.getBestParams() );
+
+	printf( "BestCost: %f\n", minf );
+	printf( "Constraints not met: %i\n", opt.con_notmet );
 
 	for( i = 0; i < N; i++ )
 	{
