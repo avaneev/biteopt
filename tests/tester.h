@@ -69,10 +69,14 @@ public:
 	#endif // defined( EVALBINS )
 
 	#if OPT_STATS
-		double SumAvgSels[ CBiteOpt :: HistCount ]; ///< Sum of average
+		int SumSelsMap[ CBiteOpt :: MaxHistCount * 8 ]; ///< Sums of
+			///< individual choices associated with histograms over all
+			///< successful attempts.
+			///<
+		double SumAvgSels[ CBiteOpt :: MaxHistCount ]; ///< Sum of average
 			///< histogram choices over all successful attempts.
 			///<
-		double SumDevSels[ CBiteOpt :: HistCount ]; ///< Sum of average
+		double SumDevSels[ CBiteOpt :: MaxHistCount ]; ///< Sum of average
 			///< histogram choice deviations (squared) over all successful
 			///< attempts.
 			///<
@@ -103,6 +107,7 @@ public:
 		#endif // defined( EVALBINS )
 
 		#if OPT_STATS
+		memset( SumSelsMap, 0, sizeof( SumSelsMap ));
 		memset( SumAvgSels, 0, sizeof( SumAvgSels ));
 		memset( SumDevSels, 0, sizeof( SumDevSels ));
 		#endif // OPT_STATS
@@ -193,9 +198,9 @@ public:
 		///<
 
 	#if OPT_STATS
-	int SumSels[ CBiteOpt :: HistCount ]; ///< Sum of histogram choices.
+	int SumSels[ CBiteOpt :: MaxHistCount ]; ///< Sum of histogram choices.
 		///<
-	int* Sels[ CBiteOpt :: HistCount ]; ///< Histogram choices at each
+	int* Sels[ CBiteOpt :: MaxHistCount ]; ///< Histogram choices at each
 		///< optimization step.
 		///<
 	int SelAlloc; ///< The number of items allocated in each Sels element.
@@ -230,7 +235,7 @@ public:
 		#if OPT_STATS
 		int i;
 
-		for( i = 0; i < CBiteOpt :: HistCount; i++ )
+		for( i = 0; i < getHistCount(); i++ )
 		{
 			delete[] Sels[ i ];
 		}
@@ -310,7 +315,8 @@ public:
 	}
 
 	#if OPT_STATS
-	double calcDevSel( const int h, const int c, const double avg )
+	double calcDevSel( const int h, const int c, const double avg,
+		int* const SumSelsMap )
 	{
 		int* const s = Sels[ h ];
 		double sd = 0.0;
@@ -319,6 +325,7 @@ public:
 		for( i = 0; i < c; i++ )
 		{
 			const double d = s[ i ] - avg;
+			SumSelsMap[ s[ i ]]++;
 			sd += d * d;
 		}
 
@@ -328,6 +335,8 @@ public:
 
 	void performOpt()
 	{
+		init( rnd );
+
 		#if OPT_STATS
 		int k;
 
@@ -335,7 +344,7 @@ public:
 		{
 			SelAlloc = MaxIters;
 
-			for( k = 0; k < CBiteOpt :: HistCount; k++ )
+			for( k = 0; k < getHistCount(); k++ )
 			{
 				delete[] Sels[ k ];
 				Sels[ k ] = new int[ MaxIters ];
@@ -344,8 +353,6 @@ public:
 
 		memset( SumSels, 0, sizeof( SumSels ));
 		#endif // OPT_STATS
-
-		init( rnd );
 
 		int i = 0;
 		int ImprIters = 0;
@@ -358,7 +365,7 @@ public:
 			#if OPT_STATS
 				const CBiteOptHistBase** const h = getHists();
 
-				for( k = 0; k < CBiteOpt :: HistCount; k++ )
+				for( k = 0; k < getHistCount(); k++ )
 				{
 					const int s = h[ k ] -> getSel();
 					Sels[ k ][ i ] = s;
@@ -376,12 +383,14 @@ public:
 			if( getBestCost() - optv < CostThreshold )
 			{
 				#if OPT_STATS
-				double DevSels[ CBiteOpt :: HistCount ];
+				double DevSels[ CBiteOpt :: MaxHistCount ];
+				int SumSelsMap[ CBiteOpt :: MaxHistCount * 8 ];
+				memset( SumSelsMap, 0, sizeof( SumSelsMap ));
 
-				for( k = 0; k < CBiteOpt :: HistCount; k++ )
+				for( k = 0; k < getHistCount(); k++ )
 				{
 					DevSels[ k ] = calcDevSel( k, i,
-						(double) SumSels[ k ] / i );
+						(double) SumSels[ k ] / i, SumSelsMap + k * 8 );
 				}
 				#endif // OPT_STATS
 
@@ -406,9 +415,19 @@ public:
 				SumStats -> SumRjCost += PrevCost;
 
 				#if OPT_STATS
-				for( k = 0; k < CBiteOpt :: HistCount; k++ )
+				for( k = 0; k < getHistCount(); k++ )
 				{
-					SumStats -> SumAvgSels[ k ] += (double) SumSels[ k ] / i;
+					int j;
+
+					for( j = 0; j < 8; j++ )
+					{
+						SumStats -> SumSelsMap[ k * 8 + j ] +=
+							SumSelsMap[ k * 8 + j ];
+					}
+
+					SumStats -> SumAvgSels[ k ] +=
+						(double) SumSels[ k ] / i;
+
 					SumStats -> SumDevSels[ k ] += DevSels[ k ];
 				}
 				#endif // OPT_STATS
@@ -775,21 +794,41 @@ public:
 			const CBiteOptHistBase** const h = opt -> getHists();
 			const char** const hnames = opt -> getHistNames();
 
-			for( k = 0; k < CBiteOpt :: HistCount; k++ )
+			printf( "\nmin\tmax\tbias\tcount\t"
+				"sel0\tsel1\tsel2\tsel3\thist\n" );
+
+			for( k = 0; k < opt -> getHistCount(); k++ )
 			{
 				const int cc = h[ k ] -> getChoiceCount();
 				const double avg = SumStats.SumAvgSels[ k ] /
 					SumStats.ComplAttempts;
 
-				const double std = 2.0 * sqrt( SumStats.SumDevSels[ k ] /
+				const double std = sqrt( SumStats.SumDevSels[ k ] /
 					SumStats.ComplAttempts );
 
-				const double bias = 1.0 / cc;
-				const double v0 = ( avg + bias - std ) / cc;
-				const double v1 = ( avg + bias + std ) / cc;
+				const double v0 = ( avg - std ) / ( cc - 1 );
+				const double v1 = ( avg + std ) / ( cc - 1 );
 
-				printf( "%6.3f\t%6.3f\t%i\t%s\n",
-					v0, v1, cc, hnames[ k ]);
+				printf( "%6.3f\t%6.3f\t%6.3f\t%i",
+					v0, v1, avg / ( cc - 1 ), cc );
+
+				int j;
+
+				for( j = 0; j < 4; j++ )
+				{
+					if( SumStats.SumSelsMap[ k * 8 + j ] > 0 )
+					{
+						printf( "\t%-5.1f", 100.0 *
+							SumStats.SumSelsMap[ k * 8 + j ] /
+							SumStats.SumIters );
+					}
+					else
+					{
+						printf( "\t     " );
+					}
+				}
+
+				printf( "\t%s\n", hnames[ k ]);
 			}
 			#endif // OPT_THREADS
 		}

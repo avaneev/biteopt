@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.11
+ * @version 2021.12
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -260,28 +260,24 @@ public:
 
 			if( DoPopIncr )
 			{
-				// Increase population size on fail.
-
 				if( CurPopSize < PopSize )
 				{
-					const int PopChange = select( PopChangeHist, rnd );
-
-					if( PopChange == 1 )
+					if( select( PopChangeHist, rnd ))
 					{
+						// Increase population size on fail.
+
 						incrCurPopSize();
 					}
 				}
 			}
 			else
 			{
-				// Decrease population size on success.
-
-				if( CurPopSize > PopSize / 2 )
+				if( CurPopSize > ( PopSize >> 1 ))
 				{
-					const int PopChange = select( PopChangeHist, rnd );
-
-					if( PopChange == 0 )
+					if( select( PopChangeHist, rnd ))
 					{
+						// Decrease population size on success.
+
 						decrCurPopSize();
 					}
 				}
@@ -312,13 +308,13 @@ protected:
 	bool DoCentEval; ///< "True" if an initial objective function evaluation
 		///< at centroid point is required.
 		///<
-	CBiteOptHist< 4, 4, 1 > CentPowHist; ///< Centroid power factor histogram.
+	CBiteOptHist< 4 > CentPowHist; ///< Centroid power factor histogram.
 		///<
-	CBiteOptHist< 4, 4, 1 > RadPowHist; ///< Radius power factor histogram.
+	CBiteOptHist< 4 > RadPowHist; ///< Radius power factor histogram.
 		///<
-	CBiteOptHist< 3, 3, 1 > EvalFacHist; ///< EvalFac histogram.
+	CBiteOptHist< 3 > EvalFacHist; ///< EvalFac histogram.
 		///<
-	CBiteOptHist< 2, 2, 4 > PopChangeHist; ///< Population size change
+	CBiteOptHist< 2 > PopChangeHist; ///< Population size change
 		///< histogram.
 		///<
 

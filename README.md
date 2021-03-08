@@ -330,7 +330,7 @@ all arguments are equal. It just often happens that such "short-cuts" provide
 useful "reference points" to the method. Removing these "short-cuts" will
 increase average convergence time of the method, but in most cases won't
 impact method's ability to find a global solution. "Short-cuts" are used only
-in 5% of objective function evaluations.
+in 3% of objective function evaluation on average.
 
 3. The method uses LCG pseudo-random number generator due to its efficiency.
 The method was also tested with a more statistically-correct PRNG and the

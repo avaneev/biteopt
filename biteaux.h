@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.11
+ * @version 2021.12
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -84,6 +84,8 @@ public:
 
 		// Skip first values to make PRNG "settle down".
 
+		advance();
+		advance();
 		advance();
 		advance();
 	}
@@ -168,8 +170,9 @@ public:
 		if( BitsLeft == 0 )
 		{
 			BitPool = getUniformRaw();
-			BitsLeft = getRawBitCount() - 1;
+			BitsLeft = getRawBitCount() - 1 - 9; // Skip lower bits.
 
+			BitPool >>= 9;
 			const int b = ( BitPool & 1 );
 			BitPool >>= 1;
 
@@ -199,7 +202,7 @@ private:
 
 	void advance()
 	{
-		seed = 500009 * seed + 300119;
+		seed = seed * 13927327461742219355ULL + 52855ULL;
 	}
 };
 
@@ -256,34 +259,36 @@ protected:
 
 /**
  * Histogram class. Used to keep track of success of various choices. Updates
- * probabilities of future choices based on the current histogram state.
+ * probabilities of future choices based on the current histogram state. Uses
+ * a self-optimization technique for internal parameters.
  *
- * If the choice is used to select probability value, with a later probability
- * evalutaion, the choice should be set to a random choice if the probability
- * does not realise.
+ * If the choice is used to select probability value or some conditional
+ * variable, the choice should be "unselected" if choice did not realise.
  *
  * @tparam Count The number of possible choices, greater than 1.
- * @tparam Divisor Divisor used to obtain a minimal histogram value. Controls
- * the ratio between minimal and maximal possible probabilities of all
- * choices. Should be usually equal to Count, but can be set up to Count * 2
- * if a certain choice is likely to be effective most of the time.
  * @tparam IncrDecr Histogram increment (on success) or decrement
  * (on failure). Usually equals to 1, but a higher value can be used if a
  * steep momentary probability change of a certain choice is effective.
  */
 
-template< int Count, int Divisor, int IncrDecr >
+template< int Count >
 class CBiteOptHist : virtual public CBiteOptHistBase
 {
 public:
 	CBiteOptHist()
-		: m( 1.0 / Divisor )
+		: m( 1.0 / Count )
 		, rcm( (double) Count / CBiteRnd :: getRawScale() )
 	{
 	}
 
 	virtual void reset( CBiteRnd& rnd )
 	{
+		const int b = rnd.getBit();
+		IncrDecrHist[ 1 ] = b;
+		IncrDecrHist[ 2 ] = 1 - b;
+		IncrDecr = 2 - b;
+		Sel = (int) ( rnd.getUniformRaw() * rcm );
+
 		memset( Hist, 0, sizeof( Hist ));
 		updateProbs();
 	}
@@ -295,12 +300,18 @@ public:
 
 	virtual void incr()
 	{
+		IncrDecrHist[ IncrDecr ]++;
+		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
+
 		Hist[ Sel ] += IncrDecr;
 		updateProbs();
 	}
 
 	virtual void decr()
 	{
+		IncrDecrHist[ IncrDecr ]--;
+		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
+
 		Hist[ Sel ] -= IncrDecr;
 		updateProbs();
 	}
@@ -362,22 +373,21 @@ public:
 
 	void unselect( CBiteRnd& rnd )
 	{
-		if( Count == 2 )
-		{
-			Sel = rnd.getBit();
-		}
-		else
-		{
-			Sel = (int) ( rnd.getUniformRaw() * rcm );
-		}
+		Sel = (int) ( rnd.getUniformRaw() * rcm );
 	}
 
 protected:
-	double m; ///< Multiplier (depends on Divisor)
+	double m; ///< Multiplier (depends on Divisor).
 		///<
 	double rcm; ///< Raw random value multiplier that depends on Count.
 		///<
 	int Hist[ Count ]; ///< Histogram.
+		///<
+	int IncrDecrHist[ 3 ]; ///< IncrDecr self-optimization histogram, element
+		///< 0 not used for efficiency.
+		///<
+	int IncrDecr; ///< Histogram-driven increment or decrement, can be equal
+		///< to 1 or 2.
 		///<
 	double Probs[ Count ]; ///< Probabilities, cumulative.
 		///<
@@ -410,7 +420,7 @@ protected:
 			HistSum += Probs[ i ];
 		}
 
-		HistSum *= m;
+		HistSum *= m * IncrDecr;
 		ProbSum = 0.0;
 
 		for( i = 0; i < Count; i++ )
@@ -428,7 +438,9 @@ protected:
 
 /**
  * Histogram class for binary variables. A lot more computationally-efficient,
- * but functionally similar to the CBiteOptHistogram class in performance.
+ * but functionally similar to the CBiteOptHistogram class. In some instances,
+ * provides better statistics, especially if some choice is effective for a
+ * prolonged time.
  *
  * The choice should be set to a random choice if the probability does not
  * realise.
@@ -443,6 +455,7 @@ public:
 
 		Hist[ 0 ] = b;
 		Hist[ 1 ] = 1 - b;
+		Sel = 1 - b;
 	}
 
 	virtual int getChoiceCount() const
@@ -452,8 +465,6 @@ public:
 
 	/**
 	 * This function should be called when a certain choice is successful.
-	 *
-	 * @param Index Choice index. Should be equal to 0 or 1.
 	 */
 
 	virtual void incr()
@@ -463,8 +474,6 @@ public:
 
 	/**
 	 * This function should be called when a certain choice is a failure.
-	 *
-	 * @param Index Choice index. Should be equal to 0 or 1.
 	 */
 
 	virtual void decr()

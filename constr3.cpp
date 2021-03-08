@@ -47,7 +47,7 @@ public:
 	{
 		if( v > 1e-4 )
 		{
-			pn = pn * 1.30 + ( v + v * v ) * 1e4;
+			pn = pn * 1.30 + ( v + v * v + v * v * v ) * 1e4;
 			con_notmet++;
 		}
 	}
