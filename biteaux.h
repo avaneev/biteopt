@@ -3,8 +3,8 @@
 /**
  * @file biteaux.h
  *
- * @brief The inclusion file for the CBiteRnd, CBiteOptPop, CBiteOptInterface,
- * and CBiteOptBase classes.
+ * @brief The inclusion file for the CBiteRnd, CBiteOptPop, CBiteOptParPop,
+ * CBiteOptInterface, and CBiteOptBase classes.
  *
  * @section license License
  * 
@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.12
+ * @version 2021.13
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -41,9 +41,10 @@
 /**
  * Class that implements a pseudo-random number generator (PRNG). The default
  * implementation includes a relatively fast PRNG that uses a classic formula
- * "seed = ( a * seed + c ) % m" (LCG). This implementation uses bits 34-63
- * (30 bits) of the state variable which ensures at least 2^34 period in the
- * lowest significant bit of the resulting pseudo-random sequence. See
+ * "seed = ( a * seed + c ) % m" (LCG), in a rearranged form. This
+ * implementation uses bits 34-63 (30 bits) of the state variable which
+ * ensures at least 2^34 period in the lowest significant bit of the resulting
+ * pseudo-random sequence. See
  * https://en.wikipedia.org/wiki/Linear_congruential_generator for more
  * details.
  */
@@ -134,8 +135,7 @@ public:
 	}
 
 	/**
-	 * @return Uniformly-distributed random number in the range [0; 1), in the
-	 * "raw" scale.
+	 * @return Uniformly-distributed random number in the "raw" scale.
 	 */
 
 	int getUniformRaw()
@@ -143,6 +143,22 @@ public:
 		advance();
 
 		return( (int) ( seed >> 34 ));
+	}
+
+	/**
+	 * @return Dual bit-size uniformly-distributed random number in the "raw"
+	 * scale.
+	 */
+
+	int64_t getUniformRaw2()
+	{
+		advance();
+		int64_t v = (int64_t) ( seed >> 34 );
+
+		advance();
+		v |= (int64_t) ( seed >> 34 ) << getRawBitCount();
+
+		return( v );
 	}
 
 	/**
@@ -170,9 +186,10 @@ public:
 		if( BitsLeft == 0 )
 		{
 			BitPool = getUniformRaw();
-			BitsLeft = getRawBitCount() - 1 - 9; // Skip lower bits.
+			BitsLeft = getRawBitCount() - 1 - 10; // Skip lower bits to get
+				// statistically-better bit range.
 
-			BitPool >>= 9;
+			BitPool >>= 10;
 			const int b = ( BitPool & 1 );
 			BitPool >>= 1;
 
@@ -202,7 +219,7 @@ private:
 
 	void advance()
 	{
-		seed = seed * 13927327461742219355ULL + 52855ULL;
+		seed = ( seed + 15509ULL ) * 11627070389458151377ULL;
 	}
 };
 
@@ -277,7 +294,7 @@ class CBiteOptHist : virtual public CBiteOptHistBase
 public:
 	CBiteOptHist()
 		: m( 1.0 / Count )
-		, rcm( (double) Count / CBiteRnd :: getRawScale() )
+		, rcm( Count * CBiteRnd :: getRawScaleInv() )
 	{
 	}
 
@@ -512,14 +529,18 @@ protected:
 /**
  * Class implements storage of population parameter vectors, costs, centroid,
  * and ordering.
+ *
+ * @tparam ptype Parameter value storage type.
  */
 
+template< typename ptype >
 class CBiteOptPop
 {
 public:
 	CBiteOptPop()
 		: ParamCount( 0 )
 		, PopSize( 0 )
+		, NeedCentUpdate( false )
 		, PopParamsBuf( NULL )
 		, PopParams( NULL )
 		, PopCosts( NULL )
@@ -568,6 +589,7 @@ public:
 		CurPopSize = s.CurPopSize;
 		CurPopSize1 = s.CurPopSize1;
 		NeedCentUpdate = s.NeedCentUpdate;
+		SparsePopSize = -1;
 
 		int i;
 
@@ -587,15 +609,6 @@ public:
 	}
 
 	/**
-	 * Function resets centroid vector.
-	 */
-
-	void resetCentroid()
-	{
-		memset( CentParams, 0, ParamCount * sizeof( CentParams[ 0 ]));
-	}
-
-	/**
 	 * Function recalculates centroid based on the current population size.
 	 * The NeedCentUpdate variable can be checked if centroid update is
 	 * needed. This function resets the NeedCentUpdate to "false".
@@ -603,30 +616,82 @@ public:
 
 	void updateCentroid()
 	{
-		resetCentroid();
+		NeedCentUpdate = false;
 
-		double* const cp = CentParams;
+		const int BatchCount = 31; // Selected to avoid integer overflows.
+		const double m = 1.0 / CurPopSize;
+		ptype* const cp = CentParams;
 		int i;
 		int j;
 
-		for( j = 0; j < CurPopSize; j++ )
+		if( CurPopSize <= BatchCount )
 		{
-			const double* const p = PopParams[ j ];
+			memcpy( cp, PopParams[ 0 ], ParamCount * sizeof( cp[ 0 ]));
+
+			for( j = 1; j < CurPopSize; j++ )
+			{
+				const ptype* const p = PopParams[ j ];
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					cp[ i ] += p[ i ];
+				}
+			}
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				cp[ i ] += p[ i ];
+				cp[ i ] = (ptype) ( cp[ i ] * m );
 			}
 		}
-
-		const double m = 1.0 / CurPopSize;
-
-		for( i = 0; i < ParamCount; i++ )
+		else
 		{
-			cp[ i ] *= m;
-		}
+			// Batched centroid calculation, for more precision and no integer
+			// overflows.
 
-		NeedCentUpdate = false;
+			ptype* const tp = TmpParams;
+			int pl = CurPopSize;
+			j = 0;
+			bool DoCopy = true;
+
+			while( pl > 0 )
+			{
+				int c = ( pl > BatchCount ? BatchCount : pl );
+				pl -= c;
+				c--;
+
+				memcpy( tp, PopParams[ j ], ParamCount * sizeof( tp[ 0 ]));
+
+				while( c > 0 )
+				{
+					j++;
+					const ptype* const p = PopParams[ j ];
+
+					for( i = 0; i < ParamCount; i++ )
+					{
+						tp[ i ] += p[ i ];
+					}
+
+					c--;
+				}
+
+				if( DoCopy )
+				{
+					DoCopy = false;
+
+					for( i = 0; i < ParamCount; i++ )
+					{
+						cp[ i ] = (ptype) ( tp[ i ] * m );
+					}
+				}
+				else
+				{
+					for( i = 0; i < ParamCount; i++ )
+					{
+						cp[ i ] += (ptype) ( tp[ i ] * m );
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -635,7 +700,7 @@ public:
 	 * updateCentroid() function called.
 	 */
 
-	const double* getCentroid() const
+	const ptype* getCentroid() const
 	{
 		return( CentParams );
 	}
@@ -647,7 +712,7 @@ public:
 	 * @param i Parameter vector index.
 	 */
 
-	const double* getParamsOrdered( const int i ) const
+	const ptype* getParamsOrdered( const int i ) const
 	{
 		return( PopParams[ i ]);
 	}
@@ -657,9 +722,9 @@ public:
 	 * which are sorted in the ascending cost order.
 	 */
 
-	const double** getPopParams() const
+	const ptype** getPopParams() const
 	{
-		return( (const double**) PopParams );
+		return( (const ptype**) PopParams );
 	}
 
 	/**
@@ -672,24 +737,15 @@ public:
 	}
 
 	/**
-	 * Function calculates Euclidean distance of the specifed vector to *this
-	 * population's centroid. Function returns the square of the distance.
+	 * Function returns "true" if the specified cost meets population's
+	 * cost constraint. The check is synchronized with the sortPop() function.
 	 *
-	 * @param p Parameter vector.
+	 * @param Cost Cost value to evaluate.
 	 */
 
-	double getDistanceSqr( const double* const p ) const
+	bool isAcceptedCost( const double Cost ) const
 	{
-		double s = 0.0;
-		int i;
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			const double d = CentParams[ i ] - p[ i ];
-			s += d * d;
-		}
-
-		return( s );
+		return( Cost <= PopCosts[ CurPopSize1 ]);
 	}
 
 	/**
@@ -704,28 +760,28 @@ public:
 	 * otherwise.
 	 */
 
-	bool updatePop( const double NewCost, const double* const UpdParams,
+	bool updatePop( const double NewCost, const ptype* const UpdParams,
 		const bool DoUpdateCentroid, const bool DoCostCheck )
 	{
 		if( DoCostCheck )
 		{
-			if( NewCost > PopCosts[ CurPopSize1 ])
+			if( !isAcceptedCost( NewCost ))
 			{
 				return( false );
 			}
 		}
 
-		double* const rp = PopParams[ CurPopSize1 ];
+		ptype* const rp = PopParams[ CurPopSize1 ];
 
 		if( DoUpdateCentroid )
 		{
-			double* const cp = CentParams;
+			ptype* const cp = CentParams;
 			const double m = 1.0 / CurPopSize;
 			int i;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				cp[ i ] += ( UpdParams[ i ] - rp[ i ]) * m;
+				cp[ i ] += (ptype) (( UpdParams[ i ] - rp[ i ]) * m );
 				rp[ i ] = UpdParams[ i ];
 			}
 		}
@@ -790,12 +846,12 @@ public:
 	 * reduces more, 0.5 - reduces less.
 	 */
 
-	const double** getSparsePopParams( int& Size, const double rf )
+	const ptype** getSparsePopParams( int& Size, const double rf )
 	{
 		if( SparsePopSize >= 0 && SparseRF == rf )
 		{
 			Size = SparsePopSize;
-			return( (const double**) SparsePopParams );
+			return( (const ptype**) SparsePopParams );
 		}
 
 		SparseRF = rf;
@@ -809,40 +865,37 @@ public:
 			s += p[ i + 1 ] - p[ i ];
 		}
 
-		if( s <= 0.0 )
-		{
-			memcpy( SparsePopParams, PopParams, CurPopSize *
-				sizeof( SparsePopParams[ 0 ]));
-
-			SparsePopSize = CurPopSize;
-			Size = CurPopSize;
-			return( (const double**) SparsePopParams );
-		}
-
-		s /= CurPopSize1 * rf;
-
 		SparsePopParams[ 0 ] = PopParams[ 0 ];
 		int c = 1;
-		double pc = p[ 0 ];
 
-		for( i = 1; i < CurPopSize; i++ )
+		if( s > 0.0 )
 		{
-			if( p[ i ] - pc > s )
+			s /= CurPopSize1 * rf;
+
+			double pc = p[ 0 ];
+
+			for( i = 1; i < CurPopSize; i++ )
 			{
-				SparsePopParams[ c ] = PopParams[ i ];
-				c++;
-				pc = p[ i ];
+				if( p[ i ] - pc > s )
+				{
+					SparsePopParams[ c ] = PopParams[ i ];
+					c++;
+					pc = p[ i ];
+				}
 			}
-		}
 
-		const int MinSize = 5;
+			int MinSize = 5;
 
-		if( c < MinSize )
-		{
-			i = CurPopSize + c - MinSize;
-
-			if( i >= 0 )
+			if( c < MinSize )
 			{
+				i = CurPopSize + c - MinSize;
+
+				if( i < 0 )
+				{
+					MinSize += i;
+					i = 0;
+				}
+
 				while( c < MinSize )
 				{
 					SparsePopParams[ c ] = PopParams[ i ];
@@ -852,9 +905,40 @@ public:
 			}
 		}
 
+		if( c < 3 )
+		{
+			memcpy( SparsePopParams, PopParams, CurPopSize *
+				sizeof( SparsePopParams[ 0 ]));
+
+			SparsePopSize = CurPopSize;
+			Size = CurPopSize;
+			return( (const ptype**) SparsePopParams );
+		}
+
 		SparsePopSize = c;
 		Size = c;
-		return( (const double**) SparsePopParams );
+		return( (const ptype**) SparsePopParams );
+	}
+
+	/**
+	 * Function calculates Euclidean distance of the specifed vector to *this
+	 * population's centroid. Function returns the square of the distance.
+	 *
+	 * @param p Parameter vector.
+	 */
+
+	double getDistanceSqr( const ptype* const p ) const
+	{
+		double s = 0.0;
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			const double d = CentParams[ i ] - p[ i ];
+			s += d * d;
+		}
+
+		return( s );
 	}
 
 protected:
@@ -870,17 +954,17 @@ protected:
 		///<
 	bool NeedCentUpdate; ///< "True" if centroid update is needed.
 		///<
-	double* PopParamsBuf; ///< Buffer for all PopParams vectors.
+	ptype* PopParamsBuf; ///< Buffer for all PopParams vectors.
 		///<
-	double** PopParams; ///< Population parameter vectors. Always kept sorted
+	ptype** PopParams; ///< Population parameter vectors. Always kept sorted
 		///< in ascending cost order.
 		///<
 	double* PopCosts; ///< Costs of population parameter vectors, sorting
 		///< order corresponds to PopParams.
 		///<
-	double* CentParams; ///< Centroid of the current parameter vectors.
+	ptype* CentParams; ///< Centroid of the current parameter vectors.
 		///<
-	double** SparsePopParams; ///< Pointers to "sparsified" population
+	ptype** SparsePopParams; ///< Pointers to "sparsified" population
 		///< parameter vectors.
 		///<
 	int SparsePopSize; ///< The number of valid elements in the
@@ -888,6 +972,9 @@ protected:
 		///< sortPop() function or on population size changes.
 		///<
 	double SparseRF; ///< "Reduction factor" used to produce SparsePopParams.
+		///<
+	ptype* TmpParams; ///< Temporary parameter vector, points to the last
+		///< element of the PopParams array.
 		///<
 
 	/**
@@ -913,19 +1000,22 @@ protected:
 		CurPopSize = aPopSize;
 		CurPopSize1 = aPopSize - 1;
 		NeedCentUpdate = false;
+		SparsePopSize = -1;
 
-		PopParamsBuf = new double[( PopSize + 1 ) * ParamCount ];
-		PopParams = new double*[ PopSize + 1 ]; // Last element is temporary.
-		PopCosts = new double[ PopSize ];
-		CentParams = new double[ ParamCount ];
-		SparsePopParams = new double*[ PopSize ];
+		PopParamsBuf = new ptype[( aPopSize + 1 ) * aParamCount ];
+		PopParams = new ptype*[ aPopSize + 1 ]; // Last element is temporary.
+		PopCosts = new double[ aPopSize ];
+		CentParams = new ptype[ aParamCount ];
+		SparsePopParams = new ptype*[ aPopSize ];
 
 		int i;
 
-		for( i = 0; i <= PopSize; i++ )
+		for( i = 0; i <= aPopSize; i++ )
 		{
-			PopParams[ i ] = PopParamsBuf + i * ParamCount;
+			PopParams[ i ] = PopParamsBuf + i * aParamCount;
 		}
+
+		TmpParams = PopParams[ aPopSize ];
 	}
 
 	/**
@@ -952,7 +1042,7 @@ protected:
 
 	void sortPop( const double Cost, int i )
 	{
-		double* const InsertParams = PopParams[ i ];
+		ptype* const InsertParams = PopParams[ i ];
 
 		while( i > 0 )
 		{
@@ -977,56 +1067,189 @@ protected:
 /**
  * Population class that embeds a dynamically-allocated parallel population
  * objects.
+ *
+ * @tparam ptype Parameter value storage type.
  */
 
-class CBiteOptParPops : virtual public CBiteOptPop
+template< typename ptype >
+class CBiteOptParPops : virtual public CBiteOptPop< ptype >
 {
 public:
 	CBiteOptParPops()
 		: ParPopCount( 0 )
 	{
-		memset( ParPops, 0, sizeof( ParPops ));
 	}
 
-protected:
-	static const int MaxParPopCount = 8; ///< The maximal number of parallel
-		///< population supported.
-		///<
-	CBiteOptPop* ParPops[ MaxParPopCount ]; ///< Parallel population orbiting
-		///< *this population.
-		///<
-	int ParPopCount; ///< Parallel population count. This variable should be
-		///< set before the initBuffers() function is called. It should not
-		///< be changed later.
-		///<
-
-	virtual void initBuffers( const int aParamCount, const int aPopSize )
+	virtual ~CBiteOptParPops()
 	{
-		CBiteOptPop :: initBuffers( aParamCount, aPopSize );
-
-		if( ParPopCount > MaxParPopCount )
-		{
-			ParPopCount = MaxParPopCount;
-		}
-
-		int i;
-
-		for( i = 0; i < ParPopCount; i++ )
-		{
-			ParPops[ i ] = new CBiteOptPop();
-		}
-	}
-
-	virtual void deleteBuffers()
-	{
-		CBiteOptPop :: deleteBuffers();
-
 		int i;
 
 		for( i = 0; i < ParPopCount; i++ )
 		{
 			delete ParPops[ i ];
 		}
+	}
+
+protected:
+	using CBiteOptPop< ptype > :: ParamCount;
+
+	static const int MaxParPopCount = 8; ///< The maximal number of parallel
+		///< population supported.
+		///<
+	CBiteOptPop< ptype >* ParPops[ MaxParPopCount ]; ///< Parallel population
+		///< orbiting *this population.
+		///<
+	int ParPopCount; ///< Parallel population count. This variable should only
+		///< be changed via the setParPopCount() function.
+		///<
+
+	/**
+	 * Function changes the parallel population count, and reallocates
+	 * buffers.
+	 *
+	 * @param NewCount New parallel population count, >= 0.
+	 */
+
+	void setParPopCount( const int NewCount )
+	{
+		while( ParPopCount > NewCount )
+		{
+			ParPopCount--;
+			delete ParPops[ ParPopCount ];
+		}
+
+		while( ParPopCount < NewCount )
+		{
+			ParPops[ ParPopCount ] = new CBiteOptPop< ptype >();
+			ParPopCount++;
+		}
+	}
+
+	/**
+	 * Function returns index of the parallel population that is most distant
+	 * to the specified parameter vector. Function returns -1 if the cost
+	 * constraint is not met in all parallel populations.
+	 *
+	 * @param Cost Cost of parameter vector, used to filter considered
+	 * parallel population pool.
+	 * @param p Parameter vector.
+	 */
+
+	int getMaxDistParPop( const double Cost, const ptype* const p ) const
+	{
+		int ppi[ MaxParPopCount ];
+		int ppc = 0;
+		int i;
+
+		for( i = 0; i < ParPopCount; i++ )
+		{
+			if( ParPops[ i ] -> isAcceptedCost( Cost ))
+			{
+				ppi[ ppc ] = i;
+				ppc++;
+			}
+		}
+
+		if( ppc == 0 )
+		{
+			return( -1 );
+		}
+
+		if( ppc == 1 )
+		{
+			return( ppi[ 0 ]);
+		}
+
+		double s[ MaxParPopCount ];
+
+		if( ppc == 4 )
+		{
+			const ptype* const c0 = ParPops[ ppi[ 0 ]] -> getCentroid();
+			const ptype* const c1 = ParPops[ ppi[ 1 ]] -> getCentroid();
+			const ptype* const c2 = ParPops[ ppi[ 2 ]] -> getCentroid();
+			const ptype* const c3 = ParPops[ ppi[ 3 ]] -> getCentroid();
+			double s0 = 0.0;
+			double s1 = 0.0;
+			double s2 = 0.0;
+			double s3 = 0.0;
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				const ptype v = p[ i ];
+				const double d0 = (double) ( v - c0[ i ]);
+				const double d1 = (double) ( v - c1[ i ]);
+				const double d2 = (double) ( v - c2[ i ]);
+				const double d3 = (double) ( v - c3[ i ]);
+				s0 += d0 * d0;
+				s1 += d1 * d1;
+				s2 += d2 * d2;
+				s3 += d3 * d3;
+			}
+
+			s[ 0 ] = s0;
+			s[ 1 ] = s1;
+			s[ 2 ] = s2;
+			s[ 3 ] = s3;
+		}
+		else
+		if( ppc == 3 )
+		{
+			const ptype* const c0 = ParPops[ ppi[ 0 ]] -> getCentroid();
+			const ptype* const c1 = ParPops[ ppi[ 1 ]] -> getCentroid();
+			const ptype* const c2 = ParPops[ ppi[ 2 ]] -> getCentroid();
+			double s0 = 0.0;
+			double s1 = 0.0;
+			double s2 = 0.0;
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				const ptype v = p[ i ];
+				const double d0 = (double) ( v - c0[ i ]);
+				const double d1 = (double) ( v - c1[ i ]);
+				const double d2 = (double) ( v - c2[ i ]);
+				s0 += d0 * d0;
+				s1 += d1 * d1;
+				s2 += d2 * d2;
+			}
+
+			s[ 0 ] = s0;
+			s[ 1 ] = s1;
+			s[ 2 ] = s2;
+		}
+		else
+		if( ppc == 2 )
+		{
+			const ptype* const c0 = ParPops[ ppi[ 0 ]] -> getCentroid();
+			const ptype* const c1 = ParPops[ ppi[ 1 ]] -> getCentroid();
+			double s0 = 0.0;
+			double s1 = 0.0;
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				const ptype v = p[ i ];
+				const double d0 = (double) ( v - c0[ i ]);
+				const double d1 = (double) ( v - c1[ i ]);
+				s0 += d0 * d0;
+				s1 += d1 * d1;
+			}
+
+			s[ 0 ] = s0;
+			s[ 1 ] = s1;
+		}
+
+		int pp = 0;
+		double d = s[ pp ];
+
+		for( i = 1; i < ppc; i++ )
+		{
+			if( s[ i ] >= d )
+			{
+				pp = i;
+				d = s[ i ];
+			}
+		}
+
+		return( ppi[ pp ]);
 	}
 };
 
@@ -1087,10 +1310,13 @@ public:
 
 /**
  * The base class for optimizers of the "biteopt" project.
+ *
+ * @tparam ptype Parameter value storage type.
  */
 
+template< typename ptype >
 class CBiteOptBase : public CBiteOptInterface,
-	virtual protected CBiteOptParPops
+	virtual protected CBiteOptParPops< ptype >
 {
 private:
 	CBiteOptBase( const CBiteOptBase& )
@@ -1109,14 +1335,14 @@ public:
 		: MinValues( NULL )
 		, MaxValues( NULL )
 		, DiffValues( NULL )
-		, NewParams( NULL )
-		, BestParams( NULL )
+		, BestValues( NULL )
+		, NewValues( NULL )
 	{
 	}
 
 	virtual const double* getBestParams() const
 	{
-		return( BestParams );
+		return( BestValues );
 	}
 
 	virtual double getBestCost() const
@@ -1125,6 +1351,30 @@ public:
 	}
 
 protected:
+	using CBiteOptParPops< ptype > :: ParamCount;
+	using CBiteOptParPops< ptype > :: PopSize;
+	using CBiteOptParPops< ptype > :: PopSize1;
+	using CBiteOptParPops< ptype > :: CurPopSize;
+	using CBiteOptParPops< ptype > :: CurPopSize1;
+	using CBiteOptParPops< ptype > :: NeedCentUpdate;
+
+	static const int IntMantBits = 58; ///< Mantissa size of the integer
+		///< parameter values (higher by 1 bit in practice for real value
+		///< 1.0). Should account for a sign bit, and possible overflow during
+		///< centroid calculation.
+		///<
+	static const int64_t IntMantMult = 1LL << IntMantBits; ///< Mantissa
+		///< multiplier.
+		///<
+	static const int64_t IntMantMultM = -IntMantMult; ///< Negative
+		///< IntMantMult.
+		///<
+	static const int64_t IntMantMult2 = ( IntMantMult << 1 ); ///< =
+		///< IntMantMult * 2.
+		///<
+	static const int64_t IntMantMask = IntMantMult - 1; ///< Mask that
+		///< corresponds to mantissa.
+		///<
 	double* MinValues; ///< Minimal parameter values.
 		///<
 	double* MaxValues; ///< Maximal parameter values.
@@ -1132,11 +1382,11 @@ protected:
 	double* DiffValues; ///< Difference between maximal and minimal parameter
 		///< values.
 		///<
-	double* NewParams; ///< Temporary new parameter buffer, with real values.
-		///<
-	double* BestParams; ///< Best parameter vector.
+	double* BestValues; ///< Best parameter vector.
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
+		///<
+	double* NewValues; ///< Temporary new parameter buffer, with real values.
 		///<
 	int StallCount; ///< The number of iterations without improvement.
 		///<
@@ -1146,7 +1396,7 @@ protected:
 	double AvgCost; ///< Average cost in the latest batch. May not be used by
 		///< the optimizer.
 		///<
-	static const int MaxApplyHists = 16; /// The maximal number of histograms
+	static const int MaxApplyHists = 32; /// The maximal number of histograms
 		///< that can be used during the optimize() function call.
 		///<
 	CBiteOptHistBase* ApplyHists[ MaxApplyHists ]; ///< Histograms used in
@@ -1158,24 +1408,24 @@ protected:
 
 	virtual void initBuffers( const int aParamCount, const int aPopSize )
 	{
-		CBiteOptParPops :: initBuffers( aParamCount, aPopSize );
+		CBiteOptParPops< ptype > :: initBuffers( aParamCount, aPopSize );
 
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
 		DiffValues = new double[ ParamCount ];
-		NewParams = new double[ ParamCount ];
-		BestParams = new double[ ParamCount ];
+		BestValues = new double[ ParamCount ];
+		NewValues = new double[ ParamCount ];
 	}
 
 	virtual void deleteBuffers()
 	{
-		CBiteOptParPops :: deleteBuffers();
+		CBiteOptParPops< ptype > :: deleteBuffers();
 
 		delete[] MinValues;
 		delete[] MaxValues;
 		delete[] DiffValues;
-		delete[] NewParams;
-		delete[] BestParams;
+		delete[] BestValues;
+		delete[] NewValues;
 	}
 
 	/**
@@ -1199,49 +1449,48 @@ protected:
 	/**
 	 * Function updates values in the DiffValues array, based on values in the
 	 * MinValues and MaxValues arrays.
+	 *
+	 * @param IsInt Apply IntMantMult divisor.
 	 */
 
-	void updateDiffValues()
+	void updateDiffValues( const bool IsInt )
 	{
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		if( IsInt )
 		{
-			DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
+			for( i = 0; i < ParamCount; i++ )
+			{
+				DiffValues[ i ] = ( MaxValues[ i ] - MinValues[ i ]) /
+					IntMantMult;
+			}
+		}
+		else
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
+			}
 		}
 	}
 
 	/**
-	 * Function updates BestCost and BestParams values, if the specified
+	 * Function updates BestCost value and BestValues array, if the specified
 	 * NewCost is better.
 	 *
 	 * @param NewCost New solution's cost.
-	 * @param UpdParams New solution's values.
-	 * @param IsNormalized "True" if values are normalized, and should be
-	 * converted with the getRealValue() function.
+	 * @param UpdValues New solution's values. The values should be in the
+	 * "real" value range.
 	 */
 
-	void updateBestCost( const double NewCost, const double* const UpdParams,
-		const bool IsNormalized = false )
+	void updateBestCost( const double NewCost, const double* const UpdValues )
 	{
 		if( NewCost <= BestCost )
 		{
 			BestCost = NewCost;
 
-			if( IsNormalized )
-			{
-				int i;
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					BestParams[ i ] = getRealValue( UpdParams, i );
-				}
-			}
-			else
-			{
-				memcpy( BestParams, UpdParams,
-					ParamCount * sizeof( BestParams[ 0 ]));
-			}
+			memcpy( BestValues, UpdValues,
+				ParamCount * sizeof( BestValues[ 0 ]));
 		}
 	}
 
@@ -1253,7 +1502,7 @@ protected:
 	 * @param i Parameter index.
 	 */
 
-	double getRealValue( const double* const NormParams, const int i ) const
+	double getRealValue( const ptype* const NormParams, const int i ) const
 	{
 		return( MinValues[ i ] + DiffValues[ i ] * NormParams[ i ]);
 	}
@@ -1288,6 +1537,42 @@ protected:
 			}
 
 			return( rnd.getRndValue() );
+		}
+
+		return( v );
+	}
+
+	/**
+	 * Function wraps the specified parameter value so that it stays in the
+	 * [0.0; 1.0] range (integer), by wrapping it over the boundaries using
+	 * random operator. This operation improves convergence in comparison to
+	 * clamping.
+	 *
+	 * @param v Parameter value to wrap.
+	 * @return Wrapped parameter value.
+	 */
+
+	static ptype wrapParamInt( CBiteRnd& rnd, const ptype v )
+	{
+		if( v < 0 )
+		{
+			if( v > IntMantMultM )
+			{
+				return( (ptype) ( rnd.getRndValue() * -v ));
+			}
+
+			return( (ptype) ( rnd.getUniformRaw2() & IntMantMask ));
+		}
+
+		if( v > IntMantMult )
+		{
+			if( v < IntMantMult2 )
+			{
+				return( (ptype) ( IntMantMult -
+					rnd.getRndValue() * ( v - IntMantMult )));
+			}
+
+			return( (ptype) ( rnd.getUniformRaw2() & IntMantMask ));
 		}
 
 		return( v );
@@ -1444,6 +1729,29 @@ protected:
 		} while(( q > 0.27846 ) || ( v * v > -4.0 * log( u ) * u * u ));
 
 		return( v / u );
+	}
+
+	/**
+	 * Function generates a Gaussian-distributed pseudo-random number, in
+	 * integer scale, with the specified mean and std.dev.
+	 *
+	 * @param rnd Uniform PRNG.
+	 * @param sd Standard deviation multiplier.
+	 * @param meanInt Mean value, in integer scale.
+	 */
+
+	static ptype getGaussianInt( CBiteRnd& rnd, const double sd,
+		const ptype meanInt )
+	{
+		while( true )
+		{
+			const double r = getGaussian( rnd ) * sd;
+
+			if( r > -8.0 && r < 8.0 )
+			{
+				return( (ptype) ( r * IntMantMult + meanInt ));
+			}
+		}
 	}
 };
 

@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.10
+ * @version 2021.13
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -42,7 +42,7 @@
  * Description is available at https://github.com/avaneev/biteopt
  */
 
-class CSMAESOpt : public CBiteOptBase
+class CSMAESOpt : public CBiteOptBase< double >
 {
 public:
 	/**
@@ -89,6 +89,7 @@ public:
 
 		curpi = 0;
 		cure = 0;
+		curem = (int) ceil( CurPopSize * EvalFac );
 
 		// Provide initial centroid and sigma (PopParams is used here
 		// temporarily, otherwise initially undefined).
@@ -105,7 +106,6 @@ public:
 
 				const double d = MaxValues[ i ] - MinValues[ i ];
 				PopParams[ 1 ][ i ] = fabs( d ) * sd;
-				DiffValues[ i ] = 1.0 / d;
 			}
 		}
 		else
@@ -115,7 +115,6 @@ public:
 				PopParams[ 0 ][ i ] = InitParams[ i ];
 				const double d = MaxValues[ i ] - MinValues[ i ];
 				PopParams[ 1 ][ i ] = fabs( d ) * sd;
-				DiffValues[ i ] = 1.0 / d;
 			}
 		}
 
@@ -178,16 +177,15 @@ public:
 	 * @param rnd Random number generator.
 	 * @param OutCost If not NULL, pointer to variable that receives cost
 	 * of the newly-evaluated solution.
-	 * @param OutParams If not NULL, pointer to array that receives
-	 * newly-evaluated parameter vector, in normalized scale.
+	 * @param OutValues If not NULL, pointer to array that receives a
+	 * newly-evaluated parameter vector, in real scale, in real value bounds.
 	 * @return The number of non-improving iterations so far.
 	 */
 
 	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
-		double* const OutParams = NULL )
+		double* const OutValues = NULL )
 	{
 		double* const Params = PopParams[ curpi ];
-		int i;
 
 		sample( rnd, Params );
 
@@ -198,13 +196,9 @@ public:
 			*OutCost = NewCost;
 		}
 
-		if( OutParams != NULL )
+		if( OutValues != NULL )
 		{
-			for( i = 0; i < ParamCount; i++ )
-			{
-				OutParams[ i ] = ( Params[ i ] - MinValues[ i ]) *
-					DiffValues[ i ];
-			}
+			memcpy( OutValues, Params, ParamCount * sizeof( OutValues[ 0 ]));
 		}
 
 		updateBestCost( NewCost, Params );
@@ -216,7 +210,7 @@ public:
 		}
 		else
 		{
-			if( NewCost <= PopCosts[ CurPopSize1 ])
+			if( isAcceptedCost( NewCost ))
 			{
 				memcpy( PopParams[ CurPopSize1 ], Params,
 					ParamCount * sizeof( PopParams[ 0 ][ 0 ]));
@@ -228,7 +222,7 @@ public:
 		AvgCost += NewCost;
 		cure++;
 
-		if( cure >= CurPopSize * EvalFac )
+		if( cure >= curem )
 		{
 			AvgCost /= cure;
 
@@ -259,8 +253,9 @@ protected:
 	int curpi; ///< Current parameter index.
 		///<
 	int cure; ///< Current evaluation index, greater or equal to
-		///< CurPopSize * EvalFac if population distribution needs to be
-		///< updated.
+		///< "curem" if population distribution needs to be updated.
+		///<
+	int curem; ///< "cure" value threshold.
 		///<
 
 	/**

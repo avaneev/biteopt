@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.12
+ * @version 2021.13
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -41,7 +41,7 @@
  * Description is available at https://github.com/avaneev/biteopt
  */
 
-class CSpherOpt : public CBiteOptBase
+class CSpherOpt : public CBiteOptBase< double >
 {
 public:
 	double Jitter; ///< Solution sampling random jitter, improves convergence
@@ -49,10 +49,54 @@ public:
 		///<
 
 	CSpherOpt()
-		: WPopCent( NULL )
+		: HistCount( 0 )
+		, WPopCent( NULL )
 		, WPopRad( NULL )
 	{
 		Jitter = 2.5;
+
+		addHist( CentPowHist );
+		addHist( RadPowHist );
+		addHist( EvalFacHist );
+		addHist( PopChangeHist );
+	}
+
+	static const int MaxHistCount = 8; ///< The maximal number of histograms
+		///< that can be added (for static arrays).
+		///<
+
+	/**
+	 * Function returns a pointer to an array of histograms in use.
+	 */
+
+	CBiteOptHistBase** getHists()
+	{
+		return( Hists );
+	}
+
+	/**
+	 * Function returns a pointer to an array of histogram names.
+	 */
+
+	static const char** getHistNames()
+	{
+		static const char* HistNames[] = {
+			"CentPowHist",
+			"RadPowHist",
+			"EvalFacHist",
+			"PopChangeHist"
+		};
+
+		return( HistNames );
+	}
+
+	/**
+	 * Function returns the number of histograms in use.
+	 */
+
+	int getHistCount() const
+	{
+		return( HistCount );
 	}
 
 	/**
@@ -95,12 +139,13 @@ public:
 		getMaxValues( MaxValues );
 
 		resetCommonVars();
-		updateDiffValues();
+		updateDiffValues( false );
 
 		EvalFac = 2.0;
 		Radius = 0.5 * InitRadius;
 		curpi = 0;
 		cure = 0;
+		curem = (int) ceil( CurPopSize * EvalFac );
 
 		// Provide initial centroid and sigma.
 
@@ -126,10 +171,10 @@ public:
 			DoCentEval = true;
 		}
 
-		CentPowHist.reset( rnd );
-		RadPowHist.reset( rnd );
-		EvalFacHist.reset( rnd );
-		PopChangeHist.reset( rnd );
+		for( i = 0; i < HistCount; i++ )
+		{
+			Hists[ i ] -> reset( rnd );
+		}
 	}
 
 	/**
@@ -139,13 +184,13 @@ public:
 	 * @param rnd Random number generator.
 	 * @param OutCost If not NULL, pointer to variable that receives cost
 	 * of the newly-evaluated solution.
-	 * @param OutParams If not NULL, pointer to array that receives
-	 * newly-evaluated parameter vector, in normalized scale.
+	 * @param OutValues If not NULL, pointer to array that receives a
+	 * newly-evaluated parameter vector, in real scale, in real value bounds.
 	 * @return The number of non-improving iterations so far.
 	 */
 
 	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
-		double* const OutParams = NULL )
+		double* const OutValues = NULL )
 	{
 		double* const Params = PopParams[ curpi ];
 		int i;
@@ -157,7 +202,7 @@ public:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				Params[ i ] = CentParams[ i ];
-				NewParams[ i ] = getRealValue( CentParams, i );
+				NewValues[ i ] = getRealValue( CentParams, i );
 			}
 		}
 		else
@@ -179,7 +224,7 @@ public:
 					Params[ i ] = wrapParam( rnd,
 						CentParams[ i ] + Params[ i ] * d );
 
-					NewParams[ i ] = getRealValue( Params, i );
+					NewValues[ i ] = getRealValue( Params, i );
 				}
 			}
 			else
@@ -191,24 +236,25 @@ public:
 					Params[ i ] = wrapParam( rnd,
 						CentParams[ i ] + Params[ i ] * d * m );
 
-					NewParams[ i ] = getRealValue( Params, i );
+					NewValues[ i ] = getRealValue( Params, i );
 				}
 			}
 		}
 
-		const double NewCost = optcost( NewParams );
+		const double NewCost = optcost( NewValues );
 
 		if( OutCost != NULL )
 		{
 			*OutCost = NewCost;
 		}
 
-		if( OutParams != NULL )
+		if( OutValues != NULL )
 		{
-			memcpy( OutParams, Params, ParamCount * sizeof( OutParams[ 0 ]));
+			memcpy( OutValues, NewValues,
+				ParamCount * sizeof( OutValues[ 0 ]));
 		}
 
-		updateBestCost( NewCost, NewParams );
+		updateBestCost( NewCost, NewValues );
 
 		if( curpi < CurPopSize )
 		{
@@ -217,7 +263,7 @@ public:
 		}
 		else
 		{
-			if( NewCost <= PopCosts[ CurPopSize1 ])
+			if( isAcceptedCost( NewCost ))
 			{
 				memcpy( PopParams[ CurPopSize1 ], Params,
 					ParamCount * sizeof( PopParams[ 0 ][ 0 ]));
@@ -229,7 +275,7 @@ public:
 		AvgCost += NewCost;
 		cure++;
 
-		if( cure >= CurPopSize * EvalFac )
+		if( cure > curem )
 		{
 			bool DoPopIncr;
 			AvgCost /= cure;
@@ -288,6 +334,11 @@ public:
 	}
 
 protected:
+	CBiteOptHistBase* Hists[ MaxHistCount ]; ///< Pointers to histogram
+		///< objects, for indexed access in some cases.
+		///<
+	int HistCount; ///< The number of histograms in use.
+		///<
 	double* WPopCent; ///< Weighting coefficients for centroid.
 		///<
 	double* WPopRad; ///< Weighting coefficients for radius.
@@ -305,6 +356,8 @@ protected:
 		///<
 	int cure; ///< Current evaluation index.
 		///<
+	int curem; ///< "cure" value threshold.
+		///<
 	bool DoCentEval; ///< "True" if an initial objective function evaluation
 		///< at centroid point is required.
 		///<
@@ -320,7 +373,7 @@ protected:
 
 	virtual void initBuffers( const int aParamCount, const int aPopSize )
 	{
-		CBiteOptBase :: initBuffers( aParamCount, aPopSize );
+		CBiteOptBase< double > :: initBuffers( aParamCount, aPopSize );
 
 		WPopCent = new double[ aPopSize ];
 		WPopRad = new double[ aPopSize ];
@@ -328,10 +381,22 @@ protected:
 
 	virtual void deleteBuffers()
 	{
-		CBiteOptBase :: deleteBuffers();
+		CBiteOptBase< double > :: deleteBuffers();
 
 		delete[] WPopCent;
 		delete[] WPopRad;
+	}
+
+	/**
+	 * Function adds a histogram to the Hists list.
+	 *
+	 * @param h Histogram object to add.
+	 */
+
+	void addHist( CBiteOptHistBase& h )
+	{
+		Hists[ HistCount ] = &h;
+		HistCount++;
 	}
 
 	/**
@@ -344,19 +409,22 @@ protected:
 	{
 		static const double WCent[ 4 ] = { 4.5, 6.0, 7.5, 10.0 };
 		static const double WRad[ 4 ] = { 14.0, 16.0, 18.0, 20.0 };
-		static const double EvalFacs[ 3 ] = { 2.0, 1.9, 1.8 };
+		static const double EvalFacs[ 3 ] = { 2.1, 2.0, 1.9 };
 
 		const double CentFac = WCent[ CentPowHist.select( rnd )];
 		const double RadFac = WRad[ RadPowHist.select( rnd )];
 		EvalFac = EvalFacs[ EvalFacHist.select( rnd )];
 
+		curem = (int) ceil( CurPopSize * EvalFac );
+
+		const double lm = 1.0 / curem;
 		double s1 = 0.0;
 		double s2 = 0.0;
 		int i;
 
 		for( i = 0; i < CurPopSize; i++ )
 		{
-			const double l = 1.0 - i / ( CurPopSize * EvalFac );
+			const double l = 1.0 - i * lm;
 
 			const double v1 = pow( l, CentFac );
 			WPopCent[ i ] = v1;

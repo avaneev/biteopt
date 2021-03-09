@@ -41,7 +41,7 @@
  * weighting to population.
  */
 
-class CBiteOptOrt : virtual public CBiteOptPop
+class CBiteOptOrt : virtual public CBiteOptPop< double >
 {
 private:
 	CBiteOptOrt( const CBiteOptOrt& )
@@ -121,19 +121,22 @@ public:
 	{
 		// Calculate weights for centroid and covariance calculation.
 
+		const double lm = 1.0 / (int) ceil( UsePopSize * EvalFac );
 		double s = 0.0;
 		int i;
 
 		for( i = 0; i < UsePopSize; i++ )
 		{
-			const double l = 1.0 - (double) i / ( UsePopSize * EvalFac );
+			const double l = 1.0 - i * lm;
 			WPopCent[ i ] = pow( l, CentPow );
 			s += WPopCent[ i ];
 		}
 
+		s = 1.0 / s;
+
 		for( i = 0; i < UsePopSize; i++ )
 		{
-			WPopCent[ i ] /= s;
+			WPopCent[ i ] *= s;
 			WPopCov[ i ] = sqrt( WPopCent[ i ]);
 		}
 	}
@@ -440,8 +443,6 @@ protected:
 	double* WPopCov; ///< Weighting coefficients for covariance calculation,
 		///< squared.
 		///<
-	double* TmpParams; ///< Temporary parameter vector.
-		///<
 	double EvalFac; ///< Function evaluations factor.
 		///<
 	double spc; ///< Distribution's sphericity coefficient. 1 - fully
@@ -460,7 +461,6 @@ protected:
 		PrevCentParams = new double[ aParamCount ];
 		WPopCent = new double[ aPopSize ];
 		WPopCov = new double[ aPopSize ];
-		TmpParams = PopParams[ aPopSize ];
 
 		int i;
 

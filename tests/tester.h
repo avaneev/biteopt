@@ -9,7 +9,7 @@
 //#include "../other/nmpopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CSpherOpt//CCMAESOpt//CNelderMeadPlusOpt//CSMAESOpt//CBiteOptDeep//
+#define OPT_CLASS CBiteOpt//CSMAESOpt//CSpherOpt//CCMAESOpt//CNelderMeadPlusOpt//CBiteOptDeep//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
 //#define OPT_PLATEAU_MUL 64 // Comment out to disable plateau check.
 //#define EVALBINS 1
@@ -363,7 +363,7 @@ public:
 			const int sc = optimize( rnd );
 
 			#if OPT_STATS
-				const CBiteOptHistBase** const h = getHists();
+				CBiteOptHistBase** const h = getHists();
 
 				for( k = 0; k < getHistCount(); k++ )
 				{
@@ -791,7 +791,7 @@ public:
 			#endif // defined( OPT_PERF )
 
 			#if OPT_STATS
-			const CBiteOptHistBase** const h = opt -> getHists();
+			CBiteOptHistBase** const h = opt -> getHists();
 			const char** const hnames = opt -> getHistNames();
 
 			printf( "\nmin\tmax\tbias\tcount\t"
