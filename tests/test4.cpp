@@ -5,7 +5,7 @@
 // RI - std.dev of the number of iterations in successful attempts.
 // At - average required number of attempts to converge.
 // C - minimal objective function value detected in all successful attempts.
-// RjC - minimal objective function value detected in all rejected attempts.
+// RjC - average objective function value detected in all rejected attempts.
 // PowerSum_10 - the name of the test function and dimensionality.
 
 #include "tester.h"

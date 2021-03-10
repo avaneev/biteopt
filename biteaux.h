@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.13
+ * @version 2021.14
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -283,9 +283,6 @@ protected:
  * variable, the choice should be "unselected" if choice did not realise.
  *
  * @tparam Count The number of possible choices, greater than 1.
- * @tparam IncrDecr Histogram increment (on success) or decrement
- * (on failure). Usually equals to 1, but a higher value can be used if a
- * steep momentary probability change of a certain choice is effective.
  */
 
 template< int Count >
@@ -468,8 +465,12 @@ class CBiteOptHistBinary : virtual public CBiteOptHistBase
 public:
 	virtual void reset( CBiteRnd& rnd )
 	{
-		const int b = rnd.getBit();
+		int b = rnd.getBit();
+		IncrDecrHist[ 1 ] = b;
+		IncrDecrHist[ 2 ] = 1 - b;
+		IncrDecr = 2 - b;
 
+		b = rnd.getBit();
 		Hist[ 0 ] = b;
 		Hist[ 1 ] = 1 - b;
 		Sel = 1 - b;
@@ -486,7 +487,10 @@ public:
 
 	virtual void incr()
 	{
-		Hist[ Sel ]++;
+		IncrDecrHist[ IncrDecr ]++;
+		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
+
+		Hist[ Sel ] += IncrDecr;
 	}
 
 	/**
@@ -495,7 +499,10 @@ public:
 
 	virtual void decr()
 	{
-		Hist[ Sel ]--;
+		IncrDecrHist[ IncrDecr ]--;
+		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
+
+		Hist[ Sel ] -= IncrDecr;
 	}
 
 	/**
@@ -523,6 +530,12 @@ public:
 
 protected:
 	int Hist[ 2 ]; ///< Histogram.
+		///<
+	int IncrDecrHist[ 3 ]; ///< IncrDecr self-optimization histogram, element
+		///< 0 not used for efficiency.
+		///<
+	int IncrDecr; ///< Histogram-driven increment or decrement, can be equal
+		///< to 1 or 2.
 		///<
 };
 

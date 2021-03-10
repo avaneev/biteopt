@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.13
+ * @version 2021.14
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -57,35 +57,29 @@ public:
 	{
 		setParPopCount( 4 );
 
+		addHist( ParPopPHist );
 		addHist( ParPopHist[ 0 ]);
 		addHist( ParPopHist[ 1 ]);
 		addHist( ParPopHist[ 2 ]);
-		addHist( ParPopPHist[ 0 ]);
-		addHist( ParPopPHist[ 1 ]);
-		addHist( ParPopPHist[ 2 ]);
 		addHist( PopChangeHist );
 		addHist( ParPopUpdHist );
 		addHist( ScutHist );
 		addHist( MethodHist );
 		addHist( DrawHist );
-		addHist( M2Hist );
-		addHist( M3Hist );
-		addHist( M3BHist );
-		addHist( MinSolPHist[ 0 ]);
-		addHist( MinSolPHist[ 1 ]);
-		addHist( MinSolPHist[ 2 ]);
-		addHist( MinSolPHist[ 3 ]);
-		addHist( MinSolPHist[ 4 ]);
-		addHist( MinSolHist[ 0 ]);
-		addHist( MinSolHist[ 1 ]);
-		addHist( MinSolHist[ 2 ]);
-		addHist( MinSolHist[ 3 ]);
-		addHist( MinSolHist[ 4 ]);
+		addHist( M1Hist );
+		addHist( M1SHist[ 0 ]);
+		addHist( M1SHist[ 1 ]);
+		addHist( MinSolPwrHist[ 0 ]);
+		addHist( MinSolPwrHist[ 1 ]);
+		addHist( MinSolPwrHist[ 2 ]);
+		addHist( MinSolMulHist[ 0 ]);
+		addHist( MinSolMulHist[ 1 ]);
+		addHist( MinSolMulHist[ 2 ]);
 		addHist( Gen1AllpHist );
-		addHist( Gen1CentHist );
-		addHist( Gen1CentAsyncHist );
-		addHist( Gen1SpanHist[ 0 ]);
-		addHist( Gen1SpanHist[ 1 ]);
+		addHist( Gen1MoveHist );
+		addHist( Gen1MoveAsyncHist );
+		addHist( Gen1MoveDEHist );
+		addHist( Gen1MoveSpanHist );
 		addHist( Gen4RedFacHist );
 		addHist( Gen4MixFacHist );
 		addHist( Gen5BinvHist );
@@ -115,35 +109,29 @@ public:
 	static const char** getHistNames()
 	{
 		static const char* HistNames[] = {
+			"ParPopPHist",
 			"ParPopHist[ 0 ]",
 			"ParPopHist[ 1 ]",
 			"ParPopHist[ 2 ]",
-			"ParPopPHist[ 0 ]",
-			"ParPopPHist[ 1 ]",
-			"ParPopPHist[ 2 ]",
 			"PopChangeHist",
 			"ParPopUpdHist",
 			"ScutHist",
 			"MethodHist",
 			"DrawHist",
-			"M2Hist",
-			"M3Hist",
-			"M3BHist",
-			"MinSolPHist[ 0 ]",
-			"MinSolPHist[ 1 ]",
-			"MinSolPHist[ 2 ]",
-			"MinSolPHist[ 3 ]",
-			"MinSolPHist[ 4 ]",
-			"MinSolHist[ 0 ]",
-			"MinSolHist[ 1 ]",
-			"MinSolHist[ 2 ]",
-			"MinSolHist[ 3 ]",
-			"MinSolHist[ 4 ]",
+			"M1Hist",
+			"M1SHist[ 0 ]",
+			"M1SHist[ 1 ]",
+			"MinSolPwrHist[ 0 ]",
+			"MinSolPwrHist[ 1 ]",
+			"MinSolPwrHist[ 2 ]",
+			"MinSolMulHist[ 0 ]",
+			"MinSolMulHist[ 1 ]",
+			"MinSolMulHist[ 2 ]",
 			"Gen1AllpHist",
-			"Gen1CentHist",
-			"Gen1CentAsyncHist",
-			"Gen1SpanHist[ 0 ]",
-			"Gen1SpanHist[ 1 ]",
+			"Gen1MoveHist",
+			"Gen1MoveAsyncHist",
+			"Gen1MoveDEHist",
+			"Gen1MoveSpanHist",
 			"Gen4RedFacHist",
 			"Gen4MixFacHist",
 			"Gen5BinvHist",
@@ -178,7 +166,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			15 + aParamCount * 4 );
+			13 + aParamCount * 4 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -186,8 +174,6 @@ public:
 		}
 
 		initBuffers( aParamCount, aPopSize );
-
-		Params = TmpParams;
 
 		ParOpt.Owner = this;
 		ParOpt.updateDims( aParamCount );
@@ -365,7 +351,7 @@ public:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = (ptype) (( v - MinValues[ i ]) /
+				TmpParams[ i ] = (ptype) (( v - MinValues[ i ]) /
 					DiffValues[ i ]);
 			}
 		}
@@ -380,58 +366,60 @@ public:
 			else
 			if( SelDraw == 1 )
 			{
-				SelMethod = selectRandom( MethodHist, rnd );
+				SelMethod = select( MethodHist, rnd );
 			}
 			else
 			{
-				SelMethod = select( MethodHist, rnd );
+				SelMethod = selectRandom( MethodHist, rnd );
 			}
 
 			if( SelMethod == 0 )
+			{
+				generateSol2( rnd );
+			}
+			else
+			if( SelMethod == 1 )
+			{
+				if( select( M1Hist, rnd ))
+				{
+					if( select( M1SHist[ 0 ], rnd ))
+					{
+						generateSol3( rnd );
+					}
+					else
+					{
+						generateSol2b( rnd );
+					}
+				}
+				else
+				{
+					if( select( M1SHist[ 1 ], rnd ))
+					{
+						generateSol4( rnd );
+					}
+					else
+					{
+						generateSol5( rnd );
+					}
+				}
+			}
+			else
+			if( SelMethod == 2 )
+			{
+				generateSol1( rnd );
+			}
+			else
 			{
 				ParOpt.optimize( rnd, &NewCost, NewValues );
 				DoEval = false;
 
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] = (ptype) (( NewValues[ i ] -
+					TmpParams[ i ] = (ptype) (( NewValues[ i ] -
 						MinValues[ i ]) / DiffValues[ i ]);
 				}
 
 				updateBestCost( NewCost, NewValues );
-			}
-			else
-			if( SelMethod == 1 )
-			{
-				generateSol1( rnd );
-			}
-			else
-			if( SelMethod == 2 )
-			{
-				if( select( M2Hist, rnd ))
-				{
-					generateSol2( rnd );
-				}
-				else
-				{
-					generateSol2b( rnd );
-				}
-			}
-			else
-			{
-				if( select( M3Hist, rnd ))
-				{
-					generateSol3( rnd );
-				}
-				else
-				if( select( M3BHist, rnd ))
-				{
-					generateSol4( rnd );
-				}
-				else
-				{
-					generateSol5( rnd );
-				}
 			}
 		}
 
@@ -443,8 +431,8 @@ public:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = wrapParamInt( rnd, Params[ i ]);
-				NewValues[ i ] = getRealValue( Params, i );
+				TmpParams[ i ] = wrapParamInt( rnd, TmpParams[ i ]);
+				NewValues[ i ] = getRealValue( TmpParams, i );
 			}
 
 			NewCost = optcost( NewValues );
@@ -458,7 +446,10 @@ public:
 
 			applyHistsDecr();
 
-			PrevSelMethod = MethodHist.selectRandom( rnd );
+			if( SelMethod >= 0 )
+			{
+				PrevSelMethod = MethodHist.selectRandom( rnd );
+			}
 
 			StallCount++;
 
@@ -493,13 +484,13 @@ public:
 				StallCount = 0;
 			}
 
-			updatePop( NewCost, Params, false, false );
+			updatePop( NewCost, TmpParams, false, false );
 
 			if( PushOpt != NULL && PushOpt != this &&
 				!PushOpt -> DoInitEvals )
 			{
-				PushOpt -> updatePop( NewCost, Params, false, true );
-				PushOpt -> updateParPop( NewCost, Params );
+				PushOpt -> updatePop( NewCost, TmpParams, false, true );
+				PushOpt -> updateParPop( NewCost, TmpParams );
 			}
 
 			if( CurPopSize > PopSize / 3 )
@@ -517,7 +508,7 @@ public:
 
 		if( select( ParPopUpdHist, rnd ))
 		{
-			updateParPop( NewCost, Params );
+			updateParPop( NewCost, TmpParams );
 		}
 
 		CentUpdateCtr++;
@@ -553,14 +544,12 @@ protected:
 		///< for higher dimensions as the "all parameter" randomization is
 		///< ineffective in the higher dimensions.
 		///<
-	ptype* Params; ///< Temporary parameter buffer.
+	CBiteOptHist< 2 > ParPopPHist; ///< Parallel population use probability
+		///< histogram.
 		///<
 	CBiteOptHist< 4 > ParPopHist[ 3 ]; ///< Parallel population
 		///< histograms for solution generators (template's Count parameter
 		///< should match ParPopCount).
-		///<
-	CBiteOptHist< 2 > ParPopPHist[ 3 ]; ///< Parallel population use
-		///< probability histograms for solution generators.
 		///<
 	CBiteOptHist< 2 > PopChangeHist; ///< Population size change
 		///< histogram.
@@ -575,28 +564,29 @@ protected:
 		///<
 	CBiteOptHist< 3 > DrawHist; ///< Method draw histogram.
 		///<
-	CBiteOptHistBinary M2Hist; ///< Method 2's sub-method histogram.
+	CBiteOptHist< 2 > M1Hist; ///< Method 1's sub-method histogram.
 		///<
-	CBiteOptHist< 2 > M3Hist; ///< Method 3's sub-method histogram.
+	CBiteOptHist< 2 > M1SHist[ 2 ]; ///< Method 1's sub-sub-method histograms.
 		///<
-	CBiteOptHist< 2 > M3BHist; ///< Method 3's sub-sub-method histogram.
+	CBiteOptHist< 4 > MinSolPwrHist[ 3 ]; ///< Index of least-cost
+		///< population, power factor.
 		///<
-	CBiteOptHist< 4 > MinSolPHist[ 5 ]; ///< Index of least-cost
-		///< population size power factor.
-		///<
-	CBiteOptHist< 4 > MinSolHist[ 5 ]; ///< Index of least-cost
-		///< population size.
+	CBiteOptHist< 4 > MinSolMulHist[ 3 ]; ///< Index of least-cost
+		///< population, multiplier.
 		///<
 	CBiteOptHistBinary Gen1AllpHist; ///< Generator method 1's Allp
 		///< histogram.
 		///<
-	CBiteOptHistBinary Gen1CentHist; ///< Generator method 1's Cent
+	CBiteOptHistBinary Gen1MoveHist; ///< Generator method 1's Move
+		///< histogram.
+		////<
+	CBiteOptHist< 2 > Gen1MoveAsyncHist; ///< Generator method 1's Move
+		///< async histogram.
+		///<
+	CBiteOptHist< 2 > Gen1MoveDEHist; ///< Generator method 1's Move DE
 		///< histogram.
 		///<
-	CBiteOptHistBinary Gen1CentAsyncHist; ///< Generator method 1's Async
-		///< histogram.
-		///<
-	CBiteOptHist< 4 > Gen1SpanHist[ 2 ]; ///< Generator method 1's Cent
+	CBiteOptHist< 4 > Gen1MoveSpanHist; ///< Generator method 1's Move span
 		///< histogram.
 		///<
 	CBiteOptHist< 3 > Gen4RedFacHist; ///< Generator method 4's RedFac
@@ -686,7 +676,7 @@ protected:
 
 	CBiteOptPop& selectParPop( const int gi, CBiteRnd& rnd )
 	{
-		if( select( ParPopPHist[ gi ], rnd ))
+		if( select( ParPopPHist, rnd ))
 		{
 			return( *ParPops[ select( ParPopHist[ gi ], rnd )]);
 		}
@@ -707,11 +697,11 @@ protected:
 	{
 		static const double pp[ 4 ] = { 0.05, 0.125, 0.25, 0.5 };
 		const double r = ps * pow( rnd.getRndValue(),
-			ps * pp[ select( MinSolPHist[ gi ], rnd )]);
+			ps * pp[ select( MinSolPwrHist[ gi ], rnd )]);
 
 		static const double rm[ 4 ] = { 0.0, 0.125, 0.25, 0.5 };
 
-		return( (int) ( r * rm[ select( MinSolHist[ gi ], rnd )]));
+		return( (int) ( r * rm[ select( MinSolMulHist[ gi ], rnd )]));
 	}
 
 	/**
@@ -722,6 +712,8 @@ protected:
 
 	void generateSol1( CBiteRnd& rnd )
 	{
+		ptype* const Params = TmpParams;
+
 		const CBiteOptPop& ParPop = selectParPop( 0, rnd );
 
 		memcpy( Params, ParPop.getParamsOrdered(
@@ -777,41 +769,44 @@ protected:
 				( rp1[ i ] ^ imask2 )) >> 1;
 		}
 
-		if( select( Gen1CentHist, rnd ))
+		if( select( Gen1MoveHist, rnd ))
 		{
-			// Random move around random previous solution vector.
-
-			static const double SpanMults[ 4 ] = {
-				0.5 * CBiteRnd :: getRawScaleInv(),
-				1.5 * CBiteRnd :: getRawScaleInv(),
-				2.0 * CBiteRnd :: getRawScaleInv(),
-				2.5 * CBiteRnd :: getRawScaleInv()
-			};
-
-			const double r2 = rnd.getRndValue();
-			const int si2 = (int) ( r2 * r2 * CurPopSize );
+			const double r3 = rnd.getRndValue();
+			const int si2 = (int) ( r3 * r3 * CurPopSize );
 			const ptype* const rp2 = getParamsOrdered( si2 );
 
-			double m1 = rnd.getTPDFRaw();
-			double m2 = rnd.getTPDFRaw();
-
-			if( select( Gen1CentAsyncHist, rnd ))
+			if( select( Gen1MoveDEHist, rnd ))
 			{
-				const double m = SpanMults[ select( Gen1SpanHist[ 0 ], rnd )];
-				m1 *= m;
-				m2 *= m;
+				// Apply a DE-based move.
+
+				const ptype* const rp3 = getParamsOrdered(
+					CurPopSize1 - si2 );
 
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] -= (ptype) (( Params[ i ] - rp2[ i ]) * m1 );
-					Params[ i ] -= (ptype) (( Params[ i ] - rp2[ i ]) * m2 );
+					Params[ i ] -= (( rp3[ i ] - rp2[ i ]) >> 1 );
 				}
 			}
 			else
 			{
-				const double m = SpanMults[ select( Gen1SpanHist[ 1 ], rnd )];
-				m1 *= m;
-				m2 *= m;
+				if( select( Gen1MoveAsyncHist, rnd ))
+				{
+					a = 0;
+					b = ParamCount - 1;
+				}
+
+				// Random move around random previous solution vector.
+
+				static const double SpanMults[ 4 ] = {
+					0.5 * CBiteRnd :: getRawScaleInv(),
+					1.5 * CBiteRnd :: getRawScaleInv(),
+					2.0 * CBiteRnd :: getRawScaleInv(),
+					2.5 * CBiteRnd :: getRawScaleInv()
+				};
+
+				const double m = SpanMults[ select( Gen1MoveSpanHist, rnd )];
+				const double m1 = rnd.getTPDFRaw() * m;
+				const double m2 = rnd.getTPDFRaw() * m;
 
 				for( i = a; i <= b; i++ )
 				{
@@ -828,6 +823,8 @@ protected:
 
 	void generateSol2( CBiteRnd& rnd )
 	{
+		ptype* const Params = TmpParams;
+
 		const int si1 = getMinSolIndex( 1, rnd, CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
 		const ptype* const rp3 = getParamsOrdered( CurPopSize1 - si1 );
@@ -856,15 +853,17 @@ protected:
 	}
 
 	/**
-	 * The alternative "Digital Evolution"-based solution generator.
+	 * An alternative "Digital Evolution"-based solution generator.
 	 */
 
 	void generateSol2b( CBiteRnd& rnd )
 	{
+		ptype* const Params = TmpParams;
+
 		// Select worst and a random previous solution from the ordered list,
 		// apply offsets to reduce sensitivity to noise.
 
-		const int si1 = getMinSolIndex( 2, rnd, CurPopSize );
+		const int si1 = getMinSolIndex( 1, rnd, CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
 
 		const double r2 = rnd.getRndValue();
@@ -896,13 +895,15 @@ protected:
 
 	void generateSol3( CBiteRnd& rnd )
 	{
+		ptype* const Params = TmpParams;
+
 		if( NeedCentUpdate )
 		{
 			updateCentroid();
 		}
 
 		const ptype* const MinParams = getParamsOrdered(
-			getMinSolIndex( 4, rnd, CurPopSize ));
+			getMinSolIndex( 2, rnd, CurPopSize ));
 
 		const ptype* const cp = getCentroid();
 
@@ -930,9 +931,11 @@ protected:
 
 	void generateSol4( CBiteRnd& rnd )
 	{
+		ptype* const Params = TmpParams;
+
 		CBiteOptPop& ParPop = selectParPop( 1, rnd );
 
-		static const double RedFacs[ 3 ] = { 0.5, 1.0, 1.5 };
+		static const double RedFacs[ 3 ] = { 0.75, 1.0, 1.5 };
 
 		int UseSize;
 		const ptype** const UseParams = ParPop.getSparsePopParams(
@@ -973,6 +976,8 @@ protected:
 
 	void generateSol5( CBiteRnd& rnd )
 	{
+		ptype* const Params = TmpParams;
+
 		const CBiteOptPop& ParPop = selectParPop( 2, rnd );
 
 		const double r1 = rnd.getRndValue();
@@ -993,12 +998,7 @@ protected:
 			const int64_t crpl = rnd.getUniformRaw2();
 
 			int64_t v1 = CrossParams1[ i ];
-			int64_t v2 = CrossParams2[ i ];
-
-			if( UseInv && rnd.getBit() )
-			{
-				v2 = ~v2;
-			}
+			int64_t v2 = ( UseInv ? ~CrossParams2[ i ] : CrossParams2[ i ]);
 
 			if( rnd.getBit() )
 			{

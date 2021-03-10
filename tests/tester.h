@@ -125,6 +125,8 @@ public:
 		///<
 	double MinRjCost; ///< Minimal cost detected in rejects.
 		///<
+	double SumRjCost; ///< Summary rejects cost.
+		///<
 	int ComplAttempts; ///< The number of completed attempts.
 		///<
 	int SumComplIters; ///< Sum of iterations in completed attempts.
@@ -139,6 +141,7 @@ public:
 	{
 		MinCost = 1e300;
 		MinRjCost = 1e300;
+		SumRjCost = 0.0;
 		ComplAttempts = 0;
 		SumComplIters = 0;
 	}
@@ -406,6 +409,7 @@ public:
 				Iters[ Index ] = i;
 				FuncStats -> ComplAttempts++;
 				FuncStats -> SumComplIters += i;
+				FuncStats -> SumRjCost += PrevCost;
 				SumStats -> ComplAttempts++;
 				SumStats -> SumIters += i;
 				SumStats -> SumImprIters += ImprIters;
@@ -453,6 +457,7 @@ public:
 				}
 
 				Iters[ Index ] = -1;
+				FuncStats -> SumRjCost += PrevCost;
 				SumStats -> SumRjCost += PrevCost;
 
 				break;
@@ -661,9 +666,8 @@ public:
 			const double MinCost = ( FuncStats.ComplAttempts == 0 ?
 				1.0 / FuncStats.ComplAttempts : FuncStats.MinCost );
 
-			const double MinRjCost = ( FuncStats.ComplAttempts == IterCount ?
-				1.0 / ( IterCount - FuncStats.ComplAttempts ) :
-				FuncStats.MinRjCost );
+			const double RjCost = FuncStats.SumRjCost /
+				( IterCount - FuncStats.ComplAttempts );
 
 			double Avg = 0.0;
 			double RMS = 0.0;
@@ -726,11 +730,11 @@ public:
 			if( DoPrint )
 			{
 				printf( "AI:%6.0f RI:%5.0f At:%5.2f C:%13.8f RjC:%7.4f "
-					"%s_%i%c\n", Avg, RMS, At, MinCost, MinRjCost,
+					"%s_%i%c\n", Avg, RMS, At, MinCost, RjCost,
 					opt -> fn -> Name, Dims,
 					( fndata -> DoRandomize ? 'r' : ' ' ));
 //				printf( "C:%20.13f %20.13f %s_%i\n",
-//					MinRjCost, opt -> optv, opt -> fn -> Name, Dims );
+//					RjCost, opt -> optv, opt -> fn -> Name, Dims );
 			}
 
 			if( _kbhit() && _getch() == 27 )
