@@ -17,6 +17,7 @@
 * [Method philosophy](#method-philosophy)
 * [SMA-ES](#sma-es)
 * [SpherOpt](#spheropt)
+* [NMSeqOpt](#nmseqopt)
 
 ## Introduction ##
 
@@ -39,7 +40,8 @@ rogue and cannot be detected), this method in absolute majority of runs will
 return the same optimum.
 
 BITEOPT uses self-optimization techniques making it objective
-function-agnostic.
+function-agnostic. In its inner workings, BITEOPT uses objective function
+value's ranking, not the actual value.
 
 ## Comparison ##
 
@@ -108,7 +110,9 @@ probabilistically lower objective function value.
 Since version 2021.1 BiteOpt uses a companion optimizer - SpherOpt - which
 works independently and provides "reference points" to BiteOpt. This companion
 improves BiteOpt's convergence properties considerably, especially when the
-parameter space is rotated.
+parameter space is rotated. Since version 2021.15 BiteOpt uses an alternative
+companion optimizer - NMSeqOpt - which additionally increases diversity of
+generated solutions.
 
 Since version 2021.3 BiteOpt became a self-optimizing method not requiring any
 fune-tuning from the user nor the author.
@@ -520,3 +524,9 @@ computationally-efficient, but at the same time provides immunity to
 coordinate axis rotations.
 
 This method uses the same self-optimization technique as the BiteOpt method.
+
+## NMSeqOpt ##
+
+`nmsopt.cpp` - CNMSeqOpt class that implements sequential Nelder-Mead simplex
+method with "stall count" tracking. This optimizer is used as an alternative
+parallel optimizer in BiteOpt.

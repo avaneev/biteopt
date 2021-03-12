@@ -6,10 +6,10 @@
 #include "../biteopt.h"
 #include "../spheropt.h"
 #include "../smaesopt.h"
-//#include "../other/nmpopt.h"
+#include "../nmsopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CSMAESOpt//CSpherOpt//CCMAESOpt//CNelderMeadPlusOpt//CBiteOptDeep//
+#define OPT_CLASS CBiteOpt//CSMAESOpt//CNMSeqOpt//CSpherOpt//CCMAESOpt//CBiteOptDeep//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
 //#define OPT_PLATEAU_MUL 64 // Comment out to disable plateau check.
 //#define EVALBINS 1

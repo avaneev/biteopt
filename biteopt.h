@@ -27,13 +27,14 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.14
+ * @version 2021.15
  */
 
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
 #include "spheropt.h"
+#include "nmsopt.h"
 
 /**
  * BiteOpt optimization class. Implements a stochastic non-linear
@@ -53,104 +54,43 @@ public:
 	 */
 
 	CBiteOpt()
-		: HistCount( 0 )
 	{
 		setParPopCount( 4 );
 
-		addHist( ParPopPHist );
-		addHist( ParPopHist[ 0 ]);
-		addHist( ParPopHist[ 1 ]);
-		addHist( ParPopHist[ 2 ]);
-		addHist( PopChangeHist );
-		addHist( ParPopUpdHist );
-		addHist( ScutHist );
-		addHist( MethodHist );
-		addHist( DrawHist );
-		addHist( M1Hist );
-		addHist( M1SHist[ 0 ]);
-		addHist( M1SHist[ 1 ]);
-		addHist( MinSolPwrHist[ 0 ]);
-		addHist( MinSolPwrHist[ 1 ]);
-		addHist( MinSolPwrHist[ 2 ]);
-		addHist( MinSolMulHist[ 0 ]);
-		addHist( MinSolMulHist[ 1 ]);
-		addHist( MinSolMulHist[ 2 ]);
-		addHist( Gen1AllpHist );
-		addHist( Gen1MoveHist );
-		addHist( Gen1MoveAsyncHist );
-		addHist( Gen1MoveDEHist );
-		addHist( Gen1MoveSpanHist );
-		addHist( Gen4RedFacHist );
-		addHist( Gen4MixFacHist );
-		addHist( Gen5BinvHist );
-		addHist( *ParOpt.getHists()[ 0 ]);
-		addHist( *ParOpt.getHists()[ 1 ]);
-		addHist( *ParOpt.getHists()[ 2 ]);
-		addHist( *ParOpt.getHists()[ 3 ]);
-	}
-
-	static const int MaxHistCount = 64; ///< The maximal number of histograms
-		///< that can be added (for static arrays).
-		///<
-
-	/**
-	 * Function returns a pointer to an array of histograms in use.
-	 */
-
-	CBiteOptHistBase** getHists()
-	{
-		return( Hists );
-	}
-
-	/**
-	 * Function returns a pointer to an array of histogram names.
-	 */
-
-	static const char** getHistNames()
-	{
-		static const char* HistNames[] = {
-			"ParPopPHist",
-			"ParPopHist[ 0 ]",
-			"ParPopHist[ 1 ]",
-			"ParPopHist[ 2 ]",
-			"PopChangeHist",
-			"ParPopUpdHist",
-			"ScutHist",
-			"MethodHist",
-			"DrawHist",
-			"M1Hist",
-			"M1SHist[ 0 ]",
-			"M1SHist[ 1 ]",
-			"MinSolPwrHist[ 0 ]",
-			"MinSolPwrHist[ 1 ]",
-			"MinSolPwrHist[ 2 ]",
-			"MinSolMulHist[ 0 ]",
-			"MinSolMulHist[ 1 ]",
-			"MinSolMulHist[ 2 ]",
-			"Gen1AllpHist",
-			"Gen1MoveHist",
-			"Gen1MoveAsyncHist",
-			"Gen1MoveDEHist",
-			"Gen1MoveSpanHist",
-			"Gen4RedFacHist",
-			"Gen4MixFacHist",
-			"Gen5BinvHist",
-			"ParOpt.CentPowHist",
-			"ParOpt.RadPowHist",
-			"ParOpt.EvalFacHist",
-			"ParOpt.PopChangeHist"
-		};
-
-		return( HistNames );
-	}
-
-	/**
-	 * Function returns the number of histograms in use.
-	 */
-
-	int getHistCount() const
-	{
-		return( HistCount );
+		addHist( ParPopPHist, "ParPopPHist" );
+		addHist( ParPopHist[ 0 ], "ParPopHist[ 0 ]" );
+		addHist( ParPopHist[ 1 ], "ParPopHist[ 1 ]" );
+		addHist( ParPopHist[ 2 ], "ParPopHist[ 2 ]" );
+		addHist( AltPopPHist, "AltPopPHist" );
+		addHist( AltPopHist[ 0 ], "AltPopHist[ 0 ]" );
+		addHist( AltPopHist[ 1 ], "AltPopHist[ 1 ]" );
+		addHist( PopChangeHist, "PopChangeHist" );
+		addHist( ParPopUpdHist, "ParPopUpdHist" );
+		addHist( ParOpt2Hist, "ParOpt2Hist" );
+		addHist( ScutHist, "ScutHist" );
+		addHist( MethodHist, "MethodHist" );
+		addHist( DrawHist, "DrawHist" );
+		addHist( M1Hist, "M1Hist" );
+		addHist( M1SHist[ 0 ], "M1SHist[ 0 ]" );
+		addHist( M1SHist[ 1 ], "M1SHist[ 1 ]" );
+		addHist( MinSolPwrHist[ 0 ], "MinSolPwrHist[ 0 ]" );
+		addHist( MinSolPwrHist[ 1 ], "MinSolPwrHist[ 1 ]" );
+		addHist( MinSolPwrHist[ 2 ], "MinSolPwrHist[ 2 ]" );
+		addHist( MinSolMulHist[ 0 ], "MinSolMulHist[ 0 ]" );
+		addHist( MinSolMulHist[ 1 ], "MinSolMulHist[ 1 ]" );
+		addHist( MinSolMulHist[ 2 ], "MinSolMulHist[ 2 ]" );
+		addHist( Gen1AllpHist, "Gen1AllpHist" );
+		addHist( Gen1MoveHist, "Gen1MoveHist" );
+		addHist( Gen1MoveAsyncHist, "Gen1MoveAsyncHist" );
+		addHist( Gen1MoveDEHist, "Gen1MoveDEHist" );
+		addHist( Gen1MoveSpanHist, "Gen1MoveSpanHist" );
+		addHist( Gen4RedFacHist, "Gen4RedFacHist" );
+		addHist( Gen4MixFacHist, "Gen4MixFacHist" );
+		addHist( Gen5BinvHist, "Gen5BinvHist" );
+		addHist( *ParOpt.getHists()[ 0 ], "ParOpt.CentPowHist" );
+		addHist( *ParOpt.getHists()[ 1 ], "ParOpt.RadPowHist" );
+		addHist( *ParOpt.getHists()[ 2 ], "ParOpt.EvalFacHist" );
+		addHist( *ParOpt.getHists()[ 3 ], "ParOpt.PopChangeHist" );
 	}
 
 	/**
@@ -166,7 +106,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			13 + aParamCount * 4 );
+			11 + aParamCount * 4 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -177,6 +117,11 @@ public:
 
 		ParOpt.Owner = this;
 		ParOpt.updateDims( aParamCount );
+		ParOptPop.initBuffers( aParamCount, aPopSize );
+
+		ParOpt2.Owner = this;
+		ParOpt2.updateDims( aParamCount );
+		ParOpt2Pop.initBuffers( aParamCount, aPopSize );
 	}
 
 	/**
@@ -196,8 +141,8 @@ public:
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
 
-		resetCommonVars();
 		updateDiffValues( true );
+		resetCommonVars( rnd );
 
 		// Initialize solution vectors randomly, calculate objective function
 		// values of these solutions.
@@ -214,6 +159,7 @@ public:
 
 				for( i = 0; i < ParamCount; i++ )
 				{
+					rnd.skip();
 					p[ i ] = wrapParamInt( rnd, getGaussianInt(
 						rnd, sd, IntMantMult >> 1 ));
 				}
@@ -236,6 +182,7 @@ public:
 
 				for( i = 0; i < ParamCount; i++ )
 				{
+					rnd.skip();
 					p[ i ] = wrapParamInt( rnd, getGaussianInt(
 						rnd, sd, p0[ i ]));
 				}
@@ -250,15 +197,14 @@ public:
 		PrevSelMethod = MethodHist.selectRandom( rnd );
 		CentUpdateCtr = 0;
 
-		for( i = 0; i < HistCount; i++ )
-		{
-			Hists[ i ] -> reset( rnd );
-		}
+		ParOptPop.resetCurPopPos();
+		ParOpt2Pop.resetCurPopPos();
 
 		ParOpt.init( rnd, InitParams, InitRadius );
+		ParOpt2.init( rnd, InitParams, InitRadius );
+		UseParOpt = 0;
 
 		DoInitEvals = true;
-		InitEvalIndex = 0;
 	}
 
 	/**
@@ -285,7 +231,7 @@ public:
 
 		if( DoInitEvals )
 		{
-			const ptype* const p = PopParams[ InitEvalIndex ];
+			const ptype* const p = PopParams[ CurPopPos ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -293,12 +239,12 @@ public:
 			}
 
 			const double NewCost = optcost( NewValues );
-			sortPop( NewCost, InitEvalIndex );
+			sortPop( NewCost, CurPopPos );
 			updateBestCost( NewCost, NewValues );
 
-			InitEvalIndex++;
+			CurPopPos++;
 
-			if( InitEvalIndex == PopSize )
+			if( CurPopPos == PopSize )
 			{
 				for( i = 0; i < ParPopCount; i++ )
 				{
@@ -410,8 +356,35 @@ public:
 			}
 			else
 			{
-				ParOpt.optimize( rnd, &NewCost, NewValues );
 				DoEval = false;
+				CBiteOptPop* UpdPop;
+
+				if( UseParOpt == 1 )
+				{
+					// Re-assign optimizer 2 based on comparison of its
+					// efficiency with optimizer 1.
+
+					UseParOpt = select( ParOpt2Hist, rnd );
+				}
+
+				if( UseParOpt == 0 )
+				{
+					if( ParOpt.optimize( rnd, &NewCost, NewValues ) > 0 )
+					{
+						UseParOpt = 1; // On stall, select optimizer 2.
+					}
+
+					UpdPop = &ParOptPop;
+				}
+				else
+				{
+					if( ParOpt2.optimize( rnd, &NewCost, NewValues ) > 0 )
+					{
+						UseParOpt = 0; // On stall, select optimizer 1.
+					}
+
+					UpdPop = &ParOpt2Pop;
+				}
 
 				for( i = 0; i < ParamCount; i++ )
 				{
@@ -419,14 +392,16 @@ public:
 						MinValues[ i ]) / DiffValues[ i ]);
 				}
 
+				UpdPop -> updatePop( NewCost, TmpParams, false, true );
+
 				updateBestCost( NewCost, NewValues );
 			}
 		}
 
-		// Evaluate objective function with new parameters.
-
 		if( DoEval )
 		{
+			// Evaluate objective function with new parameters, if the
+			// solution was not provided by the parallel optimizer.
 			// Wrap parameter values so that they stay in the [0; 1] range.
 
 			for( i = 0; i < ParamCount; i++ )
@@ -446,12 +421,12 @@ public:
 
 			applyHistsDecr();
 
+			StallCount++;
+
 			if( SelMethod >= 0 )
 			{
 				PrevSelMethod = MethodHist.selectRandom( rnd );
 			}
-
-			StallCount++;
 
 			if( CurPopSize < PopSize )
 			{
@@ -470,11 +445,6 @@ public:
 		{
 			applyHistsIncr();
 
-			if( SelMethod >= 0 )
-			{
-				PrevSelMethod = SelMethod;
-			}
-
 			if( NewCost == PopCosts[ CurPopSize1 ])
 			{
 				StallCount++;
@@ -482,6 +452,11 @@ public:
 			else
 			{
 				StallCount = 0;
+			}
+
+			if( SelMethod >= 0 )
+			{
+				PrevSelMethod = SelMethod;
 			}
 
 			updatePop( NewCost, TmpParams, false, false );
@@ -530,11 +505,6 @@ public:
 	}
 
 protected:
-	CBiteOptHistBase* Hists[ MaxHistCount ]; ///< Pointers to histogram
-		///< objects, for indexed access in some cases.
-		///<
-	int HistCount; ///< The number of histograms in use.
-		///<
 	int ParamCntr; ///< Parameter randomization index counter.
 		///<
 	double ParamCountRnd; ///< ParamCount converted into "raw" random value
@@ -554,12 +524,20 @@ protected:
 	CBiteOptHist< 2 > PopChangeHist; ///< Population size change
 		///< histogram.
 		///<
+	CBiteOptHist< 2 > ParOpt2Hist; ///< Parallel optimizer 2 use histogram.
+		///<
+	CBiteOptHist< 2 > AltPopPHist; ///< Alternative population use
+		///< histogram.
+		///<
+	CBiteOptHist< 2 > AltPopHist[ 2 ]; ///< Alternative population type use
+		///< histogram.
+		///<
 	CBiteOptHist< 2 > ParPopUpdHist; ///< Parallel population update
 		///< histogram.
 		///<
 	CBiteOptHistBinary ScutHist; ///< Short-cut method's histogram.
 		///<
-	CBiteOptHist< 4 > MethodHist; ///< Population generator method
+	CBiteOptHist< 4 > MethodHist; ///< Population generator 4-method
 		///< histogram.
 		///<
 	CBiteOptHist< 3 > DrawHist; ///< Method draw histogram.
@@ -605,14 +583,13 @@ protected:
 		///<
 	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
 		///<
-	int InitEvalIndex; ///< Current initial population index.
-		///<
 
 	/**
 	 * Parallel optimizer class.
 	 */
 
-	class CParOpt : public CSpherOpt
+	template< class T >
+	class CParOpt : public T
 	{
 	public:
 		CBiteOpt* Owner; ///< Owner object.
@@ -633,20 +610,18 @@ protected:
 		}
 	};
 
-	CParOpt ParOpt; ///< Parallel optimizer.
+	CParOpt< CSpherOpt > ParOpt; ///< Parallel optimizer.
 		///<
-
-	/**
-	 * Function adds a histogram to the Hists list.
-	 *
-	 * @param h Histogram object to add.
-	 */
-
-	void addHist( CBiteOptHistBase& h )
-	{
-		Hists[ HistCount ] = &h;
-		HistCount++;
-	}
+	CBiteOptPop ParOptPop; ///< Population of parallel optimizer's solutions.
+		///< Includes only its solutions.
+		///<
+	CParOpt< CNMSeqOpt > ParOpt2; ///< Parallel optimizer2.
+		///<
+	CBiteOptPop ParOpt2Pop; ///< Population of parallel optimizer 2's
+		///< solutions. Includes only its solutions.
+		///<
+	int UseParOpt; ///< Parallel optimizer currently being in use.
+		///<
 
 	/**
 	 * Function updates a selected parallel population.
@@ -679,6 +654,37 @@ protected:
 		if( select( ParPopPHist, rnd ))
 		{
 			return( *ParPops[ select( ParPopHist[ gi ], rnd )]);
+		}
+
+		return( *this );
+	}
+
+	/**
+	 * Function selects an alternative, parallel optimizer's, population, to
+	 * use in some solution generators.
+	 *
+	 * @param gi Solution generator index (0-1).
+	 * @param rnd PRNG object.
+	 */
+
+	CBiteOptPop& selectAltPop( const int gi, CBiteRnd& rnd )
+	{
+		if( select( AltPopPHist, rnd ))
+		{
+			if( select( AltPopHist[ gi ], rnd ))
+			{
+				if( ParOptPop.getCurPopPos() >= CurPopSize )
+				{
+					return( ParOptPop );
+				}
+			}
+			else
+			{
+				if( ParOpt2Pop.getCurPopPos() >= CurPopSize )
+				{
+					return( ParOpt2Pop );
+				}
+			}
 		}
 
 		return( *this );
@@ -833,20 +839,21 @@ protected:
 		const int si2 = 1 + (int) ( r2 * CurPopSize1 );
 		const ptype* const rp2 = getParamsOrdered( si2 );
 
-		const double r4 = rnd.getRndValue();
-		const int si4 = (int) ( r4 * r4 * CurPopSize );
+		const double r3 = rnd.getRndValue();
+		const int si4 = (int) ( r3 * r3 * CurPopSize );
+
 		const ptype* const rp4 = getParamsOrdered( si4 );
 		const ptype* const rp5 = getParamsOrdered( CurPopSize1 - si4 );
+
+		// The "step in the right direction" (Differential Evolution
+		// "mutation") operation towards the best (minimal) and away from
+		// the worst (maximal) parameter vector, plus a difference of two
+		// random vectors.
 
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			// The "step in the right direction" (Differential Evolution
-			// "mutation") operation towards the best (minimal) and away from
-			// the worst (maximal) parameter vector, plus a difference of two
-			// random vectors.
-
 			Params[ i ] = rp1[ i ] - ((( rp3[ i ] - rp2[ i ]) +
 				( rp5[ i ] - rp4[ i ])) >> 1 );
 		}
@@ -876,8 +883,11 @@ protected:
 
 		const double r4 = rnd.getRndValue();
 		const int si4 = (int) ( r4 * r4 * CurPopSize );
-		const ptype* const rp4 = getParamsOrdered( si4 );
-		const ptype* const rp5 = getParamsOrdered( CurPopSize1 - si4 );
+
+		const CBiteOptPop& AltPop = selectAltPop( 0, rnd );
+		const ptype* const rp4 = AltPop.getParamsOrdered( si4 );
+		const ptype* const rp5 = AltPop.getParamsOrdered( CurPopSize1 - si4 );
+
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
@@ -971,7 +981,7 @@ protected:
 	 * offsets, converges slowly. Completely mixes bits of two
 	 * randomly-selected solutions, plus changes 1 random bit.
 	 *
-	 * This method is fundamentally similar to biological DNA crossing-over.
+	 * This method is fundamentally similar to a biological DNA crossing-over.
 	 */
 
 	void generateSol5( CBiteRnd& rnd )
@@ -984,8 +994,10 @@ protected:
 		const ptype* const CrossParams1 = ParPop.getParamsOrdered(
 			(int) ( r1 * r1 * ParPop.getCurPopSize() ));
 
+		const CBiteOptPop& AltPop = selectAltPop( 1, rnd );
+
 		const double r2 = rnd.getRndValue();
-		const ptype* const CrossParams2 = getParamsOrdered(
+		const ptype* const CrossParams2 = AltPop.getParamsOrdered(
 			(int) ( r2 * r2 * CurPopSize ));
 
 		const bool UseInv = select( Gen5BinvHist, rnd );
@@ -995,7 +1007,7 @@ protected:
 		{
 			// Produce a random bit mixing mask.
 
-			const int64_t crpl = rnd.getUniformRaw2();
+			const int64_t crpl = rnd.getUniformRaw2() & IntMantMask;
 
 			int64_t v1 = CrossParams1[ i ];
 			int64_t v2 = ( UseInv ? ~CrossParams2[ i ] : CrossParams2[ i ]);
@@ -1003,6 +1015,7 @@ protected:
 			if( rnd.getBit() )
 			{
 				const int b = (int) ( rnd.getRndValue() * IntMantBits );
+
 				const int64_t m = ~( 1LL << b );
 				const int64_t bv = (int64_t) rnd.getBit() << b;
 
@@ -1064,9 +1077,9 @@ public:
 	 * Function returns a pointer to an array of histogram names.
 	 */
 
-	static const char** getHistNames()
+	const char** getHistNames() const
 	{
-		return( CBiteOpt :: getHistNames() );
+		return( CurOpt -> getHistNames() );
 	}
 
 	/**

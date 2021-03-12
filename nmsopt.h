@@ -1,9 +1,9 @@
 //$ nocpp
 
 /**
- * @file nmpopt.h
+ * @file nmsopt.h
  *
- * @brief The inclusion file for the CNelderMeadPlusOpt class.
+ * @brief The inclusion file for the CNMSeqOpt class.
  *
  * @section license License
  * 
@@ -27,26 +27,25 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.10
+ * @version 2021.15
  */
 
-#ifndef NMPOPT_INCLUDED
-#define NMPOPT_INCLUDED
+#ifndef NMSOPT_INCLUDED
+#define NMSOPT_INCLUDED
 
-#include "../biteaux.h"
+#include "biteaux.h"
 
 /**
- * Sequential Nelder-Mead simplex method with "Z" parameter improvement.
+ * Sequential Nelder-Mead simplex method.
  *
  * Description is available at https://github.com/avaneev/biteopt
  */
 
-class CNelderMeadPlusOpt : public CBiteOptBase
+class CNMSeqOpt : public CBiteOptBase< double >
 {
 public:
-	CNelderMeadPlusOpt()
-		: Z( 0 )
-		, x2( NULL )
+	CNMSeqOpt()
+		: x2( NULL )
 	{
 	}
 
@@ -54,32 +53,25 @@ public:
 	 * Function updates dimensionality of *this object.
 	 *
 	 * @param aParamCount The number of parameters being optimized.
-	 * @param aZ Z-parameter, >= 1. Improves convergence and increases
-	 * convergence time.
+	 * @param PopSize0 The number of elements in population to use. If set to
+	 * 0 or negative, the default formula will be used.
 	 */
 
-	void updateDims( const int aParamCount, const int aZ = 1 )
+	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
-		if( aParamCount * aZ == ParamCount && aZ == Z )
+		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
+			( aParamCount + 1 ) * 4 );
+
+		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
 			return;
 		}
 
-		deleteBuffers();
-
-		Z = aZ;
-		N = aParamCount * Z;
-		M = N + 1;
+		N = aParamCount;
+		M = aPopSize;
+		M1m = 1.0 / ( M - 1 );
 
 		initBuffers( N, M );
-
-		ParamCount0 = aParamCount;
-		M1m = 1.0 / ( M - 1 );
-		x = PopParams;
-		y = PopCosts;
-		x0 = CentParams;
-		x1 = PopParams[ M ];
-		x2 = new double[ N ];
 	}
 
 	/**
@@ -87,9 +79,9 @@ public:
 	 * function evaluations.
 	 *
 	 * @param rnd Random number generator.
-	 * @param InitParams Initial parameter values.
-	 * @param InitRadius Initial radius, relative to the default value
-	 * (<= 1.0).
+	 * @param InitParams If not NULL, initial parameter vector, also used as
+	 * centroid.
+	 * @param InitRadius Initial radius, relative to the default value.
 	 */
 
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL,
@@ -98,64 +90,43 @@ public:
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
 
-		resetCommonVars();
-		updateDiffValues();
+		updateDiffValues( false );
+		resetCommonVars( rnd );
 
 		// Initialize parameter vectors, costs and centroid.
 
 		double* const xx = x[ 0 ];
-		const double w = 1.0 / Z;
 		int i;
-		int k;
 
 		if( InitParams != NULL )
 		{
-			for( i = 0; i < ParamCount0; i++ )
-			{
-				const double v = ( InitParams[ i ] - MinValues[ i ]) /
-					DiffValues[ i ];
-
-				for( k = 0; k < Z; k++ )
-				{
-					xx[ i * Z + k ] = v * w;
-				}
-			}
+			memcpy( xx, InitParams, N * sizeof( x[ 0 ]));
 		}
 		else
 		{
-			for( i = 0; i < ParamCount0; i++ )
+			for( i = 0; i < N; i++ )
 			{
-				for( k = 0; k < Z; k++ )
-				{
-					xx[ i * Z + k ] = 0.5 * w;
-				}
+				xx[ i ] = MinValues[ i ] + DiffValues[ i ] * 0.5;
 			}
 		}
 
 		xlo = 0;
 
-		const double sd = InitRadius * 0.25 * w;
+		const double sd = 0.25 * InitRadius;
 		int j;
 
 		for( j = 1; j < M; j++ )
 		{
 			double* const xj = x[ j ];
 
-			for( i = 0; i < ParamCount0; i++ )
+			for( i = 0; i < N; i++ )
 			{
-				for( k = 0; k < Z; k++ )
-				{
-					const double v = xx[ i * Z + k ] +
-						getGaussian( rnd ) * sd;
-
-					xj[ i * Z + k ] = v;
-				}
+				xj[ i ] = xx[ i ] + DiffValues[ i ] * getGaussian( rnd ) * sd;
 			}
 		}
 
 		State = stReflection;
 		DoInitEvals = true;
-		InitEvalIndex = 0;
 	}
 
 	/**
@@ -165,29 +136,28 @@ public:
 	 * @param rnd Random number generator.
 	 * @param OutCost If not NULL, pointer to variable that receives cost
 	 * of the newly-evaluated solution.
-	 * @param OutParams If not NULL, pointer to array that receives
-	 * newly-evaluated parameter vector, in normalized scale.
+	 * @param OutValues If not NULL, pointer to array that receives
+	 * newly-evaluated parameter vector, in real scale.
 	 * @return The number of non-improving iterations so far.
 	 */
 
 	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
-		double* const OutParams = NULL )
+		double* const OutValues = NULL )
 	{
 		int i;
 
 		if( DoInitEvals )
 		{
-			y[ InitEvalIndex ] = eval( rnd, x[ InitEvalIndex ], OutCost,
-				OutParams );
+			y[ CurPopPos ] = eval( rnd, x[ CurPopPos ], OutCost, OutValues );
 
-			if( y[ InitEvalIndex ] < y[ xlo ])
+			if( y[ CurPopPos ] < y[ xlo ])
 			{
-				xlo = InitEvalIndex;
+				xlo = CurPopPos;
 			}
 
-			InitEvalIndex++;
+			CurPopPos++;
 
-			if( InitEvalIndex == M )
+			if( CurPopPos == M )
 			{
 				DoInitEvals = false;
 				calccent();
@@ -214,7 +184,7 @@ public:
 					x1[ i ] = x0[ i ] + alpha * ( x0[ i ] - xH[ i ]);
 				}
 
-				y1 = eval( rnd, x1, OutCost, OutParams );
+				y1 = eval( rnd, x1, OutCost, OutValues );
 
 				if( y1 >= y[ xlo ] && y1 < y[ xhi2 ])
 				{
@@ -244,7 +214,7 @@ public:
 					x2[ i ] = x0[ i ] + gamma * ( x0[ i ] - xH[ i ]);
 				}
 
-				const double y2 = eval( rnd, x2, OutCost, OutParams );
+				const double y2 = eval( rnd, x2, OutCost, OutValues );
 				xlo = xhi;
 
 				if( y2 < y1 )
@@ -267,7 +237,7 @@ public:
 					x2[ i ] = x0[ i ] + rho * ( x0[ i ] - xH[ i ]);
 				}
 
-				const double y2 = eval( rnd, x2, OutCost, OutParams );
+				const double y2 = eval( rnd, x2, OutCost, OutValues );
 
 				if( y2 < y[ xhi ])
 				{
@@ -305,7 +275,7 @@ public:
 					xx[ i ] = rx[ i ] + sigma * ( xx[ i ] - rx[ i ]);
 				}
 
-				y[ rj ] = eval( rnd, xx, OutCost, OutParams );
+				y[ rj ] = eval( rnd, xx, OutCost, OutValues );
 
 				if( y[ rj ] < y[ xlo ])
 				{
@@ -329,10 +299,6 @@ public:
 	}
 
 private:
-	int ParamCount0; ///< Original parameter count.
-		///<
-	int Z; ///< Z-parameter.
-		///<
 	int N; ///< The total number of internal parameter values in use.
 		///<
 	int M; ///< The number of points in a simplex.
@@ -363,8 +329,6 @@ private:
 		///<
 	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
 		///<
-	int InitEvalIndex; ///< Current initial population index.
-		///<
 
 	/**
 	 * Algorithm's state automata states.
@@ -381,9 +345,16 @@ private:
 	EState State; ///< Current optimization state.
 		///<
 
-	/**
-	 * Function deletes previously allocated buffers.
-	 */
+	virtual void initBuffers( const int aParamCount, const int aPopSize )
+	{
+		CBiteOptBase< double > :: initBuffers( aParamCount, aPopSize );
+
+		x = PopParams;
+		y = PopCosts;
+		x0 = CentParams;
+		x1 = TmpParams;
+		x2 = new double[ N ];
+	}
 
 	virtual void deleteBuffers()
 	{
@@ -474,11 +445,7 @@ private:
 		double* const xH = x[ xhi ];
 		int i;
 
-		for( i = 0; i < N; i++ )
-		{
-			xH[ i ] = ip[ i ];
-		}
-
+		memcpy( xH, ip, N * sizeof( xH[ 0 ]));
 		findhi();
 
 		const double* const nxH = x[ xhi ];
@@ -500,51 +467,36 @@ private:
 	 * @param p Parameter vector to evaluate.
 	 * @param OutCost If not NULL, pointer to variable that receives cost
 	 * of the newly-evaluated solution.
-	 * @param OutParams If not NULL, pointer to array that receives
-	 * newly-evaluated parameter vector, in normalized scale.
+	 * @param OutValues If not NULL, pointer to array that receives
+	 * newly-evaluated parameter vector, in real scale.
 	 */
 
 	double eval( CBiteRnd& rnd, const double* p,
-		double* const OutCost = NULL, double* const OutParams = NULL )
+		double* const OutCost = NULL, double* const OutValues = NULL )
 	{
 		int i;
 
-		for( i = 0; i < ParamCount0; i++ )
+		for( i = 0; i < N; i++ )
 		{
-			double v = 0.0;
-			int k;
-
-			for( k = 0; k < Z; k++ )
-			{
-				v += *p;
-				p++;
-			}
-
-			NewParams[ i ] = wrapParam( rnd, v );
+			NewValues[ i ] = wrapParamReal( rnd, p[ i ], i );
 		}
 
-		if( OutParams != NULL )
-		{
-			memcpy( OutParams, NewParams,
-				ParamCount0 * sizeof( NewParams[ 0 ]));
-		}
-
-		for( i = 0; i < ParamCount0; i++ )
-		{
-			NewParams[ i ] = getRealValue( NewParams, i );
-		}
-
-		const double cost = optcost( NewParams );
+		const double cost = optcost( NewValues );
 
 		if( OutCost != NULL )
 		{
 			*OutCost = cost;
 		}
 
-		updateBestCost( cost, NewParams );
+		if( OutValues != NULL )
+		{
+			memcpy( OutValues, NewValues, N * sizeof( OutValues[ 0 ]));
+		}
+
+		updateBestCost( cost, NewValues );
 
 		return( cost );
 	}
 };
 
-#endif // NMPOPT_INCLUDED
+#endif // NMSOPT_INCLUDED

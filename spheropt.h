@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.13
+ * @version 2021.15
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -49,54 +49,15 @@ public:
 		///<
 
 	CSpherOpt()
-		: HistCount( 0 )
-		, WPopCent( NULL )
+		: WPopCent( NULL )
 		, WPopRad( NULL )
 	{
 		Jitter = 2.5;
 
-		addHist( CentPowHist );
-		addHist( RadPowHist );
-		addHist( EvalFacHist );
-		addHist( PopChangeHist );
-	}
-
-	static const int MaxHistCount = 8; ///< The maximal number of histograms
-		///< that can be added (for static arrays).
-		///<
-
-	/**
-	 * Function returns a pointer to an array of histograms in use.
-	 */
-
-	CBiteOptHistBase** getHists()
-	{
-		return( Hists );
-	}
-
-	/**
-	 * Function returns a pointer to an array of histogram names.
-	 */
-
-	static const char** getHistNames()
-	{
-		static const char* HistNames[] = {
-			"CentPowHist",
-			"RadPowHist",
-			"EvalFacHist",
-			"PopChangeHist"
-		};
-
-		return( HistNames );
-	}
-
-	/**
-	 * Function returns the number of histograms in use.
-	 */
-
-	int getHistCount() const
-	{
-		return( HistCount );
+		addHist( CentPowHist, "CentPowHist" );
+		addHist( RadPowHist, "RadPowHist" );
+		addHist( EvalFacHist, "EvalFacHist" );
+		addHist( PopChangeHist, "PopChangeHist" );
 	}
 
 	/**
@@ -138,14 +99,12 @@ public:
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
 
-		resetCommonVars();
 		updateDiffValues( false );
+		resetCommonVars( rnd );
 
-		EvalFac = 2.0;
 		Radius = 0.5 * InitRadius;
-		curpi = 0;
 		cure = 0;
-		curem = (int) ceil( CurPopSize * EvalFac );
+		curem = (int) ceil( CurPopSize * 2.0 ); // Assume initial EvalFac=2.
 
 		// Provide initial centroid and sigma.
 
@@ -170,11 +129,6 @@ public:
 
 			DoCentEval = true;
 		}
-
-		for( i = 0; i < HistCount; i++ )
-		{
-			Hists[ i ] -> reset( rnd );
-		}
 	}
 
 	/**
@@ -192,7 +146,7 @@ public:
 	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
 		double* const OutValues = NULL )
 	{
-		double* const Params = PopParams[ curpi ];
+		double* const Params = PopParams[ CurPopPos ];
 		int i;
 
 		if( DoCentEval )
@@ -256,10 +210,10 @@ public:
 
 		updateBestCost( NewCost, NewValues );
 
-		if( curpi < CurPopSize )
+		if( CurPopPos < CurPopSize )
 		{
-			sortPop( NewCost, curpi );
-			curpi++;
+			sortPop( NewCost, CurPopPos );
+			CurPopPos++;
 		}
 		else
 		{
@@ -275,7 +229,7 @@ public:
 		AvgCost += NewCost;
 		cure++;
 
-		if( cure > curem )
+		if( cure >= curem )
 		{
 			bool DoPopIncr;
 			AvgCost /= cure;
@@ -297,12 +251,10 @@ public:
 			}
 
 			AvgCost = 0.0;
-			curpi = 0;
+			CurPopPos = 0;
 			cure = 0;
 
 			update( rnd );
-
-			// Increase population size on fail.
 
 			if( DoPopIncr )
 			{
@@ -334,11 +286,6 @@ public:
 	}
 
 protected:
-	CBiteOptHistBase* Hists[ MaxHistCount ]; ///< Pointers to histogram
-		///< objects, for indexed access in some cases.
-		///<
-	int HistCount; ///< The number of histograms in use.
-		///<
 	double* WPopCent; ///< Weighting coefficients for centroid.
 		///<
 	double* WPopRad; ///< Weighting coefficients for radius.
@@ -347,12 +294,7 @@ protected:
 		///<
 	double JitOffs; ///< Jitter multiplier offset.
 		///<
-	double EvalFac; ///< Function evaluations factor, used for best solution
-		///< selection.
-		///<
 	double Radius; ///< Current radius.
-		///<
-	int curpi; ///< Current parameter index.
 		///<
 	int cure; ///< Current evaluation index.
 		///<
@@ -388,18 +330,6 @@ protected:
 	}
 
 	/**
-	 * Function adds a histogram to the Hists list.
-	 *
-	 * @param h Histogram object to add.
-	 */
-
-	void addHist( CBiteOptHistBase& h )
-	{
-		Hists[ HistCount ] = &h;
-		HistCount++;
-	}
-
-	/**
 	 * Function updates centroid and radius.
 	 *
 	 * @param rnd PRNG object.
@@ -413,7 +343,7 @@ protected:
 
 		const double CentFac = WCent[ CentPowHist.select( rnd )];
 		const double RadFac = WRad[ RadPowHist.select( rnd )];
-		EvalFac = EvalFacs[ EvalFacHist.select( rnd )];
+		const double EvalFac = EvalFacs[ EvalFacHist.select( rnd )];
 
 		curem = (int) ceil( CurPopSize * EvalFac );
 
