@@ -9,13 +9,13 @@
 #include "../nmsopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CSMAESOpt//CNMSeqOpt//CSpherOpt//CCMAESOpt//CBiteOptDeep//
+#define OPT_CLASS CBiteOpt//CSpherOpt//CSMAESOpt//CCMAESOpt//CNMSeqOpt//CBiteOptDeep//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
 //#define OPT_PLATEAU_MUL 64 // Comment out to disable plateau check.
 //#define EVALBINS 1
 #define OPT_STATS 0 // Set to 1 to enable histogram statistics output.
 
-#if 0
+#if 1
 	#define OPT_THREADS 1
 	#include "/libvox/Sources/Core/CWorkerThreadPool.h"
 	using namespace vox;

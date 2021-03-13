@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.15
+ * @version 2021.16
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -103,8 +103,9 @@ public:
 		resetCommonVars( rnd );
 
 		Radius = 0.5 * InitRadius;
+		EvalFac = 2.0;
 		cure = 0;
-		curem = (int) ceil( CurPopSize * 2.0 ); // Assume initial EvalFac=2.
+		curem = (int) ceil( CurPopSize * EvalFac );
 
 		// Provide initial centroid and sigma.
 
@@ -238,7 +239,7 @@ public:
 			{
 				HiBound = AvgCost;
 				StallCount = 0;
-				DoPopIncr = true;
+				DoPopIncr = true; // This is not exactly logical, but works.
 
 				applyHistsIncr();
 			}
@@ -280,6 +281,8 @@ public:
 					}
 				}
 			}
+
+			curem = (int) ceil( CurPopSize * EvalFac );
 		}
 
 		return( StallCount );
@@ -295,6 +298,8 @@ protected:
 	double JitOffs; ///< Jitter multiplier offset.
 		///<
 	double Radius; ///< Current radius.
+		///<
+	double EvalFac; ///< Evaluations factor.
 		///<
 	int cure; ///< Current evaluation index.
 		///<
@@ -341,11 +346,9 @@ protected:
 		static const double WRad[ 4 ] = { 14.0, 16.0, 18.0, 20.0 };
 		static const double EvalFacs[ 3 ] = { 2.1, 2.0, 1.9 };
 
-		const double CentFac = WCent[ CentPowHist.select( rnd )];
-		const double RadFac = WRad[ RadPowHist.select( rnd )];
-		const double EvalFac = EvalFacs[ EvalFacHist.select( rnd )];
-
-		curem = (int) ceil( CurPopSize * EvalFac );
+		const double CentFac = WCent[ select( CentPowHist, rnd )];
+		const double RadFac = WRad[ select( RadPowHist, rnd )];
+		EvalFac = EvalFacs[ select( EvalFacHist, rnd )];
 
 		const double lm = 1.0 / curem;
 		double s1 = 0.0;

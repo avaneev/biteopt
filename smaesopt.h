@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.15
+ * @version 2021.16
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -64,9 +64,7 @@ public:
 
 		initBuffers( aParamCount, aPopSize );
 
-		EvalFac = 2.0;
-
-		Ort.updateDims( aParamCount, aPopSize, EvalFac );
+		Ort.updateDims( aParamCount, aPopSize );
 	}
 
 	/**
@@ -89,7 +87,7 @@ public:
 		resetCommonVars( rnd );
 
 		cure = 0;
-		curem = (int) ceil( CurPopSize * EvalFac );
+		curem = (int) ceil( CurPopSize * Ort.EvalFac );
 
 		// Provide initial centroid and sigma (PopParams is used here
 		// temporarily, otherwise initially undefined).
@@ -235,8 +233,6 @@ public:
 	}
 
 protected:
-	double EvalFac; ///< Function evalutions factor.
-		///<
 	CBiteOptOrt Ort; ///< Rotation vector and orthogonalization calculator.
 		///<
 	int cure; ///< Current evaluation index, greater or equal to

@@ -64,7 +64,7 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
 attempt success rate is >93% while the average number of objective function
-evaluations is ~360.
+evaluations is ~370.
 
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of
@@ -468,14 +468,15 @@ valuable information, moreover only a difference multiplied by a factor of
 
 ## SMA-ES ##
 
-This is an experimental optimization method called "SigMa Adaptation Evolution
-Strategy". It has the same programmatic interface as CBiteOpt class, so it
-can be easily used in place of CBiteOpt.
+This is a working optimization method called "SigMa Adaptation Evolution
+Strategy". It has the same programmatic interface as CBiteOpt class, so it can
+be easily used in place of CBiteOpt.
 
 SMA-ES is based on the same concept as CMA-ES, but performs vector sigma
 adaptation. SMA-ES performs covariance matrix update like CMA-ES, but it
-is a simple linear update using leaky integrator averaging filtering. SMA-ES
-algorithm's operation is based on principles of control signals.
+is a simple linear update using leaky integrator averaging filtering, not
+adaptation. SMA-ES algorithm's operation is based on principles of control
+signals.
 
 The main difference to CMA-ES is that per-parameter sigmas are updated using
 these elements:
@@ -496,10 +497,8 @@ contracted in the opposite direction.
 the `SigmaMulBase` coefficients, depending on sphericity. Additionally,
 overly-contracted sigmas are expanded by the `SigmaMulExp` coefficient.
 
-In overall, SMA-ES is a completely self-adaptive method, it has several fixed
-hyper-parameters that do not depend on problem's dimensionality. These
-parameters were manually fine-tuned, but it is possible to optimize them
-further.
+In overall, SMA-ES is a completely self-adaptive method, it has several
+hyper-parameters that do not depend on problem's dimensionality.
 
 Population size formula in SMA-ES is fixed to `13+Dims`: according to tests,
 in average it suits all dimensionalities. Of course, particular problems may

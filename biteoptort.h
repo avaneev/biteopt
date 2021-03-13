@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.15
+ * @version 2021.16
  */
 
 #ifndef BITEOPTORT_INCLUDED
@@ -68,6 +68,9 @@ public:
 		///<
 	double SigmaMulExp2; ///< Sigma expansion multiplier, for needle.
 		///<
+	double EvalFac; ///< The multiplier of the population size, affects the
+		///< actual number of function evaluations performed, >=1.
+		///<
 
 	CBiteOptOrt()
 		: CovParamsBuf( NULL )
@@ -86,6 +89,7 @@ public:
 		SigmaMulBase1 = 0.4;
 		SigmaMulBase2 = 0.9;
 		SigmaMulExp2 = 1.15;
+		EvalFac = 2.0;
 	}
 
 	/**
@@ -94,12 +98,9 @@ public:
 	 * @param aParamCount The number of elements in the parameter vector.
 	 * @param aPopSize Size of population used to calculate the rotation
 	 * matrix.
-	 * @param aEvalFac The multiplier of the population size - the actual
-	 * number of function evaluations performed, >=1.
 	 */
 
-	void updateDims( const int aParamCount, const int aPopSize,
-		const double aEvalFac )
+	void updateDims( const int aParamCount, const int aPopSize )
 	{
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -107,8 +108,6 @@ public:
 		}
 
 		initBuffers( aParamCount, aPopSize );
-
-		EvalFac = aEvalFac;
 	}
 
 	/**
@@ -170,7 +169,6 @@ public:
 		}
 
 		spc = 0.0;
-		updateWeights( PopSize );
 	}
 
 	/**
@@ -183,6 +181,8 @@ public:
 	{
 		const int UsePopSize = ExtPop.getCurPopSize();
 		const double** const ExtParams = ExtPop.getPopParams();
+
+		updateWeights( UsePopSize );
 
 		// Prepare PopParams (vector of per-parameter population deviations),
 		// later used to calculate weighted covariances, use current centroid
@@ -442,8 +442,6 @@ protected:
 		///<
 	double* WPopCov; ///< Weighting coefficients for covariance calculation,
 		///< squared.
-		///<
-	double EvalFac; ///< Function evaluations factor.
 		///<
 	double spc; ///< Distribution's sphericity coefficient. 1 - fully
 		///< spherical.
@@ -815,42 +813,6 @@ protected:
 		}
 
 		return( s );
-	}
-
-	/**
-	 * Function generates a Gaussian-distributed pseudo-random number with
-	 * mean=0 and std.dev=1.
-	 *
-	 * @param rnd Uniform PRNG.
-	 */
-
-	static double getGaussian( CBiteRnd& rnd )
-	{
-		double q, u, v;
-
-		do
-		{
-			u = rnd.getRndValue();
-			v = rnd.getRndValue();
-
-			if( u <= 0.0 || v <= 0.0 )
-			{
-				u = 1.0;
-				v = 1.0;
-			}
-
-			v = 1.7156 * ( v - 0.5 );
-			const double x = u - 0.449871;
-			const double y = fabs( v ) + 0.386595;
-			q = x * x + y * ( 0.19600 * y - 0.25472 * x );
-
-			if( q < 0.27597 )
-			{
-				break;
-			}
-		} while(( q > 0.27846 ) || ( v * v > -4.0 * log( u ) * u * u ));
-
-		return( v / u );
 	}
 };
 

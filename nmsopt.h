@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.15
+ * @version 2021.16
  */
 
 #ifndef NMSOPT_INCLUDED
@@ -347,7 +347,7 @@ private:
 
 	virtual void initBuffers( const int aParamCount, const int aPopSize )
 	{
-		CBiteOptBase< double > :: initBuffers( aParamCount, aPopSize );
+		CBiteOptBase :: initBuffers( aParamCount, aPopSize );
 
 		x = PopParams;
 		y = PopCosts;

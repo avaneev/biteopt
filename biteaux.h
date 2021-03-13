@@ -3,7 +3,7 @@
 /**
  * @file biteaux.h
  *
- * @brief The inclusion file for the CBiteRnd, CBiteOptPop, CBiteOptParPop,
+ * @brief The inclusion file for the CBiteRnd, CBiteOptPop, CBiteOptParPops,
  * CBiteOptInterface, and CBiteOptBase classes.
  *
  * @section license License
@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.15
+ * @version 2021.16
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -565,11 +565,11 @@ public:
 	CBiteOptPop()
 		: ParamCount( 0 )
 		, PopSize( 0 )
-		, NeedCentUpdate( false )
 		, PopParamsBuf( NULL )
 		, PopParams( NULL )
 		, PopCosts( NULL )
 		, CentParams( NULL )
+		, NeedCentUpdate( false )
 		, SparsePopParams( NULL )
 		, SparsePopSize( -1 )
 	{
@@ -615,11 +615,8 @@ public:
 
 		ParamCount = aParamCount;
 		PopSize = aPopSize;
-		PopSize1 = aPopSize - 1;
 		CurPopSize = aPopSize;
 		CurPopSize1 = aPopSize - 1;
-		NeedCentUpdate = false;
-		SparsePopSize = -1;
 
 		PopParamsBuf = new ptype[( aPopSize + 1 ) * aParamCount ];
 		PopParams = new ptype*[ aPopSize + 1 ]; // Last element is temporary.
@@ -685,7 +682,7 @@ public:
 	{
 		NeedCentUpdate = false;
 
-		const int BatchCount = 31; // Selected to avoid integer overflows.
+		const int BatchCount = ( 1 << IntOverBits ) - 1;
 		const double m = 1.0 / CurPopSize;
 		ptype* const cp = CentParams;
 		int i;
@@ -815,12 +812,14 @@ public:
 	/**
 	 * Function resets the current population position to zero. This function
 	 * is usually called when the population needs to be completely changed.
+	 * This function should be called before any updates to *this population
+	 * (usually during optimizer's initialization).
 	 */
 
 	void resetCurPopPos()
 	{
 		CurPopPos = 0;
-		NeedCentUpdate = true;
+		NeedCentUpdate = false;
 		SparsePopSize = -1;
 	}
 
@@ -937,21 +936,6 @@ public:
 	}
 
 	/**
-	 * Function sets current population size to the specified value.
-	 *
-	 * @param NewCurPopSize A new CurPopSize value, should not exceed PopSize
-	 * specified in the initBuffers() or copy() function.
-	 */
-
-	void setCurPopSize( const int NewCurPopSize )
-	{
-		CurPopSize = NewCurPopSize;
-		CurPopSize1 = NewCurPopSize - 1;
-		NeedCentUpdate = true;
-		SparsePopSize = -1;
-	}
-
-	/**
 	 * Function returns an array of "sparsified" population vectors based on
 	 * cost differences. Working with "sparsified" population increases
 	 * probability of generation of acceptable solutions for some methods.
@@ -1059,11 +1043,31 @@ public:
 	}
 
 protected:
+	static const int IntOverBits = ( sizeof( ptype ) > 4 ? 5 : 3 ); ///< The
+		///< number of bits of precision required for centroid calculation and
+		///< overflows.
+		///<
+	static const int IntMantBits = sizeof( ptype ) * 8 - 1 - IntOverBits; ///<
+		///< Mantissa size of the integer parameter values (higher by 1 bit in
+		///< practice for real value 1.0). Accounts for a sign bit, and
+		///< possible overflows.
+		///<
+	static const int64_t IntMantMult = 1LL << IntMantBits; ///< Mantissa
+		///< multiplier.
+		///<
+	static const int64_t IntMantMultM = -IntMantMult; ///< Negative
+		///< IntMantMult.
+		///<
+	static const int64_t IntMantMult2 = ( IntMantMult << 1 ); ///< =
+		///< IntMantMult * 2.
+		///<
+	static const int64_t IntMantMask = IntMantMult - 1; ///< Mask that
+		///< corresponds to mantissa.
+		///<
+
 	int ParamCount; ///< The total number of internal parameter values in use.
 		///<
 	int PopSize; ///< The size of population in use (maximal).
-		///<
-	int PopSize1; ///< = PopSize - 1.
 		///<
 	int CurPopSize; ///< Current population size.
 		///<
@@ -1071,8 +1075,6 @@ protected:
 		///<
 	int CurPopPos; ///< Current population position, for initial population
 		///< update. This variable should be initialized by the optimizer.
-		///<
-	bool NeedCentUpdate; ///< "True" if centroid update is needed.
 		///<
 	ptype* PopParamsBuf; ///< Buffer for all PopParams vectors.
 		///<
@@ -1083,6 +1085,8 @@ protected:
 		///< order corresponds to PopParams.
 		///<
 	ptype* CentParams; ///< Centroid of the current parameter vectors.
+		///<
+	bool NeedCentUpdate; ///< "True" if centroid update is needed.
 		///<
 	ptype** SparsePopParams; ///< Pointers to "sparsified" population
 		///< parameter vectors.
@@ -1141,6 +1145,65 @@ protected:
 		PopParams[ i ] = InsertParams;
 		SparsePopSize = -1;
 	}
+
+	/**
+	 * Function generates a Gaussian-distributed pseudo-random number with
+	 * mean=0 and std.dev=1.
+	 *
+	 * @param rnd Uniform PRNG.
+	 */
+
+	static double getGaussian( CBiteRnd& rnd )
+	{
+		double q, u, v;
+
+		do
+		{
+			u = rnd.getRndValue();
+			v = rnd.getRndValue();
+
+			if( u <= 0.0 || v <= 0.0 )
+			{
+				u = 1.0;
+				v = 1.0;
+			}
+
+			v = 1.7156 * ( v - 0.5 );
+			const double x = u - 0.449871;
+			const double y = fabs( v ) + 0.386595;
+			q = x * x + y * ( 0.19600 * y - 0.25472 * x );
+
+			if( q < 0.27597 )
+			{
+				break;
+			}
+		} while(( q > 0.27846 ) || ( v * v > -4.0 * log( u ) * u * u ));
+
+		return( v / u );
+	}
+
+	/**
+	 * Function generates a Gaussian-distributed pseudo-random number, in
+	 * integer scale, with the specified mean and std.dev.
+	 *
+	 * @param rnd Uniform PRNG.
+	 * @param sd Standard deviation multiplier.
+	 * @param meanInt Mean value, in integer scale.
+	 */
+
+	static ptype getGaussianInt( CBiteRnd& rnd, const double sd,
+		const ptype meanInt )
+	{
+		while( true )
+		{
+			const double r = getGaussian( rnd ) * sd;
+
+			if( r > -8.0 && r < 8.0 )
+			{
+				return( (ptype) ( r * IntMantMult + meanInt ));
+			}
+		}
+	}
 };
 
 /**
@@ -1175,8 +1238,8 @@ protected:
 	static const int MaxParPopCount = 8; ///< The maximal number of parallel
 		///< population supported.
 		///<
-	CBiteOptPop< ptype >* ParPops[ MaxParPopCount ]; ///< Parallel population
-		///< orbiting *this population.
+	CBiteOptPop< ptype >* ParPops[ MaxParPopCount ]; ///< Parallel
+		///< population orbiting *this population.
 		///<
 	int ParPopCount; ///< Parallel population count. This variable should only
 		///< be changed via the setParPopCount() function.
@@ -1462,31 +1525,19 @@ public:
 	}
 
 protected:
+	using CBiteOptParPops< ptype > :: IntMantMask;
+	using CBiteOptParPops< ptype > :: IntMantMult;
+	using CBiteOptParPops< ptype > :: IntMantMult2;
+	using CBiteOptParPops< ptype > :: IntMantMultM;
 	using CBiteOptParPops< ptype > :: ParamCount;
 	using CBiteOptParPops< ptype > :: PopSize;
-	using CBiteOptParPops< ptype > :: PopSize1;
 	using CBiteOptParPops< ptype > :: CurPopSize;
 	using CBiteOptParPops< ptype > :: CurPopSize1;
 	using CBiteOptParPops< ptype > :: CurPopPos;
 	using CBiteOptParPops< ptype > :: NeedCentUpdate;
+	using CBiteOptParPops< ptype > :: SparsePopSize;
+	using CBiteOptParPops< ptype > :: resetCurPopPos;
 
-	static const int IntMantBits = 58; ///< Mantissa size of the integer
-		///< parameter values (higher by 1 bit in practice for real value
-		///< 1.0). Should account for a sign bit, and possible overflow during
-		///< centroid calculation.
-		///<
-	static const int64_t IntMantMult = 1LL << IntMantBits; ///< Mantissa
-		///< multiplier.
-		///<
-	static const int64_t IntMantMultM = -IntMantMult; ///< Negative
-		///< IntMantMult.
-		///<
-	static const int64_t IntMantMult2 = ( IntMantMult << 1 ); ///< =
-		///< IntMantMult * 2.
-		///<
-	static const int64_t IntMantMask = IntMantMult - 1; ///< Mask that
-		///< corresponds to mantissa.
-		///<
 	double* MinValues; ///< Minimal parameter values.
 		///<
 	double* MaxValues; ///< Maximal parameter values.
@@ -1549,16 +1600,17 @@ protected:
 
 	/**
 	 * Function resets common variables used by optimizers to their default
-	 * values, including registered histograms. This function is usually
-	 * called in the init() function of the optimizer.
+	 * values, including registered histograms, calls the resetCurPopPos()
+	 * function. This function is usually called in the init() function of the
+	 * optimizer.
 	 */
 
 	void resetCommonVars( CBiteRnd& rnd )
 	{
+		resetCurPopPos();
+
 		CurPopSize = PopSize;
-		CurPopSize1 = PopSize1;
-		CurPopPos = 0;
-		NeedCentUpdate = false;
+		CurPopSize1 = PopSize - 1;
 		BestCost = 1e300;
 		StallCount = 0;
 		HiBound = 1e300;
@@ -1878,65 +1930,6 @@ protected:
 		for( i = 0; i < c; i++ )
 		{
 			ApplyHists[ i ] -> decr();
-		}
-	}
-
-	/**
-	 * Function generates a Gaussian-distributed pseudo-random number with
-	 * mean=0 and std.dev=1.
-	 *
-	 * @param rnd Uniform PRNG.
-	 */
-
-	static double getGaussian( CBiteRnd& rnd )
-	{
-		double q, u, v;
-
-		do
-		{
-			u = rnd.getRndValue();
-			v = rnd.getRndValue();
-
-			if( u <= 0.0 || v <= 0.0 )
-			{
-				u = 1.0;
-				v = 1.0;
-			}
-
-			v = 1.7156 * ( v - 0.5 );
-			const double x = u - 0.449871;
-			const double y = fabs( v ) + 0.386595;
-			q = x * x + y * ( 0.19600 * y - 0.25472 * x );
-
-			if( q < 0.27597 )
-			{
-				break;
-			}
-		} while(( q > 0.27846 ) || ( v * v > -4.0 * log( u ) * u * u ));
-
-		return( v / u );
-	}
-
-	/**
-	 * Function generates a Gaussian-distributed pseudo-random number, in
-	 * integer scale, with the specified mean and std.dev.
-	 *
-	 * @param rnd Uniform PRNG.
-	 * @param sd Standard deviation multiplier.
-	 * @param meanInt Mean value, in integer scale.
-	 */
-
-	static ptype getGaussianInt( CBiteRnd& rnd, const double sd,
-		const ptype meanInt )
-	{
-		while( true )
-		{
-			const double r = getGaussian( rnd ) * sd;
-
-			if( r > -8.0 && r < 8.0 )
-			{
-				return( (ptype) ( r * IntMantMult + meanInt ));
-			}
 		}
 	}
 };
