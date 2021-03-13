@@ -15,7 +15,7 @@
 //#define EVALBINS 1
 #define OPT_STATS 0 // Set to 1 to enable histogram statistics output.
 
-#if 1
+#if 0
 	#define OPT_THREADS 1
 	#include "/libvox/Sources/Core/CWorkerThreadPool.h"
 	using namespace vox;
