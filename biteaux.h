@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.16
+ * @version 2021.17
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -98,7 +98,7 @@ public:
 
 	inline static int getRawScale()
 	{
-		return( 0x40000000 );
+		return( raw_scale );
 	}
 
 	/**
@@ -108,7 +108,7 @@ public:
 
 	inline static int getRawBitCount()
 	{
-		return( 30 );
+		return( raw_bits );
 	}
 
 	/**
@@ -118,7 +118,7 @@ public:
 
 	inline static double getRawScaleInv()
 	{
-		static const double m = 0.5 / ( 1ULL << ( getRawBitCount() - 1 ));
+		static const double m = 0.5 / ( 1ULL << ( raw_bits - 1 ));
 
 		return( m );
 	}
@@ -131,7 +131,19 @@ public:
 	{
 		advance();
 
-		return(( seed >> 34 ) * getRawScaleInv() );
+		return(( seed >> raw_shift ) * getRawScaleInv() );
+	}
+
+	/**
+	 * @return Random number in the range [0; 1), squared.
+	 */
+
+	double getRndValueSqr()
+	{
+		advance();
+		const double v = ( seed >> raw_shift ) * getRawScaleInv();
+
+		return( v * v );
 	}
 
 	/**
@@ -142,7 +154,7 @@ public:
 	{
 		advance();
 
-		return( (int) ( seed >> 34 ));
+		return( (int) ( seed >> raw_shift ));
 	}
 
 	/**
@@ -153,10 +165,10 @@ public:
 	int64_t getUniformRaw2()
 	{
 		advance();
-		int64_t v = (int64_t) ( seed >> 34 );
+		int64_t v = (int64_t) ( seed >> raw_shift );
 
 		advance();
-		v |= (int64_t) ( seed >> 34 ) << getRawBitCount();
+		v |= (int64_t) ( seed >> raw_shift ) << raw_bits;
 
 		return( v );
 	}
@@ -168,10 +180,10 @@ public:
 	int getTPDFRaw()
 	{
 		advance();
-		const int v1 = (int) ( seed >> 34 );
+		const int v1 = (int) ( seed >> raw_shift );
 
 		advance();
-		const int v2 = (int) ( seed >> 34 );
+		const int v2 = (int) ( seed >> raw_shift );
 
 		return( v1 - v2 );
 	}
@@ -186,7 +198,7 @@ public:
 		if( BitsLeft == 0 )
 		{
 			BitPool = getUniformRaw();
-			BitsLeft = getRawBitCount() - 1 - 10; // Skip lower bits to get
+			BitsLeft = raw_bits - 1 - 10; // Skip lower bits to get
 				// statistically-better bit range.
 
 			BitPool >>= 10;
@@ -218,6 +230,15 @@ public:
 	}
 
 private:
+	static const int raw_bits = 30; ///< The number of higher bits used for
+		///< PRNG output.
+		///<
+	static const int raw_scale = 1 << raw_bits; ///< The scale of the "raw"
+		///< PRNG output.
+		///<
+	static const int raw_shift = sizeof( uint64_t ) * 8 - raw_bits; ///<
+		///< "seed" value's bit shift to obtain the output value.
+		///<
 	uint64_t seed; ///< The current random seed value.
 		///<
 	int BitPool; ///< Bit pool.
@@ -246,7 +267,7 @@ public:
 	 * This function resets histogram, should be called before calling other
 	 * functions, including after object's construction.
 	 *
-	 * @param rnd PRNG object. Not used.
+	 * @param rnd PRNG object.
 	 */
 
 	virtual void reset( CBiteRnd& rnd ) = 0;
@@ -260,16 +281,20 @@ public:
 	/**
 	 * This function should be called when a certain choice is successful.
 	 * This function should only be called after a prior select() calls.
+	 *
+	 * @param rnd PRNG object. May not be used.
 	 */
 
-	virtual void incr() = 0;
+	virtual void incr( CBiteRnd& rnd ) = 0;
 
 	/**
 	 * This function should be called when a certain choice is a failure.
 	 * This function should only be called after a prior select() calls.
+	 *
+	 * @param rnd PRNG object. May not be used.
 	 */
 
-	virtual void decr() = 0;
+	virtual void decr( CBiteRnd& rnd ) = 0;
 
 	/**
 	 * Function returns the latest made choice index.
@@ -290,9 +315,6 @@ protected:
  * Histogram class. Used to keep track of success of various choices. Updates
  * probabilities of future choices based on the current histogram state. Uses
  * a self-optimization technique for internal parameters.
- *
- * If the choice is used to select probability value or some conditional
- * variable, the choice should be "unselected" if choice did not realise.
  *
  * @tparam Count The number of possible choices, greater than 1.
  */
@@ -324,7 +346,7 @@ public:
 		return( Count );
 	}
 
-	virtual void incr()
+	virtual void incr( CBiteRnd& rnd )
 	{
 		IncrDecrHist[ IncrDecr ]++;
 		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
@@ -333,7 +355,7 @@ public:
 		updateProbs();
 	}
 
-	virtual void decr()
+	virtual void decr( CBiteRnd& rnd )
 	{
 		IncrDecrHist[ IncrDecr ]--;
 		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
@@ -366,40 +388,6 @@ public:
 
 		Sel = Count - 1;
 		return( Count - 1 );
-	}
-
-	/**
-	 * Function makes a uniformly-distributed choice.
-	 *
-	 * @param rnd PRNG object.
-	 */
-
-	int selectRandom( CBiteRnd& rnd )
-	{
-		Sel = (int) ( rnd.getUniformRaw() * rcm );
-		return( Sel );
-	}
-
-	/**
-	 * Function forces a specified choice.
-	 *
-	 * @param s Choice index, must be in Count range.
-	 */
-
-	int selectForce( const int s )
-	{
-		Sel = s;
-		return( s );
-	}
-
-	/**
-	 * Function "unselects" a previously selected choice so that the choice on
-	 * either the incr() or decr() call is randomized.
-	 */
-
-	void unselect( CBiteRnd& rnd )
-	{
-		Sel = (int) ( rnd.getUniformRaw() * rcm );
 	}
 
 protected:
@@ -463,13 +451,115 @@ protected:
 };
 
 /**
+ * This is an advanced "hyper" histogram. It embeds several sub-histograms,
+ * and has a probability chance to reuse a previous successful choice. In most
+ * cases it is as efficient as a usual histogram, but in some cases, like
+ * solution generator selection, it is more effective. Several sub-histograms
+ * allow this "hyper" histogram to make a more balanced choices, without
+ * over-rating a particular choices.
+ *
+ * @tparam Count The number of possible choices, greater than 1.
+ */
+
+template< int Count >
+class CBiteOptHistHyper : virtual public CBiteOptHistBase
+{
+public:
+	CBiteOptHistHyper()
+		: rcm( Count * CBiteRnd :: getRawScaleInv() )
+	{
+	}
+
+	virtual void reset( CBiteRnd& rnd )
+	{
+		HyperHist.reset( rnd );
+		DrawHist.reset( rnd );
+
+		int i;
+
+		for( i = 0; i < HyperCount; i++ )
+		{
+			Hists[ i ].reset( rnd );
+		}
+
+		SelHyper = -1;
+		Sel = (int) ( rnd.getUniformRaw() * rcm );
+	}
+
+	virtual int getChoiceCount() const
+	{
+		return( Count );
+	}
+
+	virtual void incr( CBiteRnd& rnd )
+	{
+		DrawHist.incr( rnd );
+
+		if( SelHyper >= 0 )
+		{
+			HyperHist.incr( rnd );
+			Hists[ SelHyper ].incr( rnd );
+		}
+	}
+
+	virtual void decr( CBiteRnd& rnd )
+	{
+		DrawHist.decr( rnd );
+
+		if( SelHyper >= 0 )
+		{
+			HyperHist.decr( rnd );
+			Hists[ SelHyper ].decr( rnd );
+		}
+
+		Sel = (int) ( rnd.getUniformRaw() * rcm ); // Randomize prior choice.
+	}
+
+	int select( CBiteRnd& rnd )
+	{
+		const int SelDraw = DrawHist.select( rnd );
+
+		if( SelDraw == 0 )
+		{
+			SelHyper = HyperHist.select( rnd );
+			Sel = Hists[ SelHyper ].select( rnd );
+		}
+		else
+		if( SelDraw == 1 )
+		{
+			SelHyper = -1; // Reuse a prior successful choice.
+		}
+		else
+		{
+			SelHyper = -1;
+			Sel = (int) ( rnd.getUniformRaw() * rcm );
+		}
+
+		return( Sel );
+	}
+
+protected:
+	static const int HyperCount = Count; ///< The number of embedded
+		///< histograms.
+		///<
+	double rcm; ///< Raw random value multiplier that depends on Count.
+		///<
+	CBiteOptHist< 3 > DrawHist; /// Selection draw histogram.
+		///<
+	CBiteOptHist< HyperCount > HyperHist; /// Embedded histogram selector
+		///< histogram.
+		///<
+	CBiteOptHist< Count > Hists[ HyperCount ]; /// Embedded histograms.
+		///<
+	int SelHyper; ///< Previous embedded histogram selector, -1 - not used.
+		///<
+};
+
+/**
  * Histogram class for binary variables. A lot more computationally-efficient,
  * but functionally similar to the CBiteOptHistogram class. In some instances,
  * provides better statistics, especially if some choice is effective for a
  * prolonged time.
- *
- * The choice should be set to a random choice if the probability does not
- * realise.
  */
 
 class CBiteOptHistBinary : virtual public CBiteOptHistBase
@@ -493,11 +583,7 @@ public:
 		return( 2 );
 	}
 
-	/**
-	 * This function should be called when a certain choice is successful.
-	 */
-
-	virtual void incr()
+	virtual void incr( CBiteRnd& rnd )
 	{
 		IncrDecrHist[ IncrDecr ]++;
 		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
@@ -505,11 +591,7 @@ public:
 		Hist[ Sel ] += IncrDecr;
 	}
 
-	/**
-	 * This function should be called when a certain choice is a failure.
-	 */
-
-	virtual void decr()
+	virtual void decr( CBiteRnd& rnd )
 	{
 		IncrDecrHist[ IncrDecr ]--;
 		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
@@ -528,16 +610,6 @@ public:
 	{
 		Sel = ( Hist[ 1 ] > Hist[ 0 ]);
 		return( Sel );
-	}
-
-	/**
-	 * Function "unselects" a previously selected choice so that the choice on
-	 * either incr() or decr() call is randomized.
-	 */
-
-	void unselect( CBiteRnd& rnd )
-	{
-		Sel = rnd.getBit();
 	}
 
 protected:
@@ -1147,6 +1219,69 @@ protected:
 	}
 
 	/**
+	 * Function wraps the specified parameter value so that it stays in the
+	 * [0.0; 1.0] range (including in integer range), by wrapping it over the
+	 * boundaries using random operator. This operation improves convergence
+	 * in comparison to clamping.
+	 *
+	 * @param v Parameter value to wrap.
+	 * @return Wrapped parameter value.
+	 */
+
+	static ptype wrapParam( CBiteRnd& rnd, const ptype v )
+	{
+		if( (ptype) 0.25 == 0 )
+		{
+			if( v < 0 )
+			{
+				if( v > IntMantMultM )
+				{
+					return( (ptype) ( rnd.getRndValue() * -v ));
+				}
+
+				return( (ptype) ( rnd.getUniformRaw2() & IntMantMask ));
+			}
+
+			if( v > IntMantMult )
+			{
+				if( v < IntMantMult2 )
+				{
+					return( (ptype) ( IntMantMult -
+						rnd.getRndValue() * ( v - IntMantMult )));
+				}
+
+				return( (ptype) ( rnd.getUniformRaw2() & IntMantMask ));
+			}
+
+			return( v );
+		}
+		else
+		{
+			if( v < 0.0 )
+			{
+				if( v > -1.0 )
+				{
+					return( (ptype) ( rnd.getRndValue() * -v ));
+				}
+
+				return( (ptype) rnd.getRndValue() );
+			}
+
+			if( v > 1.0 )
+			{
+				if( v < 2.0 )
+				{
+					return( (ptype) ( 1.0 - rnd.getRndValue() * ( v - 1.0 )));
+				}
+
+				return( (ptype) rnd.getRndValue() );
+			}
+
+			return( v );
+		}
+	}
+
+	/**
 	 * Function generates a Gaussian-distributed pseudo-random number with
 	 * mean=0 and std.dev=1.
 	 *
@@ -1525,10 +1660,7 @@ public:
 	}
 
 protected:
-	using CBiteOptParPops< ptype > :: IntMantMask;
 	using CBiteOptParPops< ptype > :: IntMantMult;
-	using CBiteOptParPops< ptype > :: IntMantMult2;
-	using CBiteOptParPops< ptype > :: IntMantMultM;
 	using CBiteOptParPops< ptype > :: ParamCount;
 	using CBiteOptParPops< ptype > :: PopSize;
 	using CBiteOptParPops< ptype > :: CurPopSize;
@@ -1601,12 +1733,13 @@ protected:
 	/**
 	 * Function resets common variables used by optimizers to their default
 	 * values, including registered histograms, calls the resetCurPopPos()
-	 * function. This function is usually called in the init() function of the
-	 * optimizer.
+	 * and updateDiffValues() functions. This function is usually called in
+	 * the init() function of the optimizer.
 	 */
 
 	void resetCommonVars( CBiteRnd& rnd )
 	{
+		updateDiffValues();
 		resetCurPopPos();
 
 		CurPopSize = PopSize;
@@ -1629,15 +1762,13 @@ protected:
 	/**
 	 * Function updates values in the DiffValues array, based on values in the
 	 * MinValues and MaxValues arrays.
-	 *
-	 * @param IsInt Apply IntMantMult divisor.
 	 */
 
-	void updateDiffValues( const bool IsInt )
+	void updateDiffValues()
 	{
 		int i;
 
-		if( IsInt )
+		if( (ptype) 0.25 == 0 )
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -1689,41 +1820,6 @@ protected:
 
 	/**
 	 * Function wraps the specified parameter value so that it stays in the
-	 * [0.0; 1.0] range, by wrapping it over the boundaries using random
-	 * operator. This operation improves convergence in comparison to
-	 * clamping.
-	 *
-	 * @param v Parameter value to wrap.
-	 * @return Wrapped parameter value.
-	 */
-
-	static double wrapParam( CBiteRnd& rnd, const double v )
-	{
-		if( v < 0.0 )
-		{
-			if( v > -1.0 )
-			{
-				return( rnd.getRndValue() * -v );
-			}
-
-			return( rnd.getRndValue() );
-		}
-
-		if( v > 1.0 )
-		{
-			if( v < 2.0 )
-			{
-				return( 1.0 - rnd.getRndValue() * ( v - 1.0 ));
-			}
-
-			return( rnd.getRndValue() );
-		}
-
-		return( v );
-	}
-
-	/**
-	 * Function wraps the specified parameter value so that it stays in the
 	 * [MinValue; MaxValue] real range, by wrapping it over the boundaries
 	 * using random operator. This operation improves convergence in
 	 * comparison to clamping.
@@ -1767,42 +1863,6 @@ protected:
 	}
 
 	/**
-	 * Function wraps the specified parameter value so that it stays in the
-	 * [0.0; 1.0] range (integer), by wrapping it over the boundaries using
-	 * random operator. This operation improves convergence in comparison to
-	 * clamping.
-	 *
-	 * @param v Parameter value to wrap.
-	 * @return Wrapped parameter value.
-	 */
-
-	static ptype wrapParamInt( CBiteRnd& rnd, const ptype v )
-	{
-		if( v < 0 )
-		{
-			if( v > IntMantMultM )
-			{
-				return( (ptype) ( rnd.getRndValue() * -v ));
-			}
-
-			return( (ptype) ( rnd.getUniformRaw2() & IntMantMask ));
-		}
-
-		if( v > IntMantMult )
-		{
-			if( v < IntMantMult2 )
-			{
-				return( (ptype) ( IntMantMult -
-					rnd.getRndValue() * ( v - IntMantMult )));
-			}
-
-			return( (ptype) ( rnd.getUniformRaw2() & IntMantMask ));
-		}
-
-		return( v );
-	}
-
-	/**
 	 * Function adds a histogram to the Hists list.
 	 *
 	 * @param h Histogram object to add.
@@ -1834,40 +1894,6 @@ protected:
 	}
 
 	/**
-	 * Function performs random choice selection based on histogram's choice
-	 * count, and adds the histogram to apply list.
-	 *
-	 * @param Hist Histogram.
-	 * @param rnd PRNG object.
-	 */
-
-	template< class T >
-	int selectRandom( T& Hist, CBiteRnd& rnd )
-	{
-		ApplyHists[ ApplyHistsCount ] = &Hist;
-		ApplyHistsCount++;
-
-		return( Hist.selectRandom( rnd ));
-	}
-
-	/**
-	 * Function forces a specified choice selection to the histogram, and adds
-	 * the histogram to apply list.
-	 *
-	 * @param Hist Histogram.
-	 * @param s Choice index. Will be returned unchanged.
-	 */
-
-	template< class T >
-	int selectForce( T& Hist, const int s )
-	{
-		ApplyHists[ ApplyHistsCount ] = &Hist;
-		ApplyHistsCount++;
-
-		return( Hist.selectForce( s ));
-	}
-
-	/**
 	 * Function performs choice selection based on the specified histogram,
 	 * and adds the histogram to apply list. Specialized for binary
 	 * histograms.
@@ -1885,25 +1911,12 @@ protected:
 	}
 
 	/**
-	 * Function "unselects" a previously selected choice in the specified
-	 * histogram so that the choice on either the applyHistsIncr() or
-	 * applyHistsDecr() call is randomized.
+	 * Function applies histogram increments on optimization success.
 	 *
-	 * @param Hist Histogram.
 	 * @param rnd PRNG object.
 	 */
 
-	template< class T >
-	void unselect( T& Hist, CBiteRnd& rnd )
-	{
-		Hist.unselect( rnd );
-	}
-
-	/**
-	 * Function applies histogram increments on optimization success.
-	 */
-
-	void applyHistsIncr()
+	void applyHistsIncr( CBiteRnd& rnd )
 	{
 		const int c = ApplyHistsCount;
 		ApplyHistsCount = 0;
@@ -1912,15 +1925,17 @@ protected:
 
 		for( i = 0; i < c; i++ )
 		{
-			ApplyHists[ i ] -> incr();
+			ApplyHists[ i ] -> incr( rnd );
 		}
 	}
 
 	/**
 	 * Function applies histogram decrements on optimization fail.
+	 *
+	 * @param rnd PRNG object.
 	 */
 
-	void applyHistsDecr()
+	void applyHistsDecr( CBiteRnd& rnd )
 	{
 		const int c = ApplyHistsCount;
 		ApplyHistsCount = 0;
@@ -1929,7 +1944,7 @@ protected:
 
 		for( i = 0; i < c; i++ )
 		{
-			ApplyHists[ i ] -> decr();
+			ApplyHists[ i ] -> decr( rnd );
 		}
 	}
 };

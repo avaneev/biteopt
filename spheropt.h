@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.16
+ * @version 2021.17
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -57,7 +57,6 @@ public:
 		addHist( CentPowHist, "CentPowHist" );
 		addHist( RadPowHist, "RadPowHist" );
 		addHist( EvalFacHist, "EvalFacHist" );
-		addHist( PopChangeHist, "PopChangeHist" );
 	}
 
 	/**
@@ -99,7 +98,6 @@ public:
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
 
-		updateDiffValues( false );
 		resetCommonVars( rnd );
 
 		Radius = 0.5 * InitRadius;
@@ -232,23 +230,20 @@ public:
 
 		if( cure >= curem )
 		{
-			bool DoPopIncr;
 			AvgCost /= cure;
 
 			if( AvgCost < HiBound )
 			{
 				HiBound = AvgCost;
 				StallCount = 0;
-				DoPopIncr = true; // This is not exactly logical, but works.
 
-				applyHistsIncr();
+				applyHistsIncr( rnd );
 			}
 			else
 			{
 				StallCount += cure;
-				DoPopIncr = false;
 
-				applyHistsDecr();
+				applyHistsDecr( rnd );
 			}
 
 			AvgCost = 0.0;
@@ -256,31 +251,6 @@ public:
 			cure = 0;
 
 			update( rnd );
-
-			if( DoPopIncr )
-			{
-				if( CurPopSize < PopSize )
-				{
-					if( select( PopChangeHist, rnd ))
-					{
-						// Increase population size on fail.
-
-						incrCurPopSize();
-					}
-				}
-			}
-			else
-			{
-				if( CurPopSize > ( PopSize >> 1 ))
-				{
-					if( select( PopChangeHist, rnd ))
-					{
-						// Decrease population size on success.
-
-						decrCurPopSize();
-					}
-				}
-			}
 
 			curem = (int) ceil( CurPopSize * EvalFac );
 		}
@@ -313,9 +283,6 @@ protected:
 	CBiteOptHist< 4 > RadPowHist; ///< Radius power factor histogram.
 		///<
 	CBiteOptHist< 3 > EvalFacHist; ///< EvalFac histogram.
-		///<
-	CBiteOptHist< 2 > PopChangeHist; ///< Population size change
-		///< histogram.
 		///<
 
 	virtual void initBuffers( const int aParamCount, const int aPopSize )

@@ -53,7 +53,7 @@ the method is to provide fast solutions for computationally expensive
 
 This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
-evaluated): [Comparison of derivative-free optimization algorithms](http://archimedes.cheme.cmu.edu/?q=dfocomp).
+evaluated): [Comparison of derivative-free optimization algorithms](https://sahinidis.coe.gatech.edu/?q=dfocomp).
 This method was able to solve 76% of non-convex smooth problems in 10
 attempts, 2500 iterations each. It comes 2nd (very close to the 1st) in the
 comparison on non-convex smooth problems (see Fig.9 in the paper). With a huge
@@ -64,13 +64,13 @@ On a comparable test function suite and conditions outlined at this page:
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
 attempt success rate is >93% while the average number of objective function
-evaluations is ~370.
+evaluations is ~360.
 
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of
 version 2021.1, BiteOpt's "solvability" exceeds CMA-ES on synthetic function
 sets that involve random coordinate axis rotations and offsets (e.g. [BBOB
-suite](http://coco.gforge.inria.fr/)). BiteOptDeep (e.g. with M=6)
+suite](https://coco.gforge.inria.fr/)). BiteOptDeep (e.g. with M=6)
 considerably outperforms CMA-ES in "solvability".
 
 As a matter of sport curiosity, BiteOpt is able to solve in reasonable time

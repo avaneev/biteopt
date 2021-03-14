@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.16
+ * @version 2021.17
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -83,7 +83,6 @@ public:
 		getMinValues( MinValues );
 		getMaxValues( MaxValues );
 
-		updateDiffValues( false );
 		resetCommonVars( rnd );
 
 		cure = 0;
