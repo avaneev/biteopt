@@ -152,7 +152,7 @@ In most cases it is more efficient to rerun the optimization with a new random
 seed than to wait for the optimization process to converge. Based on the
 results of optimization of the test corpus, for 2-dimensional functions it is
 reasonable to expect convergence in 1000 iterations (in a successful attempt),
-for 10-dimensional functions it is reasonable to expect convergence in 5000
+for 10-dimensional functions it is reasonable to expect convergence in 7000
 iterations (harder functions may require more iterations to converge). Most
 classic 2-dimensional problems converge in 400 iterations or less, at 1e-6
 precision.

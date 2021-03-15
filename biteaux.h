@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.17
+ * @version 2021.18
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -325,7 +325,6 @@ class CBiteOptHist : virtual public CBiteOptHistBase
 public:
 	CBiteOptHist()
 		: m( 1.0 / Count )
-		, rcm( Count * CBiteRnd :: getRawScaleInv() )
 	{
 	}
 
@@ -335,10 +334,11 @@ public:
 		IncrDecrHist[ 1 ] = b;
 		IncrDecrHist[ 2 ] = 1 - b;
 		IncrDecr = 2 - b;
-		Sel = (int) ( rnd.getUniformRaw() * rcm );
 
 		memset( Hist, 0, sizeof( Hist ));
 		updateProbs();
+
+		select( rnd );
 	}
 
 	virtual int getChoiceCount() const
@@ -390,10 +390,19 @@ public:
 		return( Count - 1 );
 	}
 
+	/**
+	 * Function "forces" a specific choice on a histogram.
+	 *
+	 * @param NewSel New choice selection.
+	 */
+
+	void set( const int NewSel )
+	{
+		Sel = NewSel;
+	}
+
 protected:
 	double m; ///< Multiplier (depends on Divisor).
-		///<
-	double rcm; ///< Raw random value multiplier that depends on Count.
 		///<
 	int Hist[ Count ]; ///< Histogram.
 		///<
@@ -482,7 +491,7 @@ public:
 			Hists[ i ].reset( rnd );
 		}
 
-		SelHyper = -1;
+		SelHyper = HyperHist.select( rnd );
 		Sel = (int) ( rnd.getUniformRaw() * rcm );
 	}
 
@@ -494,45 +503,36 @@ public:
 	virtual void incr( CBiteRnd& rnd )
 	{
 		DrawHist.incr( rnd );
-
-		if( SelHyper >= 0 )
-		{
-			HyperHist.incr( rnd );
-			Hists[ SelHyper ].incr( rnd );
-		}
+		HyperHist.incr( rnd );
+		Hists[ SelHyper ].incr( rnd );
 	}
 
 	virtual void decr( CBiteRnd& rnd )
 	{
 		DrawHist.decr( rnd );
-
-		if( SelHyper >= 0 )
-		{
-			HyperHist.decr( rnd );
-			Hists[ SelHyper ].decr( rnd );
-		}
-
+		HyperHist.decr( rnd );
+		Hists[ SelHyper ].decr( rnd );
 		Sel = (int) ( rnd.getUniformRaw() * rcm ); // Randomize prior choice.
 	}
 
 	int select( CBiteRnd& rnd )
 	{
 		const int SelDraw = DrawHist.select( rnd );
+		SelHyper = HyperHist.select( rnd );
 
 		if( SelDraw == 0 )
 		{
-			SelHyper = HyperHist.select( rnd );
 			Sel = Hists[ SelHyper ].select( rnd );
 		}
 		else
 		if( SelDraw == 1 )
 		{
-			SelHyper = -1; // Reuse a prior successful choice.
+			Hists[ SelHyper ].set( Sel );
 		}
 		else
 		{
-			SelHyper = -1;
 			Sel = (int) ( rnd.getUniformRaw() * rcm );
+			Hists[ SelHyper ].set( Sel );
 		}
 
 		return( Sel );

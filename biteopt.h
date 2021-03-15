@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.17
+ * @version 2021.18
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -59,9 +59,10 @@ public:
 		addHist( M1AHist, "M1AHist" );
 		addHist( M1BHist, "M1BHist" );
 		addHist( PopChangeHist, "PopChangeHist" );
-		addHist( ParPopUpdHist, "ParPopUpdHist" );
 		addHist( ParOpt2Hist, "ParOpt2Hist" );
-		addHist( ParPopPHist, "ParPopPHist" );
+		addHist( ParPopPHist[ 0 ], "ParPopPHist[ 0 ]" );
+		addHist( ParPopPHist[ 1 ], "ParPopPHist[ 1 ]" );
+		addHist( ParPopPHist[ 2 ], "ParPopPHist[ 2 ]" );
 		addHist( ParPopHist[ 0 ], "ParPopHist[ 0 ]" );
 		addHist( ParPopHist[ 1 ], "ParPopHist[ 1 ]" );
 		addHist( ParPopHist[ 2 ], "ParPopHist[ 2 ]" );
@@ -406,10 +407,7 @@ public:
 
 		// "Diverging populations" technique.
 
-		if( select( ParPopUpdHist, rnd ))
-		{
-			updateParPop( NewCost, TmpParams );
-		}
+		updateParPop( NewCost, TmpParams );
 
 		CentUpdateCtr++;
 
@@ -440,7 +438,7 @@ protected:
 	CBiteOptHistHyper< 4 > MethodHist; ///< Population generator 4-method
 		///< histogram.
 		///<
-	CBiteOptHist< 2 > M1Hist; ///< Method 1's sub-method histogram.
+	CBiteOptHistHyper< 2 > M1Hist; ///< Method 1's sub-method histogram.
 		///<
 	CBiteOptHist< 2 > M1AHist; ///< Method 1's sub-sub-method A histogram.
 		///<
@@ -449,14 +447,11 @@ protected:
 	CBiteOptHist< 2 > PopChangeHist; ///< Population size change
 		///< histogram.
 		///<
-	CBiteOptHist< 2 > ParPopUpdHist; ///< Parallel population update
-		///< histogram.
-		///<
 	CBiteOptHist< 2 > ParOpt2Hist; ///< Parallel optimizer 2 use
 		///< histogram.
 		///<
-	CBiteOptHist< 2 > ParPopPHist; ///< Parallel population use probability
-		///< histogram.
+	CBiteOptHist< 2 > ParPopPHist[ 3 ]; ///< Parallel population use
+		///< probability histogram.
 		///<
 	CBiteOptHist< 4 > ParPopHist[ 3 ]; ///< Parallel population
 		///< histograms for solution generators (template's Count parameter
@@ -570,7 +565,7 @@ protected:
 
 	CBiteOptPop& selectParPop( const int gi, CBiteRnd& rnd )
 	{
-		if( select( ParPopPHist, rnd ))
+		if( select( ParPopPHist[ gi ], rnd ))
 		{
 			return( *ParPops[ select( ParPopHist[ gi ], rnd )]);
 		}
@@ -917,7 +912,8 @@ protected:
 			const ptype crpl = (ptype) ( rnd.getUniformRaw2() & IntMantMask );
 
 			ptype v1 = CrossParams1[ i ];
-			ptype v2 = ( UseInv ? ~CrossParams2[ i ] : CrossParams2[ i ]);
+			ptype v2 = ( UseInv && rnd.getBit() ?
+				~CrossParams2[ i ] : CrossParams2[ i ]);
 
 			if( rnd.getBit() )
 			{
