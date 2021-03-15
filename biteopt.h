@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.18
+ * @version 2021.19
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -538,7 +538,7 @@ protected:
 		///<
 
 	/**
-	 * Function updates a selected parallel population.
+	 * Function updates an appropriate parallel population.
 	 *
 	 * @param NewCost Cost of the new solution.
 	 * @param UpdParams New parameter values.
@@ -546,7 +546,7 @@ protected:
 
 	void updateParPop( const double NewCost, const ptype* const UpdParams )
 	{
-		const int p = getMaxDistParPop( NewCost, UpdParams );
+		const int p = getMinDistParPop( NewCost, UpdParams );
 
 		if( p >= 0 )
 		{

@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.18
+ * @version 2021.19
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -1403,7 +1403,7 @@ protected:
 	}
 
 	/**
-	 * Function returns index of the parallel population that is most distant
+	 * Function returns index of the parallel population that is most close
 	 * to the specified parameter vector. Function returns -1 if the cost
 	 * constraint is not met in all parallel populations.
 	 *
@@ -1412,7 +1412,7 @@ protected:
 	 * @param p Parameter vector.
 	 */
 
-	int getMaxDistParPop( const double Cost, const ptype* const p ) const
+	int getMinDistParPop( const double Cost, const ptype* const p ) const
 	{
 		int ppi[ MaxParPopCount ];
 		int ppc = 0;
@@ -1519,7 +1519,7 @@ protected:
 
 		for( i = 1; i < ppc; i++ )
 		{
-			if( s[ i ] >= d )
+			if( s[ i ] <= d )
 			{
 				pp = i;
 				d = s[ i ];
