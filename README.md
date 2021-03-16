@@ -18,6 +18,7 @@
 * [SMA-ES](#sma-es)
 * [SpherOpt](#spheropt)
 * [NMSeqOpt](#nmseqopt)
+* [Citing](#citing)
 
 ## Introduction ##
 
@@ -529,3 +530,16 @@ This method uses the same self-optimization technique as the BiteOpt method.
 `nmsopt.cpp` - CNMSeqOpt class that implements sequential Nelder-Mead simplex
 method with "stall count" tracking. This optimizer is used as an alternative
 parallel optimizer in BiteOpt.
+
+## Citing ##
+
+```bibtex
+@misc{biteopt,
+    author = {Aleksey Vaneev},
+    title = {{BITEOPT - Derivative-free optimization method}},
+    year = {2021},
+    publisher = {GitHub},
+    journal = {GitHub repository},
+    howpublished = {\url{https://github.com/avaneev/biteopt}},
+}
+```
