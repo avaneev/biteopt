@@ -12,7 +12,6 @@
 * [Convergence proof](#convergence-proof)
 * [Tested uses](#tested-uses)
 * [Examples](#examples)
-* [Users](#users)
 * [Method description](#method-description)
 * [Method philosophy](#method-philosophy)
 * [SMA-ES](#sma-es)
@@ -349,19 +348,6 @@ in 4% of objective function evaluation on average.
 3. The method uses LCG pseudo-random number generator due to its efficiency.
 The method was also tested with a more statistically-correct PRNG and the
 difference turned out to be negligible.
-
-## Users ##
-
-This library is used by:
-
-Please drop me a note at aleksey.vaneev@gmail.com and I will include a link to
-your project to the list of users.
-
-## Other ##
-
-[Follow me on Twitter](https://twitter.com/AlekseyVaneev)
-
-[Become a patron on Patreon](https://patreon.com/aleksey_vaneev)
 
 ## Method description ##
 
