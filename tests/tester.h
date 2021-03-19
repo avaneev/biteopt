@@ -9,9 +9,9 @@
 #include "../nmsopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CSpherOpt//CSMAESOpt//CCMAESOpt//CNMSeqOpt//CBiteOptDeep//
+#define OPT_CLASS CBiteOpt//CSMAESOpt//CNMSeqOpt//CSpherOpt//CCMAESOpt//CBiteOptDeep//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
-//#define OPT_PLATEAU_MUL 64 // Comment out to disable plateau check.
+//#define OPT_PLATEAU_MUL 64 // Uncomment to enable plateau check.
 //#define EVALBINS 1
 #define OPT_STATS 0 // Set to 1 to enable histogram statistics output.
 
@@ -36,11 +36,19 @@
 class CSumStats
 {
 public:
+	int SumIt; ///< The overall number of performed function evaluations in
+		///< successful attempts.
+		///<
 	double SumIt_l10n; ///< = sum( log( It ) / log( 10 )) in completed
 		///< attempts.
 		///<
-	double SumRjCost; ///< Summary costs detected in all attempts (successful
-		///< attempts include cost prior to success).
+	int SumItImpr; ///< Sum of improving iterations across successful
+		///< attempts.
+		///<
+	double SumRjCost; ///< Summary unbiased costs detected in all rejected
+		///< attempts.
+		///<
+	double SumRMS; ///< = sum( RMS ).
 		///<
 	double SumRMS_l10n; ///< = sum( log( RMS / N ) / log( 10 )).
 		///<
@@ -50,12 +58,6 @@ public:
 		///< Must be set externally.
 		///<
 	int ComplAttempts; ///< The overall number of successful function
-		///< attempts.
-		///<
-	int SumIters; ///< The overall number of performed function evaluations
-		///< in successful attempts.
-		///<
-	int SumImprIters; ///< Sum of improving iterations across sucessful
 		///< attempts.
 		///<
 	int ComplFuncs; ///< The total number of optimized functions.
@@ -84,13 +86,14 @@ public:
 
 	void clear()
 	{
+		SumIt = 0;
+		SumItImpr = 0;
 		SumIt_l10n = 0.0;
 		SumRjCost = 0.0;
+		SumRMS = 0.0;
 		SumRMS_l10n = 0.0;
 		SumRMSCount = 0;
 		ComplAttempts = 0;
-		SumIters = 0;
-		SumImprIters = 0;
 		ComplFuncs = 0;
 
 		#if defined( EVALBINS )
@@ -121,15 +124,13 @@ public:
 class CFuncStats
 {
 public:
-	double MinCost; ///< Minimal cost detected in successes.
-		///<
-	double MinRjCost; ///< Minimal cost detected in rejects.
+	double MinCost; ///< Minimal cost detected in all attempts.
 		///<
 	double SumRjCost; ///< Summary rejects cost.
 		///<
 	int ComplAttempts; ///< The number of completed attempts.
 		///<
-	int SumComplIters; ///< Sum of iterations in completed attempts.
+	int SumItCompl; ///< Sum of iterations in completed attempts.
 		///<
 
 	CFuncStats()
@@ -140,10 +141,9 @@ public:
 	void clear()
 	{
 		MinCost = 1e300;
-		MinRjCost = 1e300;
 		SumRjCost = 0.0;
 		ComplAttempts = 0;
-		SumComplIters = 0;
+		SumItCompl = 0;
 	}
 };
 
@@ -408,15 +408,12 @@ public:
 
 				Iters[ Index ] = i;
 				FuncStats -> ComplAttempts++;
-				FuncStats -> SumComplIters += i;
-				FuncStats -> SumRjCost += PrevCost;
+				FuncStats -> SumItCompl += i;
 				SumStats -> ComplAttempts++;
-				SumStats -> SumIters += i;
-				SumStats -> SumImprIters += ImprIters;
+				SumStats -> SumIt += i;
+				SumStats -> SumItImpr += ImprIters;
 				SumStats -> SumIt_l10n += log( (double) i / Dims ) /
 					log( 10.0 );
-
-				SumStats -> SumRjCost += PrevCost;
 
 				#if OPT_STATS
 				for( k = 0; k < getHistCount(); k++ )
@@ -439,7 +436,7 @@ public:
 				break;
 			}
 
-			PrevCost = getBestCost() - optv;
+			PrevCost = getBestCost();
 
 			#if defined( OPT_PLATEAU_MUL )
 			if( sc > Dims * OPT_PLATEAU_MUL || i == MaxIters )
@@ -451,14 +448,14 @@ public:
 					VOXSYNC( StatsSync );
 				#endif // OPT_THREADS
 
-				if( getBestCost() < FuncStats -> MinRjCost )
+				if( getBestCost() < FuncStats -> MinCost )
 				{
-					FuncStats -> MinRjCost = getBestCost();
+					FuncStats -> MinCost = getBestCost();
 				}
 
 				Iters[ Index ] = -1;
 				FuncStats -> SumRjCost += PrevCost;
-				SumStats -> SumRjCost += PrevCost;
+				SumStats -> SumRjCost += PrevCost - optv;
 
 				break;
 			}
@@ -489,11 +486,13 @@ public:
 		///<
 	double SuccessAt; ///< Average Success attempts, available after run().
 		///<
-	double AvgRMS; ///< Average RMS, available after run().
-		///<
 	double AvgIt; ///< Average Iters, available after run().
 		///<
 	double AvgIt_l10n; ///< Average Iters/ln(10), available after run().
+		///<
+	double AvgRMS; ///< Average RMS, available after run().
+		///<
+	double AvgRMS_l10n; ///< Average RMS/ln(10), available after run().
 		///<
 	double AvgRjCost; ///< Average reject cost, available after run().
 		///<
@@ -666,7 +665,7 @@ public:
 			const double MinCost = ( FuncStats.ComplAttempts == 0 ?
 				1.0 / FuncStats.ComplAttempts : FuncStats.MinCost );
 
-			const double RjCost = FuncStats.SumRjCost /
+			const double AvgRjCost0 = FuncStats.SumRjCost /
 				( IterCount - FuncStats.ComplAttempts );
 
 			double Avg = 0.0;
@@ -675,8 +674,7 @@ public:
 			if( FuncStats.ComplAttempts > 0 )
 			{
 				SumStats.ComplFuncs++;
-				Avg = (double) FuncStats.SumComplIters /
-					FuncStats.ComplAttempts;
+				Avg = (double) FuncStats.SumItCompl / FuncStats.ComplAttempts;
 
 				RMS = 0.0;
 				int RMSCount = 0;
@@ -694,6 +692,7 @@ public:
 				if( RMSCount > 0 && RMS > 0.0 )
 				{
 					RMS = sqrt( RMS / RMSCount );
+					SumStats.SumRMS += RMS;
 					SumStats.SumRMS_l10n += log( RMS / Dims ) / log( 10.0 );
 					SumStats.SumRMSCount++;
 				}
@@ -729,12 +728,9 @@ public:
 
 			if( DoPrint )
 			{
-				printf( "AI:%6.0f RI:%5.0f At:%5.2f C:%13.8f RjC:%7.4f "
-					"%s_%i%c\n", Avg, RMS, At, MinCost, RjCost,
-					opt -> fn -> Name, Dims,
-					( fndata -> DoRandomize ? 'r' : ' ' ));
-//				printf( "C:%20.13f %20.13f %s_%i\n",
-//					RjCost, opt -> optv, opt -> fn -> Name, Dims );
+				printf( "I:%6.0f R:%5.0f A:%5.2f C:%11.5f RC:%11.5f %s_%i%c\n",
+					Avg, RMS, At, MinCost, AvgRjCost0, opt -> fn -> Name,
+					Dims, ( fndata -> DoRandomize ? 'r' : ' ' ));
 			}
 
 			if( _kbhit() && _getch() == 27 )
@@ -754,10 +750,12 @@ public:
 
 		const double SuccessFn = 100.0 * SumStats.ComplFuncs / FnCount;
 		SuccessAt = 100.0 * SumStats.ComplAttempts / SumStats.TotalAttempts;
-		AvgRMS = SumStats.SumRMS_l10n / SumStats.SumRMSCount;
-		AvgIt = (double) SumStats.SumIters / SumStats.ComplAttempts;
+		AvgIt = (double) SumStats.SumIt / SumStats.ComplAttempts;
 		AvgIt_l10n = SumStats.SumIt_l10n / SumStats.ComplAttempts;
-		AvgRjCost = SumStats.SumRjCost * FnCount / SumStats.TotalAttempts;
+		AvgRMS = SumStats.SumRMS / SumStats.SumRMSCount;
+		AvgRMS_l10n = SumStats.SumRMS_l10n / SumStats.SumRMSCount;
+		AvgRjCost = SumStats.SumRjCost /
+			( SumStats.TotalAttempts - SumStats.ComplAttempts );
 
 		if( DoPrint )
 		{
@@ -771,8 +769,8 @@ public:
 				FnCount, IterCount, InnerIterCount );
 
 			printf( "GoodItersAvg: %.2f%% (percent of improving "
-				"iterations in successful attempts)\n", 100.0 *
-				SumStats.SumImprIters / SumStats.SumIters );
+				"iterations in successful attempts)\n",
+				100.0 * SumStats.SumItImpr / SumStats.SumIt );
 
 			printf( "Func success: %.2f%%\n", SuccessFn );
 			printf( "Attempts success: %.2f%%\n", SuccessAt );
@@ -782,10 +780,14 @@ public:
 			printf( "AvgIt_l10n: %.3f (avg log10(it/N) across all successful "
 				"attempts)\n", AvgIt_l10n );
 
-			printf( "AvgRMS_l10n: %.1f (avg log10(std.dev/N) of convergence time)\n",
+			printf( "AvgRMS: %.1f (avg std.dev of convergence time)\n",
 				AvgRMS );
 
-			printf( "AvgRjCost: %.6f (avg reject cost)\n", AvgRjCost );
+			printf( "AvgRMS_l10n: %.1f (avg log10(std.dev/N) of convergence time)\n",
+				AvgRMS_l10n );
+
+			printf( "AvgRjCost: %.6f (avg unbiased reject cost)\n",
+				AvgRjCost );
 
 			#if defined( OPT_PERF )
 			LARGE_INTEGER t2;
@@ -824,7 +826,7 @@ public:
 					{
 						printf( "\t%-5.1f", 100.0 *
 							SumStats.SumSelsMap[ k * 8 + j ] /
-							SumStats.SumIters );
+							SumStats.SumIt );
 					}
 					else
 					{

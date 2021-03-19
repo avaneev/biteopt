@@ -258,16 +258,25 @@ Evolution.
 This optimization method was tested for the following applications beside
 synthetic benchmarking:
 
-1. Hyperparameter optimization of complex non-linear black-box systems.
+* Hyperparameter optimization of complex non-linear black-box systems.
 Namely, [AVIR](https://github.com/avaneev/avir) image resizing algorithm's
-hyper-parameters, BiteOpt's own hyper-parameters, digital audio limiter
-algorithm's parameters.
+hyper-parameters, digital audio limiter algorithm's parameters.
 
-2. Non-linear least-squares problems, see calcHougen and calcOsborne functions
+* Non-linear least-squares problems, see calcHougen and calcOsborne functions
 in `testfn.h` for example problems.
 
-3. BiteOptDeep was successfuly used for direct search of optimal short
-symmetric FIR filters.
+* BiteOptDeep was successfuly used for direct search of optimal short
+symmetric FIR filters, namely, for use in
+[r8brain-free-src](https://github.com/avaneev/r8brain-free-src)
+sample rate converter.
+
+BITEOPT was also mentioned in these scientific papers:
+
+* [Information Signaling: A Counter-Intuitive Defense Against Password
+Cracking](https://arxiv.org/pdf/2009.10060)
+
+* [CIP2A is a prime synthetic-lethal target for BRCA-mutated
+cancers](https://www.biorxiv.org/content/10.1101/2021.02.08.430060v1.full)
 
 ## Examples ##
 
@@ -297,7 +306,7 @@ reaction kinetics. Non-linear least squares problem.
 
 `test2.cpp` is a convergence test for all available functions. Performs many
 optimization attempts on all functions. Prints various performance
-information, including percentage of rejected attempts (rejection rate).
+information, including per-function and per-attempt success rates.
 
 `test3.cpp` is a convergence test for multi-dimensional functions with random
 axis rotations and offsets.
@@ -335,7 +344,7 @@ all arguments are equal. It just often happens that such "short-cuts" provide
 useful "reference points" to the method. Removing these "short-cuts" will
 increase average convergence time of the method, but in most cases won't
 impact method's ability to find a global solution. "Short-cuts" are used only
-in 3% of objective function evaluation on average.
+in 4% of objective function evaluation on average.
 
 3. The method uses LCG pseudo-random number generator due to its efficiency.
 The method was also tested with a more statistically-correct PRNG and the
@@ -436,21 +445,21 @@ solution is replaced using the upper bound cost constraint.
 BiteOpt is an evolutionary optimization method. Unlike many established
 optimization methods like CMA-ES where new populations are generated on each
 iteration, with or without combining with the previous generation, BiteOpt
-keeps and updates a single population of solutions at any given time. A new
-solution either replaces a worst solution or is discarded. In common terms it
-means that population has some fixed "living space" which is only available to
-the best fit (least cost) solutions. Structurally, this is similar to a
+keeps and updates a single main population of solutions at any given time. A
+new solution either replaces a worst solution or is discarded. In common terms
+it means that population has some fixed "living space" which is only available
+to the best fit (least cost) solutions. Structurally, this is similar to a
 natural evolutionary environment which usually offers only a limited "living
 space" to its members. Least fit members have little chance to stay in this
 "living space".
 
 BiteOpt uses several methods to generate new solutions, each method taking
-various information from the population. These methods are used in
+various information from various populations. These methods are used in
 a probabilistic manner without any predefined preference.
 
 BiteOptDeep implements evolutionary method which can be seen in society and
 nature: exchange of solutions between independent populations. Such exchange
-allows to find better solutions in teamwork of sufficiently diverse members,
+allows to find better solutions in a teamwork of sufficiently diverse members,
 it also reduces time (but not human-hours) to find a better solution. This
 method is a model of Swiss presidency rotation (each independent population
 represents an independent human brain).
@@ -461,7 +470,7 @@ understanding that it provides an implicit gradient information. A candidate
 solution is generated as a sum of best solution and a difference between a
 random and the worst solution. Such difference between a random and the worst
 solution actually generates a probabilistically correct step towards the
-minimum of a function relative to the best solution. Due to this
+minimum of a function, relative to the better solutions. Due to this
 understanding, it is impossible to employ various DE variants in BiteOpt,
 only the difference between high rank and low rank solutions generates a
 valuable information, moreover only a difference multiplied by a factor of
