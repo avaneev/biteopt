@@ -53,7 +53,8 @@ the method is to provide fast solutions for computationally expensive
 
 This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
-evaluated): [Comparison of derivative-free optimization algorithms](https://sahinidis.coe.gatech.edu/?q=dfocomp).
+evaluated): [Comparison of derivative-free optimization
+algorithms](https://sahinidis.coe.gatech.edu/?q=dfocomp).
 This method was able to solve 76% of non-convex smooth problems in 10
 attempts, 2500 iterations each. It comes 2nd (very close to the 1st) in the
 comparison on non-convex smooth problems (see Fig.9 in the paper). With a huge
@@ -110,9 +111,9 @@ probabilistically lower objective function value.
 Since version 2021.1 BiteOpt uses a companion optimizer - SpherOpt - which
 works independently and provides "reference points" to BiteOpt. This companion
 improves BiteOpt's convergence properties considerably, especially when the
-parameter space is rotated. Since version 2021.15 BiteOpt uses an alternative
-companion optimizer - NMSeqOpt - which additionally increases diversity of
-generated solutions.
+parameter space is rotated. Since version 2021.15 BiteOpt uses an additional
+companion optimizer - NMSeqOpt - which increases diversity of generated
+solutions.
 
 Since version 2021.3 BiteOpt became a self-optimizing method not requiring any
 fune-tuning from the user nor the author.
@@ -257,7 +258,7 @@ Evolution.
 This optimization method was tested for the following applications beside
 synthetic benchmarking:
 
-* Hyperparameter optimization of complex non-linear black-box systems.
+* Hyper-parameter optimization of complex non-linear black-box systems.
 Namely, [AVIR](https://github.com/avaneev/avir) image resizing algorithm's
 hyper-parameters, digital audio limiter algorithm's parameters.
 
@@ -265,11 +266,11 @@ hyper-parameters, digital audio limiter algorithm's parameters.
 in `testfn.h` for example problems.
 
 * BiteOptDeep was successfuly used for direct search of optimal short
-symmetric FIR filters, namely, for use in
+symmetric FIR filters. Namely, in
 [r8brain-free-src](https://github.com/avaneev/r8brain-free-src)
 sample rate converter.
 
-BITEOPT was also mentioned in these scientific papers:
+BITEOPT is also referenced in these scientific papers:
 
 * [Information Signaling: A Counter-Intuitive Defense Against Password
 Cracking](https://arxiv.org/pdf/2009.10060)
@@ -522,9 +523,9 @@ This method uses the same self-optimization technique as the BiteOpt method.
 
 ## NMSeqOpt ##
 
-`nmsopt.cpp` - CNMSeqOpt class that implements sequential Nelder-Mead simplex
-method with "stall count" tracking. This optimizer is used as an alternative
-parallel optimizer in BiteOpt.
+The CNMSeqOpt class that implements sequential Nelder-Mead simplex method with
+"stall count" tracking. This optimizer is used as an alternative parallel
+optimizer in BiteOpt.
 
 ## Citing ##
 

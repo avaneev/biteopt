@@ -662,9 +662,7 @@ public:
 			VOXERRSKIP( Threads.waitAllForFinish() );
 			#endif // OPT_THREADS
 
-			const double MinCost = ( FuncStats.ComplAttempts == 0 ?
-				1.0 / FuncStats.ComplAttempts : FuncStats.MinCost );
-
+			const double MinCost = FuncStats.MinCost;
 			const double AvgRjCost0 = FuncStats.SumRjCost /
 				( IterCount - FuncStats.ComplAttempts );
 
