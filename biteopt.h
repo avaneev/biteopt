@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.19
+ * @version 2021.20
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -101,7 +101,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			11 + aParamCount * 4 );
+			13 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -363,7 +363,7 @@ public:
 
 			if( CurPopSize < PopSize )
 			{
-				if( select( PopChangeHist, rnd ))
+				if( select( PopChangeHist, rnd ) == 0 )
 				{
 					// Increase population size on fail.
 
@@ -394,9 +394,9 @@ public:
 				PushOpt -> updateParPop( NewCost, TmpParams );
 			}
 
-			if( CurPopSize > PopSize / 3 )
+			if( CurPopSize > PopSize / 2 )
 			{
-				if( select( PopChangeHist, rnd ))
+				if( select( PopChangeHist, rnd ) == 1 )
 				{
 					// Decrease population size on success.
 
@@ -850,7 +850,7 @@ protected:
 
 		CBiteOptPop& ParPop = selectParPop( 1, rnd );
 
-		static const double RedFacs[ 3 ] = { 0.75, 1.0, 1.5 };
+		static const double RedFacs[ 3 ] = { 1.0, 1.5, 2.0 };
 
 		int UseSize;
 		const ptype** const UseParams = ParPop.getSparsePopParams(
