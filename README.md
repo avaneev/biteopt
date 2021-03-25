@@ -39,8 +39,8 @@ there are no competing minima in a function (or the true/global minimum is
 rogue and cannot be detected), this method in absolute majority of runs will
 return the same optimum.
 
-BITEOPT uses self-optimization techniques making it objective
-function-agnostic. In its inner workings, BITEOPT uses objective function
+BiteOpt uses self-optimization techniques making it objective
+function-agnostic. In its inner workings, BiteOpt uses objective function
 value's ranking, not the actual value.
 
 ## Comparison ##
@@ -225,18 +225,34 @@ a sum of differences between bit values and continuous variables in the range
 [0; 1].
 
 While constraint satisfaction is generally not the best area of application of
-derivative-free methods, value constraints can be implemented as penalties, in
-this way: constraint c1:x1+2.0\*x2-3.0\*x3<=0 can be used to adjust objective
-function value: cost+=(c1<=0?0:100000+c1*9999), with 100000 penalty base
-(barrier) and 9999 constraint scale chosen to assure no interaction with the
-expected "normal" objective function values while providing a useful gradient.
-Note that if the solution's value is equal to or higher than the penalty base
-it means either a feasible solution was not found or the chosen constraint
-scale does not generate a useful gradient. See `constr.cpp` for an example of
-constraint programming. `constr2.cpp` is an example of non-linear constraint
-programming with both non-equalities and equalities. Sometimes using quadratic
-penalties may be more effective than adding the aforementioned barrier
-constant.
+derivative-free methods, value constraints can be implemented as penalties.
+The author has found a general effective method to apply value constraints via
+penalties. In the code below, `n_con` is the number of constraints,
+`con_nonmet` is the number of constraints not meeting tolerances, and the
+`pn[]` is the array of linear penalty values for each constraint (penalty
+value should be set to 0 if it meets the tolerance). Models with up to 190
+constraints, both equalities and non-eqalities, were tested with this method.
+
+	double pns = 0.0;
+	int i;
+
+	for( i = 0; i < n_con; i++ )
+	{
+		pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] * pn[ i ];
+	}
+
+	cost += 1e8 * ( con_notmet * con_notmet + pns );
+
+In essence, this method transforms each penalty value into a quadratic penalty
+value, places each penalty value into its own value range, and also applies a
+quadratic "barrier value" that depends on the number of constraints not met.
+The barrier value is suitably large for most practical constraint programming
+problems.
+
+See `constr.cpp` for an example of constraint programming. `constr2.cpp` is an
+example of non-linear constraint programming with both non-equalities and
+equalities. To effectively solve constraint programming problems, the
+CBiteOptDeep class should be used, with M=6 or higher.
 
 It is not advisable to use constraints like (x1-round(x1)=0) commonly used
 in model libraries to force integer or binary values, as such constraint
@@ -270,7 +286,7 @@ symmetric FIR filters. Namely, in
 [r8brain-free-src](https://github.com/avaneev/r8brain-free-src)
 sample rate converter.
 
-BITEOPT is also referenced in these scientific papers:
+BiteOpt is also referenced in these scientific papers:
 
 * [Information Signaling: A Counter-Intuitive Defense Against Password
 Cracking](https://arxiv.org/pdf/2009.10060)
@@ -462,6 +478,15 @@ understanding, it is impossible to employ various DE variants in BiteOpt,
 only the difference between high rank and low rank solutions generates a
 valuable information, moreover only a difference multiplied by a factor of
 0.5 works in practice.
+
+BiteOpt is more like a stochastic meta-method, it is incorrect to assume it
+leans towards some specific optimizer class: for example, it won't work
+acceptably if only DE-based solution generators are used by it. BiteOpt
+encompasses Differential Evolution, Nelder-Mead, and author's original
+SpherOpt, "bitmask inversion", and "bit mixing" solution generators. A success
+with the "bitmask inversion" operation (coupled with a stochastic "move"
+operation it looks quite a lot like a random search) was the main driver for
+BiteOpt's further development.
 
 ## SMA-ES ##
 

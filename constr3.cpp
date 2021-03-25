@@ -43,13 +43,15 @@ public:
 		}
 	}
 
-	void penalty( double& pn, const double v )
+	double penalty( const double v )
 	{
 		if( v > 1e-4 )
 		{
-			pn = pn * 1.30 + ( v + v * v + v * v * v ) * 1e4;
 			con_notmet++;
+			return( v );
 		}
+
+		return( 0.0 );
 	}
 
 	virtual double optcost( const double* const p0 )
@@ -66,22 +68,27 @@ public:
 			4*sqr(p[3]-5)+sqr(p[4]-3)+2*sqr(p[5]-1)+5*sqr(p[6])+
 			7*sqr(p[7]-11)+2*sqr(p[8]-10)+sqr(p[9]-7)+45;
 
+		const int n_con = 8;
+		double pn[ n_con ];
 		con_notmet = 0;
-		double pn = 0.0;
 
-		penalty( pn, 4*p[0]+5*p[1]-3*p[6]+9*p[7]-105 );
-		penalty( pn, 10*p[0]-8*p[1]-17*p[6]+2*p[7] );
-		penalty( pn, -8*p[0]+2*p[1]+5*p[8]-2*p[9]-12 );
-		penalty( pn, 3*sqr(p[0]-2)+4*sqr(p[1]-3)+2*sqr(p[2])-7*p[3]-120 );
-		penalty( pn, 5*sqr(p[0])+8*p[1]+sqr(p[2]-6)-2*p[3]-40 );
-		penalty( pn, 0.5*sqr(p[0]-8)+2*sqr(p[1]-4)+3*sqr(p[4])-p[5]-30 );
-		penalty( pn, sqr(p[0])+2*sqr(p[1]-2)-2*p[0]*p[1]+14*p[4]-6*p[5] );
-		penalty( pn, -3*p[0]+6*p[1]+12*sqr(p[8]-8)-7*p[9] );
+		pn[ 0 ] = penalty( 4*p[0]+5*p[1]-3*p[6]+9*p[7]-105 );
+		pn[ 1 ] = penalty( 10*p[0]-8*p[1]-17*p[6]+2*p[7] );
+		pn[ 2 ] = penalty( -8*p[0]+2*p[1]+5*p[8]-2*p[9]-12 );
+		pn[ 3 ] = penalty( 3*sqr(p[0]-2)+4*sqr(p[1]-3)+2*sqr(p[2])-7*p[3]-120 );
+		pn[ 4 ] = penalty( 5*sqr(p[0])+8*p[1]+sqr(p[2]-6)-2*p[3]-40 );
+		pn[ 5 ] = penalty( 0.5*sqr(p[0]-8)+2*sqr(p[1]-4)+3*sqr(p[4])-p[5]-30 );
+		pn[ 6 ] = penalty( sqr(p[0])+2*sqr(p[1]-2)-2*p[0]*p[1]+14*p[4]-6*p[5] );
+		pn[ 7 ] = penalty( -3*p[0]+6*p[1]+12*sqr(p[8]-8)-7*p[9] );
 
-		if( con_notmet > 0 )
+		double pns = 0.0;
+
+		for( i = 0; i < n_con; i++ )
 		{
-			cost += pn;
+			pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] * pn[ i ];
 		}
+
+		cost += 1e8 * ( con_notmet * con_notmet + pns );
 
 		return( cost );
 	}
@@ -98,9 +105,13 @@ int main()
 	opt.updateDims( N, 6 );
 	opt.init( rnd );
 
-	for( i = 0; i < 200000; i++ )
+	for( i = 0; i < 500000; i++ )
 	{
-		opt.optimize( rnd );
+		if( opt.optimize( rnd ) > N * 64 )
+		{
+			printf( "Finished at iter %i\n", i + 1 );
+			break;
+		}
 	}
 
 	const double minf = opt.optcost( opt.getBestParams() );

@@ -8,6 +8,8 @@
 	#define sqr( x ) (( x ) * ( x ))
 #endif // !defined( sqr )
 
+const int N = 13;
+
 class CTestOpt : public CBiteOpt
 {
 public:
@@ -15,7 +17,7 @@ public:
 
 	CTestOpt()
 	{
-		updateDims( 13 );
+		updateDims( N );
 	}
 
 	virtual void getMinValues( double* const p ) const
@@ -52,13 +54,15 @@ public:
 		p[ 12 ] = 1.0;
 	}
 
-	void penalty( double& pn, const double v )
+	double penalty( double v )
 	{
 		if( v > 1e-8 )
 		{
-			pn = pn * 1.30 + ( v + v * v + v * v * v ) * 1e4;
 			con_notmet++;
+			return( v );
 		}
+
+		return( 0.0 );
 	}
 
 	virtual double optcost( const double* const p )
@@ -81,23 +85,28 @@ public:
 
 		double cost = 5.0*s1-5.0*s2-s3;
 
+		const int n_con = 9;
+		double pn[ n_con ];
 		con_notmet = 0;
-		double pn = 0.0;
 
-		penalty( pn, 2.0*p[0]+2.0*p[1]+p[9]+p[10]-10.0 );
-		penalty( pn, 2.0*p[0]+2.0*p[2]+p[9]+p[11]-10.0 );
-		penalty( pn, 2.0*p[1]+2.0*p[2]+p[10]+p[11]-10.0 );
-		penalty( pn, -8.0*p[0]+p[9] );
-		penalty( pn, -8.0*p[1]+p[10] );
-		penalty( pn, -8.0*p[2]+p[11] );
-		penalty( pn, -2.0*p[3]-p[4]+p[9] );
-		penalty( pn, -2.0*p[5]-p[6]+p[10] );
-		penalty( pn, -2.0*p[7]-p[8]+p[11] );
+		pn[ 0 ] = penalty( 2.0*p[0]+2.0*p[1]+p[9]+p[10]-10.0 );
+		pn[ 1 ] = penalty( 2.0*p[0]+2.0*p[2]+p[9]+p[11]-10.0 );
+		pn[ 2 ] = penalty( 2.0*p[1]+2.0*p[2]+p[10]+p[11]-10.0 );
+		pn[ 3 ] = penalty( -8.0*p[0]+p[9] );
+		pn[ 4 ] = penalty( -8.0*p[1]+p[10] );
+		pn[ 5 ] = penalty( -8.0*p[2]+p[11] );
+		pn[ 6 ] = penalty( -2.0*p[3]-p[4]+p[9] );
+		pn[ 7 ] = penalty( -2.0*p[5]-p[6]+p[10] );
+		pn[ 8 ] = penalty( -2.0*p[7]-p[8]+p[11] );
 
-		if( con_notmet > 0 )
+		double pns = 0.0;
+
+		for( i = 0; i < n_con; i++ )
 		{
-			cost += pn;
+			pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] * pn[ i ];
 		}
+
+		cost += 1e8 * ( con_notmet * con_notmet + pns );
 
 		return( cost );
 	}
@@ -113,23 +122,21 @@ int main()
 
 	int i;
 
-	for( i = 0; i < 30000; i++ )
+	for( i = 0; i < 500000; i++ )
 	{
-		opt.optimize( rnd );
-
-		if( opt.getBestCost() < -14.999999 )
+		if( opt.optimize( rnd ) > N * 64 )
 		{
+			printf( "Finished at iter %i\n", i + 1 );
 			break;
 		}
 	}
 
 	const double minf = opt.optcost( opt.getBestParams() );
 
-	printf( "IterCount: %i\n", i );
 	printf( "BestCost: %f\n", minf );
 	printf( "Constraints not met: %i\n", opt.con_notmet );
 
-	for( i = 0; i < 13; i++ )
+	for( i = 0; i < N; i++ )
 	{
 		printf( "x[%i] = %f\n", i, opt.getBestParams()[ i ]);
 	}

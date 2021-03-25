@@ -27,24 +27,28 @@ public:
 		p[ 3 ] = 0.55;
 	}
 
-	void penalty( double& pn, const double v )
+	double penalty( const double v )
 	{
 		if( v > 1e-8 )
 		{
-			pn = pn * 1.30 + ( v + v * v + v * v * v ) * 1e4;
 			con_notmet++;
+			return( v );
 		}
+
+		return( 0.0 );
 	}
 
-	void penalty0( double& pn, double v )
+	double penalty0( double v )
 	{
 		v = fabs( v );
 
-		if( v > 1e-8 )
+		if( v > 1e-4 )
 		{
-			pn = pn * 1.25 + ( v + v * v ) * 1e4;
 			con_notmet++;
+			return( v );
 		}
+
+		return( 0.0 );
 	}
 
 	virtual double optcost( const double* const p )
@@ -52,19 +56,25 @@ public:
 		double cost = 3.0*p[1]+1e-6*pow(p[0],3.0)+2.0*p[1]+
 			2e-6/3.0*pow(p[1],3.0);
 
+		const int n_con = 5;
+		double pn[ n_con ];
 		con_notmet = 0;
-		double pn = 0.0;
 
-		penalty( pn, p[2]-p[3]-0.55 );
-		penalty( pn, p[3]-p[2]-0.55 );
-		penalty0( pn, 1000*(sin(-p[2]-0.25)+sin(-p[3]-0.25))+894.8-p[0] );
-		penalty0( pn, 1000*(sin(p[2]-0.25)+sin(p[2]-p[3]-0.25))+894.8-p[1] );
-		penalty0( pn, 1000*(sin(p[3]-0.25)+sin(p[3]-p[2]-0.25))+1294.8 );
+		pn[ 0 ] = penalty( p[2]-p[3]-0.55 );
+		pn[ 1 ] = penalty( p[3]-p[2]-0.55 );
+		pn[ 2 ] = penalty0( 1000*(sin(-p[2]-0.25)+sin(-p[3]-0.25))+894.8-p[0] );
+		pn[ 3 ] = penalty0( 1000*(sin(p[2]-0.25)+sin(p[2]-p[3]-0.25))+894.8-p[1] );
+		pn[ 4 ] = penalty0( 1000*(sin(p[3]-0.25)+sin(p[3]-p[2]-0.25))+1294.8 );
 
-		if( con_notmet > 0 )
+		double pns = 0.0;
+		int i;
+
+		for( i = 0; i < n_con; i++ )
 		{
-			cost += pn;
+			pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] * pn[ i ];
 		}
+
+		cost += 1e8 * ( con_notmet * con_notmet + pns );
 
 		return( cost );
 	}
@@ -81,9 +91,13 @@ int main()
 
 	int i;
 
-	for( i = 0; i < 200000; i++ )
+	for( i = 0; i < 500000; i++ )
 	{
-		opt.optimize( rnd );
+		if( opt.optimize( rnd ) > N * 64 )
+		{
+			printf( "Finished at iter %i\n", i + 1 );
+			break;
+		}
 	}
 
 	const double minf = opt.optcost( opt.getBestParams() );
