@@ -330,10 +330,8 @@ axis rotations and offsets.
 `test4.cpp` is a convergence test for multi-dimensional functions without
 randomization.
 
-`constr.cpp` and `constr2.cpp` programs demonstrate use of constraint
-penalties.
-
-`constr3.cpp` demonstrates use of the "deep" optimization method.
+`constr.cpp`, `constr2.cpp`, and `constr3.cpp` programs demonstrate the use of
+constraint penalties.
 
 ## Development ##
 
@@ -483,10 +481,10 @@ BiteOpt is more like a stochastic meta-method, it is incorrect to assume it
 leans towards some specific optimizer class: for example, it won't work
 acceptably if only DE-based solution generators are used by it. BiteOpt
 encompasses Differential Evolution, Nelder-Mead, and author's original
-SpherOpt, "bitmask inversion", and "bit mixing" solution generators. A success
-with the "bitmask inversion" operation (coupled with a stochastic "move"
-operation it looks quite a lot like a random search) was the main driver for
-BiteOpt's further development.
+SpherOpt, "bitmask inversion", and "bit mixing" solution generators. An
+initial success with the "bitmask inversion" operation (coupled with a
+stochastic "move" operation it looks quite a lot like a random search) was the
+main driver for BiteOpt's further development.
 
 ## SMA-ES ##
 
@@ -557,10 +555,11 @@ optimizer in BiteOpt.
 ```bibtex
 @misc{biteopt,
     author = {Aleksey Vaneev},
-    title = {{BITEOPT - Derivative-free optimization method}},
+    title = {BITEOPT - Derivative-free optimization method},
+    note = {C++ source code, with description and examples},
     year = {2021},
     publisher = {GitHub},
     journal = {GitHub repository},
-    howpublished = {\url{https://github.com/avaneev/biteopt}},
+    howpublished = {Available at \url{https://github.com/avaneev/biteopt}},
 }
 ```
