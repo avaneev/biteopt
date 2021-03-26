@@ -85,10 +85,11 @@ public:
 
 		for( i = 0; i < n_con; i++ )
 		{
-			pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] * pn[ i ];
+			pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] +
+				pn[ i ] * pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
 		}
 
-		cost += 1e8 * ( con_notmet * con_notmet + pns );
+		cost += 1e8 * ( con_notmet + pns );
 
 		return( cost );
 	}

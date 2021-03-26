@@ -238,16 +238,16 @@ constraints, both equalities and non-eqalities, were tested with this method.
 
 	for( i = 0; i < n_con; i++ )
 	{
-		pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] * pn[ i ];
+		pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] +
+			pn[ i ] * pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
 	}
 
-	cost += 1e8 * ( con_notmet * con_notmet + pns );
+	cost += 1e8 * ( con_notmet + pns );
 
-In essence, this method transforms each penalty value into a quadratic penalty
-value, places each penalty value into its own value range, and also applies a
-quadratic "barrier value" that depends on the number of constraints not met.
-The barrier value is suitably large for most practical constraint programming
-problems.
+In essence, this method transforms each penalty value into a cubic penalty
+value, places each penalty value into its own "strata", and also applies a
+"barrier value" that depends on the number of constraints not met. The barrier
+value is suitably large for most practical constraint programming problems.
 
 See `constr.cpp` for an example of constraint programming. `constr2.cpp` is an
 example of non-linear constraint programming with both non-equalities and
