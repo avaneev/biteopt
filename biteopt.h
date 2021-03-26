@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.20
+ * @version 2021.21
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -310,18 +310,38 @@ public:
 
 			if( UseParOpt == 0 )
 			{
-				if( ParOpt.optimize( rnd, &NewCost, NewValues ) > 0 )
+				const int sc = ParOpt.optimize( rnd, &NewCost, NewValues );
+
+				if( sc > 0 )
 				{
 					UseParOpt = 1; // On stall, select optimizer 2.
+				}
+
+				if( sc > ParamCount * 64 )
+				{
+					ParOpt.init( rnd, getBestParams(),
+						2.0 * sqrt( getDistanceSqr( getParamsOrdered( 0 ))));
+
+					ParOptPop.resetCurPopPos();
 				}
 
 				UpdPop = &ParOptPop;
 			}
 			else
 			{
-				if( ParOpt2.optimize( rnd, &NewCost, NewValues ) > 0 )
+				const int sc = ParOpt2.optimize( rnd, &NewCost, NewValues );
+
+				if( sc > 0 )
 				{
 					UseParOpt = 0; // On stall, select optimizer 1.
+				}
+
+				if( sc > ParamCount * 8 )
+				{
+					ParOpt2.init( rnd, getBestParams(),
+						2.0 * sqrt( getDistanceSqr( getParamsOrdered( 0 ))));
+
+					ParOpt2Pop.resetCurPopPos();
 				}
 
 				UpdPop = &ParOpt2Pop;
