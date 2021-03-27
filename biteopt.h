@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.21
+ * @version 2021.22
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -703,8 +703,18 @@ protected:
 
 		for( i = a; i < b; i++ )
 		{
-			Params[ i ] = (( Params[ i ] ^ imask ) +
-				( rp1[ i ] ^ imask2 )) >> 1;
+			const ptype d = rp1[ i ] - Params[ i ];
+
+			if( d < 0 )
+			{
+				Params[ i ] = (( Params[ i ] ^ imask ) +
+					Params[ i ] - ( -d ^ imask2 )) >> 1;
+			}
+			else
+			{
+				Params[ i ] = (( Params[ i ] ^ imask ) +
+					Params[ i ] + ( d ^ imask2 )) >> 1;
+			}
 		}
 
 		if( select( Gen1MoveHist, rnd ))
@@ -849,11 +859,8 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			const ptype m1 = (ptype) rnd.getBit();
-			const ptype m2 = (ptype) 1 - m1;
-
-			Params[ i ] = cp[ i ] * m1 +
-				( MinParams[ i ] + ( MinParams[ i ] - rp1[ i ])) * m2;
+			Params[ i ] = ( rnd.getBit() ? cp[ i ] :
+				MinParams[ i ] + ( MinParams[ i ] - rp1[ i ]));
 		}
 	}
 

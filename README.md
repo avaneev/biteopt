@@ -335,10 +335,8 @@ constraint penalties.
 
 ## Development ##
 
-While the basic algorithm of the method is finished, the built-in
-hyper-parameters of the algorithm is an area of ongoing research. There are
-several things that were discovered that may need to be addressed in the
-future:
+There are several things that were discovered that may need to be addressed in
+the future:
 
 1. Parallelization of BiteOpt algorithm is technically possible, but may be
 counter-productive (increases convergence time considerably). It is more
@@ -546,7 +544,7 @@ This method uses the same self-optimization technique as the BiteOpt method.
 
 ## NMSeqOpt ##
 
-The CNMSeqOpt class that implements sequential Nelder-Mead simplex method with
+The CNMSeqOpt class implements sequential Nelder-Mead simplex method with
 "stall count" tracking. This optimizer is used as an alternative parallel
 optimizer in BiteOpt.
 
