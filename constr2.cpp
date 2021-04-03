@@ -10,6 +10,7 @@ class CTestOpt : public CBiteOptDeep
 {
 public:
 	int con_notmet;
+	double real_value;
 
 	virtual void getMinValues( double* const p ) const
 	{
@@ -29,7 +30,7 @@ public:
 
 	double penalty( const double v )
 	{
-		if( v > 1e-8 )
+		if( v > 1e-15 )
 		{
 			con_notmet++;
 			return( v );
@@ -42,7 +43,7 @@ public:
 	{
 		v = fabs( v );
 
-		if( v > 1e-4 )
+		if( v > 1e-6 )
 		{
 			con_notmet++;
 			return( v );
@@ -75,7 +76,8 @@ public:
 				pn[ i ] * pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
 		}
 
-		cost += 1e8 * ( con_notmet + pns );
+		real_value = cost;
+		cost += 1e10 * ( con_notmet + pns );
 
 		return( cost );
 	}
@@ -92,18 +94,18 @@ int main()
 
 	int i;
 
-	for( i = 0; i < 500000; i++ )
+	for( i = 0; i < 2000000; i++ )
 	{
-		if( opt.optimize( rnd ) > N * 64 )
+		if( opt.optimize( rnd ) > N * 128 )
 		{
-			printf( "Finished at iter %i\n", i + 1 );
 			break;
 		}
 	}
 
-	const double minf = opt.optcost( opt.getBestParams() );
+	opt.optcost( opt.getBestParams() );
 
-	printf( "BestCost: %f\n", minf );
+	printf( "Finished at iteration %i\n", i + 1 );
+	printf( "Objective = %.8g\n", opt.real_value );
 	printf( "Constraints not met: %i\n", opt.con_notmet );
 
 	for( i = 0; i < N; i++ )

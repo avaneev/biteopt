@@ -12,8 +12,8 @@
 * [Convergence proof](#convergence-proof)
 * [Tested uses](#tested-uses)
 * [Examples](#examples)
-* [Method description](#method-description)
 * [Method philosophy](#method-philosophy)
+* [Method description](#method-description)
 * [SMA-ES](#sma-es)
 * [SpherOpt](#spheropt)
 * [NMSeqOpt](#nmseqopt)
@@ -55,17 +55,17 @@ This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
 evaluated): [Comparison of derivative-free optimization
 algorithms](https://sahinidis.coe.gatech.edu/?q=dfocomp).
-This method was able to solve 76% of non-convex smooth problems in 10
+This method was able to solve 77% of non-convex smooth problems in 10
 attempts, 2500 iterations each. It comes 2nd (very close to the 1st) in the
 comparison on non-convex smooth problems (see Fig.9 in the paper). With a huge
-iteration budget (up to 1 million) this method solves 96% of problems.
+iteration budget (up to 1 million) this method solves 97% of problems.
 
 On a comparable test function suite and conditions outlined at this page:
 [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
 (excluding several ill-defined and overly simple functions, and including
 several complex functions, use `test2.cpp` to run the test) this method's
-attempt success rate is >93% while the average number of objective function
-evaluations is ~360.
+attempt success rate is >94% (with 100% of functions solved) while the average
+number of objective function evaluations is ~370.
 
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of
@@ -120,10 +120,10 @@ fune-tuning from the user nor the author.
 
 ## CBiteOptDeep (biteopt.h) ##
 
-Deep optimization class. Based on an array of M CBiteOpt objects. This "deep"
-method pushes the newly-obtained solution to the random CBiteOpt object which
-is then optimized. This method while increasing the convergence time is able
-to solve complex multi-modal functions.
+Deep optimization class. Based on an array of `M` CBiteOpt objects. This
+"deep" method pushes the newly-obtained solution to the random CBiteOpt object
+which is then optimized. This method while increasing the convergence time is
+able to solve complex multi-modal functions.
 
 This method is most effective on complex functions, possibly with noisy
 fluctuations near the global solution that are not very expensive to calculate
@@ -132,12 +132,12 @@ functions that have many strongly competing minima this "deep" method
 considerably increases the chance to find a global solution relative to the
 CBiteOpt class, but still requires several runs at different random seeds.
 When using this method, the required iteration budget usually increases by
-a factor of `M^0.5`, but the number of required optimization attempts usually
-decreases. In practice, it is not always possible to predict the convergence
-time increase of the CBiteOptDeep class, but increase does correlate to its M
-parameter. For some complex functions the use of CBiteOptDeep even decreases
-convergence time. For sure, CBiteOptDeep class often produces better solutions
-than the CBiteOpt class.
+a factor of `M<sup>0.5</sup>`, but the number of required optimization
+attempts usually decreases. In practice, it is not always possible to predict
+the convergence time increase of the CBiteOptDeep class, but increase does
+correlate to its `M` parameter. For some complex functions the use of
+CBiteOptDeep even decreases convergence time. For sure, CBiteOptDeep class
+often produces better solutions than the CBiteOpt class.
 
 ## Notes ##
 
@@ -155,8 +155,8 @@ results of optimization of the test corpus, for 2-dimensional functions it is
 reasonable to expect convergence in 1000 iterations (in a successful attempt),
 for 10-dimensional functions it is reasonable to expect convergence in 7000
 iterations (harder functions may require more iterations to converge). Most
-classic 2-dimensional problems converge in 400 iterations or less, at 1e-6
-precision.
+classic 2-dimensional problems converge in 400 iterations or less, at
+10<sup>-6</sup> precision.
 
 Each run may generate an equally-usable candidate solution (not necessarily
 having the least cost), in practice the researcher may select solution from
@@ -217,21 +217,24 @@ deviates from the standard distribution, the mean corresponds to 0\*sigma):
 
 Mixed integer programming can be achieved by using rounded parameter values in
 the objective function. Note that using categorical variables may not be
-effective, because they require an exhaustive search. Binary variables may be
+effective, because they require combinatorial search. Binary variables may be
 used, in small quantities (otherwise the problem usually transforms into
-a complex combinatorial problem). While not very fast, BiteOpt is able to
-solve binary combinatorics problems if the cost function is formulated as
+a combinatorial problem as well). While not very fast, BiteOpt is able to
+solve binary combinatorial problems if the cost function is formulated as
 a sum of differences between bit values and continuous variables in the range
 [0; 1].
 
-While constraint satisfaction is generally not the best area of application of
-derivative-free methods, value constraints can be implemented as penalties.
-The author has found a general effective method to apply value constraints via
+Equality and non-equality constraints can be implemented as penalties. The
+author has found a general effective method to apply value constraints via
 penalties. In the code below, `n_con` is the number of constraints,
 `con_nonmet` is the number of constraints not meeting tolerances, and the
-`pn[]` is the array of linear penalty values for each constraint (penalty
-value should be set to 0 if it meets the tolerance). Models with up to 190
-constraints, both equalities and non-eqalities, were tested with this method.
+`pn[]` is the array of linear penalty values for each constraint; a penalty
+value should be set to 0 if it meets the tolerance. For derivative-free
+methods, a suggested equality tolerance is 10<sup>-4</sup>, but a more common
+10<sup>-6</sup> can be also used; lower values are not advised for use. Models
+with up to 190 constraints, both equalities and non-equalities, were tested
+with this method. In practice, on a large set of problems, this method finds a
+feasible solution in up to 93% of cases.
 
 	double pns = 0.0;
 	int i;
@@ -242,7 +245,8 @@ constraints, both equalities and non-eqalities, were tested with this method.
 			pn[ i ] * pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
 	}
 
-	cost += 1e8 * ( con_notmet + pns );
+    real_value = cost;
+	cost += 1e10 * ( con_notmet + pns );
 
 In essence, this method transforms each penalty value into a cubic penalty
 value, places each penalty value into its own "strata", and also applies a
@@ -256,8 +260,8 @@ CBiteOptDeep class should be used, with M=6 or higher.
 
 It is not advisable to use constraints like (x1-round(x1)=0) commonly used
 in model libraries to force integer or binary values, as such constraint
-formulation does not provide a global descent. Instead, direct rounding should
-be used on integer variables.
+formulation does not provide a useful global gradient. Instead, direct
+rounding should be used on integer variables.
 
 ## Convergence proof ##
 
@@ -286,7 +290,7 @@ symmetric FIR filters. Namely, in
 [r8brain-free-src](https://github.com/avaneev/r8brain-free-src)
 sample rate converter.
 
-BiteOpt is also referenced in these scientific papers:
+BiteOpt is also referenced in these research papers:
 
 * [Information Signaling: A Counter-Intuitive Defense Against Password
 Cracking](https://arxiv.org/pdf/2009.10060)
@@ -361,6 +365,51 @@ in 4% of objective function evaluation on average.
 3. The method uses LCG pseudo-random number generator due to its efficiency.
 The method was also tested with a more statistically-correct PRNG and the
 difference turned out to be negligible.
+
+## Method philosophy ##
+
+BiteOpt is an evolutionary optimization method. Unlike many established
+optimization methods like CMA-ES where new populations are generated on each
+iteration, with or without combining with the previous generation, BiteOpt
+keeps and updates a single main population of solutions at any given time. A
+new solution either replaces a worst solution or is discarded. In common terms
+it means that population has some fixed "living space" which is only available
+to the best fit (least cost) solutions. Structurally, this is similar to a
+natural evolutionary environment which usually offers only a limited "living
+space" to its members. Least fit members have little chance to stay in this
+"living space".
+
+BiteOpt uses several methods to generate new solutions, each method taking
+various information from various parallel populations. These methods are used
+in a probabilistic manner without any predefined preference.
+
+BiteOptDeep implements evolutionary method which can be seen in society and
+nature: exchange of solutions between independent populations. Such exchange
+allows to find better solutions in a teamwork of sufficiently diverse members,
+it also reduces time (but not human-hours) to find a better solution. This
+method is a model of Swiss presidency rotation (each independent population
+represents an independent human brain).
+
+The author did not originally employ results and reasoning available in papers
+on Differential Evolution. Author's use of DE operations is based on
+understanding that it provides an implicit gradient information. A candidate
+solution is generated as a sum of best solution and a difference between a
+random and the worst solution. Such difference between a random and the worst
+solution actually generates a probabilistically correct step towards the
+minimum of a function, relative to the better solution. Due to this
+understanding, it is impossible to employ various DE variants in BiteOpt,
+only the difference between high rank and low rank solutions generates a
+valuable information, moreover only a difference multiplied by a factor of
+0.5 works in practice.
+
+BiteOpt is more like a stochastic meta-method, it is incorrect to assume it
+leans towards some specific optimizer class: for example, it won't work
+acceptably if only DE-based solution generators are used by it. BiteOpt
+encompasses Differential Evolution, Nelder-Mead, and author's original
+SpherOpt, "bitmask inversion", and "bit mixing" solution generators. An
+initial success with the "bitmask inversion" operation (coupled with a
+stochastic "move" operation it looks quite a lot like a random search) was the
+main driver for BiteOpt's further development.
 
 ## Method description ##
 
@@ -439,51 +488,6 @@ is performed.
 5. After each objective function evaluation, the highest-cost previous
 solution is replaced using the upper bound cost constraint.
 
-## Method philosophy ##
-
-BiteOpt is an evolutionary optimization method. Unlike many established
-optimization methods like CMA-ES where new populations are generated on each
-iteration, with or without combining with the previous generation, BiteOpt
-keeps and updates a single main population of solutions at any given time. A
-new solution either replaces a worst solution or is discarded. In common terms
-it means that population has some fixed "living space" which is only available
-to the best fit (least cost) solutions. Structurally, this is similar to a
-natural evolutionary environment which usually offers only a limited "living
-space" to its members. Least fit members have little chance to stay in this
-"living space".
-
-BiteOpt uses several methods to generate new solutions, each method taking
-various information from various populations. These methods are used in
-a probabilistic manner without any predefined preference.
-
-BiteOptDeep implements evolutionary method which can be seen in society and
-nature: exchange of solutions between independent populations. Such exchange
-allows to find better solutions in a teamwork of sufficiently diverse members,
-it also reduces time (but not human-hours) to find a better solution. This
-method is a model of Swiss presidency rotation (each independent population
-represents an independent human brain).
-
-The author did not originally employ results and reasoning available in papers
-on Differential Evolution. Author's use of DE operations is based on
-understanding that it provides an implicit gradient information. A candidate
-solution is generated as a sum of best solution and a difference between a
-random and the worst solution. Such difference between a random and the worst
-solution actually generates a probabilistically correct step towards the
-minimum of a function, relative to the better solutions. Due to this
-understanding, it is impossible to employ various DE variants in BiteOpt,
-only the difference between high rank and low rank solutions generates a
-valuable information, moreover only a difference multiplied by a factor of
-0.5 works in practice.
-
-BiteOpt is more like a stochastic meta-method, it is incorrect to assume it
-leans towards some specific optimizer class: for example, it won't work
-acceptably if only DE-based solution generators are used by it. BiteOpt
-encompasses Differential Evolution, Nelder-Mead, and author's original
-SpherOpt, "bitmask inversion", and "bit mixing" solution generators. An
-initial success with the "bitmask inversion" operation (coupled with a
-stochastic "move" operation it looks quite a lot like a random search) was the
-main driver for BiteOpt's further development.
-
 ## SMA-ES ##
 
 This is a working optimization method called "SigMa Adaptation Evolution
@@ -525,7 +529,7 @@ objective function evaluations is twice the population size per sample
 distribution update (best fit solutions enter the population): this aspect is
 controlled via the `EvalFac` parameter, which adjusts method's overhead
 with only a minor effect on convergence property. Method's typical
-observed complexity is O(N^1.6).
+observed complexity is O(N<sup>1.6</sup>).
 
 ## SpherOpt ##
 
@@ -551,7 +555,7 @@ optimizer in BiteOpt.
 ## Citing ##
 
 ```bibtex
-@misc{biteopt,
+@misc{biteopt2021,
     author = {Aleksey Vaneev},
     title = {BITEOPT - Derivative-free optimization method},
     note = {C++ source code, with description and examples},

@@ -13,15 +13,16 @@ const int N = 10;
 
 inline double applyRound( double v )
 {
-	v *= 10000000.0;
+	v *= 100000000.0;
 	v = ( v < 0.0 ? -floor( 0.5 - v ) : floor( v + 0.5 ));
-	return( v / 10000000.0 );
+	return( v / 100000000.0 );
 }
 
 class CTestOpt : public CBiteOptDeep
 {
 public:
 	int con_notmet;
+	double real_value;
 
 	virtual void getMinValues( double* const p ) const
 	{
@@ -45,7 +46,7 @@ public:
 
 	double penalty( const double v )
 	{
-		if( v > 1e-4 )
+		if( v > 1e-15 )
 		{
 			con_notmet++;
 			return( v );
@@ -89,7 +90,8 @@ public:
 				pn[ i ] * pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
 		}
 
-		cost += 1e8 * ( con_notmet + pns );
+		real_value = cost;
+		cost += 1e10 * ( con_notmet + pns );
 
 		return( cost );
 	}
@@ -108,21 +110,21 @@ int main()
 
 	for( i = 0; i < 500000; i++ )
 	{
-		if( opt.optimize( rnd ) > N * 64 )
+		if( opt.optimize( rnd ) > N * 128 )
 		{
-			printf( "Finished at iter %i\n", i + 1 );
 			break;
 		}
 	}
 
-	const double minf = opt.optcost( opt.getBestParams() );
+	opt.optcost( opt.getBestParams() );
 
-	printf( "BestCost: %f\n", minf );
+	printf( "Finished at iteration %i\n", i + 1 );
+	printf( "Objective = %.8g\n", opt.real_value );
 	printf( "Constraints not met: %i\n", opt.con_notmet );
 
 	for( i = 0; i < N; i++ )
 	{
-		printf( "x[%i] = %0.10g\n", i, applyRound( opt.getBestParams()[ i ]));
+		printf( "x[%i] = %0.15g\n", i, applyRound( opt.getBestParams()[ i ]));
 	}
 
 	// Optimum provided by function's source.
@@ -138,7 +140,9 @@ int main()
 	x[ 7 ] = 9.828726;
 	x[ 8 ] = 8.280092;
 	x[ 9 ] = 8.375927;
-	printf( "Source opt: %.8f\n", opt.optcost( x ));
+	opt.optcost( x );
+
+	printf( "Source objective = %.8g\n", opt.real_value );
 
 	return( 0 );
 }

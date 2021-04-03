@@ -2,43 +2,54 @@
 //
 // AMPL NL parser sources and compiled library "amplsolv" should be put into
 // the "solvers" directory. AMPL parser can be acquired at
-// http://www.netlib.org/ampl/
+// https://ampl.com/netlib/ampl/
 //
-// The model `.mod` file should be first converted to the `.nl` format via
-// `ampl -og` command.
+// The model `.mod` file should first be converted to the `.nl` format via
+// the `ampl -og` command.
 
 //$ lib "solvers/amplsolv"
 //$ skip_include "z|solvers/getstub.h"
 
+#include "updsol.h"
 #include "solvers/getstub.h"
 #include "../biteopt.h"
+#include <math.h>
 
-static fint depth = 9;
+static fint depth = 8;
 static fint attc = 10;
+static int maxdim = 60;
 static int nprob = -1;
+static int progr = 0;
 static double itmult = 1.0;
+static int soldb = 0;
+static double tol = 1e-5; // Constraint tolerance.
+
 real* tmpx; // Temporary holder for solution and rounding.
 real* tmpcon; // Temprorary holder for constraint bodies.
 real* fc; // Temporary buffer of constraint penalties.
-int tmpcon_notmet; // no. contraints not met.
-int negate;
+int con_notmet; // no. contraints not met.
+int negate; // negate objective.
 ASL *asl;
 
 static keyword keywds[] = {	/* must be in alphabetical order */
-	KW("attcnt", L_val, &attc, "no. of attempts (default 10)"),
-	KW("depth", L_val, &depth, "solver's depth (default 9), expected value 1 to 32"),
+	KW("attc", L_val, &attc, "no. of attempts (default 10)"),
+	KW("depth", L_val, &depth, "solver's depth (default 8), expected value 1 to 32"),
 	KW("itmult", D_val, &itmult, "iteration number multiplier (default 1.0)"),
+	KW("maxdim", I_val, &maxdim, "maximum number of dimensions to accept (default 60)"),
 	KW("nprob", I_val, &nprob, "objective choice: 1 (default) = 1st"),
+	KW("progr", I_val, &progr, "1 - print progress (default 0)"),
+	KW("soldb", I_val, &soldb, "1 - use solution database (default 0)"),
+	KW("tol", D_val, &tol, "constraint tolerance (default 1e-5)"),
 	KW("version", Ver_val, 0, "report version"),
 	KW("wantsol", WS_val, 0, WSu_desc_ASL+5)
 };
 
 static char biteoptvers[] =
-	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 20180501\n";
+	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 20210403\n";
 
 static Option_Info Oinfo = {
-	"biteoptampl", "BITEOPT-20180501", "biteopt_options", keywds, nkeywds, 1.,
-	biteoptvers, 0,0,0,0,0, 20180501
+	"biteoptampl", "BITEOPT-20210403", "biteopt_options", keywds, nkeywds, 1.,
+	biteoptvers, 0,0,0,0,0, 20210403
 };
 
 int xround( real* x, int n )
@@ -56,96 +67,104 @@ int xround( real* x, int n )
 
 int solround( real* x )
 {
-	int nint;
 	int nround = 0;
-	real* x2;
+	int nint = niv + nbv;
 
-	if( nint = niv + nbv )
+	if( nint > 0 )
 	{
-		x2 = x + n_var - nint;
-		nround = xround( x2, nint );
+		nround = xround( x + n_var - nint, nint );
 	}
 
-	if( nint = nlvbi )
+	if( nlvbi > 0 )
 	{
-		x2 = x + ( nlvb - nint );
-		nround += xround( x2, nint );
+		nround += xround( x + ( nlvb - nlvbi ), nlvbi );
 	}
 
-	if( nint = nlvci )
+	if( nlvci > 0 )
 	{
-		x2 = x + ( nlvc - nint );
-		nround += xround( x2, nint );
+		nround += xround( x + ( nlvc - nlvci ), nlvci );
 	}
 
-	if( nint = nlvoi )
+	if( nlvoi > 0 )
 	{
-		x2 = x + (nlvo - nint);
-		nround += xround( x2, nint );
+		nround += xround( x + ( nlvo - nlvoi ), nlvoi );
 	}
 
 	return( nround );
 }
 
-static double objfn( int N, const double* x )
+static double objfn( int N, const double* const x )
 {
-	int i;
-
-	for( i = 0; i < N; i++ )
-	{
-		tmpx[ i ] = x[ i ];
-	}
-
+	memcpy( tmpx, x, N * sizeof( tmpx[ 0 ]));
 	solround( tmpx );
 
-	double f = objval( nprob, tmpx, 0 );
-	f = ( negate ? -f : f );
-	tmpcon_notmet = 0;
+	fint nerr = 0;
+	double f = objval( nprob, tmpx, &nerr );
+	f = ( nerr > 0 ? 1e300 : ( negate ? -f : f ));
+
+	con_notmet = 0;
 
 	if( n_con > 0 )
 	{
-		conval( tmpx, tmpcon, 0 );
+		nerr = 0;
+		conval( tmpx, tmpcon, &nerr );
 
-		for( i = 0; i < n_con; i++ )
-		{
-			fc[ i ] = 0.0;
-		}
+		int i;
 
-		for( i = 0; i < n_con; i++ )
+		if( nerr > 0 )
 		{
-			if( fabs( LUrhs[ i ] - Urhsx[ i ]) <= 1e-11 )
+			for( i = 0; i < n_con; i++ )
 			{
-				double a = fabs( tmpcon[ i ] - LUrhs[ i ]);
+				fc[ i ] = 0.0;
+			}
 
-				if( a > 1e-7 )
+			f += 1e300;
+			con_notmet = 1000000000;
+		}
+		else
+		{
+			for( i = 0; i < n_con; i++ )
+			{
+				fc[ i ] = 0.0;
+
+				if( fabs( LUrhs[ i ] - Urhsx[ i ]) <= tol )
 				{
-					fc[ i ] = a + a * a;
-					tmpcon_notmet++;
+					double a = fabs(( LUrhs[ i ] + Urhsx[ i ]) * 0.5 -
+						tmpcon[ i ]);
+
+					if( a > tol )
+					{
+						fc[ i ] = a;
+						con_notmet++;
+					}
+				}
+				else
+				{
+					if( LUrhs[ i ] > negInfinity &&
+						tmpcon[ i ] < LUrhs[ i ])
+					{
+						double a = LUrhs[ i ] - tmpcon[ i ];
+
+						if( a > 1e-15 )
+						{
+							fc[ i ] = a;
+							con_notmet++;
+						}
+					}
+
+					if( Urhsx[ i ] < Infinity &&
+						tmpcon[ i ] > Urhsx[ i ])
+					{
+						double a = tmpcon[ i ] - Urhsx[ i ];
+
+						if( a > 1e-15 )
+						{
+							fc[ i ] = a;
+							con_notmet++;
+						}
+					}
 				}
 			}
-			else
-			{
-				if( LUrhs[ i ] > negInfinity &&
-					tmpcon[ i ] < LUrhs[ i ])
-				{
-					double a = LUrhs[ i ] - tmpcon[ i ];
-					fc[ i ] = a + a * a + a * a * a + a * a * a * a;
-					tmpcon_notmet++;
-				}
-
-				if( Urhsx[ i ] < Infinity &&
-					tmpcon[ i ] > Urhsx[ i ])
-				{
-					double a = tmpcon[ i ] - Urhsx[ i ];
-					fc[ i ] = a + a * a + a * a * a + a * a * a * a;
-					tmpcon_notmet++;
-				}
-			}
-		}
-
-		for( i = 0; i < n_con; i++ )
-		{
-			f += fc[ i ] * 10000.0;
 		}
 	}
 
@@ -177,7 +196,22 @@ public:
 
 	virtual double optcost( const double* const p )
 	{
-		return( objfn( n_var, p ));
+		double ov = objfn( n_var, p );
+		double pns = 0.0;
+
+		if( n_con > 0 )
+		{
+			const double ps = pow( 4.0, 1.0 / n_con );
+			int i;
+
+			for( i = 0; i < n_con; i++ )
+			{
+				const double fc2 = fc[ i ] * fc[ i ];
+				pns = pns * ps + fc[ i ] + fc2 + fc[ i ] * fc2;
+			}
+		}
+
+		return( ov + 1e10 * ( con_notmet + pns ));
 	}
 };
 
@@ -187,8 +221,11 @@ int main( int argc, char* argv[])
 	char buf[ 2048 ], *stub;
 	char* msg = "";
 	int msgo = 0;
+	int infc = 0;
 
 	asl = ASL_alloc( ASL_read_fg );
+	want_derivs = 0;
+
 	stub = getstops( argv, &Oinfo );
 	nl = jac0dim( stub, (fint) strlen( stub ));
 
@@ -207,12 +244,24 @@ int main( int argc, char* argv[])
 		goto done;
 	}
 
-	if( n_con > 0 )
+	if( n_obj > 1 )
 	{
 		msgo += sprintf( buf + msgo,
-			"NOTE: model contains %d constraints. Constraint support of this \n"
-			"solver is experimental, constraints are applied as quadratic and \n"
-			"cubic penalties to the objective function.\n", n_con );
+			"Model contains %d objectives. This solver supports \n"
+			"single-objective optimization only. You can specify the \n",
+			"objective index via the \"nprob\" parameter.", n_obj );
+	}
+
+	if( n_con > 0 )
+	{
+		msgo += sprintf( buf + msgo, "Model contains %d constraints.\n",
+			n_con );
+	}
+
+	if( n_var > maxdim )
+	{
+		msg = "Too many dimensions (more than \"maxdim\").";
+		goto done;
 	}
 
 	X0 = (real*) Malloc(( 4 * n_var + 4 * n_con ) * sizeof( real ));
@@ -227,52 +276,66 @@ int main( int argc, char* argv[])
 
 	negate = ( objtype[ nprob ] != 0 );
 	int i;
-	int infc = 0;
 
 	for( i = 0; i < n_var; i++ )
 	{
 		if( LUv[ i ] <= negInfinity )
 		{
 			infc++;
-			LUv[ i ] = -1e8;
+			LUv[ i ] = -1e10;
 		}
 
 		if( Uvx[ i ] >= Infinity )
 		{
 			infc++;
-			Uvx[ i ] = 1e8;
+			Uvx[ i ] = 1e10;
 		}
 	}
 
 	if( infc > 0 )
 	{
 		msgo += sprintf( buf + msgo,
-			"Infinity var ranges were limited to [-1e8; 1e8] range.\n" );
+			"Infinity var ranges were limited to [-1e10; 1e10] range.\n" );
 	}
 
-	double f;
+	goto start;
+
+done:
+	printf( "model: %s (%s)\n", stub,
+		( negate ? "maximization" : "minimization" ));
+
+	msgo += sprintf( buf + msgo, msg );
+
+	write_sol( buf, X0, 0, &Oinfo );
+	fclose( nl );
+
+	return( 0 );
+
+start:
 	CBiteOptAMPL opt;
-	opt.updateDims( n_var, depth, 12 + n_var * 2 + n_con * 2 );
+	opt.updateDims( n_var, depth );
 
 	CBiteRnd rnd;
 	rnd.init( 1 );
 
 	int fnevals = 0;
-	const int hardlim = (int) ( itmult * 2000.0 * pow( (double) n_var, 1.75 ) *
-		sqrt( (double) depth ));
+	const int hardlim = (int) ( itmult * 1500.0 *
+		pow( (double) n_var, 2.1 ) * sqrt( (double) depth ));
 
-	const int sc_thresh = (int) (( 12 + n_var * 2 ) * 12.0 );
+	const int sc_thresh = n_var * 128;
 
-	int kmet = ( n_con > 0 ? 0 : 1 );
+	double f;
+	int f_notmet;
+	int f_iters;
 	int khl = 0;
 	int k;
 
 	for( k = 0; k < attc; k++ )
 	{
 		opt.init( rnd );
-		fnevals += opt.getInitEvals();
-		i = 0;
+
 		double thr = 200.0;
+		i = 0;
 
 		while( i < hardlim )
 		{
@@ -280,15 +343,16 @@ int main( int argc, char* argv[])
 			fnevals++;
 			i++;
 
-/*			if( i > (int) thr )
+			if( progr && i > thr )
 			{
-				printf( "Attempt %i/%i n_vars=%i n_constr=%i iter %i, "
-					"obj.value = %.15g\n", k + 1, attc, n_var, n_con, i,
-					opt.getBestCost() );
+				const double nf = objfn( n_var, opt.getBestParams() );
+
+				printf( "Attempt %i/%i n_var=%i n_con=%i iter %i, "
+					"Objective = %.15g\n", k + 1, attc, n_var, n_con, i, nf );
 
 				thr *= 1.4;
 			}
-*/
+
 			if( sc > sc_thresh )
 			{
 				break;
@@ -300,18 +364,20 @@ int main( int argc, char* argv[])
 			khl++;
 		}
 
-		objfn( n_var, opt.getBestParams() );
+		const double nf = objfn( n_var, opt.getBestParams() );
 
-		if( k == 0 || ( kmet == 0 && tmpcon_notmet == 0 ) ||
-			( opt.getBestCost() < f && tmpcon_notmet == 0 ))
+		if( k == 0 || con_notmet < f_notmet ||
+			( con_notmet == f_notmet && nf < f ))
 		{
+			f_iters = i;
+
 			for( i = 0; i < n_var; i++ )
 			{
 				X0[ i ] = opt.getBestParams()[ i ];
 			}
 
-			f = opt.getBestCost();
-			kmet += ( tmpcon_notmet == 0 ? 1 : 0 );
+			f = nf;
+			f_notmet = con_notmet;
 		}
 	}
 
@@ -324,22 +390,21 @@ int main( int argc, char* argv[])
 	msgo += sprintf( buf + msgo, "Hard iteration limit achieved in %i of %i "
 		"attempts.\n", khl, attc );
 
-	solround( X0 );
-	f = objfn( n_var, X0 );
+	f = ( negate ? -f : f );
 
-	msgo += sprintf( buf + msgo, "Objective = %.*g\n", obj_prec(),
-		negate ? -f : f );
+	msgo += sprintf( buf + msgo, "Objective = %.*g\n", obj_prec(), f );
 
-	if( n_con > 0 && tmpcon_notmet > 0 )
+	if( f_notmet > 0 )
 	{
 		msgo += sprintf( buf + msgo,
-			"(%i constraint(s) not met, infeasible solution)\n",
-			tmpcon_notmet );
+			"!!! %i constraint(s) not met, infeasible solution\n", f_notmet );
 	}
 
-done:
-	printf( "model: %s\n", stub );
-	msgo += sprintf( buf + msgo, msg );
-	write_sol( buf, X0, 0, &Oinfo );
-	fclose( nl );
+	if( soldb )
+	{
+		VOXERRSKIP( updateSol( stub, negate, f, f_notmet, f_iters ));
+	}
+
+	solround( X0 );
+	goto done;
 }

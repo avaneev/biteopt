@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.22
+ * @version 2021.23
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -75,6 +75,7 @@ public:
 		addHist( MinSolMulHist[ 0 ], "MinSolMulHist[ 0 ]" );
 		addHist( MinSolMulHist[ 1 ], "MinSolMulHist[ 1 ]" );
 		addHist( MinSolMulHist[ 2 ], "MinSolMulHist[ 2 ]" );
+		addHist( PowFacHist, "PowFacHist" );
 		addHist( Gen1AllpHist, "Gen1AllpHist" );
 		addHist( Gen1MoveHist, "Gen1MoveHist" );
 		addHist( Gen1MoveAsyncHist, "Gen1MoveAsyncHist" );
@@ -101,7 +102,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			13 + aParamCount * 3 );
+			12 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -350,7 +351,7 @@ public:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				TmpParams[ i ] = (ptype) (( NewValues[ i ] -
-					MinValues[ i ]) / DiffValues[ i ]);
+					MinValues[ i ]) * DiffValuesI[ i ]);
 			}
 
 			UpdPop -> updatePop( NewCost, TmpParams, false, true );
@@ -458,7 +459,7 @@ protected:
 	CBiteOptHistHyper< 4 > MethodHist; ///< Population generator 4-method
 		///< histogram.
 		///<
-	CBiteOptHistHyper< 2 > M1Hist; ///< Method 1's sub-method histogram.
+	CBiteOptHist< 2 > M1Hist; ///< Method 1's sub-method histogram.
 		///<
 	CBiteOptHist< 2 > M1AHist; ///< Method 1's sub-sub-method A histogram.
 		///<
@@ -488,6 +489,9 @@ protected:
 		///<
 	CBiteOptHist< 4 > MinSolMulHist[ 3 ]; ///< Index of least-cost
 		///< population, multiplier.
+		///<
+	CBiteOptHist< 3 > PowFacHist; ///< Power factor histogram, for population
+		///< weighting in various solution generators
 		///<
 	CBiteOptHistBinary Gen1AllpHist; ///< Generator method 1's Allp
 		///< histogram.
@@ -645,9 +649,25 @@ protected:
 	}
 
 	/**
-	 * The original "bitmask inversion" solution generator. Most of the time
-	 * adjusts only a single parameter of the very best solution, yet manages
-	 * to produce excellent "reference points".
+	 * Functions generates a random number raised into the selected power.
+	 *
+	 * @param gi Solution generator index (0-1).
+	 * @param rnd PRNG object.
+	 */
+
+	double getRndPowFac( const int gi, CBiteRnd& rnd )
+	{
+		static const double pf[ 3 ] = { 2.0, 2.5, 3.0 };
+
+		const double r = rnd.getRndValue();
+
+		return( pow( r, pf[ select( PowFacHist, rnd )]));
+	}
+
+	/**
+	 * The original "bitmask inversion with random move" solution generator.
+	 * Most of the time adjusts only a single parameter of a better solution,
+	 * yet manages to produce excellent "reference points".
 	 */
 
 	void generateSol1( CBiteRnd& rnd )
@@ -687,8 +707,8 @@ protected:
 			b = a + 1;
 		}
 
-		// Bitmask inversion operation, works as a "driver" of optimization
-		// process.
+		// Bitmask inversion operation, works as the main "driver" of
+		// optimization process.
 
 		const double r1 = rnd.getRndValue();
 		const double r12 = r1 * r1;
@@ -742,7 +762,7 @@ protected:
 					b = ParamCount;
 				}
 
-				// Random move around random previous solution vector.
+				// Random move around a random previous solution vector.
 
 				static const double SpanMults[ 4 ] = {
 					0.5 * CBiteRnd :: getRawScaleInv(),
@@ -779,7 +799,7 @@ protected:
 		const int si2 = 1 + (int) ( rnd.getRndValue() * CurPopSize1 );
 		const ptype* const rp2 = getParamsOrdered( si2 );
 
-		const int si4 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+		const int si4 = (int) ( getRndPowFac( 0, rnd ) * CurPopSize );
 		const ptype* const rp4 = getParamsOrdered( si4 );
 		const ptype* const rp5 = getParamsOrdered( CurPopSize1 - si4 );
 
@@ -811,7 +831,7 @@ protected:
 		const int si1 = getMinSolIndex( 1, rnd, CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
 
-		const int si2 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+		const int si2 = (int) ( getRndPowFac( 1, rnd ) * CurPopSize );
 		const ptype* const rp2 = getParamsOrdered( si2 );
 
 		const ptype* const rp3 = getParamsOrdered( CurPopSize1 - si2 );
@@ -834,9 +854,9 @@ protected:
 	}
 
 	/**
-	 * Alternative randomized solution generator, works well for convex
-	 * functions. Uses the very best solution and a random previous solution.
-	 * "mp * mp" is equivalent of giving more weight to better solutions.
+	 * "Centroid mix with DE" solution generator, works well for convex
+	 * functions. For DE operation, uses a better solution and a random
+	 * previous solution.
 	 */
 
 	void generateSol3( CBiteRnd& rnd )
@@ -960,7 +980,7 @@ protected:
 	}
 
 	/**
-	 * A short-cut solution generator. Parameter value short-cuts, they
+	 * A short-cut solution generator. Parameter value short-cuts: they
 	 * considerably reduce convergence time for some functions while not
 	 * severely impacting performance for other functions.
 	 */
@@ -978,7 +998,7 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			Params[ i ] = (ptype) (( v - MinValues[ i ]) / DiffValues[ i ]);
+			Params[ i ] = (ptype) (( v - MinValues[ i ]) * DiffValuesI[ i ]);
 		}
 	}
 };

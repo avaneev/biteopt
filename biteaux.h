@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.19
+ * @version 2021.23
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -390,17 +390,6 @@ public:
 		return( Count - 1 );
 	}
 
-	/**
-	 * Function "forces" a specific choice on a histogram.
-	 *
-	 * @param NewSel New choice selection.
-	 */
-
-	void set( const int NewSel )
-	{
-		Sel = NewSel;
-	}
-
 protected:
 	double m; ///< Multiplier (depends on Divisor).
 		///<
@@ -460,12 +449,11 @@ protected:
 };
 
 /**
- * This is an advanced "hyper" histogram. It embeds several sub-histograms,
- * and has a probability chance to reuse a previous successful choice. In most
- * cases it is as efficient as a usual histogram, but in some cases, like
- * solution generator selection, it is more effective. Several sub-histograms
- * allow this "hyper" histogram to make a more balanced choices, without
- * over-rating a particular choices.
+ * This is an advanced "hyper" histogram. It embeds several sub-histograms. In
+ * most cases it is as efficient as a usual histogram, but in some cases,
+ * like solution generator selection, it is more effective. Several
+ * sub-histograms allow this "hyper" histogram to make a more balanced
+ * choices, without over-rating a particular probability distribution.
  *
  * @tparam Count The number of possible choices, greater than 1.
  */
@@ -474,15 +462,9 @@ template< int Count >
 class CBiteOptHistHyper : virtual public CBiteOptHistBase
 {
 public:
-	CBiteOptHistHyper()
-		: rcm( Count * CBiteRnd :: getRawScaleInv() )
-	{
-	}
-
 	virtual void reset( CBiteRnd& rnd )
 	{
 		HyperHist.reset( rnd );
-		DrawHist.reset( rnd );
 
 		int i;
 
@@ -492,7 +474,7 @@ public:
 		}
 
 		SelHyper = HyperHist.select( rnd );
-		Sel = (int) ( rnd.getUniformRaw() * rcm );
+		Sel = Hists[ SelHyper ].select( rnd );
 	}
 
 	virtual int getChoiceCount() const
@@ -502,38 +484,20 @@ public:
 
 	virtual void incr( CBiteRnd& rnd )
 	{
-		DrawHist.incr( rnd );
 		HyperHist.incr( rnd );
 		Hists[ SelHyper ].incr( rnd );
 	}
 
 	virtual void decr( CBiteRnd& rnd )
 	{
-		DrawHist.decr( rnd );
 		HyperHist.decr( rnd );
 		Hists[ SelHyper ].decr( rnd );
-		Sel = (int) ( rnd.getUniformRaw() * rcm ); // Randomize prior choice.
 	}
 
 	int select( CBiteRnd& rnd )
 	{
-		const int SelDraw = DrawHist.select( rnd );
 		SelHyper = HyperHist.select( rnd );
-
-		if( SelDraw == 0 )
-		{
-			Sel = Hists[ SelHyper ].select( rnd );
-		}
-		else
-		if( SelDraw == 1 )
-		{
-			Hists[ SelHyper ].set( Sel );
-		}
-		else
-		{
-			Sel = (int) ( rnd.getUniformRaw() * rcm );
-			Hists[ SelHyper ].set( Sel );
-		}
+		Sel = Hists[ SelHyper ].select( rnd );
 
 		return( Sel );
 	}
@@ -542,16 +506,12 @@ protected:
 	static const int HyperCount = Count; ///< The number of embedded
 		///< histograms.
 		///<
-	double rcm; ///< Raw random value multiplier that depends on Count.
-		///<
-	CBiteOptHist< 3 > DrawHist; /// Selection draw histogram.
-		///<
 	CBiteOptHist< HyperCount > HyperHist; /// Embedded histogram selector
 		///< histogram.
 		///<
 	CBiteOptHist< Count > Hists[ HyperCount ]; /// Embedded histograms.
 		///<
-	int SelHyper; ///< Previous embedded histogram selector, -1 - not used.
+	int SelHyper; ///< Previous embedded histogram selector.
 		///<
 };
 
@@ -1107,7 +1067,7 @@ public:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			const double d = CentParams[ i ] - p[ i ];
+			const double d = (double) ( CentParams[ i ] - p[ i ]);
 			s += d * d;
 		}
 
@@ -1612,6 +1572,7 @@ public:
 		: MinValues( NULL )
 		, MaxValues( NULL )
 		, DiffValues( NULL )
+		, DiffValuesI( NULL )
 		, BestValues( NULL )
 		, NewValues( NULL )
 		, HistCount( 0 )
@@ -1677,6 +1638,8 @@ protected:
 	double* DiffValues; ///< Difference between maximal and minimal parameter
 		///< values.
 		///<
+	double* DiffValuesI; ///< Inverse DiffValues.
+		///<
 	double* BestValues; ///< Best parameter vector.
 		///<
 	double BestCost; ///< Cost of the best parameter vector.
@@ -1715,6 +1678,7 @@ protected:
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
 		DiffValues = new double[ ParamCount ];
+		DiffValuesI = new double[ ParamCount ];
 		BestValues = new double[ ParamCount ];
 		NewValues = new double[ ParamCount ];
 	}
@@ -1726,6 +1690,7 @@ protected:
 		delete[] MinValues;
 		delete[] MaxValues;
 		delete[] DiffValues;
+		delete[] DiffValuesI;
 		delete[] BestValues;
 		delete[] NewValues;
 	}
@@ -1772,8 +1737,10 @@ protected:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				DiffValues[ i ] = ( MaxValues[ i ] - MinValues[ i ]) /
-					IntMantMult;
+				const double d = MaxValues[ i ] - MinValues[ i ];
+
+				DiffValues[ i ] = d / IntMantMult;
+				DiffValuesI[ i ] = IntMantMult / d;
 			}
 		}
 		else
@@ -1781,6 +1748,7 @@ protected:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				DiffValues[ i ] = MaxValues[ i ] - MinValues[ i ];
+				DiffValuesI[ i ] = 1.0 / DiffValues[ i ];
 			}
 		}
 	}

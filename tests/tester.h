@@ -9,7 +9,7 @@
 #include "../nmsopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CSMAESOpt//CNMSeqOpt//CSpherOpt//CCMAESOpt//CBiteOptDeep//
+#define OPT_CLASS CBiteOpt//CSpherOpt//CNMSeqOpt//CSMAESOpt//CCMAESOpt//CBiteOptDeep//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
 //#define OPT_PLATEAU_MUL 64 // Uncomment to enable plateau check.
 //#define EVALBINS 1
@@ -383,7 +383,7 @@ public:
 
 			i++;
 
-			if( getBestCost() - optv < CostThreshold )
+			if( getBestCost() <= CostThreshold )
 			{
 				#if OPT_STATS
 				double DevSels[ CBiteOpt :: MaxHistCount ];
@@ -603,7 +603,6 @@ public:
 
 				opt -> updateDims( Dims );
 				opt -> fn = Funcs[ k ];
-				opt -> CostThreshold = CostThreshold;
 				opt -> DoRandomize = fndata -> DoRandomize;
 				opt -> DoRandomizeAll = fndata -> DoRandomizeAll;
 				opt -> MaxIters = InnerIterCount;
@@ -626,6 +625,18 @@ public:
 						opt -> minv[ i ] = opt -> fn -> RangeMin;
 						opt -> maxv[ i ] = opt -> fn -> RangeMax;
 					}
+				}
+
+				if( CostThreshold > 0.0 )
+				{
+					opt -> CostThreshold = opt -> optv + CostThreshold;
+				}
+				else
+				{
+					const double d = fabs( opt -> optv ) * -CostThreshold;
+
+					opt -> CostThreshold =
+						opt -> optv + ( d < 0.01 ? 0.01 : d );
 				}
 
 				if( fndata -> DoRandomize )
