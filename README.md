@@ -1,24 +1,5 @@
 # BITEOPT - Derivative-Free Optimization Method #
 
-## Contents ##
-
-* [Introduction](#introduction)
-* [Comparison](#comparison)
-* [CBiteOpt (biteopt.h)](#cbiteopt-biteopth)
-* [CBiteOptDeep (biteopt.h)](#cbiteoptdeep-biteopth)
-* [Notes](#notes)
-* [Limitations](#limitations)
-* [Constraint programming](#constraint-programming)
-* [Convergence proof](#convergence-proof)
-* [Tested uses](#tested-uses)
-* [Examples](#examples)
-* [Method philosophy](#method-philosophy)
-* [Method description](#method-description)
-* [SMA-ES](#sma-es)
-* [SpherOpt](#spheropt)
-* [NMSeqOpt](#nmseqopt)
-* [Citing](#citing)
-
 ## Introduction ##
 
 BITEOPT is a free open-source stochastic non-linear bound-constrained
@@ -45,7 +26,7 @@ value's ranking, not the actual value.
 
 ## Comparison ##
 
-This "black-box" optimization method was tested on 500+ 1-56 dimensional
+This "black-box" optimization method was tested on 2000+ 1-60 dimensional
 optimization problems and performed well, and it successfully solves even
 600-dimensional test problems found in some textbooks. But the main focus of
 the method is to provide fast solutions for computationally expensive
@@ -70,7 +51,7 @@ number of objective function evaluations is ~370.
 At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of
 version 2021.1, BiteOpt's "solvability" exceeds CMA-ES on synthetic function
-sets that involve random coordinate axis rotations and offsets (e.g. [BBOB
+sets that involve random coordinate axis rotations and offsets (e.g., [BBOB
 suite](https://coco.gforge.inria.fr/)). BiteOptDeep (e.g. with M=6)
 considerably outperforms CMA-ES in "solvability".
 
@@ -132,7 +113,7 @@ functions that have many strongly competing minima this "deep" method
 considerably increases the chance to find a global solution relative to the
 CBiteOpt class, but still requires several runs at different random seeds.
 When using this method, the required iteration budget usually increases by
-a factor of M<sup>0.5</sup>, but the number of required optimization
+a factor of M<sup>0.5</sup>, but the number of the required optimization
 attempts usually decreases. In practice, it is not always possible to predict
 the convergence time increase of the CBiteOptDeep class, but increase does
 correlate to its `M` parameter. For some complex functions the use of
@@ -184,11 +165,11 @@ While this method was designed to be applied to continuous functions, it is
 immune to discontinuities, and it can solve problems that utilize parameter
 value rounding (integer parameters). This method can't acceptably solve
 high-dimensional problems that are implicitly or explicitly combinatorial
-(e.g. Perm and Lennard-Jones atom clustering problems) as in such problems the
-global descent vanishes at some point and the method is left with an
+(e.g., Perm and Lennard-Jones atom clustering problems) as in such problems
+the global descent vanishes at some point and the method is left with an
 exponentially increasing number of local minima. Similarly, problems with many
 competing minima without a pronounced global descent towards global minimum
-(e.g. Bukin N.6 problem) may not be solved acceptably as in most cases they
+(e.g., Bukin N.6 problem) may not be solved acceptably as in most cases they
 require exhaustive search or a search involving knowledge of the structure of
 the problem.
 
@@ -249,7 +230,7 @@ feasible solution in up to 93% of cases.
 	cost += 1e10 * ( con_notmet + pns );
 
 In essence, this method transforms each penalty value into a cubic penalty
-value, places each penalty value into its own "strata", and also applies a
+value, places each penalty value into its own "stratum", and also applies a
 "barrier value" that depends on the number of constraints not met. The barrier
 value is suitably large for most practical constraint programming problems.
 
@@ -282,8 +263,8 @@ synthetic benchmarking:
 Namely, [AVIR](https://github.com/avaneev/avir) image resizing algorithm's
 hyper-parameters, digital audio limiter algorithm's parameters.
 
-* Non-linear least-squares problems, see calcHougen and calcOsborne functions
-in `testfn.h` for example problems.
+* Non-linear least-squares problems, see the calcHougen and calcOsborne
+functions in the `testfn.h` file for example problems.
 
 * BiteOptDeep was successfuly used for direct search of optimal short
 symmetric FIR filters. Namely, in
@@ -304,7 +285,7 @@ Use the `example.cpp` program to see the basic usage example of C++ interface.
 
 `example2.cpp` program is an example of a simple C-like function
 biteopt_minimize(). This is a minimization test for Hougen-Watson model for
-reaction kinetics. Non-linear least squares problem.
+reaction kinetics (non-linear least squares problem).
 
     void biteopt_minimize( const int N, biteopt_func f, void* data,
         const double* lb, const double* ub, double* x, double* minf,
@@ -346,7 +327,7 @@ the future:
 counter-productive (increases convergence time considerably). It is more
 efficient to run several optimizers in parallel with different random seeds.
 Specifically saying, it is possible (tested to be working on some code commits
-before May 15, 2018) to generate a serie of candidate solutions, evaluate them
+before May 15, 2018) to generate series of candidate solutions, evaluate them
 in parallel, and then update optimizer's state before generating a new batch
 of candidate solutions. Later commits have changed the algorithm to a from
 less suitable for such parallelization.
@@ -413,7 +394,7 @@ main driver for BiteOpt's further development.
 
 ## Method description ##
 
-NOTE: as of verison 2021.3 this topic is not yet up-to-date.
+NOTE: as of version 2021.3 this topic is not yet up-to-date.
 
 The algorithm consists of the following elements:
 
@@ -507,11 +488,11 @@ these elements:
 fit solutions have more influence on expansion or contraction of the sigma.
 
 2. SMA-ES approximates the "geometry" of the sample distribution. It ranges
-from "spherical" to "needle" geometry (represented by a continous `spc`
+from "spherical" to "needle" geometry (represented by a continuous `spc`
 variable). When geometry is spherical, covariance matrix update filter is
 tuned to an increased frequency (`CovUpdFast` instead of `CovUpdSlow`).
 
-3. An assymetry is introduced to the Gaussian noise function, depending on the
+3. An asymmetry is introduced to the Gaussian noise function, depending on the
 centroid step size. Distribution is expanded in the direction of the step and
 contracted in the opposite direction.
 
@@ -519,7 +500,7 @@ contracted in the opposite direction.
 the `SigmaMulBase` coefficients, depending on sphericity. Additionally,
 overly-contracted sigmas are expanded by the `SigmaMulExp` coefficient.
 
-In overall, SMA-ES is a completely self-adaptive method, it has several
+In overall, SMA-ES is a completely self-adaptive method. It has several
 hyper-parameters that do not depend on problem's dimensionality.
 
 Population size formula in SMA-ES is fixed to `13+Dims`: according to tests,
@@ -549,7 +530,7 @@ This method uses the same self-optimization technique as the BiteOpt method.
 ## NMSeqOpt ##
 
 The CNMSeqOpt class implements sequential Nelder-Mead simplex method with
-"stall count" tracking. This optimizer is used as an alternative parallel
+the "stall count" tracking. This optimizer is used as an alternative parallel
 optimizer in BiteOpt.
 
 ## Citing ##
