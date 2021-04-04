@@ -329,7 +329,7 @@ efficient to run several optimizers in parallel with different random seeds.
 Specifically saying, it is possible (tested to be working on some code commits
 before May 15, 2018) to generate series of candidate solutions, evaluate them
 in parallel, and then update optimizer's state before generating a new batch
-of candidate solutions. Later commits have changed the algorithm to a from
+of candidate solutions. Later commits have changed the algorithm to a form
 less suitable for such parallelization.
 
 2. The method uses "short-cuts" which can be considered as "tricks"
@@ -341,7 +341,7 @@ all arguments are equal. It just often happens that such "short-cuts" provide
 useful "reference points" to the method. Removing these "short-cuts" will
 increase average convergence time of the method, but in most cases won't
 impact method's ability to find a global solution. "Short-cuts" are used only
-in 4% of objective function evaluation on average.
+in 4% of objective function evaluations on average.
 
 3. The method uses LCG pseudo-random number generator due to its efficiency.
 The method was also tested with a more statistically-correct PRNG and the
@@ -361,7 +361,7 @@ space" to its members. Least fit members have little chance to stay in this
 "living space".
 
 BiteOpt uses several methods to generate new solutions, each method taking
-various information from various parallel populations. These methods are used
+various information from various internal populations. These methods are used
 in a probabilistic manner without any predefined preference.
 
 BiteOptDeep implements evolutionary method which can be seen in society and
@@ -369,7 +369,7 @@ nature: exchange of solutions between independent populations. Such exchange
 allows to find better solutions in a teamwork of sufficiently diverse members,
 it also reduces time (but not human-hours) to find a better solution. This
 method is a model of Swiss presidency rotation (each independent population
-represents an independent human brain).
+represents an independent human).
 
 The author did not originally employ results and reasoning available in papers
 on Differential Evolution. Author's use of DE operations is based on
