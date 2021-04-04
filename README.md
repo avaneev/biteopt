@@ -52,10 +52,10 @@ At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of
 version 2021.1, BiteOpt's "solvability" exceeds CMA-ES on synthetic function
 sets that involve random coordinate axis rotations and offsets (e.g., [BBOB
-suite](https://coco.gforge.inria.fr/)). BiteOptDeep (e.g. with M=6)
+suite](https://coco.gforge.inria.fr/)). BiteOptDeep (e.g., with M=6)
 considerably outperforms CMA-ES in "solvability".
 
-As a matter of sport curiosity, BiteOpt is able to solve in reasonable time
+As a matter of sport curiosity, BiteOpt is able to solve, in reasonable time,
 almost all functions proposed in classic academic literature on global
 optimization. This is quite a feat for a derivative-free method (not to be
 confused with large-scale analytic and gradient-based global optimization
@@ -90,7 +90,7 @@ randomization and the "step in the right direction" (Differential Evolution
 probabilistically lower objective function value.
 
 Since version 2021.1 BiteOpt uses a companion optimizer - SpherOpt - which
-works independently and provides "reference points" to BiteOpt. This companion
+works independently and provides "reference points" to BiteOpt. Such companion
 improves BiteOpt's convergence properties considerably, especially when the
 parameter space is rotated. Since version 2021.15 BiteOpt uses an additional
 companion optimizer - NMSeqOpt - which increases diversity of generated
@@ -107,9 +107,9 @@ which is then optimized. This method while increasing the convergence time is
 able to solve complex multi-modal functions.
 
 This method is most effective on complex functions, possibly with noisy
-fluctuations near the global solution that are not very expensive to calculate
-and that have a large iteration budget. Tests have shown that on smooth
-functions that have many strongly competing minima this "deep" method
+fluctuations near the global solution, that are not very expensive to
+calculate and that have a large iteration budget. Tests have shown that on
+smooth functions that have many strongly competing minima this "deep" method
 considerably increases the chance to find a global solution relative to the
 CBiteOpt class, but still requires several runs at different random seeds.
 When using this method, the required iteration budget usually increases by
@@ -128,15 +128,15 @@ may not be effective.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
-Running 10 times is a minimal general requirement. This method is hugely
-probabilistic and it depends on its initial state, which is selected randomly.
-In most cases it is more efficient to rerun the optimization with a new random
-seed than to wait for the optimization process to converge. Based on the
-results of optimization of the test corpus, for 2-dimensional functions it is
-reasonable to expect convergence in 1000 iterations (in a successful attempt),
-for 10-dimensional functions it is reasonable to expect convergence in 7000
-iterations (harder functions may require more iterations to converge). Most
-classic 2-dimensional problems converge in 400 iterations or less, at
+Running 10 times is a minimal general requirement. This method is
+hugely-probabilistic, and it depends on its initial state, which is selected
+randomly. In most cases it is more efficient to rerun the optimization with a
+new random seed than to wait for the optimization process to converge. Based
+on the results of optimization of the test corpus, for 2-dimensional functions
+it is reasonable to expect convergence in 1000 iterations (in a successful
+attempt), for 10-dimensional functions it is reasonable to expect convergence
+in 7000 iterations (harder functions may require more iterations to converge).
+Most classic 2-dimensional problems converge in 400 iterations or less, at
 10<sup>-6</sup> precision.
 
 Each run may generate an equally-usable candidate solution (not necessarily
@@ -165,7 +165,7 @@ While this method was designed to be applied to continuous functions, it is
 immune to discontinuities, and it can solve problems that utilize parameter
 value rounding (integer parameters). This method can't acceptably solve
 high-dimensional problems that are implicitly or explicitly combinatorial
-(e.g., Perm and Lennard-Jones atom clustering problems) as in such problems
+(e.g., Perm, and Lennard-Jones atom clustering problems) as in such problems
 the global descent vanishes at some point and the method is left with an
 exponentially increasing number of local minima. Similarly, problems with many
 competing minima without a pronounced global descent towards global minimum
@@ -283,7 +283,7 @@ cancers](https://www.biorxiv.org/content/10.1101/2021.02.08.430060v1.full)
 
 Use the `example.cpp` program to see the basic usage example of C++ interface.
 
-`example2.cpp` program is an example of a simple C-like function
+The `example2.cpp` program is a usage example of a simple C-like function
 biteopt_minimize(). This is a minimization test for Hougen-Watson model for
 reaction kinetics (non-linear least squares problem).
 
