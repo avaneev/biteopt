@@ -12,13 +12,12 @@ not meet constraints. Equality constraints are evaluated within the configured
 tolerance (10<sup>-5</sup> by default), non-equality constraints are evaluated
 strictly.
 
-Solver runs up to `1500\*itmult\*(n_var<sup>2.1</sup>)\*sqrt(depth)`
-iterations (function evaluations) per attempt, which is a hard limit, or lower
-if solver plateaus. So, for higher-dimensional problems this budget can be
-quite high, but it can be decreased via the `itmult` parameter. Solver reports
-the number of attempts where hard iteration limit was reached without reaching
-optimization plateau. If all attempts reached this limit, increasing `itmult`
-is advisable.
+Solver runs for a dimension-dependent maximum number of iterations (function
+evaluations) per attempt, which is a hard limit, or lower if solver plateaus.
+For higher-dimensional problems this budget can be quite high, but it can be
+decreased via the `itmult` parameter. Solver reports the number of attempts
+where hard iteration limit was reached without reaching optimization plateau.
+If all attempts reached this limit, increasing `itmult` is advisable.
 
 The model `.mod` file should first be converted to the `.nl` format via
 the `ampl -og` command.

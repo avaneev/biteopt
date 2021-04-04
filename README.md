@@ -132,7 +132,7 @@ functions that have many strongly competing minima this "deep" method
 considerably increases the chance to find a global solution relative to the
 CBiteOpt class, but still requires several runs at different random seeds.
 When using this method, the required iteration budget usually increases by
-a factor of `M<sup>0.5</sup>`, but the number of required optimization
+a factor of M<sup>0.5</sup>, but the number of required optimization
 attempts usually decreases. In practice, it is not always possible to predict
 the convergence time increase of the CBiteOptDeep class, but increase does
 correlate to its `M` parameter. For some complex functions the use of
@@ -205,7 +205,7 @@ performed since it makes required budget unpredictable. But if several
 attempts are performed, it is a positive property: it means that in some
 optimization attempts BiteOpt converges faster and may find a better optimum
 with the same iteration budget per attempt. Based on `test2.cpp`
-(2-dimensional) and `test4.cpp` (10-dimensional) test corpuses, only about
+(2-dimensional) and `test3.cpp` (14-dimensional) test corpuses, only about
 1% of attempts require more than 3\*sigma iterations, 58% of attempts require
 less than the mean. A typical probability distribution of percent of
 attempts/sigma is as follows (discretized, not centered around 0 because it
@@ -536,7 +536,7 @@ observed complexity is O(N<sup>1.6</sup>).
 This is a "converging hyper-spheroid" optimization method. While it is not
 as effective as, for example, CMA-ES, it also stands parameter space scaling,
 offsetting and rotation well. Since version 2021.1 it is used as a companion
-to BiteOpt optimizer with excellent results.
+to BiteOpt, with excellent results.
 
 This method is structurally similar to SMA-ES, but instead of Gaussian
 sampling, SpherOpt selects random points on a hyper-spheroid (with a bit of

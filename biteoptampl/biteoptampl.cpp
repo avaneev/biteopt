@@ -10,10 +10,15 @@
 //$ lib "solvers/amplsolv"
 //$ skip_include "z|solvers/getstub.h"
 
-#include "updsol.h"
 #include "solvers/getstub.h"
 #include "../biteopt.h"
 #include <math.h>
+
+#define USE_SOLDB 0 // For internal use: 1 = use solution database.
+
+#if USE_SOLDB
+	#include "updsol.h"
+#endif // USE_SOLDB
 
 static fint depth = 8;
 static fint attc = 10;
@@ -21,7 +26,6 @@ static int maxdim = 60;
 static int nprob = -1;
 static int progr = 0;
 static double itmult = 1.0;
-static int soldb = 0;
 static double tol = 1e-5; // Constraint tolerance.
 
 real* tmpx; // Temporary holder for solution and rounding.
@@ -38,18 +42,17 @@ static keyword keywds[] = {	/* must be in alphabetical order */
 	KW("maxdim", I_val, &maxdim, "maximum number of dimensions to accept (default 60)"),
 	KW("nprob", I_val, &nprob, "objective choice: 1 (default) = 1st"),
 	KW("progr", I_val, &progr, "1 - print progress (default 0)"),
-	KW("soldb", I_val, &soldb, "1 - use solution database (default 0)"),
 	KW("tol", D_val, &tol, "constraint tolerance (default 1e-5)"),
 	KW("version", Ver_val, 0, "report version"),
 	KW("wantsol", WS_val, 0, WSu_desc_ASL+5)
 };
 
 static char biteoptvers[] =
-	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 20210403\n";
+	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2021.23\n";
 
 static Option_Info Oinfo = {
-	"biteoptampl", "BITEOPT-20210403", "biteopt_options", keywds, nkeywds, 1.,
-	biteoptvers, 0,0,0,0,0, 20210403
+	"biteoptampl", "BITEOPT-2021.23", "biteopt_options", keywds, nkeywds, 1.,
+	biteoptvers, 0,0,0,0,0, 202123
 };
 
 int xround( real* x, int n )
@@ -319,8 +322,9 @@ start:
 	rnd.init( 1 );
 
 	int fnevals = 0;
-	const int hardlim = (int) ( itmult * 1500.0 *
-		pow( (double) n_var, 2.1 ) * sqrt( (double) depth ));
+	const double p = ( n_var >= 60 ? 1.6 : 4.0 * exp( -0.015 * n_var ));
+	const int hardlim = (int) ( 1000.0 * itmult * pow( (double) n_var, p ) *
+		sqrt( (double) depth ));
 
 	const int sc_thresh = n_var * 128;
 
@@ -400,10 +404,9 @@ start:
 			"!!! %i constraint(s) not met, infeasible solution\n", f_notmet );
 	}
 
-	if( soldb )
-	{
-		VOXERRSKIP( updateSol( stub, negate, f, f_notmet, f_iters ));
-	}
+	#if USE_SOLDB
+		VOXERRSKIP( updateSol( stub, negate, f, f_notmet, f_iters, khl ));
+	#endif // USE_SOLDB
 
 	solround( X0 );
 	goto done;
