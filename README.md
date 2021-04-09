@@ -208,7 +208,7 @@ a sum of differences between bit values and continuous variables in the range
 Equality and non-equality constraints can be implemented as penalties. The
 author has found a general effective method to apply value constraints via
 penalties. In the code below, `n_con` is the number of constraints,
-`con_nonmet` is the number of constraints not meeting tolerances, and the
+`con_notmet` is the number of constraints not meeting tolerances, and the
 `pn[]` is the array of linear penalty values for each constraint; a penalty
 value should be set to 0 if it meets the tolerance. For derivative-free
 methods, a suggested equality tolerance is 10<sup>-4</sup>, but a more common
@@ -372,12 +372,12 @@ method is a model of Swiss presidency rotation (each independent population
 represents an independent human).
 
 The author did not originally employ results and reasoning available in papers
-on Differential Evolution. Author's use of DE operations is based on
+on Differential Evolution. Author's use of DE operation is based on
 understanding that it provides an implicit gradient information. A candidate
 solution is generated as a sum of best solution and a difference between a
 random and the worst solution. Such difference between a random and the worst
 solution actually generates a probabilistically correct step towards the
-minimum of a function, relative to the better solution. Due to this
+minimum of a function, relative to a better solution. Due to this
 understanding, it is impossible to employ various DE variants in BiteOpt,
 only the difference between high rank and low rank solutions generates a
 valuable information, moreover only a difference multiplied by a factor of
@@ -450,23 +450,23 @@ solutions, plus a difference of two other random solutions. This is
 conceptually similar to Differential Evolution's "mutation" operation. The
 used worst solution is randomly chosen from 3 worst solutions.
 
-Alternatively, an "entropy bit mixing" method is used to create a candidate
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-(x_\text{rand2}-x_\text{rand3}))}{2})
+
+4. Alternatively, an "entropy bit mixing" method is used to create a candidate
 solution. This method mixes (XORs) parameter values represented as raw bit
 strings drawn from an odd number of parameter vectors. Probabilistically,
 such composition creates a new random parameter vector with an overwhelming
 number of bits common to better-performing solutions, and a fewer number of
 bits without certainty.
 
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-(x_\text{rand2}-x_\text{rand3}))}{2})
-
-4. With `ScutProb` probability a "short-cut" parameter vector change operation
+5. With `ScutProb` probability a "short-cut" parameter vector change operation
 is performed.
 
 ![equation](https://latex.codecogs.com/gif.latex?z=x_\text{new}[\text{rand}(1\ldots&space;N)])
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=z,&space;\quad&space;i=1,\ldots,N)
 
-5. After each objective function evaluation, the highest-cost previous
+6. After each objective function evaluation, the highest-cost previous
 solution is replaced using the upper bound cost constraint.
 
 ## SMA-ES ##
@@ -492,9 +492,9 @@ from "spherical" to "needle" geometry (represented by a continuous `spc`
 variable). When geometry is spherical, covariance matrix update filter is
 tuned to an increased frequency (`CovUpdFast` instead of `CovUpdSlow`).
 
-3. An asymmetry is introduced to the Gaussian noise function, depending on the
-centroid step size. Distribution is expanded in the direction of the step and
-contracted in the opposite direction.
+3. An asymmetry is introduced to the Gaussian sampling function, depending on
+the centroid step size. Distribution is expanded in the direction of the step
+and contracted in the opposite direction.
 
 4. On every update, all per-parameter sigmas are contracted (multiplied) by
 the `SigmaMulBase` coefficients, depending on sphericity. Additionally,
@@ -530,7 +530,7 @@ This method uses the same self-optimization technique as the BiteOpt method.
 ## NMSeqOpt ##
 
 The CNMSeqOpt class implements sequential Nelder-Mead simplex method with
-the "stall count" tracking. This optimizer is used as an alternative parallel
+the "stall count" tracking. This optimizer is used as an additional parallel
 optimizer in BiteOpt.
 
 ## Citing ##
@@ -538,7 +538,7 @@ optimizer in BiteOpt.
 ```bibtex
 @misc{biteopt2021,
     author = {Aleksey Vaneev},
-    title = {BITEOPT - Derivative-free optimization method},
+    title = {{BITEOPT - Derivative-free optimization method}},
     note = {C++ source code, with description and examples},
     year = {2021},
     publisher = {GitHub},

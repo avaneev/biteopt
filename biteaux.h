@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.23
+ * @version 2021.24
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -81,7 +81,7 @@ public:
 	void init( const int NewSeed )
 	{
 		BitsLeft = 0;
-		seed = (uint64_t) NewSeed;
+		Seed = (uint64_t) NewSeed;
 
 		// Skip first values to make PRNG "settle down".
 
@@ -89,26 +89,6 @@ public:
 		advance();
 		advance();
 		advance();
-	}
-
-	/**
-	 * @return Scale of "raw" random values returned by functions with the
-	 * "raw" suffix.
-	 */
-
-	inline static int getRawScale()
-	{
-		return( raw_scale );
-	}
-
-	/**
-	 * Function returns the number of significant bits in the "raw" random
-	 * value.
-	 */
-
-	inline static int getRawBitCount()
-	{
-		return( raw_bits );
 	}
 
 	/**
@@ -129,9 +109,7 @@ public:
 
 	double getRndValue()
 	{
-		advance();
-
-		return(( seed >> raw_shift ) * getRawScaleInv() );
+		return( advance() * getRawScaleInv() );
 	}
 
 	/**
@@ -140,8 +118,7 @@ public:
 
 	double getRndValueSqr()
 	{
-		advance();
-		const double v = ( seed >> raw_shift ) * getRawScaleInv();
+		const double v = advance() * getRawScaleInv();
 
 		return( v * v );
 	}
@@ -150,11 +127,9 @@ public:
 	 * @return Uniformly-distributed random number in the "raw" scale.
 	 */
 
-	int getUniformRaw()
+	uint32_t getUniformRaw()
 	{
-		advance();
-
-		return( (int) ( seed >> raw_shift ));
+		return( advance() );
 	}
 
 	/**
@@ -162,30 +137,24 @@ public:
 	 * scale.
 	 */
 
-	int64_t getUniformRaw2()
+	uint64_t getUniformRaw2()
 	{
-		advance();
-		int64_t v = (int64_t) ( seed >> raw_shift );
-
-		advance();
-		v |= (int64_t) ( seed >> raw_shift ) << raw_bits;
+		uint64_t v = (uint64_t) advance();
+		v |= (uint64_t) advance() << raw_bits;
 
 		return( v );
 	}
 
 	/**
-	 * @return TPDF random number in the range (-1; 1), in the "raw" scale.
+	 * @return TPDF random number in the range (-1; 1).
 	 */
 
-	int getTPDFRaw()
+	double getTPDF()
 	{
-		advance();
-		const int v1 = (int) ( seed >> raw_shift );
+		const int64_t v1 = (int64_t) advance();
+		const int64_t v2 = (int64_t) advance();
 
-		advance();
-		const int v2 = (int) ( seed >> raw_shift );
-
-		return( v1 - v2 );
+		return(( v1 - v2 ) * getRawScaleInv() );
 	}
 
 	/**
@@ -198,71 +167,70 @@ public:
 		if( BitsLeft == 0 )
 		{
 			BitPool = getUniformRaw();
-			BitsLeft = raw_bits - 1 - 10; // Skip lower bits to get
-				// statistically-better bit range.
 
-			BitPool >>= 10;
 			const int b = ( BitPool & 1 );
+
+			BitsLeft = raw_bits - 1;
 			BitPool >>= 1;
 
 			return( b );
 		}
-		else
-		{
-			const int b = ( BitPool & 1 );
-			BitPool >>= 1;
-			BitsLeft--;
 
-			return( b );
-		}
-	}
+		const int b = ( BitPool & 1 );
 
-	/**
-	 * Function "skips" a single PRNG value, and resets BitPool. This function
-	 * can be used to improve randomness on lower-quality PRNGs, especially
-	 * useful when initializing an initial state of an optimizer.
-	 */
+		BitsLeft--;
+		BitPool >>= 1;
 
-	void skip()
-	{
-		advance();
-		BitsLeft = 0;
+		return( b );
 	}
 
 private:
-	static const int raw_bits = 30; ///< The number of higher bits used for
-		///< PRNG output.
-		///<
-	static const int raw_scale = 1 << raw_bits; ///< The scale of the "raw"
+	static const int raw_bits = 29; ///< The number of higher bits used for
 		///< PRNG output.
 		///<
 	static const int raw_shift = sizeof( uint64_t ) * 8 - raw_bits; ///<
 		///< "seed" value's bit shift to obtain the output value.
 		///<
-	uint64_t seed; ///< The current random seed value.
+	uint64_t Seed; ///< The current random seed value.
 		///<
-	int BitPool; ///< Bit pool.
+	uint32_t BitPool; ///< Bit pool.
 		///<
 	int BitsLeft; ///< The number of bits left in the bit pool.
 		///<
 
 	/**
-	 * Function advances the PRNG.
+	 * Function advances the PRNG and returns the next PRNG value.
 	 */
 
-	void advance()
+	uint32_t advance()
 	{
-		seed = ( seed + 15509ULL ) * 11627070389458151377ULL;
+		Seed = ( Seed + 15509ULL ) * 11627070389458151377ULL;
+
+		return( (uint32_t) ( Seed >> raw_shift ));
 	}
 };
 
 /**
- * Base histogram class.
+ * Histogram class. Used to keep track of success of various choices. Updates
+ * probabilities of future choices based on the current histogram state. Uses
+ * a self-optimization technique for internal parameters.
  */
 
 class CBiteOptHistBase
 {
 public:
+	/**
+	 * Constructor.
+	 *
+	 * @param Count The number of possible choices, greater than 1.
+	 */
+
+	CBiteOptHistBase( const int aCount )
+		: Count( aCount )
+		, m( 1.0 / aCount )
+	{
+	}
+
 	/**
 	 * This function resets histogram, should be called before calling other
 	 * functions, including after object's construction.
@@ -270,65 +238,7 @@ public:
 	 * @param rnd PRNG object.
 	 */
 
-	virtual void reset( CBiteRnd& rnd ) = 0;
-
-	/**
-	 * An auxiliary function that returns histogram's choice count.
-	 */
-
-	virtual int getChoiceCount() const = 0;
-
-	/**
-	 * This function should be called when a certain choice is successful.
-	 * This function should only be called after a prior select() calls.
-	 *
-	 * @param rnd PRNG object. May not be used.
-	 */
-
-	virtual void incr( CBiteRnd& rnd ) = 0;
-
-	/**
-	 * This function should be called when a certain choice is a failure.
-	 * This function should only be called after a prior select() calls.
-	 *
-	 * @param rnd PRNG object. May not be used.
-	 */
-
-	virtual void decr( CBiteRnd& rnd ) = 0;
-
-	/**
-	 * Function returns the latest made choice index.
-	 */
-
-	int getSel() const
-	{
-		return( Sel );
-	}
-
-protected:
-	int Sel; ///< The latest selected choice. Available only after the
-		///< select() function calls.
-		///<
-};
-
-/**
- * Histogram class. Used to keep track of success of various choices. Updates
- * probabilities of future choices based on the current histogram state. Uses
- * a self-optimization technique for internal parameters.
- *
- * @tparam Count The number of possible choices, greater than 1.
- */
-
-template< int Count >
-class CBiteOptHist : virtual public CBiteOptHistBase
-{
-public:
-	CBiteOptHist()
-		: m( 1.0 / Count )
-	{
-	}
-
-	virtual void reset( CBiteRnd& rnd )
+	void reset( CBiteRnd& rnd )
 	{
 		const int b = rnd.getBit();
 		IncrDecrHist[ 1 ] = b;
@@ -341,12 +251,23 @@ public:
 		select( rnd );
 	}
 
-	virtual int getChoiceCount() const
+	/**
+	 * An auxiliary function that returns histogram's choice count.
+	 */
+
+	int getChoiceCount() const
 	{
 		return( Count );
 	}
 
-	virtual void incr( CBiteRnd& rnd )
+	/**
+	 * This function should be called when a certain choice is successful.
+	 * This function should only be called after a prior select() calls.
+	 *
+	 * @param rnd PRNG object. May not be used.
+	 */
+
+	void incr( CBiteRnd& rnd )
 	{
 		IncrDecrHist[ IncrDecr ]++;
 		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
@@ -355,7 +276,14 @@ public:
 		updateProbs();
 	}
 
-	virtual void decr( CBiteRnd& rnd )
+	/**
+	 * This function should be called when a certain choice is a failure.
+	 * This function should only be called after a prior select() calls.
+	 *
+	 * @param rnd PRNG object. May not be used.
+	 */
+
+	void decr( CBiteRnd& rnd )
 	{
 		IncrDecrHist[ IncrDecr ]--;
 		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
@@ -390,10 +318,24 @@ public:
 		return( Count - 1 );
 	}
 
+	/**
+	 * Function returns the latest made choice index.
+	 */
+
+	int getSel() const
+	{
+		return( Sel );
+	}
+
 protected:
-	double m; ///< Multiplier (depends on Divisor).
+	static const int MaxCount = 8; ///< The maximal number of choices
+		///< supported.
 		///<
-	int Hist[ Count ]; ///< Histogram.
+	int Count; ///< The number of choices in use.
+		///<
+	double m; ///< Multiplier (depends on Count).
+		///<
+	int Hist[ MaxCount ]; ///< Histogram.
 		///<
 	int IncrDecrHist[ 3 ]; ///< IncrDecr self-optimization histogram, element
 		///< 0 not used for efficiency.
@@ -401,9 +343,12 @@ protected:
 	int IncrDecr; ///< Histogram-driven increment or decrement, can be equal
 		///< to 1 or 2.
 		///<
-	double Probs[ Count ]; ///< Probabilities, cumulative.
+	double Probs[ MaxCount ]; ///< Probabilities, cumulative.
 		///<
 	double ProbSum; ///< Sum of probabilities, for random variable scaling.
+		///<
+	int Sel; ///< The latest selected choice. Available only after the
+		///< select() function calls.
 		///<
 
 	/**
@@ -449,138 +394,20 @@ protected:
 };
 
 /**
- * This is an advanced "hyper" histogram. It embeds several sub-histograms. In
- * most cases it is as efficient as a usual histogram, but in some cases,
- * like solution generator selection, it is more effective. Several
- * sub-histograms allow this "hyper" histogram to make a more balanced
- * choices, without over-rating a particular probability distribution.
+ * Templated histogram class, for convenient constructor's Count parameter
+ * specification.
  *
- * @tparam Count The number of possible choices, greater than 1.
+ * @tparam tCount The number of possible choices, greater than 1.
  */
 
-template< int Count >
-class CBiteOptHistHyper : virtual public CBiteOptHistBase
+template< int tCount >
+class CBiteOptHist : public CBiteOptHistBase
 {
 public:
-	virtual void reset( CBiteRnd& rnd )
+	CBiteOptHist()
+		: CBiteOptHistBase( tCount )
 	{
-		HyperHist.reset( rnd );
-
-		int i;
-
-		for( i = 0; i < HyperCount; i++ )
-		{
-			Hists[ i ].reset( rnd );
-		}
-
-		SelHyper = HyperHist.select( rnd );
-		Sel = Hists[ SelHyper ].select( rnd );
 	}
-
-	virtual int getChoiceCount() const
-	{
-		return( Count );
-	}
-
-	virtual void incr( CBiteRnd& rnd )
-	{
-		HyperHist.incr( rnd );
-		Hists[ SelHyper ].incr( rnd );
-	}
-
-	virtual void decr( CBiteRnd& rnd )
-	{
-		HyperHist.decr( rnd );
-		Hists[ SelHyper ].decr( rnd );
-	}
-
-	int select( CBiteRnd& rnd )
-	{
-		SelHyper = HyperHist.select( rnd );
-		Sel = Hists[ SelHyper ].select( rnd );
-
-		return( Sel );
-	}
-
-protected:
-	static const int HyperCount = Count; ///< The number of embedded
-		///< histograms.
-		///<
-	CBiteOptHist< HyperCount > HyperHist; /// Embedded histogram selector
-		///< histogram.
-		///<
-	CBiteOptHist< Count > Hists[ HyperCount ]; /// Embedded histograms.
-		///<
-	int SelHyper; ///< Previous embedded histogram selector.
-		///<
-};
-
-/**
- * Histogram class for binary variables. A lot more computationally-efficient,
- * but functionally similar to the CBiteOptHistogram class. In some instances,
- * provides better statistics, especially if some choice is effective for a
- * prolonged time.
- */
-
-class CBiteOptHistBinary : virtual public CBiteOptHistBase
-{
-public:
-	virtual void reset( CBiteRnd& rnd )
-	{
-		int b = rnd.getBit();
-		IncrDecrHist[ 1 ] = b;
-		IncrDecrHist[ 2 ] = 1 - b;
-		IncrDecr = 2 - b;
-
-		b = rnd.getBit();
-		Hist[ 0 ] = b;
-		Hist[ 1 ] = 1 - b;
-		Sel = 1 - b;
-	}
-
-	virtual int getChoiceCount() const
-	{
-		return( 2 );
-	}
-
-	virtual void incr( CBiteRnd& rnd )
-	{
-		IncrDecrHist[ IncrDecr ]++;
-		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
-
-		Hist[ Sel ] += IncrDecr;
-	}
-
-	virtual void decr( CBiteRnd& rnd )
-	{
-		IncrDecrHist[ IncrDecr ]--;
-		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
-
-		Hist[ Sel ] -= IncrDecr;
-	}
-
-	/**
-	 * Function produces a fixed binary choice index based on the current
-	 * histogram state.
-	 *
-	 * @param rnd PRNG object. Not used.
-	 */
-
-	int select( CBiteRnd& rnd )
-	{
-		Sel = ( Hist[ 1 ] > Hist[ 0 ]);
-		return( Sel );
-	}
-
-protected:
-	int Hist[ 2 ]; ///< Histogram.
-		///<
-	int IncrDecrHist[ 3 ]; ///< IncrDecr self-optimization histogram, element
-		///< 0 not used for efficiency.
-		///<
-	int IncrDecr; ///< Histogram-driven increment or decrement, can be equal
-		///< to 1 or 2.
-		///<
 };
 
 /**
@@ -602,8 +429,6 @@ public:
 		, PopCosts( NULL )
 		, CentParams( NULL )
 		, NeedCentUpdate( false )
-		, SparsePopParams( NULL )
-		, SparsePopSize( -1 )
 	{
 	}
 
@@ -654,7 +479,6 @@ public:
 		PopParams = new ptype*[ aPopSize + 1 ]; // Last element is temporary.
 		PopCosts = new double[ aPopSize ];
 		CentParams = new ptype[ aParamCount ];
-		SparsePopParams = new ptype*[ aPopSize ];
 
 		int i;
 
@@ -685,7 +509,6 @@ public:
 		CurPopSize1 = s.CurPopSize1;
 		CurPopPos = s.CurPopPos;
 		NeedCentUpdate = s.NeedCentUpdate;
-		SparsePopSize = -1;
 
 		int i;
 
@@ -852,7 +675,6 @@ public:
 	{
 		CurPopPos = 0;
 		NeedCentUpdate = false;
-		SparsePopSize = -1;
 	}
 
 	/**
@@ -951,7 +773,6 @@ public:
 		CurPopSize++;
 		CurPopSize1++;
 		NeedCentUpdate = true;
-		SparsePopSize = -1;
 	}
 
 	/**
@@ -964,93 +785,6 @@ public:
 		CurPopSize--;
 		CurPopSize1--;
 		NeedCentUpdate = true;
-		SparsePopSize = -1;
-	}
-
-	/**
-	 * Function returns an array of "sparsified" population vectors based on
-	 * cost differences. Working with "sparsified" population increases
-	 * probability of generation of acceptable solutions for some methods.
-	 * Sparsification usually reduces population size by a factor of 2 (at
-	 * rf=1).
-	 *
-	 * @param[out] Size Resulting population size.
-	 * @param rf "Reduction factor". 1.0 usualy produces halving, 2.0 -
-	 * reduces more, 0.5 - reduces less.
-	 */
-
-	const ptype** getSparsePopParams( int& Size, const double rf )
-	{
-		if( SparsePopSize >= 0 && SparseRF == rf )
-		{
-			Size = SparsePopSize;
-			return( (const ptype**) SparsePopParams );
-		}
-
-		SparseRF = rf;
-
-		const double* const p = PopCosts;
-		double s = 0.0;
-		int i;
-
-		for( i = 0; i < CurPopSize1; i++ )
-		{
-			s += p[ i + 1 ] - p[ i ];
-		}
-
-		SparsePopParams[ 0 ] = PopParams[ 0 ];
-		int c = 1;
-
-		if( s > 0.0 )
-		{
-			s /= CurPopSize1 * rf;
-
-			double pc = p[ 0 ];
-
-			for( i = 1; i < CurPopSize; i++ )
-			{
-				if( p[ i ] - pc > s )
-				{
-					SparsePopParams[ c ] = PopParams[ i ];
-					c++;
-					pc = p[ i ];
-				}
-			}
-
-			int MinSize = 5;
-
-			if( c < MinSize )
-			{
-				i = CurPopSize + c - MinSize;
-
-				if( i < 0 )
-				{
-					MinSize += i;
-					i = 0;
-				}
-
-				while( c < MinSize )
-				{
-					SparsePopParams[ c ] = PopParams[ i ];
-					c++;
-					i++;
-				}
-			}
-		}
-
-		if( c < 3 )
-		{
-			memcpy( SparsePopParams, PopParams, CurPopSize *
-				sizeof( SparsePopParams[ 0 ]));
-
-			SparsePopSize = CurPopSize;
-			Size = CurPopSize;
-			return( (const ptype**) SparsePopParams );
-		}
-
-		SparsePopSize = c;
-		Size = c;
-		return( (const ptype**) SparsePopParams );
 	}
 
 	/**
@@ -1120,15 +854,6 @@ protected:
 		///<
 	bool NeedCentUpdate; ///< "True" if centroid update is needed.
 		///<
-	ptype** SparsePopParams; ///< Pointers to "sparsified" population
-		///< parameter vectors.
-		///<
-	int SparsePopSize; ///< The number of valid elements in the
-		///< SparsePopParams array. -1 if unavailable. Reset to -1 in the
-		///< sortPop() function or on population size changes.
-		///<
-	double SparseRF; ///< "Reduction factor" used to produce SparsePopParams.
-		///<
 	ptype* TmpParams; ///< Temporary parameter vector, points to the last
 		///< element of the PopParams array.
 		///<
@@ -1144,7 +869,6 @@ protected:
 		delete[] PopParams;
 		delete[] PopCosts;
 		delete[] CentParams;
-		delete[] SparsePopParams;
 	}
 
 	/**
@@ -1175,7 +899,6 @@ protected:
 
 		PopCosts[ i ] = Cost;
 		PopParams[ i ] = InsertParams;
-		SparsePopSize = -1;
 	}
 
 	/**
@@ -1628,7 +1351,6 @@ protected:
 	using CBiteOptParPops< ptype > :: CurPopSize1;
 	using CBiteOptParPops< ptype > :: CurPopPos;
 	using CBiteOptParPops< ptype > :: NeedCentUpdate;
-	using CBiteOptParPops< ptype > :: SparsePopSize;
 	using CBiteOptParPops< ptype > :: resetCurPopPos;
 
 	double* MinValues; ///< Minimal parameter values.
@@ -1719,7 +1441,6 @@ protected:
 
 		for( i = 0; i < HistCount; i++ )
 		{
-			rnd.skip();
 			Hists[ i ] -> reset( rnd );
 		}
 	}
@@ -1854,23 +1575,6 @@ protected:
 
 	template< class T >
 	int select( T& Hist, CBiteRnd& rnd )
-	{
-		ApplyHists[ ApplyHistsCount ] = &Hist;
-		ApplyHistsCount++;
-
-		return( Hist.select( rnd ));
-	}
-
-	/**
-	 * Function performs choice selection based on the specified histogram,
-	 * and adds the histogram to apply list. Specialized for binary
-	 * histograms.
-	 *
-	 * @param Hist Histogram.
-	 * @param rnd PRNG object.
-	 */
-
-	int select( CBiteOptHistBinary& Hist, CBiteRnd& rnd )
 	{
 		ApplyHists[ ApplyHistsCount ] = &Hist;
 		ApplyHistsCount++;
