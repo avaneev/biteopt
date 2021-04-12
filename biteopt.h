@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.24
+ * @version 2021.25
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -895,7 +895,7 @@ protected:
 		CBiteOptPop& ParPop = selectParPop( 1, rnd );
 
 		int UseSize[ 2 ];
-		UseSize[ 0 ] = AltPop.getCurPopSize();
+		UseSize[ 0 ] = CurPopSize;
 		UseSize[ 1 ] = ParPop.getCurPopSize();
 
 		const ptype** UseParams[ 2 ];

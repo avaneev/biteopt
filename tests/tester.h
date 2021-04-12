@@ -9,7 +9,7 @@
 #include "../nmsopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CSpherOpt//CNMSeqOpt//CSMAESOpt//CCMAESOpt//CBiteOptDeep//
+#define OPT_CLASS CBiteOpt//CNMSeqOpt//CSpherOpt//CCMAESOpt//CSMAESOpt//CBiteOptDeep//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
 //#define OPT_PLATEAU_MUL 64 // Uncomment to enable plateau check.
 //#define EVALBINS 1
@@ -87,8 +87,8 @@ public:
 	void clear()
 	{
 		SumIt = 0;
-		SumItImpr = 0;
 		SumIt_l10n = 0.0;
+		SumItImpr = 0;
 		SumRjCost = 0.0;
 		SumRMS = 0.0;
 		SumRMS_l10n = 0.0;
@@ -211,7 +211,8 @@ public:
 	#endif // OPT_STATS
 
 	CTestOpt()
-		: minv( NULL )
+		: Dims( 0 )
+		, minv( NULL )
 		, maxv( NULL )
 		, shifts( NULL )
 		, signs( NULL )
@@ -247,6 +248,11 @@ public:
 
 	void updateDims( const int aDims )
 	{
+		if( Dims == aDims )
+		{
+			return;
+		}
+
 		Dims = aDims;
 		delete[] minv;
 		delete[] maxv;
@@ -359,7 +365,6 @@ public:
 
 		int i = 0;
 		int ImprIters = 0;
-		double PrevCost = 0.0;
 
 		while( true )
 		{
@@ -436,8 +441,6 @@ public:
 				break;
 			}
 
-			PrevCost = getBestCost();
-
 			#if defined( OPT_PLATEAU_MUL )
 			if( sc > Dims * OPT_PLATEAU_MUL || i == MaxIters )
 			#else // defined( OPT_PLATEAU_MUL )
@@ -454,8 +457,8 @@ public:
 				}
 
 				Iters[ Index ] = -1;
-				FuncStats -> SumRjCost += PrevCost;
-				SumStats -> SumRjCost += PrevCost - optv;
+				FuncStats -> SumRjCost += getBestCost();
+				SumStats -> SumRjCost += getBestCost() - optv;
 
 				break;
 			}
@@ -592,7 +595,6 @@ public:
 				fndata -> DefDims : Funcs[ k ] -> Dims );
 
 			CFuncStats FuncStats;
-			int i;
 			int j;
 
 			for( j = 0; j < IterCount; j++ )
@@ -601,6 +603,7 @@ public:
 				VOXERRSKIP( Threads.getIdleThread( opt ));
 				#endif // OPT_THREADS
 
+				opt -> rnd.init( k + j * 10000 );
 				opt -> updateDims( Dims );
 				opt -> fn = Funcs[ k ];
 				opt -> DoRandomize = fndata -> DoRandomize;
@@ -610,8 +613,9 @@ public:
 				opt -> FuncStats = &FuncStats;
 				opt -> Index = j;
 				opt -> Iters = Iters;
-				opt -> rnd.init( k + j * 10000 );
 				opt -> optv = opt -> fn -> OptValue;
+
+				int i;
 
 				if( opt -> fn -> ParamFunc != NULL )
 				{
