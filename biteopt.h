@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.25
+ * @version 2021.26
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -77,7 +77,6 @@ public:
 		addHist( MinSolMulHist[ 0 ], "MinSolMulHist[ 0 ]" );
 		addHist( MinSolMulHist[ 1 ], "MinSolMulHist[ 1 ]" );
 		addHist( MinSolMulHist[ 2 ], "MinSolMulHist[ 2 ]" );
-		addHist( PowFacHist, "PowFacHist" );
 		addHist( Gen1AllpHist, "Gen1AllpHist" );
 		addHist( Gen1MoveHist, "Gen1MoveHist" );
 		addHist( Gen1MoveAsyncHist, "Gen1MoveAsyncHist" );
@@ -342,7 +341,7 @@ public:
 					UseParOpt = 0; // On stall, select optimizer 1.
 				}
 
-				if( sc > ParamCount * 8 )
+				if( sc > ParamCount * 16 )
 				{
 					ParOpt2.init( rnd, getBestParams(),
 						2.0 * sqrt( getDistanceSqr( getParamsOrdered( 0 ))));
@@ -493,9 +492,6 @@ protected:
 		///<
 	CBiteOptHist< 4 > MinSolMulHist[ 3 ]; ///< Index of least-cost
 		///< population, multiplier.
-		///<
-	CBiteOptHist< 3 > PowFacHist; ///< Power factor histogram, for population
-		///< weighting in various solution generators
 		///<
 	CBiteOptHist< 2 > Gen1AllpHist; ///< Generator method 1's Allp
 		///< histogram.
@@ -650,22 +646,6 @@ protected:
 	}
 
 	/**
-	 * Functions generates a random number raised into the selected power.
-	 *
-	 * @param gi Solution generator index (0-1).
-	 * @param rnd PRNG object.
-	 */
-
-	double getRndPowFac( const int gi, CBiteRnd& rnd )
-	{
-		static const double pf[ 3 ] = { 2.0, 2.25, 2.5 };
-
-		const double r = rnd.getRndValue();
-
-		return( pow( r, pf[ select( PowFacHist, rnd )]));
-	}
-
-	/**
 	 * The original "bitmask inversion with random move" solution generator.
 	 * Most of the time adjusts only a single parameter of a better solution,
 	 * yet manages to produce excellent "reference points".
@@ -724,18 +704,8 @@ protected:
 
 		for( i = a; i < b; i++ )
 		{
-			const ptype d = rp1[ i ] - Params[ i ];
-
-			if( d < 0 )
-			{
-				Params[ i ] = (( Params[ i ] ^ imask ) +
-					Params[ i ] - ( -d ^ imask2 )) >> 1;
-			}
-			else
-			{
-				Params[ i ] = (( Params[ i ] ^ imask ) +
-					Params[ i ] + ( d ^ imask2 )) >> 1;
-			}
+			Params[ i ] = (( Params[ i ] ^ imask ) +
+				( rp1[ i ] ^ imask2 )) >> 1;
 		}
 
 		if( select( Gen1MoveHist, rnd ))
@@ -795,7 +765,7 @@ protected:
 		const int si2 = 1 + (int) ( rnd.getRndValue() * CurPopSize1 );
 		const ptype* const rp2 = getParamsOrdered( si2 );
 
-		const int si4 = (int) ( getRndPowFac( 0, rnd ) * CurPopSize );
+		const int si4 = (int) ( rnd.getRndValueSqr() * CurPopSize );
 		const ptype* const rp4 = getParamsOrdered( si4 );
 		const ptype* const rp5 = getParamsOrdered( CurPopSize1 - si4 );
 
@@ -827,7 +797,7 @@ protected:
 		const int si1 = getMinSolIndex( 1, rnd, CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
 
-		const int si2 = (int) ( getRndPowFac( 1, rnd ) * CurPopSize );
+		const int si2 = (int) ( rnd.getRndValueSqr() * CurPopSize );
 		const ptype* const rp2 = getParamsOrdered( si2 );
 
 		const ptype* const rp3 = getParamsOrdered( CurPopSize1 - si2 );

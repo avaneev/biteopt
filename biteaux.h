@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.24
+ * @version 2021.26
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -790,12 +790,18 @@ public:
 	/**
 	 * Function calculates Euclidean distance of the specifed vector to *this
 	 * population's centroid. Function returns the square of the distance.
+	 * Function updates centroid if it requires an update.
 	 *
 	 * @param p Parameter vector.
 	 */
 
-	double getDistanceSqr( const ptype* const p ) const
+	double getDistanceSqr( const ptype* const p )
 	{
+		if( NeedCentUpdate )
+		{
+			updateCentroid();
+		}
+
 		double s = 0.0;
 		int i;
 
