@@ -103,41 +103,44 @@ fune-tuning from the user nor the author.
 
 Deep optimization class. Based on an array of `M` CBiteOpt objects. This
 "deep" method pushes the newly-obtained solution to the random CBiteOpt object
-which is then optimized. This method while increasing the convergence time is
-able to solve complex multi-modal functions.
+which is then optimized. This method, while increasing the convergence time,
+is able to solve complex multi-modal functions.
 
 This method is most effective on complex functions, possibly with noisy
 fluctuations near the global solution, that are not very expensive to
 calculate and that have a large iteration budget. Tests have shown that on
 smooth functions that have many strongly competing minima this "deep" method
 considerably increases the chance to find a global solution relative to the
-CBiteOpt class, but still requires several runs at different random seeds.
+CBiteOpt class, but still requires several runs with different random seeds.
 When using this method, the required iteration budget usually increases by
 a factor of M<sup>0.5</sup>, but the number of the required optimization
 attempts usually decreases. In practice, it is not always possible to predict
 the convergence time increase of the CBiteOptDeep class, but increase does
 correlate to its `M` parameter. For some complex functions the use of
-CBiteOptDeep even decreases convergence time. For sure, CBiteOptDeep class
+CBiteOptDeep even decreases convergence time. For sure, the CBiteOptDeep class
 often produces better solutions than the CBiteOpt class.
 
 ## Notes ##
 
-As of version 2021.3, BiteOpt is a completely self-optimizing method. It does
-not feature user-adjustable hyper-parameters. Even population size adjustments
-may not be effective.
+BiteOpt is a completely self-optimizing method. It does not feature
+user-adjustable hyper-parameters. Even population size adjustments may not be
+effective.
 
 It is usually necessary to run the optimization process several times with
 different random seeds since the process may get stuck in a local minimum.
-Running 10 times is a minimal general requirement. This method is
-hugely-probabilistic, and it depends on its initial state, which is selected
-randomly. In most cases it is more efficient to rerun the optimization with a
-new random seed than to wait for the optimization process to converge. Based
-on the results of optimization of the test corpus, for 2-dimensional functions
-it is reasonable to expect convergence in 1000 iterations (in a successful
-attempt), for 10-dimensional functions it is reasonable to expect convergence
-in 7000 iterations (harder functions may require more iterations to converge).
-Most classic 2-dimensional problems converge in 400 iterations or less, at
-10<sup>-6</sup> precision.
+Running 10 times is a minimal general requirement. The required number of
+optimization attempts is usually proportional to the number of strongly
+competing minima in a function. 
+
+This method is hugely-probabilistic, and it depends on its initial state,
+which is selected randomly. In most cases it is more efficient to rerun the
+optimization with a new random seed than to wait for the optimization process
+to converge. Based on the results of optimization of the test corpus, for
+2-dimensional functions it is reasonable to expect convergence in 1000
+iterations (in a successful attempt), for 10-dimensional functions it is
+reasonable to expect convergence in 7000 iterations (harder functions may
+require more iterations to converge). Most classic 2-dimensional problems
+converge in 400 iterations or less, at 10<sup>-6</sup> precision.
 
 Each run may generate an equally-usable candidate solution (not necessarily
 having the least cost), in practice the researcher may select solution from
@@ -146,21 +149,26 @@ incorrect to assume that least-performing runs are "wasted". In practice,
 least-performing runs may give more acceptable parameter values within the
 search space in comparison to the best-performing runs.
 
+Note that derivative-free optimization methods in general provide "asymptotic"
+solutions for complex functions. Thus it is reasonable to expect that BiteOpt
+gives an optimal solution with some tolerance only. Given a large enough
+function evaluation budget, BiteOpt usually does find an optimal solution
+which is cross-checked with several other solvers, but a solution of a new
+unexplored function must be treated as "asymptotically" optimal.
+
 ## Limitations ##
 
-The required number of optimization attempts is usually proportional to the
-number of strongly competing minima in a function. Rogue optimums may not be
-found by this method. A rogue optimum is an optimum that has a very small,
-almost undetectable area of descent and is placed apart from other competing
-minima. The method favors minimum with a larger area of descent. The
-Damavandi test function is a perfect example of the limitation of this
-method (this test function is solved by this method, but requires a lot
+Rogue optimums may not be found by this method. A rogue optimum is an optimum
+that has a very small, almost undetectable area of descent and is placed apart
+from other competing minima. The method favors minimum with a larger area of
+descent. The Damavandi test function is a perfect example of the limitation of
+this method (this test function is solved by this method, but requires a lot
 of iterations). In practice, however, rogue optimums can be considered as
 undesired outliers that rely on unstable parameter values (if such parameters
 are used in real-world system that has a certain parameter value precision, a
 system may leave the "rogue" optimal regime easily).
 
-To a small degree this method is immune to noise in the objective function.
+To a small degree, this method is immune to noise in the objective function.
 While this method was designed to be applied to continuous functions, it is
 immune to discontinuities, and it can solve problems that utilize parameter
 value rounding (integer parameters). This method can't acceptably solve
@@ -380,7 +388,7 @@ solution actually generates a probabilistically correct step towards the
 minimum of a function, relative to a better solution. Due to this
 understanding, it is impossible to employ various DE variants in BiteOpt,
 only the difference between high rank and low rank solutions generates a
-valuable information, moreover only a difference multiplied by a factor of
+valuable information; moreover, only a difference multiplied by a factor of
 0.5 works in practice.
 
 BiteOpt is more like a stochastic meta-method, it is incorrect to assume it
@@ -472,12 +480,12 @@ solution is replaced using the upper bound cost constraint.
 ## SMA-ES ##
 
 This is a working optimization method called "SigMa Adaptation Evolution
-Strategy". It has the same programmatic interface as CBiteOpt class, so it can
-be easily used in place of CBiteOpt.
+Strategy". It has the same programmatic interface as the CBiteOpt class, so it
+can be easily used in place of CBiteOpt.
 
 SMA-ES is based on the same concept as CMA-ES, but performs vector sigma
 adaptation. SMA-ES performs covariance matrix update like CMA-ES, but it
-is a simple linear update using leaky integrator averaging filtering, not
+is a simple linear update using "leaky integrator" averaging filtering, not
 adaptation. SMA-ES algorithm's operation is based on principles of control
 signals.
 
@@ -485,7 +493,7 @@ The main difference to CMA-ES is that per-parameter sigmas are updated using
 these elements:
 
 1. Sigma auto-adapts due to weighted parameter covariance calculation. Better
-fit solutions have more influence on expansion or contraction of the sigma.
+fit solutions have more influence over expansion or contraction of the sigma.
 
 2. SMA-ES approximates the "geometry" of the sample distribution. It ranges
 from "spherical" to "needle" geometry (represented by a continuous `spc`
@@ -525,7 +533,7 @@ added jitter for lower dimensions). This makes the method very
 computationally-efficient, but at the same time provides immunity to
 coordinate axis rotations.
 
-This method uses the same self-optimization technique as the BiteOpt method.
+This method uses the same self-optimization technique as BiteOpt.
 
 ## NMSeqOpt ##
 
