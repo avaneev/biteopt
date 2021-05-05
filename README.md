@@ -22,7 +22,8 @@ return the same optimum.
 
 BiteOpt uses self-optimization techniques making it objective
 function-agnostic. In its inner workings, BiteOpt uses objective function
-value's ranking, not the actual value.
+value's ranking, not the actual value. BiteOpt is a multi-faceted example of
+a "probabilistic computing" system.
 
 ## Comparison ##
 
