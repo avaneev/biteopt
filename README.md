@@ -144,18 +144,18 @@ require more iterations to converge). Most classic 2-dimensional problems
 converge in 400 iterations or less, at 10<sup>-6</sup> precision.
 
 Each run may generate an equally-usable candidate solution (not necessarily
-having the least cost), in practice the researcher may select solution from
-any run based on his/her own considerations. In this light, it may be
-incorrect to assume that least-performing runs are "wasted". In practice,
-least-performing runs may give more acceptable parameter values within the
-search space in comparison to the best-performing runs.
+having the least cost), so the researcher may select solution from any run
+based on his/her own considerations. In this light, it may be incorrect to
+assume that least-performing runs are "wasted". In practice, least-performing
+runs may give more acceptable parameter values within the search space
+compared to the best-performing runs.
 
 Note that derivative-free optimization methods in general provide "asymptotic"
-solutions for complex functions. Thus it is reasonable to expect that BiteOpt
-gives an optimal solution with some tolerance only. Given a large enough
-function evaluation budget, BiteOpt usually does find an optimal solution
-which is cross-checked with several other solvers, but a solution of a new
-unexplored function must be treated as "asymptotically" optimal.
+solutions for complex functions. Thus it is reasonable to assume that BiteOpt
+gives an optimal solution with some implicit tolerance factor. Given a large
+enough function evaluation budget, BiteOpt usually does find an optimal
+solution which can be cross-checked with other solvers, but a solution of a
+new unexplored function must be treated as "asymptotically optimal".
 
 ## Limitations ##
 
@@ -166,8 +166,8 @@ descent. The Damavandi test function is a perfect example of the limitation of
 this method (this test function is solved by this method, but requires a lot
 of iterations). In practice, however, rogue optimums can be considered as
 undesired outliers that rely on unstable parameter values (if such parameters
-are used in real-world system that has a certain parameter value precision, a
-system may leave the "rogue" optimal regime easily).
+are used in a real-world system that has a certain parameter value precision,
+a system may leave the "rogue" optimal regime easily).
 
 To a small degree, this method is immune to noise in the objective function.
 While this method was designed to be applied to continuous functions, it is
@@ -203,7 +203,7 @@ deviates from the standard distribution, the mean corresponds to 0\*sigma):
 
 ![PDF plot](https://github.com/avaneev/biteopt/blob/master/attempt_pdf_plot.png)
 
-## Constraint programming ##
+## Constraint Programming ##
 
 Mixed integer programming can be achieved by using rounded parameter values in
 the objective function. Note that using categorical variables may not be
@@ -253,7 +253,7 @@ in model libraries to force integer or binary values, as such constraint
 formulation does not provide a useful global gradient. Instead, direct
 rounding should be used on integer variables.
 
-## Convergence proof ##
+## Convergence Proof ##
 
 Considering the structure of the method and the fact that on every iteration
 only improving solutions are accepted into the population, with ever
@@ -263,7 +263,7 @@ the formal proof of ability of the method to converge is complicated, and
 should be at least as good as partly random search and partly Differential
 Evolution.
 
-## Tested uses ##
+## Tested Uses ##
 
 This optimization method was tested for the following applications beside
 synthetic benchmarking:
@@ -356,7 +356,7 @@ in 4% of objective function evaluations on average.
 The method was also tested with a more statistically-correct PRNG and the
 difference turned out to be negligible.
 
-## Method philosophy ##
+## Method's Philosophy ##
 
 BiteOpt is an evolutionary optimization method. Unlike many established
 optimization methods like CMA-ES where new populations are generated on each
@@ -385,12 +385,11 @@ on Differential Evolution. Author's use of DE operation is based on
 understanding that it provides an implicit gradient information. A candidate
 solution is generated as a sum of best solution and a difference between a
 random and the worst solution. Such difference between a random and the worst
-solution actually generates a probabilistically correct step towards the
-minimum of a function, relative to a better solution. Due to this
-understanding, it is impossible to employ various DE variants in BiteOpt,
-only the difference between high rank and low rank solutions generates a
-valuable information; moreover, only a difference multiplied by a factor of
-0.5 works in practice.
+solution generates a probabilistically correct step towards the minimum of a
+function, relative to a better solution. Due to this understanding, it is
+impossible to employ various DE variants in BiteOpt, only the difference
+between high rank and low rank solutions generates a valuable information;
+moreover, only a difference multiplied by a factor of 0.5 works in practice.
 
 BiteOpt is more like a stochastic meta-method, it is incorrect to assume it
 leans towards some specific optimizer class: for example, it won't work
@@ -401,7 +400,7 @@ initial success with the "bitmask inversion" operation (coupled with a
 stochastic "move" operation it looks quite a lot like a random search) was the
 main driver for BiteOpt's further development.
 
-## Method description ##
+## Method's Description ##
 
 NOTE: as of version 2021.3 this topic is not yet up-to-date.
 
@@ -409,25 +408,23 @@ The algorithm consists of the following elements:
 
 1. A cost-ordered population of previous solutions is maintained. A solution
 is an independent parameter vector which is evolved towards a better solution.
-On every iteration, one of the 4 best solutions is evolved (best selection
-allows method to be less sensitive to noise). At start, solution vectors
-are initialized at the center of the search space, using Gaussian sampling.
+On every iteration, the method utilizes a probabilistically-chosen candidate
+solution generator. At start, solution vectors are initialized at the center
+of the search space, using Gaussian sampling.
 
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best})
-
-Probabilities are defined in the range [0; 1] and in many instances in the
-code were replaced with simple resetting counters for more efficiency.
 Parameter values are internally normalized to [0; 1] range and, to stay in
 this range, are wrapped in a special manner before each function evaluation.
-Algorithm's hyper-parameters (probabilities) were pre-selected and should not
-be changed. Algorithm uses an alike of state automata to switch between
-different probability values depending on the candidate solution acceptance.
-In many instances random solution selection uses square of the random
+Algorithm uses an alike of probabilistic state automata (histograms) to switch
+between algorithm flow paths, depending on the candidate solution acceptance.
+In many instances candidate solution generators uses square of the random
 variable: this has an effect of giving more weight to better solutions.
 
-Initially, depending on the `ParOptProb` probability, an independent,
-algorithmically different, parallel optimizer is engaged whose solution is
-evaluated for inclusion into the population.
+With some probability, an independent, algorithmically different, parallel
+optimizer is engaged whose solution is evaluated for inclusion into the
+population.
+
+After each objective function evaluation, the highest-cost previous solution
+is replaced using the upper bound cost constraint.
 
 2. Depending on the `RandProb` probability, a single (or all) parameter value
 randomization is performed using "bitmask inversion" operation (which is
@@ -474,9 +471,6 @@ is performed.
 ![equation](https://latex.codecogs.com/gif.latex?z=x_\text{new}[\text{rand}(1\ldots&space;N)])
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=z,&space;\quad&space;i=1,\ldots,N)
-
-6. After each objective function evaluation, the highest-cost previous
-solution is replaced using the upper bound cost constraint.
 
 ## SMA-ES ##
 
