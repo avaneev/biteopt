@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.26
+ * @version 2021.27
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -58,6 +58,7 @@ public:
 		addHist( M1Hist, "M1Hist" );
 		addHist( M1AHist, "M1AHist" );
 		addHist( M1BHist, "M1BHist" );
+		addHist( M1BAHist, "M1BAHist" );
 		addHist( M1BBHist, "M1BBHist" );
 		addHist( PopChangeHist, "PopChangeHist" );
 		addHist( ParOpt2Hist, "ParOpt2Hist" );
@@ -275,7 +276,14 @@ public:
 
 				if( SelM1B == 0 )
 				{
-					generateSol4( rnd );
+					if( select( M1BAHist, rnd ))
+					{
+						generateSol4( rnd );
+					}
+					else
+					{
+						generateSol4b( rnd );
+					}
 				}
 				else
 				if( SelM1B == 1 )
@@ -465,6 +473,8 @@ protected:
 	CBiteOptHist< 2 > M1AHist; ///< Method 1's sub-sub-method A histogram.
 		///<
 	CBiteOptHist< 3 > M1BHist; ///< Method 1's sub-sub-method B histogram.
+		///<
+	CBiteOptHist< 2 > M1BAHist; ///< Method 1's sub-sub-method A2 histogram.
 		///<
 	CBiteOptHist< 2 > M1BBHist; ///< Method 1's sub-sub-method B2 histogram.
 		///<
@@ -893,6 +903,43 @@ protected:
 			for( i = 0; i < ParamCount; i++ )
 			{
 				Params[ i ] ^= rp1[ i ];
+			}
+		}
+	}
+
+	/**
+	 * Solution generator similar to generateSol4, but uses solutions from the
+	 * main population only, and includes "crossover" approach first
+	 * implemented in the generateSol5b() function.
+	 */
+
+	void generateSol4b( CBiteRnd& rnd )
+	{
+		ptype* const Params = TmpParams;
+
+		const int km = 3 + ( select( Gen4MixFacHist, rnd ) << 1 );
+
+		int si1 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+		const ptype* rp1 = getParamsOrdered( si1 );
+
+		memcpy( Params, rp1, ParamCount * sizeof( Params[ 0 ]));
+
+		int k;
+
+		for( k = 1; k < km; k++ )
+		{
+			si1 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+			int si2 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+
+			const ptype* CrossParams[ 2 ];
+			CrossParams[ 0 ] = getParamsOrdered( si1 );
+			CrossParams[ 1 ] = getParamsOrdered( si2 );
+
+			int i;
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] ^= CrossParams[ rnd.getBit()][ i ];
 			}
 		}
 	}
