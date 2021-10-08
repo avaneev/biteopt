@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.26
+ * @version 2021.28
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -785,33 +785,6 @@ public:
 		CurPopSize--;
 		CurPopSize1--;
 		NeedCentUpdate = true;
-	}
-
-	/**
-	 * Function calculates Euclidean distance of the specifed vector to *this
-	 * population's centroid. Function returns the square of the distance.
-	 * Function updates centroid if it requires an update.
-	 *
-	 * @param p Parameter vector.
-	 */
-
-	double getDistanceSqr( const ptype* const p )
-	{
-		if( NeedCentUpdate )
-		{
-			updateCentroid();
-		}
-
-		double s = 0.0;
-		int i;
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			const double d = (double) ( CentParams[ i ] - p[ i ]);
-			s += d * d;
-		}
-
-		return( s );
 	}
 
 protected:

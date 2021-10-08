@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.17
+ * @version 2021.28
  */
 
 #ifndef BITEOPTORT_INCLUDED
@@ -619,7 +619,7 @@ protected:
 	 * Function returns maximum of 2 values.
 	 */
 
-	static double max( const double a, const double b )
+	static double max_( const double a, const double b )
 	{
 		return( a > b ? a : b );
 	}
@@ -648,7 +648,7 @@ protected:
 
 			// Find small subdiagonal element
 
-			tst1 = max(tst1,abs(d[l]) + abs(e[l]));
+			tst1 = max_(tst1,abs(d[l]) + abs(e[l]));
 			int m = l;
 			while (m < n) {
 				if (abs(e[m]) <= eps*tst1) {

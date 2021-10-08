@@ -332,9 +332,7 @@ public:
 
 				if( sc > ParamCount * 64 )
 				{
-					ParOpt.init( rnd, getBestParams(),
-						2.0 * sqrt( getDistanceSqr( getParamsOrdered( 0 ))));
-
+					ParOpt.init( rnd, getBestParams() );
 					ParOptPop.resetCurPopPos();
 				}
 
@@ -351,9 +349,7 @@ public:
 
 				if( sc > ParamCount * 16 )
 				{
-					ParOpt2.init( rnd, getBestParams(),
-						2.0 * sqrt( getDistanceSqr( getParamsOrdered( 0 ))));
-
+					ParOpt2.init( rnd, getBestParams(), -1.0 );
 					ParOpt2Pop.resetCurPopPos();
 				}
 

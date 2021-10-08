@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.17
+ * @version 2021.28
  */
 
 #ifndef NMSOPT_INCLUDED
@@ -81,7 +81,8 @@ public:
 	 * @param rnd Random number generator.
 	 * @param InitParams If not NULL, initial parameter vector, also used as
 	 * centroid.
-	 * @param InitRadius Initial radius, relative to the default value.
+	 * @param InitRadius Initial radius, relative to the default value. Set
+	 * to negative to use uniformly-random sampling.
 	 */
 
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL,
@@ -96,6 +97,7 @@ public:
 
 		double* const xx = x[ 0 ];
 		int i;
+		int j;
 
 		if( InitParams != NULL )
 		{
@@ -111,16 +113,32 @@ public:
 
 		xlo = 0;
 
-		const double sd = 0.25 * InitRadius;
-		int j;
-
-		for( j = 1; j < M; j++ )
+		if( InitRadius <= 0.0 )
 		{
-			double* const xj = x[ j ];
-
-			for( i = 0; i < N; i++ )
+			for( j = 1; j < M; j++ )
 			{
-				xj[ i ] = xx[ i ] + DiffValues[ i ] * getGaussian( rnd ) * sd;
+				double* const xj = x[ j ];
+
+				for( i = 0; i < N; i++ )
+				{
+					xj[ i ] = MinValues[ i ] + DiffValues[ i ] *
+						rnd.getRndValue();
+				}
+			}
+		}
+		else
+		{
+			const double sd = 0.25 * InitRadius;
+
+			for( j = 1; j < M; j++ )
+			{
+				double* const xj = x[ j ];
+
+				for( i = 0; i < N; i++ )
+				{
+					xj[ i ] = xx[ i ] + DiffValues[ i ] *
+						getGaussian( rnd ) * sd;
+				}
 			}
 		}
 

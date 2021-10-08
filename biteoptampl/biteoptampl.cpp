@@ -10,15 +10,15 @@
 //$ lib "solvers/amplsolv"
 //$ skip_include "z|solvers/getstub.h"
 
-#include "solvers/getstub.h"
-#include "../biteopt.h"
-#include <math.h>
-
 #define USE_SOLDB 0 // For internal use: 1 = use solution database.
 
 #if USE_SOLDB
 	#include "updsol.h"
 #endif // USE_SOLDB
+
+#include "solvers/getstub.h"
+#include "../biteopt.h"
+#include <math.h>
 
 static fint depth = 8;
 static fint attc = 10;
@@ -51,8 +51,8 @@ static char biteoptvers[] =
 	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2021.23\n";
 
 static Option_Info Oinfo = {
-	"biteoptampl", "BITEOPT-2021.23", "biteopt_options", keywds, nkeywds, 1.,
-	biteoptvers, 0,0,0,0,0, 202123
+	"biteoptampl", "BITEOPT-2021.28", "biteopt_options", keywds, nkeywds, 1.,
+	biteoptvers, 0,0,0,0,0, 202128
 };
 
 int xround( real* x, int n )
