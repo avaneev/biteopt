@@ -400,10 +400,13 @@ function, relative to a better solution. Due to this understanding, it is
 impossible to employ various DE variants in BiteOpt, only the difference
 between high rank and low rank solutions generates a valuable information;
 moreover, only a difference multiplied by a factor of 0.5 works in practice.
+Also, since BiteOpt does not use random crossover in its DE-alike operations,
+the used approach is closer to an intermix of Nelder-Mead ("reduction") and
+DE (multi-vector "mutation").
 
 BiteOpt is more like a stochastic meta-method, it is incorrect to assume it
 leans towards some specific optimizer class: for example, it won't work
-acceptably if only DE-based solution generators are used by it. BiteOpt
+acceptably if only DE-alike solution generators are used by it. BiteOpt
 encompasses Differential Evolution, Nelder-Mead, and author's original
 SpherOpt, "bitmask inversion", and "bit mixing" solution generators. An
 initial success with the "bitmask inversion" operation (coupled with a
