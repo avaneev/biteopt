@@ -205,9 +205,9 @@ performed since it makes required budget unpredictable. But if several
 attempts are performed, it is a positive property: it means that in some
 optimization attempts BiteOpt converges faster and may find a better optimum
 with the same iteration budget per attempt. Based on `test2.cpp`
-(2-dimensional) and `test3.cpp` (14-dimensional) test corpuses, only about
-1% of attempts require more than 3\*sigma iterations, 58% of attempts require
-less than the mean. A typical probability distribution of percent of
+(2-dimensional) and `test3.cpp` (14-dimensional) test corpuses, less than
+0.9% of attempts require more than 3\*sigma iterations, 54% of attempts
+require less than the mean. A typical probability distribution of percent of
 attempts/sigma is as follows (discretized, not centered around 0 because it
 deviates from the standard distribution, the mean corresponds to 0\*sigma):
 
