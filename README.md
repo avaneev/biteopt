@@ -551,11 +551,11 @@ optimizer in BiteOpt.
 
 ## DEOpt ##
 
-The CDEOpt class implements a Digital Evolution-alike DFO solver, but in the
-population-handling framework of BiteOpt. "best/3/bit". Mutation parameter is
-fixed, equal to 0.25. Instead of a crossover, uses 1-bit randomization with
-50% probability. Population size is equal to 20 \* Dims by default.
-Population is initialized with a Gaussian sampling.
+The CDEOpt class implements a Differential Evolution-alike DFO solver, but in
+the population-handling framework of BiteOpt. "best/3/bit". Mutation parameter
+is fixed, equals to 0.25. Instead of a crossover, the method uses 1-bit
+randomization with 50% probability. Population size is equal to 20\*Dims, by
+default. Population is initialized with a Gaussian sampling.
 
 ## Thanks ##
 
