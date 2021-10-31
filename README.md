@@ -560,8 +560,8 @@ default. Population is initialized with a Gaussian sampling.
 ## Thanks ##
 
 The author would like to thank [Dietmar Wolz](https://github.com/dietmarwo)
-for useful discussions and additional BiteOpt testing in the astrodynamics
-field.
+for additional BiteOpt testing in the astrodynamics field. You may check out
+the `fast-cma-es` for multi-threaded "parallel retry" wrapper for BiteOpt.
 
 ## Citing ##
 
