@@ -292,8 +292,8 @@ sample rate converter.
 
 BiteOpt is also referenced in these research papers:
 
-* [Information Signaling: A Counter-Intuitive Defense Against Password
-Cracking](https://arxiv.org/pdf/2009.10060)
+* [Password Strength Signaling: A Counter-Intuitive Defense Against Password
+Cracking](https://link.springer.com/chapter/10.1007/978-3-030-90370-1_18)
 
 * [CIP2A is a prime synthetic-lethal target for BRCA-mutated
 cancers](https://www.biorxiv.org/content/10.1101/2021.02.08.430060v1.full)
