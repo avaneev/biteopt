@@ -298,8 +298,8 @@ BiteOpt is also referenced in these research papers:
 * [Password Strength Signaling: A Counter-Intuitive Defense Against Password
 Cracking](https://link.springer.com/chapter/10.1007/978-3-030-90370-1_18)
 
-* [CIP2A is a prime synthetic-lethal target for BRCA-mutated
-cancers](https://www.biorxiv.org/content/10.1101/2021.02.08.430060v1.full)
+* [The CIP2A–TOPBP1 axis safeguards chromosome stability and is a synthetic
+lethal target for BRCA-mutated cancer](https://www.nature.com/articles/s43018-021-00266-w)
 
 ## Examples ##
 
