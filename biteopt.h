@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.28
+ * @version 2021.28.1
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -1355,11 +1355,16 @@ public:
  * algorithm. Expected range is [1; 36]. Internally multiplies "iter" by
  * sqrt(M). 
  * @param attc The number of optimization attempts to perform.
+ * @param stopc Stopping criteria (convergence check). 0: off, 1: 64*N,
+ * 2: 128*N.
+ * @return The total number of function evaluations performed; useful if the
+ * "stopc" was used.
  */
 
-inline void biteopt_minimize( const int N, biteopt_func f, void* data,
+inline int biteopt_minimize( const int N, biteopt_func f, void* data,
 	const double* lb, const double* ub, double* x, double* minf,
-	const int iter, const int M = 1, const int attc = 10 )
+	const int iter, const int M = 1, const int attc = 10,
+	const int stopc = 0 )
 {
 	CBiteOptMinimize opt;
 	opt.N = N;
@@ -1372,7 +1377,9 @@ inline void biteopt_minimize( const int N, biteopt_func f, void* data,
 	CBiteRnd rnd;
 	rnd.init( 1 );
 
+	const int sct = ( stopc <= 0 ? 0 : 64 * N * stopc );
 	const int useiter = (int) ( iter * sqrt( (double) M ));
+	int evals = 0;
 	int k;
 
 	for( k = 0; k < attc; k++ )
@@ -1383,8 +1390,16 @@ inline void biteopt_minimize( const int N, biteopt_func f, void* data,
 
 		for( i = 0; i < useiter; i++ )
 		{
-			opt.optimize( rnd );
+			const int sc = opt.optimize( rnd );
+
+			if( sct > 0 && sc >= sct )
+			{
+				evals++;
+				break;
+			}
 		}
+
+		evals += i;
 
 		if( k == 0 || opt.getBestCost() <= *minf )
 		{
@@ -1392,6 +1407,8 @@ inline void biteopt_minimize( const int N, biteopt_func f, void* data,
 			*minf = opt.getBestCost();
 		}
 	}
+
+	return( evals );
 }
 
 #endif // BITEOPT_INCLUDED

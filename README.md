@@ -309,9 +309,10 @@ The `example2.cpp` program is a usage example of a simple C-like function
 biteopt_minimize(). This is a minimization test for Hougen-Watson model for
 reaction kinetics (non-linear least squares problem).
 
-    void biteopt_minimize( const int N, biteopt_func f, void* data,
+    int biteopt_minimize( const int N, biteopt_func f, void* data,
         const double* lb, const double* ub, double* x, double* minf,
-        const int iter, const int M = 1, const int attc = 10 )
+        const int iter, const int M = 1, const int attc = 10,
+        const int stopc = 0 )
 
     N     The number of parameters in an objective function.
     f     Objective function.
@@ -326,6 +327,10 @@ reaction kinetics (non-linear least squares problem).
           algorithm. Expected range is [1; 36]. Internally multiplies "iter"
           by sqrt(M).
     attc  The number of optimization attempts to perform.
+    stopc Stopping criteria (convergence check). 0: off, 1: 64*N, 2: 128*N.
+
+    This function returns the total number of function evaluations performed;
+    useful if the "stopc>0" was used.
 
 `test2.cpp` is a convergence test for all available functions. Performs many
 optimization attempts on all functions. Prints various performance
