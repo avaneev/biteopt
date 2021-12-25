@@ -3,8 +3,9 @@
 ## Introduction ##
 
 BITEOPT is a free open-source stochastic non-linear bound-constrained
-derivative-free optimization method (algorithm, heuristic, or strategy). The
-name "BiteOpt" is an acronym for "BITmask Evolution OPTimization".
+derivative-free optimization method (algorithm, heuristic, or strategy), for
+global optimization. The name "BiteOpt" is an acronym for "BITmask Evolution
+OPTimization".
 
 The benefit of this method is a relatively high robustness: it can
 successfully optimize a wide range of multi-dimensional test functions.
