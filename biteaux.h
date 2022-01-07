@@ -8,7 +8,7 @@
  *
  * @section license License
  * 
- * Copyright (c) 2016-2021 Aleksey Vaneev
+ * Copyright (c) 2016-2022 Aleksey Vaneev
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.28
+ * @version 2022.1
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -795,7 +795,7 @@ protected:
 	static const int IntMantBits = sizeof( ptype ) * 8 - 1 - IntOverBits; ///<
 		///< Mantissa size of the integer parameter values (higher by 1 bit in
 		///< practice for real value 1.0). Accounts for a sign bit, and
-		///< possible overflows.
+		///< possible accumulation overflows.
 		///<
 	static const int64_t IntMantMult = 1LL << IntMantBits; ///< Mantissa
 		///< multiplier.

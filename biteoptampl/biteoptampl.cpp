@@ -122,7 +122,7 @@ static double objfn( int N, const double* const x )
 			}
 
 			f += 1e300;
-			con_notmet = 1000000000;
+			con_notmet = n_con;
 		}
 		else
 		{

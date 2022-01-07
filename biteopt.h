@@ -7,7 +7,7 @@
  *
  * @section license License
  *
- * Copyright (c) 2016-2021 Aleksey Vaneev
+ * Copyright (c) 2016-2022 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.28.1
+ * @version 2022.1
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -81,7 +81,6 @@ public:
 		addHist( Gen1AllpHist, "Gen1AllpHist" );
 		addHist( Gen1MoveHist, "Gen1MoveHist" );
 		addHist( Gen1MoveAsyncHist, "Gen1MoveAsyncHist" );
-		addHist( Gen1MoveDEHist, "Gen1MoveDEHist" );
 		addHist( Gen1MoveSpanHist, "Gen1MoveSpanHist" );
 		addHist( Gen4MixFacHist, "Gen4MixFacHist" );
 		addHist( Gen5BinvHist, "Gen5BinvHist" );
@@ -508,9 +507,6 @@ protected:
 	CBiteOptHist< 2 > Gen1MoveAsyncHist; ///< Generator method 1's Move
 		///< async histogram.
 		///<
-	CBiteOptHist< 2 > Gen1MoveDEHist; ///< Generator method 1's Move DE
-		///< histogram.
-		///<
 	CBiteOptHist< 4 > Gen1MoveSpanHist; ///< Generator method 1's Move span
 		///< histogram.
 		///<
@@ -719,39 +715,24 @@ protected:
 			const int si2 = (int) ( rnd.getRndValueSqr() * CurPopSize );
 			const ptype* const rp2 = getParamsOrdered( si2 );
 
-			if( select( Gen1MoveDEHist, rnd ))
+			if( select( Gen1MoveAsyncHist, rnd ))
 			{
-				// Apply a DE-based move.
-
-				const ptype* const rp3 = getParamsOrdered(
-					CurPopSize1 - si2 );
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					Params[ i ] -= ( rp3[ i ] - rp2[ i ]) >> 1;
-				}
+				a = 0;
+				b = ParamCount;
 			}
-			else
+
+			// Random move around a random previous solution vector.
+
+			static const double SpanMults[ 4 ] = { 0.5, 1.5, 2.0, 2.5 };
+
+			const double m = SpanMults[ select( Gen1MoveSpanHist, rnd )];
+			const double m1 = rnd.getTPDF() * m;
+			const double m2 = rnd.getTPDF() * m;
+
+			for( i = a; i < b; i++ )
 			{
-				if( select( Gen1MoveAsyncHist, rnd ))
-				{
-					a = 0;
-					b = ParamCount;
-				}
-
-				// Random move around a random previous solution vector.
-
-				static const double SpanMults[ 4 ] = { 0.5, 1.5, 2.0, 2.5 };
-
-				const double m = SpanMults[ select( Gen1MoveSpanHist, rnd )];
-				const double m1 = rnd.getTPDF() * m;
-				const double m2 = rnd.getTPDF() * m;
-
-				for( i = a; i < b; i++ )
-				{
-					Params[ i ] -= (ptype) (( Params[ i ] - rp2[ i ]) * m1 );
-					Params[ i ] -= (ptype) (( Params[ i ] - rp2[ i ]) * m2 );
-				}
+				Params[ i ] -= (ptype) (( Params[ i ] - rp2[ i ]) * m1 );
+				Params[ i ] -= (ptype) (( Params[ i ] - rp2[ i ]) * m2 );
 			}
 		}
 	}
@@ -1219,8 +1200,8 @@ public:
 		}
 		else
 		{
-			StallCount++;
 			CurOpt = PushOpt;
+			StallCount++;
 		}
 
 		return( StallCount );
@@ -1266,7 +1247,7 @@ protected:
 		///<
 	CBiteOptWrap* BestOpt; ///< Optimizer that contains the best solution.
 		///<
-	CBiteOptWrap* CurOpt; ///< Current optimization object index.
+	CBiteOptWrap* CurOpt; ///< Current optimizer object.
 		///<
 	int StallCount; ///< The number of iterations without improvement.
 		///<

@@ -7,9 +7,10 @@
 #include "../spheropt.h"
 #include "../smaesopt.h"
 #include "../nmsopt.h"
+#include "../deopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CNMSeqOpt//CSpherOpt//CCMAESOpt//CSMAESOpt//CBiteOptDeep//
+#define OPT_CLASS CBiteOpt//CDEOpt//CNMSeqOpt//CSpherOpt//CCMAESOpt//CSMAESOpt//CBiteOptDeep//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
 //#define OPT_PLATEAU_MUL 64 // Uncomment to enable plateau check.
 //#define EVALBINS 1
@@ -17,7 +18,7 @@
 
 #if 0
 	#define OPT_THREADS 1
-	#include "/libvox/Sources/Core/CWorkerThreadPool.h"
+	#include "../../../libvox/Sources/Core/CWorkerThreadPool.h"
 	using namespace vox;
 	CSyncObject StatsSync;
 #else // OPT_THREADS
