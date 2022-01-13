@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.1
+ * @version 2022.2
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -696,7 +696,7 @@ protected:
 		const double r1 = rnd.getRndValue();
 		const double r12 = r1 * r1;
 		const int ims = (int) ( r12 * r12 * 48.0 );
-		const ptype imask = (ptype) ( ims > 63 ? 0 : IntMantMask >> ims );
+		const ptype imask = (ptype) ( IntMantMask >> ims );
 
 		const int im2s = (int) ( rnd.getRndValueSqr() * 96.0 );
 		const ptype imask2 = (ptype) ( im2s > 63 ? 0 : IntMantMask >> im2s );
@@ -778,22 +778,18 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		// Select worst and a random previous solution from the ordered list,
-		// apply offsets to reduce sensitivity to noise.
+		// rand/2/none DE-alike mutation.
 
-		const int si1 = getMinSolIndex( 1, rnd, CurPopSize );
+		const int si1 = (int) ( rnd.getRndValue() * CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
 
-		const int si2 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+		const int si2 = (int) ( rnd.getRndValue() * CurPopSize );
 		const ptype* const rp2 = getParamsOrdered( si2 );
-
 		const ptype* const rp3 = getParamsOrdered( CurPopSize1 - si2 );
-
-		// Select two more previous solutions to be used in the mix.
 
 		const CBiteOptPop& AltPop = selectAltPop( 0, rnd );
 
-		const int si4 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+		const int si4 = (int) ( rnd.getRndValue() * CurPopSize * 0.5 );
 		const ptype* const rp4 = AltPop.getParamsOrdered( si4 );
 		const ptype* const rp5 = AltPop.getParamsOrdered( CurPopSize1 - si4 );
 
@@ -801,8 +797,8 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			Params[ i ] = rp1[ i ] - ((( rp3[ i ] - rp2[ i ]) +
-				( rp5[ i ] - rp4[ i ])) >> 1 );
+			Params[ i ] = rp1[ i ] - (( rp3[ i ] - rp2[ i ]) +
+				( rp5[ i ] - rp4[ i ]));
 		}
 	}
 
@@ -848,7 +844,7 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		CBiteOptPop& AltPop = selectAltPop( 2, rnd );
+		CBiteOptPop& AltPop = selectAltPop( 1, rnd );
 		CBiteOptPop& ParPop = selectParPop( 1, rnd );
 
 		int UseSize[ 2 ];
@@ -927,7 +923,8 @@ protected:
 	 * offsets, converges slowly. Completely mixes bits of two
 	 * randomly-selected solutions, plus changes 1 random bit.
 	 *
-	 * This method is fundamentally similar to a biological DNA crossing-over.
+	 * This method is similar to a biological DNA crossing-over, but on a
+	 * single-bit scale.
 	 */
 
 	void generateSol5( CBiteRnd& rnd )
@@ -939,7 +936,7 @@ protected:
 		const ptype* const CrossParams1 = ParPop.getParamsOrdered(
 			(int) ( rnd.getRndValueSqr() * ParPop.getCurPopSize() ));
 
-		const CBiteOptPop& AltPop = selectAltPop( 1, rnd );
+		const CBiteOptPop& AltPop = selectAltPop( 2, rnd );
 
 		const ptype* const CrossParams2 = AltPop.getParamsOrdered(
 			(int) ( rnd.getRndValueSqr() * CurPopSize ));
@@ -959,6 +956,8 @@ protected:
 
 			if( rnd.getBit() )
 			{
+				// Randomize a single bit, with 50% probability.
+
 				const int b = (int) ( rnd.getRndValue() * IntMantBits );
 
 				const ptype m = ~( (ptype) 1 << b );
@@ -989,7 +988,7 @@ protected:
 		CrossParams[ 0 ] = ParPop.getParamsOrdered(
 			(int) ( rnd.getRndValueSqr() * ParPop.getCurPopSize() ));
 
-		const CBiteOptPop& AltPop = selectAltPop( 1, rnd );
+		const CBiteOptPop& AltPop = selectAltPop( 2, rnd );
 
 		CrossParams[ 1 ] = AltPop.getParamsOrdered(
 			(int) ( rnd.getRndValueSqr() * CurPopSize ));
@@ -1290,8 +1289,8 @@ public:
 	int N; ///< The number of dimensions in objective function.
 	biteopt_func f; ///< Objective function.
 	void* data; ///< Objective function's data.
-	const double* lb; ///< Parameter's lower bounds.
-	const double* ub; ///< Parameter's lower bounds.
+	const double* lb; ///< Parameters' lower bounds.
+	const double* ub; ///< Parameters' upper bounds.
 
 	virtual void getMinValues( double* const p ) const
 	{
@@ -1373,7 +1372,7 @@ inline int biteopt_minimize( const int N, biteopt_func f, void* data,
 		{
 			const int sc = opt.optimize( rnd );
 
-			if( sct > 0 && sc >= sct )
+			if( sct != 0 && sc >= sct )
 			{
 				evals++;
 				break;
