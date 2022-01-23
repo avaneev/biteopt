@@ -352,7 +352,8 @@ start:
 				const double nf = objfn( n_var, opt.getBestParams() );
 
 				printf( "Attempt %i/%i n_var=%i n_con=%i iter %i, "
-					"Objective = %.15g\n", k + 1, attc, n_var, n_con, i, nf );
+					"Objective = %.15g\n", k + 1, attc, n_var, n_con, i,
+					( negate ? -nf : nf ));
 
 				thr *= 1.4;
 			}
@@ -405,7 +406,8 @@ start:
 	}
 
 	#if USE_SOLDB
-		VOXERRSKIP( updateSol( stub, negate, f, f_notmet, f_iters, khl ));
+		VOXERRSKIP( updateSol( stub, n_var, n_con, negate, f, f_notmet,
+			f_iters, khl ));
 	#endif // USE_SOLDB
 
 	solround( X0 );

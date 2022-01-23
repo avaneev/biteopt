@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.2
+ * @version 2022.3
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -60,7 +60,8 @@ public:
 		addHist( M1BHist, "M1BHist" );
 		addHist( M1BAHist, "M1BAHist" );
 		addHist( M1BBHist, "M1BBHist" );
-		addHist( PopChangeHist, "PopChangeHist" );
+		addHist( PopChangeIncrHist, "PopChangeIncrHist" );
+		addHist( PopChangeDecrHist, "PopChangeDecrHist" );
 		addHist( ParOpt2Hist, "ParOpt2Hist" );
 		addHist( ParPopPHist[ 0 ], "ParPopPHist[ 0 ]" );
 		addHist( ParPopPHist[ 1 ], "ParPopPHist[ 1 ]" );
@@ -391,7 +392,7 @@ public:
 
 			if( CurPopSize < PopSize )
 			{
-				if( select( PopChangeHist, rnd ) == 0 )
+				if( select( PopChangeIncrHist, rnd ))
 				{
 					// Increase population size on fail.
 
@@ -416,7 +417,7 @@ public:
 			updatePop( NewCost, TmpParams, false, false );
 
 			if( PushOpt != NULL && PushOpt != this &&
-				!PushOpt -> DoInitEvals )
+				!PushOpt -> DoInitEvals && NewCost > PopCosts[ 0 ])
 			{
 				PushOpt -> updatePop( NewCost, TmpParams, false, true );
 				PushOpt -> updateParPop( NewCost, TmpParams );
@@ -424,7 +425,7 @@ public:
 
 			if( CurPopSize > PopSize / 2 )
 			{
-				if( select( PopChangeHist, rnd ) == 1 )
+				if( select( PopChangeDecrHist, rnd ))
 				{
 					// Decrease population size on success.
 
@@ -473,7 +474,10 @@ protected:
 		///<
 	CBiteOptHist< 2 > M1BBHist; ///< Method 1's sub-sub-method B2 histogram.
 		///<
-	CBiteOptHist< 2 > PopChangeHist; ///< Population size change
+	CBiteOptHist< 2 > PopChangeIncrHist; ///< Population size change increase
+		///< histogram.
+		///<
+	CBiteOptHist< 2 > PopChangeDecrHist; ///< Population size change decrease
 		///< histogram.
 		///<
 	CBiteOptHist< 2 > ParOpt2Hist; ///< Parallel optimizer 2 use
