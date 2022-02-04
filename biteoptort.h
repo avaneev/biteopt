@@ -7,7 +7,7 @@
  *
  * @section license License
  *
- * Copyright (c) 2016-2021 Aleksey Vaneev
+ * Copyright (c) 2016-2022 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.28
+ * @version 2022.3
  */
 
 #ifndef BITEOPTORT_INCLUDED
@@ -402,7 +402,7 @@ public:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			TmpParams[ i ] = getGaussian( rnd );
+			TmpParams[ i ] = rnd.getGaussian();
 
 			TmpParams[ i ] *= ( TmpParams[ i ] < 0.0 ?
 				DParamsN[ i ] : DParams[ i ]);

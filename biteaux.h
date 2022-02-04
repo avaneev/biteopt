@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.1
+ * @version 2022.3
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -184,7 +184,41 @@ public:
 		return( b );
 	}
 
-private:
+	/**
+	 * Function generates a Gaussian-distributed pseudo-random number with
+	 * mean=0 and std.dev=1.
+	 */
+
+	double getGaussian()
+	{
+		double q, u, v;
+
+		do
+		{
+			u = getRndValue();
+			v = getRndValue();
+
+			if( u <= 0.0 || v <= 0.0 )
+			{
+				u = 1.0;
+				v = 1.0;
+			}
+
+			v = 1.7156 * ( v - 0.5 );
+			const double x = u - 0.449871;
+			const double y = fabs( v ) + 0.386595;
+			q = x * x + y * ( 0.19600 * y - 0.25472 * x );
+
+			if( q < 0.27597 )
+			{
+				break;
+			}
+		} while(( q > 0.27846 ) || ( v * v > -4.0 * log( u ) * u * u ));
+
+		return( v / u );
+	}
+
+protected:
 	static const int raw_bits = 29; ///< The number of higher bits used for
 		///< PRNG output.
 		///<
@@ -944,42 +978,6 @@ protected:
 	}
 
 	/**
-	 * Function generates a Gaussian-distributed pseudo-random number with
-	 * mean=0 and std.dev=1.
-	 *
-	 * @param rnd Uniform PRNG.
-	 */
-
-	static double getGaussian( CBiteRnd& rnd )
-	{
-		double q, u, v;
-
-		do
-		{
-			u = rnd.getRndValue();
-			v = rnd.getRndValue();
-
-			if( u <= 0.0 || v <= 0.0 )
-			{
-				u = 1.0;
-				v = 1.0;
-			}
-
-			v = 1.7156 * ( v - 0.5 );
-			const double x = u - 0.449871;
-			const double y = fabs( v ) + 0.386595;
-			q = x * x + y * ( 0.19600 * y - 0.25472 * x );
-
-			if( q < 0.27597 )
-			{
-				break;
-			}
-		} while(( q > 0.27846 ) || ( v * v > -4.0 * log( u ) * u * u ));
-
-		return( v / u );
-	}
-
-	/**
 	 * Function generates a Gaussian-distributed pseudo-random number, in
 	 * integer scale, with the specified mean and std.dev.
 	 *
@@ -993,7 +991,7 @@ protected:
 	{
 		while( true )
 		{
-			const double r = getGaussian( rnd ) * sd;
+			const double r = rnd.getGaussian() * sd;
 
 			if( r > -8.0 && r < 8.0 )
 			{

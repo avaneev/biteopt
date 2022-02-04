@@ -297,10 +297,12 @@ sample rate converter.
 BiteOpt is also referenced in these research papers:
 
 * [Password Strength Signaling: A Counter-Intuitive Defense Against Password
-Cracking](https://link.springer.com/chapter/10.1007/978-3-030-90370-1_18)
+Cracking; Springer]
+(https://link.springer.com/chapter/10.1007/978-3-030-90370-1_18)
 
 * [The CIP2A–TOPBP1 axis safeguards chromosome stability and is a synthetic
-lethal target for BRCA-mutated cancer](https://www.nature.com/articles/s43018-021-00266-w)
+lethal target for BRCA-mutated cancer; Nature Cancer]
+(https://www.nature.com/articles/s43018-021-00266-w)
 
 ## Examples ##
 
@@ -575,11 +577,11 @@ the `fast-cma-es` for multi-threaded "parallel retry" wrapper for BiteOpt.
 ## Citing ##
 
 ```bibtex
-@misc{biteopt2021,
+@misc{biteopt2022,
     author = {Aleksey Vaneev},
     title = {{BITEOPT - Derivative-free optimization method}},
     note = {C++ source code, with description and examples},
-    year = {2021},
+    year = {2022},
     publisher = {GitHub},
     journal = {GitHub repository},
     howpublished = {Available at \url{https://github.com/avaneev/biteopt}},
