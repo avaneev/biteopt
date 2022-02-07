@@ -162,10 +162,12 @@ solution which can be cross-checked with other solvers, but a solution of a
 new unexplored function must be treated as "asymptotically optimal".
 
 Also note that in some problem areas like [ESA GTOP](https://www.esa.int/gsp/ACT/projects/gtop/)
-problem suite the attempt budget should as high as 2000 (beside using the
-BiteOpt depth of at least 8). At the same time, iteration budget can be
-kept reasonably moderate (100000). Despite a large attempt budget, on a 8-core
-processor, this still allows one to get good solutions in a matter of minutes.
+problem suite the attempt budget should be as high as 2000 (beside using the
+BiteOptDeep depth of at least 8). At the same time, iteration budget per
+attempt can be kept moderate (100000), compared to usual techniques used to
+solve it. Despite a large attempt budget, on a 8-core processor, this still
+allows one to get good (not necessarily best-known) solutions in a matter of
+minutes.
 
 ## Limitations ##
 
@@ -179,10 +181,6 @@ undesired outliers that rely on unstable parameter values (if such parameters
 are used in a real-world system that has a certain parameter value precision,
 a system may leave the "rogue" optimal regime easily).
 
-When the problem field requires one to locate such "rogue optimums", the best
-approach is to use a magnitudes larger attempt budget (a so called "parallel
-retry" approach).
-
 To a small degree, this method is immune to noise in the objective function.
 While this method was designed to be applied to continuous functions, it is
 immune to discontinuities, and it can solve problems that utilize parameter
@@ -190,11 +188,17 @@ value rounding (integer parameters). This method can't acceptably solve
 high-dimensional problems that are implicitly or explicitly combinatorial
 (e.g., Perm, and Lennard-Jones atom clustering problems) as in such problems
 the global descent vanishes at some point and the method is left with an
-exponentially increasing number of local minima. Similarly, problems with many
-competing minima without a pronounced global descent towards global minimum
-(e.g., Bukin N.6 problem) may not be solved acceptably as in most cases they
-require exhaustive search or a search involving knowledge of the structure of
-the problem.
+exponentially increasing number of local minima.
+
+Similarly, problems with many competing minima without a pronounced global
+descent towards global minimum (e.g., Bukin N.6 problem) may not be solved
+acceptably as in most cases they require exhaustive search or a search
+involving knowledge of the structure of the problem. When the problem field
+requires one to locate such "rogue optimums", the best approach is to use a
+magnitudes larger attempt budget (a so called "parallel retry" approach).
+With 5000 attempts and 50000 iterations per attempt budget, BiteOptDeep solves
+even the Bukin N.6 problem. It may seem excessive, but currently BiteOpt does
+not offer another way to solve such complex problems.
 
 Difference between upper and lower parameter bound values should be specified
 in a way to cover a wider value range, in order to reduce boundary effects
@@ -297,12 +301,10 @@ sample rate converter.
 BiteOpt is also referenced in these research papers:
 
 * [Password Strength Signaling: A Counter-Intuitive Defense Against Password
-Cracking; Springer]
-(https://link.springer.com/chapter/10.1007/978-3-030-90370-1_18)
+Cracking, Springer](https://link.springer.com/chapter/10.1007/978-3-030-90370-1_18)
 
-* [The CIP2A–TOPBP1 axis safeguards chromosome stability and is a synthetic
-lethal target for BRCA-mutated cancer; Nature Cancer]
-(https://www.nature.com/articles/s43018-021-00266-w)
+* [The CIP2A-TOPBP1 axis safeguards chromosome stability and is a synthetic
+lethal target for BRCA-mutated cancer, Nature Cancer](https://www.nature.com/articles/s43018-021-00266-w)
 
 ## Examples ##
 
