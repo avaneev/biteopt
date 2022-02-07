@@ -559,18 +559,21 @@ observed complexity is O(N<sup>1.6</sup>).
 
 ## SpherOpt ##
 
-This is a "converging hyper-spheroid" optimization method. While it is not
-as effective as, for example, CMA-ES, it also stands parameter space scaling,
-offsetting and rotation well. Since version 2021.1 it is used as a companion
-to BiteOpt, with excellent results.
+This is a "converging hyper-spheroid" optimization method (or hyper-sphere,
+depending on optimization space's bounds). While it is not as effective as,
+for example, CMA-ES, it also stands parameter space scaling, offsetting, and
+rotation well. Since version 2021.1 it is used as a companion (parallel
+optimizer) to BiteOpt, with excellent results.
 
-This method is structurally similar to SMA-ES, but instead of Gaussian
-sampling, SpherOpt selects random points on a hyper-spheroid (with a bit of
-added jitter for lower dimensions), which eventually converges to a point.
-This makes the method very computationally-efficient, but at the same time
-provides immunity to coordinate axis rotations.
+This method is in parts similar to SMA-ES, but instead of keeping track of
+per-parameter sigmas, covariance matrix, and using Gaussian sampling, SpherOpt
+simply selects random points on a hyper-spheroid (with a bit of added jitter
+for lower dimensions), which eventually converges to a point. This makes the
+method very computationally-efficient, but at the same time provides immunity
+to coordinate axis rotations.
 
-This method uses the same self-optimization technique as BiteOpt.
+This method uses the same self-optimization technique as BiteOpt which is,
+however, not a vital element of the method.
 
 ## NMSeqOpt ##
 
