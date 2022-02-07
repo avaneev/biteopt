@@ -431,7 +431,7 @@ BiteOpt's further development.
 
 ## Method's Description ##
 
-# Overview #
+### Overview ###
 
 A cost-ordered population of previous solutions is maintained. A solution
 is an independent parameter vector which can be used to generate/compose a new
@@ -467,7 +467,7 @@ independent populations, and they can be used by the solution generators.
 After each objective function evaluation, the highest-cost previous solution
 is replaced using the upper bound cost constraint.
 
-# Solution Generators #
+### Solution Generators ###
 
 1. A single (or all) parameter value randomization is performed using the
 "bitmask inversion" operation (which is approximately equivalent to `v=1-v`
@@ -478,9 +478,9 @@ rand(1, N) or in the range [1; N], depending on the `Allp` probability.
 Actual implementation is more complex as it uses the average of two such
 operations.
 
-![equation](https://latex.codecogs.com/gif.latex?mask=(2^{MantSize}-1)\gg&space;\lfloor&space;rand(0\ldots1)^4\cdot&space;MantSizeSh\rfloor)
+![equation](https://latex.codecogs.com/gif.latex?mask=(2^{IntMantBits}-1)\gg&space;\lfloor&space;rand(0\ldots1)^4\cdot&space;MantSizeSh\rfloor)
 
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]&space;=&space;\frac{\lfloor&space;x_\text{new}[i]\cdot&space;2^{MantSize}&space;\rfloor&space;\bigotimes&space;mask&space;}{2^{MantSize}})
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]&space;=&space;\frac{\lfloor&space;x_\text{best}[i]\cdot&space;2^{IntMantBits}&space;\rfloor&space;\bigotimes&space;mask&space;}{2^{IntMantBits}})
 
 Plus, with `Move` probability the move around a random previous solution
 is performed, utilizing a TPDF random value. This operation is performed
@@ -498,17 +498,17 @@ the chosen best solution.
 
 3. Involves the best solution, centroid vector, and a random solution.
 
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{new}[i]),&space;\quad&space;i=1,\ldots,N,\\&space;\quad&space;s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5&space;?&space;1:2))
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{best}[i]&plus;x_\text{rand}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{rand}[i]),&space;\quad&space;i=1,\ldots,N,\\&space;\quad&space;s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5&space;?&space;1:2))
 
-4. An "entropy bit mixing" method. This method mixes (XORs) parameter values
+4. The "entropy bit mixing" method. This method mixes (XORs) parameter values
 represented as raw bit strings drawn from an odd number of parameter vectors.
 Probabilistically, such composition creates a new random parameter vector,
 with an overwhelming number of bits being common to the better-performing
 solutions, and a fewer number of bits without fitness certainty.
 
-6. A "short-cut" parameter vector generation.
+6. The "short-cut" parameter vector generation.
 
-![equation](https://latex.codecogs.com/gif.latex?z=x_\text{new}[\text{rand}(1\ldots&space;N)])
+![equation](https://latex.codecogs.com/gif.latex?z=x_\text{best}[\text{rand}(1\ldots&space;N)])
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=z,&space;\quad&space;i=1,\ldots,N)
 
