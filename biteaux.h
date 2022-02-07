@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.3
+ * @version 2022.4
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -39,12 +39,21 @@
 #include <string.h>
 
 /**
+ * Type for an externally-provided random number generator, to be used instead
+ * of the default PRNG. Note that if the external produces 64-bit random
+ * values, they can be safely truncated/typecasted to the "uint32_t" type. If
+ * the external PRNG produces floating-point values, they should be scaled to
+ * the 32-bit unsigned integer range.
+ */
+
+typedef uint32_t( *biteopt_rng )( void* rng_data );
+
+/**
  * Class that implements a pseudo-random number generator (PRNG). The default
  * implementation includes a relatively fast PRNG that uses a classic formula
  * "seed = ( a * seed + c ) % m" (LCG), in a rearranged form. This
- * implementation uses bits 34-63 (30 bits) of the state variable which
- * ensures at least 2^34 period in the lowest significant bit of the resulting
- * pseudo-random sequence. See
+ * implementation uses bits 35-63 (29 bits) of the state variable as a random
+ * output. See
  * https://en.wikipedia.org/wiki/Linear_congruential_generator for more
  * details.
  */
@@ -75,11 +84,18 @@ public:
 	/**
 	 * Function initializes *this PRNG object.
 	 *
-	 * @param NewSeed New random seed value.
+	 * @param NewSeed New random seed value. Ignored, if "arf" is non-NULL.
+     * @param arf External random number generator to use; NULL: use the
+	 * default PRNG. Note that the external RNG should be seeded externally.
+	 * @param ardata Data pointer to pass to the "arf" function.
 	 */
 
-	void init( const int NewSeed )
+	void init( const int NewSeed, biteopt_rng const arf = NULL,
+		void* const ardata = NULL )
 	{
+		rf = arf;
+		rdata = ardata;
+
 		BitsLeft = 0;
 		Seed = (uint64_t) NewSeed;
 
@@ -187,6 +203,10 @@ public:
 	/**
 	 * Function generates a Gaussian-distributed pseudo-random number with
 	 * mean=0 and std.dev=1.
+	 *
+	 * Algorithm is adopted from "Leva, J. L. 1992. "A Fast Normal Random
+	 * Number Generator", ACM Transactions on Mathematical Software, vol. 18,
+	 * no. 4, pp. 449-453".
 	 */
 
 	double getGaussian()
@@ -225,6 +245,15 @@ protected:
 	static const int raw_shift = sizeof( uint64_t ) * 8 - raw_bits; ///<
 		///< "seed" value's bit shift to obtain the output value.
 		///<
+	static const int raw_shift32 = sizeof( uint32_t ) * 8 - raw_bits; ///<
+		///< Value's bit shift to obtain the output value from an external
+		///< RNG.
+		///<
+	biteopt_rng rf; ///< External random number generator to use; NULL: use
+		///< the default PRNG.
+		///<
+	void* rdata; ///< Data pointer to pass to the "rf" function.
+		///<
 	uint64_t Seed; ///< The current random seed value.
 		///<
 	uint32_t BitPool; ///< Bit pool.
@@ -238,6 +267,11 @@ protected:
 
 	uint32_t advance()
 	{
+		if( rf != NULL )
+		{
+			return(( *rf )( rdata ) >> raw_shift32 );
+		}
+
 		Seed = ( Seed + 15509ULL ) * 11627070389458151377ULL;
 
 		return( (uint32_t) ( Seed >> raw_shift ));

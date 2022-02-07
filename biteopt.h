@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.3
+ * @version 2022.4
  */
 
 #ifndef BITEOPT_INCLUDED
@@ -742,7 +742,7 @@ protected:
 	}
 
 	/**
-	 * The "Digital Evolution"-based solution generator.
+	 * The "Differential Evolution"-based solution generator.
 	 */
 
 	void generateSol2( CBiteRnd& rnd )
@@ -775,7 +775,7 @@ protected:
 	}
 
 	/**
-	 * An alternative "Digital Evolution"-based solution generator.
+	 * An alternative "Differential Evolution"-based solution generator.
 	 */
 
 	void generateSol2b( CBiteRnd& rnd )
@@ -1280,8 +1280,7 @@ protected:
  * Objective function.
  */
 
-typedef double (*biteopt_func)( int N, const double* x,
-	void* func_data );
+typedef double( *biteopt_func )( int N, const double* x, void* func_data );
 
 /**
  * Wrapper class for the biteopt_minimize() function.
@@ -1318,7 +1317,7 @@ public:
 
 	virtual double optcost( const double* const p )
 	{
-		return( (*f)( N, p, data ));
+		return(( *f )( N, p, data ));
 	}
 };
 
@@ -1341,6 +1340,9 @@ public:
  * @param attc The number of optimization attempts to perform.
  * @param stopc Stopping criteria (convergence check). 0: off, 1: 64*N,
  * 2: 128*N.
+ * @param rf Random number generator function; 0: use the default BiteOpt
+ * PRNG. Note that the external RNG should be seeded externally.
+ * @param rdata Data pointer to pass to the "rf" function.
  * @return The total number of function evaluations performed; useful if the
  * "stopc" was used.
  */
@@ -1348,7 +1350,7 @@ public:
 inline int biteopt_minimize( const int N, biteopt_func f, void* data,
 	const double* lb, const double* ub, double* x, double* minf,
 	const int iter, const int M = 1, const int attc = 10,
-	const int stopc = 0 )
+	const int stopc = 0, biteopt_rng rf = 0, void* rdata = 0 )
 {
 	CBiteOptMinimize opt;
 	opt.N = N;
@@ -1359,7 +1361,7 @@ inline int biteopt_minimize( const int N, biteopt_func f, void* data,
 	opt.updateDims( N, M );
 
 	CBiteRnd rnd;
-	rnd.init( 1 );
+	rnd.init( 1, rf, rdata );
 
 	const int sct = ( stopc <= 0 ? 0 : 64 * N * stopc );
 	const int useiter = (int) ( iter * sqrt( (double) M ));

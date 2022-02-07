@@ -315,7 +315,7 @@ reaction kinetics (non-linear least squares problem).
     int biteopt_minimize( const int N, biteopt_func f, void* data,
         const double* lb, const double* ub, double* x, double* minf,
         const int iter, const int M = 1, const int attc = 10,
-        const int stopc = 0 )
+        const int stopc = 0, biteopt_rng rf = 0, void* rdata = 0 )
 
     N     The number of parameters in an objective function.
     f     Objective function.
@@ -331,6 +331,9 @@ reaction kinetics (non-linear least squares problem).
           by sqrt(M).
     attc  The number of optimization attempts to perform.
     stopc Stopping criteria (convergence check). 0: off, 1: 64*N, 2: 128*N.
+    rf    Random number generator function; 0: use the default BiteOpt PRNG.
+          Note that the external RNG should be seeded externally.
+    rdata Data pointer to pass to the "rf" function.
 
     This function returns the total number of function evaluations performed;
     useful if the "stopc>0" was used.
@@ -399,7 +402,9 @@ nature: exchange of solutions between independent populations. Such exchange
 allows to find better solutions in a teamwork of sufficiently diverse members,
 it also reduces time (but not human-hours) to find a better solution. This
 method is a model of Swiss presidency rotation (each independent population
-represents an independent human).
+represents an independent human). Note that the very best solution found by
+a member is not shared with other members as to not speed-up the convergence
+unnecessarily.
 
 The author did not originally employ results and reasoning available in papers
 on Differential Evolution. Author's use of DE operation is based on
@@ -418,79 +423,90 @@ DE (multi-vector "mutation").
 BiteOpt is more like a stochastic meta-method, it is incorrect to assume it
 leans towards some specific optimizer class: for example, it won't work
 acceptably if only DE-alike solution generators are used by it. BiteOpt
-encompasses Differential Evolution, Nelder-Mead, and author's original
-SpherOpt, "bitmask inversion", and "bit mixing" solution generators. An
-initial success with the "bitmask inversion" operation (coupled with a
-stochastic "move" operation it looks quite a lot like a random search) was the
-main driver for BiteOpt's further development.
+encompasses Differential Evolution, Nelder-Mead, author's original SpherOpt,
+"bitmask inversion", and "bit mixing" solution generators. An initial success
+with the "bitmask inversion" operation (coupled with a stochastic "move"
+operation it looks quite a lot like a random search) was the main driver for
+BiteOpt's further development.
 
 ## Method's Description ##
 
-NOTE: as of version 2021.3 this topic is not yet up-to-date.
+# Overview #
 
-The algorithm consists of the following elements:
+A cost-ordered population of previous solutions is maintained. A solution
+is an independent parameter vector which can be used to generate/compose a new
+candidate solution by a selected solution generator. On every iteration, the
+method utilizes a probabilistically-chosen candidate solution generator. At
+start, the solution vectors are initialized at the center of the search space,
+using Gaussian sampling.
 
-1. A cost-ordered population of previous solutions is maintained. A solution
-is an independent parameter vector which is evolved towards a better solution.
-On every iteration, the method utilizes a probabilistically-chosen candidate
-solution generator. At start, solution vectors are initialized at the center
-of the search space, using Gaussian sampling.
+Beside the main population, the method keeps several "parallel populations"
+that are updated on the basis of proximity of candidate solution to
+population's centroid. As a result, these populations tend to slightly
+diverge from both each other and the main population.
 
 Parameter values are internally normalized to [0; 1] range and, to stay in
 this range, are wrapped in a special manner before each function evaluation.
-Algorithm uses an alike of probabilistic state automata (histograms) to switch
-between algorithm flow paths, depending on the candidate solution acceptance.
-In many instances candidate solution generators uses square of the random
-variable: this has an effect of giving more weight to better solutions.
+Algorithm uses an alike of a probabilistic state-automata (by means of
+"histograms") to switch between algorithm flow-paths, depending on the
+candidate solutions' acceptance on previous iterations. Each histogram
+represents a superposition of flow-paths, with each flow-path initially being
+equally-probable. Depending on the acceptance or rejection of the
+newly-generated candidate solution, the histogram is updated accordingly, and
+the "probabilistic weight" of a recently used flow-path is adjusted.
+
+In many instances candidate solution generators use the square of the random
+variable to obtain solution's index: this has an effect of giving more weight
+to better solutions.
 
 With some probability, an independent, algorithmically different, parallel
 optimizer is engaged whose solution is evaluated for inclusion into the
-population.
+population. The solutions of parallel optimizers are kept in additional
+independent populations, and they can be used by the solution generators.
 
 After each objective function evaluation, the highest-cost previous solution
 is replaced using the upper bound cost constraint.
 
-2. Depending on the `RandProb` probability, a single (or all) parameter value
-randomization is performed using "bitmask inversion" operation (which is
-approximately equivalent to `v=1-v` operation in normalized parameter space).
-Below, _i_ is either equal to rand(1, N) or in the range [1; N], depending on
-the `AllpProb` probability. `>>` is a bit shift-right operation, `MantSize` is
-a constant equal to 54, `MantSizeSh` is a hyper-parameter that limits bit
-shift operation range. Actual implementation is more complex as it uses
-average of two such operations.
+# Solution Generators #
+
+1. A single (or all) parameter value randomization is performed using the
+"bitmask inversion" operation (which is approximately equivalent to `v=1-v`
+operation in normalized parameter space). Below, _i_ is either equal to
+rand(1, N) or in the range [1; N], depending on the `Allp` probability.
+`>>` is a bit shift-right operation, `IntMantBits` is a constant equal to 58,
+`MantSizeSh` is a fixed parameter that specifies bit shift operation's range.
+Actual implementation is more complex as it uses the average of two such
+operations.
 
 ![equation](https://latex.codecogs.com/gif.latex?mask=(2^{MantSize}-1)\gg&space;\lfloor&space;rand(0\ldots1)^4\cdot&space;MantSizeSh\rfloor)
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]&space;=&space;\frac{\lfloor&space;x_\text{new}[i]\cdot&space;2^{MantSize}&space;\rfloor&space;\bigotimes&space;mask&space;}{2^{MantSize}})
 
-Plus, with `CentProb` probability the move around a random previous solution
+Plus, with `Move` probability the move around a random previous solution
 is performed, utilizing a TPDF random value. This operation is performed
 twice.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}(-1\ldots1)\cdot&space;CentSpan\cdot&space;(x_\text{new}[i]-x_\text{rand}[i]))
 
-With `RandProb2` probability an alternative randomization method is used
-involving the best solution, centroid vector and a random solution.
-
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{new}[i]),&space;\quad&space;i=1,\ldots,N,\\&space;\quad&space;s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5&space;?&space;1:2))
-
-3. (Not together with N.2) the "step in the right direction" operation is
-performed using the random previous solution, chosen best and worst
-solutions, plus a difference of two other random solutions. This is
-conceptually similar to Differential Evolution's "mutation" operation. The
-used worst solution is randomly chosen from 3 worst solutions.
+2. The "step in the right direction" operation. Uses the random previous
+solution, chosen best and worst solutions, plus a difference of two other
+random solutions. This is conceptually similar to Differential Evolution's
+"mutation" operation. The worst solution is selected symmetrically relative to
+the chosen best solution.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-(x_\text{rand2}-x_\text{rand3}))}{2})
 
-4. Alternatively, an "entropy bit mixing" method is used to create a candidate
-solution. This method mixes (XORs) parameter values represented as raw bit
-strings drawn from an odd number of parameter vectors. Probabilistically,
-such composition creates a new random parameter vector with an overwhelming
-number of bits common to better-performing solutions, and a fewer number of
-bits without certainty.
+3. Involves the best solution, centroid vector, and a random solution.
 
-5. With `ScutProb` probability a "short-cut" parameter vector change operation
-is performed.
+![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{new}[i]),&space;\quad&space;i=1,\ldots,N,\\&space;\quad&space;s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5&space;?&space;1:2))
+
+4. An "entropy bit mixing" method. This method mixes (XORs) parameter values
+represented as raw bit strings drawn from an odd number of parameter vectors.
+Probabilistically, such composition creates a new random parameter vector,
+with an overwhelming number of bits being common to the better-performing
+solutions, and a fewer number of bits without fitness certainty.
+
+6. A "short-cut" parameter vector generation.
 
 ![equation](https://latex.codecogs.com/gif.latex?z=x_\text{new}[\text{rand}(1\ldots&space;N)])
 
@@ -548,9 +564,9 @@ to BiteOpt, with excellent results.
 
 This method is structurally similar to SMA-ES, but instead of Gaussian
 sampling, SpherOpt selects random points on a hyper-spheroid (with a bit of
-added jitter for lower dimensions). This makes the method very
-computationally-efficient, but at the same time provides immunity to
-coordinate axis rotations.
+added jitter for lower dimensions), which eventually converges to a point.
+This makes the method very computationally-efficient, but at the same time
+provides immunity to coordinate axis rotations.
 
 This method uses the same self-optimization technique as BiteOpt.
 

@@ -36,7 +36,7 @@
 #include "biteaux.h"
 
 /**
- * Digital Evolution-alike DFO solver.
+ * Differential Evolution-alike DFO solver.
  *
  * Description is available at https://github.com/avaneev/biteopt
  */
