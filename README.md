@@ -26,9 +26,6 @@ function-agnostic. In its inner workings, BiteOpt uses objective function
 value's ranking, not the actual value. BiteOpt is a multi-faceted example of
 a "probabilistic computing" system.
 
-Python wrapper with `scipy.optimize`-alike API, currently in beta, is
-available [here](https://scipybiteopt.readthedocs.io/en/latest/index.html).
-
 ## Comparison ##
 
 This "black-box" optimization method was tested on 2000+ 1-60 dimensional
@@ -588,12 +585,6 @@ the population-handling framework of BiteOpt. "best/3/bit". Mutation parameter
 is fixed, equals to 0.25. Instead of a crossover, the method uses 1-bit
 randomization with 50% probability. Population size is equal to 20\*Dims, by
 default. Population is initialized with a Gaussian sampling.
-
-## Thanks ##
-
-The author would like to thank [Dietmar Wolz](https://github.com/dietmarwo)
-for additional BiteOpt testing in the astrodynamics field. You may check out
-the `fast-cma-es` for multi-threaded "parallel retry" wrapper for BiteOpt.
 
 ## Citing ##
 
