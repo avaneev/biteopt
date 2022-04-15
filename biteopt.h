@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.5"
+#define BITEOPT_VERSION "2022.6"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -66,9 +66,6 @@ public:
 		addHist( ParPopPHist[ 0 ], "ParPopPHist[ 0 ]" );
 		addHist( ParPopPHist[ 1 ], "ParPopPHist[ 1 ]" );
 		addHist( ParPopPHist[ 2 ], "ParPopPHist[ 2 ]" );
-		addHist( ParPopHist[ 0 ], "ParPopHist[ 0 ]" );
-		addHist( ParPopHist[ 1 ], "ParPopHist[ 1 ]" );
-		addHist( ParPopHist[ 2 ], "ParPopHist[ 2 ]" );
 		addHist( AltPopPHist, "AltPopPHist" );
 		addHist( AltPopHist[ 0 ], "AltPopHist[ 0 ]" );
 		addHist( AltPopHist[ 1 ], "AltPopHist[ 1 ]" );
@@ -85,6 +82,7 @@ public:
 		addHist( Gen1MoveSpanHist, "Gen1MoveSpanHist" );
 		addHist( Gen4MixFacHist, "Gen4MixFacHist" );
 		addHist( Gen5BinvHist, "Gen5BinvHist" );
+		addHist( Gen7PowFacHist, "Gen7PowFacHist" );
 		addHist( *ParOpt.getHists()[ 0 ], "ParOpt.CentPowHist" );
 		addHist( *ParOpt.getHists()[ 1 ], "ParOpt.RadPowHist" );
 		addHist( *ParOpt.getHists()[ 2 ], "ParOpt.EvalFacHist" );
@@ -282,7 +280,7 @@ public:
 					}
 					else
 					{
-						generateSol4b( rnd );
+						generateSol7( rnd );
 					}
 				}
 				else
@@ -486,10 +484,6 @@ protected:
 	CBiteOptHist< 2 > ParPopPHist[ 3 ]; ///< Parallel population use
 		///< probability histogram.
 		///<
-	CBiteOptHist< 4 > ParPopHist[ 3 ]; ///< Parallel population
-		///< histograms for solution generators (template's Count parameter
-		///< should match ParPopCount).
-		///<
 	CBiteOptHist< 2 > AltPopPHist; ///< Alternative population use
 		///< histogram.
 		///<
@@ -507,7 +501,7 @@ protected:
 		///<
 	CBiteOptHist< 2 > Gen1MoveHist; ///< Generator method 1's Move
 		///< histogram.
-		////<
+		///<
 	CBiteOptHist< 2 > Gen1MoveAsyncHist; ///< Generator method 1's Move
 		///< async histogram.
 		///<
@@ -519,6 +513,9 @@ protected:
 		///<
 	CBiteOptHist< 2 > Gen5BinvHist; ///< Generator method 5's random
 		///< inversion technique histogram.
+		///<
+	CBiteOptHist< 3 > Gen7PowFacHist; ///< Generator method 2c's Power
+		///< histogram.
 		///<
 	int CentUpdateCtr; ///< Centroid update counter.
 		///<
@@ -594,7 +591,7 @@ protected:
 	{
 		if( select( ParPopPHist[ gi ], rnd ))
 		{
-			return( *ParPops[ select( ParPopHist[ gi ], rnd )]);
+			return( *ParPops[ (int) ( rnd.getRndValue() * ParPopCount )]);
 		}
 
 		return( *this );
@@ -885,43 +882,6 @@ protected:
 	}
 
 	/**
-	 * Solution generator similar to generateSol4, but uses solutions from the
-	 * main population only, and includes "crossover" approach first
-	 * implemented in the generateSol5b() function.
-	 */
-
-	void generateSol4b( CBiteRnd& rnd )
-	{
-		ptype* const Params = TmpParams;
-
-		const int km = 3 + ( select( Gen4MixFacHist, rnd ) << 1 );
-
-		int si1 = (int) ( rnd.getRndValueSqr() * CurPopSize );
-		const ptype* rp1 = getParamsOrdered( si1 );
-
-		memcpy( Params, rp1, ParamCount * sizeof( Params[ 0 ]));
-
-		int k;
-
-		for( k = 1; k < km; k++ )
-		{
-			si1 = (int) ( rnd.getRndValueSqr() * CurPopSize );
-			int si2 = (int) ( rnd.getRndValueSqr() * CurPopSize );
-
-			const ptype* CrossParams[ 2 ];
-			CrossParams[ 0 ] = getParamsOrdered( si1 );
-			CrossParams[ 1 ] = getParamsOrdered( si2 );
-
-			int i;
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				Params[ i ] ^= CrossParams[ rnd.getBit()][ i ];
-			}
-		}
-	}
-
-	/**
 	 * A novel "Randomized bit crossing-over" candidate solution generation
 	 * method. Effective, but on its own cannot stand coordinate system
 	 * offsets, converges slowly. Completely mixes bits of two
@@ -1025,6 +985,33 @@ protected:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			Params[ i ] = (ptype) (( v - MinValues[ i ]) * DiffValuesI[ i ]);
+		}
+	}
+
+	/**
+	 * A solution generator that randomly combines solutions from the parallel
+	 * populations. Conceptually, it can be called a weighted-random
+	 * crossover. Note that while parallel populations are unordered, the
+	 * generator gives more weight to populations leading the array.
+	 */
+
+	void generateSol7( CBiteRnd& rnd )
+	{
+		ptype* const Params = TmpParams;
+
+		static const double p[ 3 ] = { 1.0, 1.5, 2.0 };
+		const double pwr = p[ select( Gen7PowFacHist, rnd )];
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			const CBiteOptPop& ParPop = *ParPops[
+				(int) ( rnd.getRndValueSqr() * ParPopCount )];
+
+			const double rv = pow( rnd.getRndValue(), pwr );
+			const int si = (int) ( rv * ParPop.getCurPopSize() );
+
+			Params[ i ] = getParamsOrdered( si )[ i ];
 		}
 	}
 };

@@ -505,11 +505,24 @@ Probabilistically, such composition creates a new random parameter vector,
 with an overwhelming number of bits being common to the better-performing
 solutions, and a fewer number of bits without fitness certainty.
 
+5. A novel "Randomized bit crossing-over" candidate solution generation
+method. Effective, but on its own cannot stand coordinate system offsets,
+converges slowly. Completely mixes bits of two randomly-selected solutions,
+plus changes 1 random bit. Uses a random mix-mask.
+
+This method is similar to a biological DNA crossing-over, but on a
+single-bit scale.
+
 6. The "short-cut" parameter vector generation.
 
 ![equation](https://latex.codecogs.com/gif.latex?z=x_\text{best}[\text{rand}(1\ldots&space;N)])
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=z,&space;\quad&space;i=1,\ldots,N)
+
+7. A solution generator that randomly combines solutions from the parallel
+populations. Conceptually, it can be called a weighted-random crossover. Note
+that while parallel populations are unordered, the generator gives more weight
+to populations leading the array.
 
 ## SMA-ES ##
 

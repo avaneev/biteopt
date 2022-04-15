@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.5
+ * @version 2022.6
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -295,6 +295,7 @@ public:
 
 	CBiteOptHistBase( const int aCount )
 		: Count( aCount )
+		, Count1( aCount - 1 )
 		, m( 1.0 / aCount )
 	{
 	}
@@ -373,7 +374,7 @@ public:
 		const double rv = rnd.getUniformRaw() * ProbSum;
 		int i;
 
-		for( i = 0; i < Count - 1; i++ )
+		for( i = 0; i < Count1; i++ )
 		{
 			if( rv < Probs[ i ])
 			{
@@ -382,8 +383,8 @@ public:
 			}
 		}
 
-		Sel = Count - 1;
-		return( Count - 1 );
+		Sel = Count1;
+		return( Count1 );
 	}
 
 	/**
@@ -400,6 +401,8 @@ protected:
 		///< supported.
 		///<
 	int Count; ///< The number of choices in use.
+		///<
+	int Count1; ///< Equals Count-1.
 		///<
 	double m; ///< Multiplier (depends on Count).
 		///<
