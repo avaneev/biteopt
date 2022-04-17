@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.7"
+#define BITEOPT_VERSION "2022.8"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -117,6 +117,8 @@ public:
 		ParOpt2.Owner = this;
 		ParOpt2.updateDims( aParamCount );
 		ParOpt2Pop.initBuffers( aParamCount, aPopSize );
+
+		OldPop.initBuffers( aParamCount, aPopSize );
 	}
 
 	/**
@@ -192,6 +194,7 @@ public:
 
 		ParOptPop.resetCurPopPos();
 		ParOpt2Pop.resetCurPopPos();
+		OldPop.resetCurPopPos();
 
 		DoInitEvals = true;
 	}
@@ -412,6 +415,12 @@ public:
 				StallCount = 0;
 			}
 
+			if( rnd.getRndValue() < 1.0 / ParamCount )
+			{
+				OldPop.updatePop( PopCosts[ CurPopSize1 ],
+					PopParams[ CurPopSize1 ], false, true );
+			}
+
 			updatePop( NewCost, TmpParams, false, false );
 
 			if( PushOpt != NULL && PushOpt != this &&
@@ -520,6 +529,9 @@ protected:
 	int CentUpdateCtr; ///< Centroid update counter.
 		///<
 	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
+		///<
+	CBiteOptPop OldPop; ///< Population of older solutions, updated
+		///< probabilistically.
 		///<
 
 	/**
@@ -990,14 +1002,16 @@ protected:
 
 	/**
 	 * A solution generator that randomly combines solutions from the main
-	 * population. Conceptually, it can be called a weighted-random
-	 * crossover that combines solutions from diverse sources.
+	 * and "old" populations. Conceptually, it can be called a
+	 * weighted-random crossover that combines solutions from diverse
+	 * sources.
 	 */
 
 	void generateSol7( CBiteRnd& rnd )
 	{
 		ptype* const Params = TmpParams;
 
+		const bool UseOldPop = ( OldPop.getCurPopPos() > 2 );
 		static const double p[ 4 ] = { 1.0, 1.5, 2.0, 2.5 };
 		const double pwr = p[ select( Gen7PowFacHist, rnd )];
 		int i;
@@ -1005,7 +1019,17 @@ protected:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			const double rv = pow( rnd.getRndValue(), pwr );
-			Params[ i ] = getParamsOrdered( (int) ( rv * CurPopSize ))[ i ];
+
+			if( UseOldPop && rnd.getBit() )
+			{
+				Params[ i ] = OldPop.getParamsOrdered(
+					(int) ( rv * OldPop.getCurPopPos() ))[ i ];
+			}
+			else
+			{
+				Params[ i ] = getParamsOrdered(
+					(int) ( rv * CurPopSize ))[ i ];
+			}
 		}
 	}
 };

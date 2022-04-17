@@ -519,9 +519,9 @@ single-bit scale.
 
 ![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=z,&space;\quad&space;i=1,\ldots,N)
 
-7. A solution generator that randomly combines solutions from the main
-population. Conceptually, it can be called a weighted-random crossover that
-combines solutions from diverse sources.
+7. A solution generator that randomly combines solutions from the main and
+"old" populations. Conceptually, it can be called a weighted-random
+crossover that combines solutions from diverse sources.
 
 ## SMA-ES ##
 
