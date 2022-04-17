@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.6"
+#define BITEOPT_VERSION "2022.7"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -514,7 +514,7 @@ protected:
 	CBiteOptHist< 2 > Gen5BinvHist; ///< Generator method 5's random
 		///< inversion technique histogram.
 		///<
-	CBiteOptHist< 3 > Gen7PowFacHist; ///< Generator method 2c's Power
+	CBiteOptHist< 4 > Gen7PowFacHist; ///< Generator method 2c's Power
 		///< histogram.
 		///<
 	int CentUpdateCtr; ///< Centroid update counter.
@@ -989,29 +989,23 @@ protected:
 	}
 
 	/**
-	 * A solution generator that randomly combines solutions from the parallel
-	 * populations. Conceptually, it can be called a weighted-random
-	 * crossover. Note that while parallel populations are unordered, the
-	 * generator gives more weight to populations leading the array.
+	 * A solution generator that randomly combines solutions from the main
+	 * population. Conceptually, it can be called a weighted-random
+	 * crossover that combines solutions from diverse sources.
 	 */
 
 	void generateSol7( CBiteRnd& rnd )
 	{
 		ptype* const Params = TmpParams;
 
-		static const double p[ 3 ] = { 1.0, 1.5, 2.0 };
+		static const double p[ 4 ] = { 1.0, 1.5, 2.0, 2.5 };
 		const double pwr = p[ select( Gen7PowFacHist, rnd )];
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			const CBiteOptPop& ParPop = *ParPops[
-				(int) ( rnd.getRndValueSqr() * ParPopCount )];
-
 			const double rv = pow( rnd.getRndValue(), pwr );
-			const int si = (int) ( rv * ParPop.getCurPopSize() );
-
-			Params[ i ] = getParamsOrdered( si )[ i ];
+			Params[ i ] = getParamsOrdered( (int) ( rv * CurPopSize ))[ i ];
 		}
 	}
 };
