@@ -38,10 +38,10 @@ This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
 evaluated): [Comparison of derivative-free optimization
 algorithms](https://sahinidis.coe.gatech.edu/?q=dfocomp).
-This method was able to solve 77% of non-convex smooth problems in 10
-attempts, 2500 iterations each. It comes 2nd (very close to the 1st) in the
-comparison on non-convex smooth problems (see Fig.9 in the paper). With a huge
-iteration budget (up to 1 million) this method solves 97% of problems.
+This method was able to solve 75% of non-convex smooth problems in 10
+attempts, 2500 iterations each. It comes 2nd in the comparison on non-convex
+smooth problems (see Fig.9 in the paper). With a huge iteration budget (up to
+1 million) this method solves 96% of problems.
 
 On a comparable test function suite and conditions outlined at this page:
 [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
@@ -239,7 +239,7 @@ methods, a suggested equality tolerance is 10<sup>-4</sup>, but a more common
 10<sup>-6</sup> can be also used; lower values are not advised for use. Models
 with up to 190 constraints, both equalities and non-equalities, were tested
 with this method. In practice, on a large set of problems, this method finds a
-feasible solution in up to 93% of cases.
+feasible solution in up to 94% of cases.
 
 	double pns = 0.0;
 	int i;

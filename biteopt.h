@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.8"
+#define BITEOPT_VERSION "2022.9"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -73,9 +73,11 @@ public:
 		addHist( MinSolPwrHist[ 0 ], "MinSolPwrHist[ 0 ]" );
 		addHist( MinSolPwrHist[ 1 ], "MinSolPwrHist[ 1 ]" );
 		addHist( MinSolPwrHist[ 2 ], "MinSolPwrHist[ 2 ]" );
+		addHist( MinSolPwrHist[ 3 ], "MinSolPwrHist[ 3 ]" );
 		addHist( MinSolMulHist[ 0 ], "MinSolMulHist[ 0 ]" );
 		addHist( MinSolMulHist[ 1 ], "MinSolMulHist[ 1 ]" );
 		addHist( MinSolMulHist[ 2 ], "MinSolMulHist[ 2 ]" );
+		addHist( MinSolMulHist[ 3 ], "MinSolMulHist[ 3 ]" );
 		addHist( Gen1AllpHist, "Gen1AllpHist" );
 		addHist( Gen1MoveHist, "Gen1MoveHist" );
 		addHist( Gen1MoveAsyncHist, "Gen1MoveAsyncHist" );
@@ -499,10 +501,10 @@ protected:
 	CBiteOptHist< 2 > AltPopHist[ 3 ]; ///< Alternative population type use
 		///< histogram.
 		///<
-	CBiteOptHist< 4 > MinSolPwrHist[ 3 ]; ///< Index of least-cost
+	CBiteOptHist< 4 > MinSolPwrHist[ 4 ]; ///< Index of least-cost
 		///< population, power factor.
 		///<
-	CBiteOptHist< 4 > MinSolMulHist[ 3 ]; ///< Index of least-cost
+	CBiteOptHist< 4 > MinSolMulHist[ 4 ]; ///< Index of least-cost
 		///< population, multiplier.
 		///<
 	CBiteOptHist< 2 > Gen1AllpHist; ///< Generator method 1's Allp
@@ -793,7 +795,7 @@ protected:
 
 		// rand/2/none DE-alike mutation.
 
-		const int si1 = (int) ( rnd.getRndValue() * CurPopSize );
+		const int si1 = getMinSolIndex( 2, rnd, CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
 
 		const int si2 = (int) ( rnd.getRndValue() * CurPopSize );
@@ -826,7 +828,7 @@ protected:
 		ptype* const Params = TmpParams;
 
 		const ptype* const MinParams = getParamsOrdered(
-			getMinSolIndex( 2, rnd, CurPopSize ));
+			getMinSolIndex( 3, rnd, CurPopSize ));
 
 		if( NeedCentUpdate )
 		{
@@ -926,9 +928,11 @@ protected:
 
 			const ptype crpl = (ptype) ( rnd.getUniformRaw2() & IntMantMask );
 
-			ptype v1 = CrossParams1[ i ];
-			ptype v2 = ( UseInv && rnd.getBit() ?
+			const ptype v1 = CrossParams1[ i ];
+			const ptype v2 = ( UseInv && rnd.getBit() ?
 				~CrossParams2[ i ] : CrossParams2[ i ]);
+
+			Params[ i ] = ( v1 & crpl ) | ( v2 & ~crpl );
 
 			if( rnd.getBit() )
 			{
@@ -936,16 +940,9 @@ protected:
 
 				const int b = (int) ( rnd.getRndValue() * IntMantBits );
 
-				const ptype m = ~( (ptype) 1 << b );
-				const ptype bv = (ptype) rnd.getBit() << b;
-
-				v1 &= m;
-				v2 &= m;
-				v1 |= bv;
-				v2 |= bv;
+				Params[ i ] &= ~( (ptype) 1 << b );
+				Params[ i ] |= (ptype) rnd.getBit() << b;
 			}
-
-			Params[ i ] = ( v1 & crpl ) | ( v2 & ~crpl );
 		}
 	}
 
@@ -1020,7 +1017,7 @@ protected:
 		{
 			const double rv = pow( rnd.getRndValue(), pwr );
 
-			if( UseOldPop && rnd.getBit() )
+			if( UseOldPop && rnd.getBit() && rnd.getBit() )
 			{
 				Params[ i ] = OldPop.getParamsOrdered(
 					(int) ( rv * OldPop.getCurPopPos() ))[ i ];
