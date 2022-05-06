@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.6
+ * @version 2022.10
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -314,7 +314,14 @@ public:
 		IncrDecrHist[ 2 ] = 1 - b;
 		IncrDecr = 2 - b;
 
-		memset( Hist, 0, sizeof( Hist ));
+		int i;
+
+		for( i = 0; i < Count; i++ )
+		{
+			HistIncr[ i ] = 1;
+			HistSum[ i ] = 1;
+		}
+
 		updateProbs();
 
 		select( rnd );
@@ -341,7 +348,9 @@ public:
 		IncrDecrHist[ IncrDecr ]++;
 		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
 
-		Hist[ Sel ] += IncrDecr;
+		HistIncr[ Sel ] += IncrDecr;
+		HistSum[ Sel ] += IncrDecr;
+
 		updateProbs();
 	}
 
@@ -357,7 +366,8 @@ public:
 		IncrDecrHist[ IncrDecr ]--;
 		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
 
-		Hist[ Sel ] -= IncrDecr;
+		HistSum[ Sel ] += IncrDecr;
+
 		updateProbs();
 	}
 
@@ -406,7 +416,9 @@ protected:
 		///<
 	double m; ///< Multiplier (depends on Count).
 		///<
-	int Hist[ MaxCount ]; ///< Histogram.
+	int HistIncr[ MaxCount ]; ///< Increments histogram.
+		///<
+	int HistSum[ MaxCount ]; ///< Increase+decrease sum histogram.
 		///<
 	int IncrDecrHist[ 3 ]; ///< IncrDecr self-optimization histogram, element
 		///< 0 not used for efficiency.
@@ -428,34 +440,14 @@ protected:
 
 	void updateProbs()
 	{
-		int MinHist = Hist[ 0 ];
+		const double mh = m * IncrDecr;
+		ProbSum = 0.0;
 		int i;
 
-		for( i = 1; i < Count; i++ )
-		{
-			if( Hist[ i ] < MinHist )
-			{
-				MinHist = Hist[ i ];
-			}
-		}
-
-		MinHist--;
-		double HistSum = 0.0;
-
 		for( i = 0; i < Count; i++ )
 		{
-			Probs[ i ] = Hist[ i ] - MinHist;
-			HistSum += Probs[ i ];
-		}
-
-		HistSum *= m * IncrDecr;
-		ProbSum = 0.0;
-
-		for( i = 0; i < Count; i++ )
-		{
-			const double v = ( Probs[ i ] < HistSum ? HistSum : Probs[ i ]) +
-				ProbSum;
-
+			const double h = (double) HistIncr[ i ] / HistSum[ i ];
+			const double v = ( h < mh ? mh : h ) + ProbSum;
 			Probs[ i ] = v;
 			ProbSum = v;
 		}
