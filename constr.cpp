@@ -100,12 +100,12 @@ public:
 		pn[ 7 ] = penalty( -2.0*p[5]-p[6]+p[10] );
 		pn[ 8 ] = penalty( -2.0*p[7]-p[8]+p[11] );
 
+		const double ps = pow( 3.0, 1.0 / n_con );
 		double pns = 0.0;
 
 		for( i = 0; i < n_con; i++ )
 		{
-			pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] +
-				pn[ i ] * pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
+			pns = pns * ps + pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
 		}
 
 		real_value = cost;

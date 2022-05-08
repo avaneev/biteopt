@@ -32,6 +32,7 @@ real* tmpx; // Temporary holder for solution and rounding.
 real* tmpcon; // Temprorary holder for constraint bodies.
 real* fc; // Temporary buffer of constraint penalties.
 int con_notmet; // no. contraints not met.
+double last_ov = 0.0; // Last evaluated obj value.
 int negate; // negate objective.
 ASL *asl;
 
@@ -48,11 +49,11 @@ static keyword keywds[] = {	/* must be in alphabetical order */
 };
 
 static char biteoptvers[] =
-	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2021.23\n";
+	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.11\n";
 
 static Option_Info Oinfo = {
-	"biteoptampl", "BITEOPT-2021.28", "biteopt_options", keywds, nkeywds, 1.,
-	biteoptvers, 0,0,0,0,0, 202128
+	"biteoptampl", "BITEOPT-2022.11", "biteopt_options", keywds, nkeywds, 1.,
+	biteoptvers, 0,0,0,0,0, 202211
 };
 
 int xround( real* x, int n )
@@ -143,24 +144,22 @@ static double objfn( int N, const double* const x )
 				}
 				else
 				{
-					if( LUrhs[ i ] > negInfinity &&
-						tmpcon[ i ] < LUrhs[ i ])
+					if( LUrhs[ i ] > negInfinity && tmpcon[ i ] < LUrhs[ i ])
 					{
 						double a = LUrhs[ i ] - tmpcon[ i ];
 
-						if( a > 1e-15 )
+						if( a > tol )
 						{
 							fc[ i ] = a;
 							con_notmet++;
 						}
 					}
 
-					if( Urhsx[ i ] < Infinity &&
-						tmpcon[ i ] > Urhsx[ i ])
+					if( Urhsx[ i ] < Infinity && tmpcon[ i ] > Urhsx[ i ])
 					{
 						double a = tmpcon[ i ] - Urhsx[ i ];
 
-						if( a > 1e-15 )
+						if( a > tol )
 						{
 							fc[ i ] = a;
 							con_notmet++;
@@ -199,22 +198,21 @@ public:
 
 	virtual double optcost( const double* const p )
 	{
-		double ov = objfn( n_var, p );
+		last_ov = objfn( n_var, p );
 		double pns = 0.0;
 
 		if( n_con > 0 )
 		{
-			const double ps = pow( 4.0, 1.0 / n_con );
+			const double ps = pow( 3.0, 1.0 / n_con );
 			int i;
 
 			for( i = 0; i < n_con; i++ )
 			{
-				const double fc2 = fc[ i ] * fc[ i ];
-				pns = pns * ps + fc[ i ] + fc2 + fc[ i ] * fc2;
+				pns = pns * ps + fc[ i ] + fc[ i ] * fc[ i ] * fc[ i ];
 			}
 		}
 
-		return( ov + 1e10 * ( con_notmet + pns ));
+		return( last_ov + 1e10 * ( con_notmet + pns ));
 	}
 };
 
@@ -326,7 +324,22 @@ start:
 	const int hardlim = (int) ( 1000.0 * itmult * pow( (double) n_var, p ) *
 		sqrt( (double) depth ));
 
-	const int sc_thresh = n_var * 128;
+	const int sc_thresh = n_var * 256;
+
+	#if USE_SOLDB
+		bool UseBestSol = false;
+		double MinObj = 0.0;
+
+		VOXERRSKIP( loadBestSols() );
+
+		CMap< CString, double > :: iterator it2 = BestSols.find( stub );
+
+		if( it2 != BestSols.end() )
+		{
+			MinObj = it2.value();
+			UseBestSol = true;
+		}
+	#endif // USE_SOLDB
 
 	double f;
 	int f_notmet;
@@ -346,6 +359,31 @@ start:
 			int sc = opt.optimize( rnd );
 			fnevals++;
 			i++;
+
+			#if USE_SOLDB
+			if( UseBestSol && con_notmet == 0 )
+			{
+				const double d = ( MinObj == 0.0 ?
+					SolTol0 : fabs( MinObj ) * SolTol );
+
+				if( negate )
+				{
+					if( -last_ov >= MinObj - d )
+					{
+						k = attc;
+						break;
+					}
+				}
+				else
+				{
+					if( last_ov <= MinObj + d )
+					{
+						k = attc;
+						break;
+					}
+				}
+			}
+			#endif // USE_SOLDB
 
 			if( progr && i > thr )
 			{

@@ -46,7 +46,7 @@ public:
 
 	double penalty( const double v )
 	{
-		if( v > 1e-15 )
+		if( v > 1e-6 )
 		{
 			con_notmet++;
 			return( v );
@@ -82,12 +82,12 @@ public:
 		pn[ 6 ] = penalty( sqr(p[0])+2*sqr(p[1]-2)-2*p[0]*p[1]+14*p[4]-6*p[5] );
 		pn[ 7 ] = penalty( -3*p[0]+6*p[1]+12*sqr(p[8]-8)-7*p[9] );
 
+		const double ps = pow( 3.0, 1.0 / n_con );
 		double pns = 0.0;
 
 		for( i = 0; i < n_con; i++ )
 		{
-			pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] +
-				pn[ i ] * pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
+			pns = pns * ps + pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
 		}
 
 		real_value = cost;

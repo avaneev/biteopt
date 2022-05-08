@@ -30,7 +30,7 @@ public:
 
 	double penalty( const double v )
 	{
-		if( v > 1e-15 )
+		if( v > 1e-6 )
 		{
 			con_notmet++;
 			return( v );
@@ -67,13 +67,13 @@ public:
 		pn[ 3 ] = penalty0( 1000*(sin(p[2]-0.25)+sin(p[2]-p[3]-0.25))+894.8-p[1] );
 		pn[ 4 ] = penalty0( 1000*(sin(p[3]-0.25)+sin(p[3]-p[2]-0.25))+1294.8 );
 
+		const double ps = pow( 3.0, 1.0 / n_con );
 		double pns = 0.0;
 		int i;
 
 		for( i = 0; i < n_con; i++ )
 		{
-			pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] +
-				pn[ i ] * pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
+			pns = pns * ps + pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
 		}
 
 		real_value = cost;

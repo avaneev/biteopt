@@ -235,19 +235,19 @@ penalties. In the code below, `n_con` is the number of constraints,
 `con_notmet` is the number of constraints not meeting tolerances, and the
 `pn[]` is the array of linear penalty values for each constraint; a penalty
 value should be set to 0 if it meets the tolerance. For derivative-free
-methods, a suggested equality tolerance is 10<sup>-4</sup>, but a more common
-10<sup>-6</sup> can be also used; lower values are not advised for use. Models
-with up to 190 constraints, both equalities and non-equalities, were tested
-with this method. In practice, on a large set of problems, this method finds a
-feasible solution in up to 94% of cases.
+methods, a suggested constraint tolerance is 10<sup>-4</sup>, but a more
+common 10<sup>-6</sup> can be also used; lower values are not advised for use.
+Models with up to 190 constraints, both equalities and non-equalities, were
+tested with this method. In practice, on a large set of problems, this method
+finds a feasible solution in up to 94% of cases.
 
+	const double ps = pow( 3.0, 1.0 / n_con );
 	double pns = 0.0;
 	int i;
 
 	for( i = 0; i < n_con; i++ )
 	{
-		pns = pns * pow( 4.0, 1.0 / n_con ) + pn[ i ] +
-			pn[ i ] * pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
+		pns = pns * ps + pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
 	}
 
     real_value = cost;

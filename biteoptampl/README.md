@@ -8,9 +8,8 @@ impossible, otherwise other solvers are recommended.
 
 It supports both continuous and integer variables. Constraints satisfaction is
 working for most problems (via penalties). The solver will report if it could
-not meet constraints. Equality constraints are evaluated within the configured
-tolerance (10<sup>-5</sup> by default), non-equality constraints are evaluated
-strictly.
+not meet constraints. Both equality and non-equality constraints are evaluated
+within the configured tolerance (10<sup>-5</sup> by default).
 
 Solver runs for a dimension-dependent maximum number of iterations (function
 evaluations) per attempt, which is a hard limit, or lower if solver plateaus.

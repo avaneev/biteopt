@@ -7,7 +7,7 @@
  *
  * @section license License
  *
- * Copyright (c) 2021 Aleksey Vaneev
+ * Copyright (c) 2021-2022 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.28
+ * @version 2022.11
  */
 
 #ifndef DEOPT_INCLUDED
@@ -86,7 +86,7 @@ public:
 
 		resetCommonVars( rnd );
 
-		const double sd = 0.25 * InitRadius;
+		const double sd = 0.125 * InitRadius;
 		int i;
 		int j;
 
@@ -222,20 +222,20 @@ public:
 			{
 				TmpParams[ i ] += rp2[ i ] - rp3[ i ];
 			}
+
+			if( rnd.getBit() )
+			{
+				const int k = (int) ( rnd.getRndValue() * ParamCount );
+				const int b = (int) ( rnd.getRndValue() * IntMantBits );
+
+				TmpParams[ k ] &= ~( (ptype) 1 << b );
+				TmpParams[ k ] |= (ptype) rnd.getBit() << b;
+			}
 		}
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			TmpParams[ i ] = rp1[ i ] + ( TmpParams[ i ] >> 2 );
-		}
-
-		if( rnd.getBit() )
-		{
-			const int j = (int) ( rnd.getRndValue() * ParamCount );
-			const int b = (int) ( rnd.getRndValue() * IntMantBits );
-
-			TmpParams[ j ] &= ~( (ptype) 1 << b );
-			TmpParams[ j ] |= (ptype) rnd.getBit() << b;
 		}
 
 		for( i = 0; i < ParamCount; i++ )
