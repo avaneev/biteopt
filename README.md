@@ -479,6 +479,7 @@ operations.
 
 $$ mask=(2^{IntMantBits}-1)\gg \lfloor rand(0\ldots1)^4\cdot
 MantSizeSh\rfloor $$
+
 $$ x_\text{new}[i] = \frac{\lfloor x_\text{best}[i]\cdot 2^{IntMantBits}
 \rfloor \bigotimes mask }{2^{IntMantBits}} $$
 
@@ -521,6 +522,7 @@ single-bit scale.
 6. The "short-cut" parameter vector generation.
 
 $$ z=x_\text{best}[\text{rand}(1\ldots N)] $$
+
 $$ x_\text{new}[i]=z, \quad i=1,\ldots,N $$
 
 7. A solution generator that randomly combines solutions from the main and
