@@ -477,19 +477,17 @@ rand(1, N) or in the range [1; N], depending on the `Allp` probability.
 Actual implementation is more complex as it uses the average of two such
 operations.
 
-$$
-mask=(2^{IntMantBits}-1)\gg \lfloor rand(0\ldots1)^4\cdot MantSizeSh\rfloor
-
-x_\text{new}[i] = \frac{\lfloor x_\text{best}[i]\cdot 2^{IntMantBits} \rfloor \bigotimes mask }{2^{IntMantBits}}
-$$
+$$ mask=(2^{IntMantBits}-1)\gg \lfloor rand(0\ldots1)^4\cdot
+MantSizeSh\rfloor $$
+$$ x_\text{new}[i] = \frac{\lfloor x_\text{best}[i]\cdot 2^{IntMantBits}
+\rfloor \bigotimes mask }{2^{IntMantBits}} $$
 
 Plus, with `Move` probability the move around a random previous solution
 is performed, utilizing a TPDF random value. This operation is performed
 twice.
 
-$$
-x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}(-1\ldots1)\cdot CentSpan\cdot (x_\text{new}[i]-x_\text{rand}[i])
-$$
+$$ x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}(-1\ldots1)\cdot CentSpan\cdot
+(x_\text{new}[i]-x_\text{rand}[i]) $$
 
 2. The "step in the right direction" operation. Uses the random previous
 solution, chosen best and worst solutions, plus a difference of two other
@@ -497,15 +495,14 @@ random solutions. This is conceptually similar to Differential Evolution's
 "mutation" operation. The worst solution is selected symmetrically relative to
 the chosen best solution.
 
-$$
-x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-(x_\text{rand2}-x_\text{rand3}))}{2}
-$$
+$$ x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-
+(x_\text{rand2}-x_\text{rand3}))}{2} $$
 
 3. Involves the best solution, centroid vector, and a random solution.
 
-$$
-x_\text{new}[i]=x_\text{best}[i]&plus;x_\text{rand}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{rand}[i]), \quad i=1,\ldots,N,\\ \quad s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5 ? 1:2)
-$$
+$$ x_\text{new}[i]=x_\text{best}[i]+x_\text{rand}[i]+(-1)^{s}(x_\text{cent}[i]-
+x_\text{rand}[i]), \quad i=1,\ldots,N,\\ \quad s\in\{1,2\}=
+(\text{rand}(0\ldots1)<0.5 ? 1:2) $$
 
 4. The "entropy bit mixing" method. This method mixes (XORs) parameter values
 represented as raw bit strings drawn from an odd number of parameter vectors.
@@ -523,11 +520,8 @@ single-bit scale.
 
 6. The "short-cut" parameter vector generation.
 
-$$
-z=x_\text{best}[\text{rand}(1\ldots N)]
-
-x_\text{new}[i]=z, \quad i=1,\ldots,N
-$$
+$$ z=x_\text{best}[\text{rand}(1\ldots N)] $$
+$$ x_\text{new}[i]=z, \quad i=1,\ldots,N $$
 
 7. A solution generator that randomly combines solutions from the main and
 "old" populations. Conceptually, it can be called a weighted-random
