@@ -49,11 +49,11 @@ static keyword keywds[] = {	/* must be in alphabetical order */
 };
 
 static char biteoptvers[] =
-	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.11\n";
+	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.12\n";
 
 static Option_Info Oinfo = {
-	"biteoptampl", "BITEOPT-2022.11", "biteopt_options", keywds, nkeywds, 1.,
-	biteoptvers, 0,0,0,0,0, 202211
+	"biteoptampl", "BITEOPT-2022.12", "biteopt_options", keywds, nkeywds, 1.,
+	biteoptvers, 0,0,0,0,0, 202212
 };
 
 int xround( real* x, int n )
@@ -283,20 +283,20 @@ int main( int argc, char* argv[])
 		if( LUv[ i ] <= negInfinity )
 		{
 			infc++;
-			LUv[ i ] = -1e10;
+			LUv[ i ] = -1e9;
 		}
 
 		if( Uvx[ i ] >= Infinity )
 		{
 			infc++;
-			Uvx[ i ] = 1e10;
+			Uvx[ i ] = 1e9;
 		}
 	}
 
 	if( infc > 0 )
 	{
 		msgo += sprintf( buf + msgo,
-			"Infinity var ranges were limited to [-1e10; 1e10] range.\n" );
+			"Infinity var ranges were limited to [-1e9; 1e9] range.\n" );
 	}
 
 	goto start;

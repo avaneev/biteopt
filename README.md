@@ -329,7 +329,7 @@ reaction kinetics (non-linear least squares problem).
           algorithm. Expected range is [1; 36]. Internally multiplies "iter"
           by sqrt(M).
     attc  The number of optimization attempts to perform.
-    stopc Stopping criteria (convergence check). 0: off, 1: 64*N, 2: 128*N.
+    stopc Stopping criteria (convergence check). 0: off, 1: 128*N, 2: 256*N.
     rf    Random number generator function; 0: use the default BiteOpt PRNG.
           Note that the external RNG should be seeded externally.
     rdata Data pointer to pass to the "rf" function.
@@ -477,15 +477,19 @@ rand(1, N) or in the range [1; N], depending on the `Allp` probability.
 Actual implementation is more complex as it uses the average of two such
 operations.
 
-![equation](https://latex.codecogs.com/gif.latex?mask=(2^{IntMantBits}-1)\gg&space;\lfloor&space;rand(0\ldots1)^4\cdot&space;MantSizeSh\rfloor)
+$$
+mask=(2^{IntMantBits}-1)\gg \lfloor rand(0\ldots1)^4\cdot MantSizeSh\rfloor
 
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]&space;=&space;\frac{\lfloor&space;x_\text{best}[i]\cdot&space;2^{IntMantBits}&space;\rfloor&space;\bigotimes&space;mask&space;}{2^{IntMantBits}})
+x_\text{new}[i] = \frac{\lfloor x_\text{best}[i]\cdot 2^{IntMantBits} \rfloor \bigotimes mask }{2^{IntMantBits}}
+$$
 
 Plus, with `Move` probability the move around a random previous solution
 is performed, utilizing a TPDF random value. This operation is performed
 twice.
 
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}(-1\ldots1)\cdot&space;CentSpan\cdot&space;(x_\text{new}[i]-x_\text{rand}[i]))
+$$
+x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}(-1\ldots1)\cdot CentSpan\cdot (x_\text{new}[i]-x_\text{rand}[i])
+$$
 
 2. The "step in the right direction" operation. Uses the random previous
 solution, chosen best and worst solutions, plus a difference of two other
@@ -493,11 +497,15 @@ random solutions. This is conceptually similar to Differential Evolution's
 "mutation" operation. The worst solution is selected symmetrically relative to
 the chosen best solution.
 
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-(x_\text{rand2}-x_\text{rand3}))}{2})
+$$
+x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-(x_\text{rand2}-x_\text{rand3}))}{2}
+$$
 
 3. Involves the best solution, centroid vector, and a random solution.
 
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=x_\text{best}[i]&plus;x_\text{rand}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{rand}[i]),&space;\quad&space;i=1,\ldots,N,\\&space;\quad&space;s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5&space;?&space;1:2))
+$$
+x_\text{new}[i]=x_\text{best}[i]&plus;x_\text{rand}[i]&plus;(-1)^{s}(x_\text{cent}[i]-x_\text{rand}[i]), \quad i=1,\ldots,N,\\ \quad s\in\{1,2\}=(\text{rand}(0\ldots1)<0.5 ? 1:2)
+$$
 
 4. The "entropy bit mixing" method. This method mixes (XORs) parameter values
 represented as raw bit strings drawn from an odd number of parameter vectors.
@@ -515,13 +523,19 @@ single-bit scale.
 
 6. The "short-cut" parameter vector generation.
 
-![equation](https://latex.codecogs.com/gif.latex?z=x_\text{best}[\text{rand}(1\ldots&space;N)])
+$$
+z=x_\text{best}[\text{rand}(1\ldots N)]
 
-![equation](https://latex.codecogs.com/gif.latex?x_\text{new}[i]=z,&space;\quad&space;i=1,\ldots,N)
+x_\text{new}[i]=z, \quad i=1,\ldots,N
+$$
 
 7. A solution generator that randomly combines solutions from the main and
 "old" populations. Conceptually, it can be called a weighted-random
 crossover that combines solutions from diverse sources.
+
+8. Solution generator that is DE-alike in its base. It calculates a centroid
+of a number of best solutions, and then applies "mutation" operation between
+the centroid and the solutions, using a random multiplier.
 
 ## SMA-ES ##
 
@@ -593,10 +607,10 @@ optimizer in BiteOpt.
 ## DEOpt ##
 
 The CDEOpt class implements a Differential Evolution-alike DFO solver, but in
-the population-handling framework of BiteOpt. "best/3/bit". Mutation parameter
-is fixed, equals to 0.25. Instead of a crossover, the method uses 1-bit
-randomization with 50% probability. Population size is equal to 20\*Dims, by
-default. Population is initialized with a Gaussian sampling.
+the population-handling framework of BiteOpt. "DE/best/3/bit". Mutation
+parameter is fixed, equals to 0.25. Instead of a crossover, the method uses
+1-bit randomization. Population size is equal to 20\*Dims, by default.
+Population is initialized with a Gaussian sampling.
 
 ## Citing ##
 

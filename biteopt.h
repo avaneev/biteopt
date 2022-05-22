@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.11"
+#define BITEOPT_VERSION "2022.12"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -61,6 +61,7 @@ public:
 		addHist( M1BAHist, "M1BAHist" );
 		addHist( M1BBHist, "M1BBHist" );
 		addHist( M2Hist, "M2Hist" );
+		addHist( M2BHist, "M2BHist" );
 		addHist( PopChangeIncrHist, "PopChangeIncrHist" );
 		addHist( PopChangeDecrHist, "PopChangeDecrHist" );
 		addHist( ParOpt2Hist, "ParOpt2Hist" );
@@ -86,6 +87,7 @@ public:
 		addHist( Gen4MixFacHist, "Gen4MixFacHist" );
 		addHist( Gen5BinvHist, "Gen5BinvHist" );
 		addHist( Gen7PowFacHist, "Gen7PowFacHist" );
+		addHist( Gen8NumHist, "Gen8NumHist" );
 		addHist( *ParOpt.getHists()[ 0 ], "ParOpt.CentPowHist" );
 		addHist( *ParOpt.getHists()[ 1 ], "ParOpt.RadPowHist" );
 		addHist( *ParOpt.getHists()[ 2 ], "ParOpt.EvalFacHist" );
@@ -104,7 +106,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			14 + aParamCount * 3 );
+			13 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -316,7 +318,14 @@ public:
 			}
 			else
 			{
-				generateSol3( rnd );
+				if( select( M2BHist, rnd ))
+				{
+					generateSol3( rnd );
+				}
+				else
+				{
+					generateSol8( rnd );
+				}
 			}
 		}
 		else
@@ -414,8 +423,6 @@ public:
 		}
 		else
 		{
-			applyHistsIncr( rnd );
-
 			if( NewCost == PopCosts[ CurPopSize1 ])
 			{
 				StallCount++;
@@ -431,7 +438,9 @@ public:
 					PopParams[ CurPopSize1 ], false, true );
 			}
 
-			updatePop( NewCost, TmpParams, false, false );
+			const int p = updatePop( NewCost, TmpParams, false, false );
+			const double pv = (double) p / CurPopSize1;
+			applyHistsIncr( rnd, 1.0 - pv * pv );
 
 			if( PushOpt != NULL && PushOpt != this &&
 				!PushOpt -> DoInitEvals && NewCost > PopCosts[ 0 ])
@@ -493,6 +502,8 @@ protected:
 		///<
 	CBiteOptHist< 2 > M2Hist; ///< Method 2's sub-method histogram.
 		///<
+	CBiteOptHist< 2 > M2BHist; ///< Method 2's sub-sub-method B histogram.
+		///<
 	CBiteOptHist< 2 > PopChangeIncrHist; ///< Population size change increase
 		///< histogram.
 		///<
@@ -536,6 +547,9 @@ protected:
 		///< inversion technique histogram.
 		///<
 	CBiteOptHist< 4 > Gen7PowFacHist; ///< Generator method 7's Power
+		///< histogram.
+		///<
+	CBiteOptHist< 4 > Gen8NumHist; ///< Generator method 8's NumSols
 		///< histogram.
 		///<
 	int CentUpdateCtr; ///< Centroid update counter.
@@ -1103,6 +1117,64 @@ protected:
 			{
 				Params[ i ] = getParamsOrdered(
 					(int) ( rv * CurPopSize ))[ i ];
+			}
+		}
+	}
+
+	/**
+	 * Solution generator that is DE-alike in its base. It calculates a
+	 * centroid of a number of best solutions, and then applies "mutation"
+	 * operation between the centroid and the solutions, using a random
+	 * multiplier.
+	 */
+
+	void generateSol8( CBiteRnd& rnd )
+	{
+		ptype* const Params = TmpParams;
+
+		const int NumSols = 4 + select( Gen8NumHist, rnd );
+		const ptype* rp[ 7 ];
+
+		// Calculate centroid of a number of selected solutions.
+
+		int si0 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+		const ptype* rp0 = getParamsOrdered( si0 );
+		rp[ 0 ] = rp0;
+		memcpy( Params, rp0, ParamCount * sizeof( Params[ 0 ]));
+
+		int j;
+		int i;
+
+		for( j = 1; j < NumSols; j++ )
+		{
+			si0 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+			rp0 = getParamsOrdered( si0 );
+			rp[ j ] = rp0;
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] += rp0[ i ];
+			}
+		}
+
+		const double m = 1.0 / NumSols;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			NewValues[ i ] = Params[ i ] * m; // Centroid.
+			Params[ i ] = (ptype) NewValues[ i ];
+		}
+
+		const double gm = 2.0 / sqrt( (double) NumSols );
+
+		for( j = 0; j < NumSols; j++ )
+		{
+			const double r = rnd.getGaussian() * gm;
+			rp0 = rp[ j ];
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] -= (ptype) (( NewValues[ i ] - rp0[ i ]) * r );
 			}
 		}
 	}
