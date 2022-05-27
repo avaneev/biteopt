@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.12"
+#define BITEOPT_VERSION "2022.13"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -88,6 +88,7 @@ public:
 		addHist( Gen5BinvHist, "Gen5BinvHist" );
 		addHist( Gen7PowFacHist, "Gen7PowFacHist" );
 		addHist( Gen8NumHist, "Gen8NumHist" );
+		addHist( Gen8SpanHist, "Gen8SpanHist" );
 		addHist( *ParOpt.getHists()[ 0 ], "ParOpt.CentPowHist" );
 		addHist( *ParOpt.getHists()[ 1 ], "ParOpt.RadPowHist" );
 		addHist( *ParOpt.getHists()[ 2 ], "ParOpt.EvalFacHist" );
@@ -438,14 +439,14 @@ public:
 					PopParams[ CurPopSize1 ], false, true );
 			}
 
-			const int p = updatePop( NewCost, TmpParams, false, false );
+			const int p = updatePop( NewCost, TmpParams, true, false );
 			const double pv = (double) p / CurPopSize1;
 			applyHistsIncr( rnd, 1.0 - pv * pv );
 
 			if( PushOpt != NULL && PushOpt != this &&
 				!PushOpt -> DoInitEvals && NewCost > PopCosts[ 0 ])
 			{
-				PushOpt -> updatePop( NewCost, TmpParams, false, true );
+				PushOpt -> updatePop( NewCost, TmpParams, true, true );
 				PushOpt -> updateParPop( NewCost, TmpParams );
 			}
 
@@ -466,12 +467,14 @@ public:
 
 		CentUpdateCtr++;
 
-		if( CentUpdateCtr >= CurPopSize * 32 )
+		if( CentUpdateCtr >= CurPopSize * 8 )
 		{
-			// Update centroids of parallel populations that use running
-			// average, to reduce error accumulation.
+			// Update centroids of populations that use running average, to
+			// reduce error accumulation.
 
 			CentUpdateCtr = 0;
+
+			updateCentroid();
 
 			for( i = 0; i < ParPopCount; i++ )
 			{
@@ -550,6 +553,9 @@ protected:
 		///< histogram.
 		///<
 	CBiteOptHist< 4 > Gen8NumHist; ///< Generator method 8's NumSols
+		///< histogram.
+		///<
+	CBiteOptHist< 4 > Gen8SpanHist; ///< Generator method 8's random span
 		///< histogram.
 		///<
 	int CentUpdateCtr; ///< Centroid update counter.
@@ -770,8 +776,8 @@ protected:
 
 			for( i = a; i < b; i++ )
 			{
-				Params[ i ] -= (ptype) (( Params[ i ] - rp2[ i ]) * m1 );
-				Params[ i ] -= (ptype) (( Params[ i ] - rp2[ i ]) * m2 );
+				Params[ i ] += (ptype) (( rp2[ i ] - Params[ i ]) * m1 );
+				Params[ i ] += (ptype) (( rp2[ i ] - Params[ i ]) * m2 );
 			}
 		}
 	}
@@ -804,8 +810,8 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			Params[ i ] = rp1[ i ] - ((( rp3[ i ] - rp2[ i ]) +
-				( rp5[ i ] - rp4[ i ])) >> 1 );
+			Params[ i ] = rp1[ i ] + ((( rp2[ i ] - rp3[ i ]) +
+				( rp4[ i ] - rp5[ i ])) >> 1 );
 		}
 	}
 
@@ -836,8 +842,8 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			Params[ i ] = rp1[ i ] - (( rp3[ i ] - rp2[ i ]) +
-				( rp5[ i ] - rp4[ i ]));
+			Params[ i ] = rp1[ i ] + (( rp2[ i ] - rp3[ i ]) +
+				( rp4[ i ] - rp5[ i ]));
 		}
 	}
 
@@ -920,11 +926,6 @@ protected:
 
 		const ptype* const MinParams = getParamsOrdered(
 			getMinSolIndex( 3, rnd, CurPopSize ));
-
-		if( NeedCentUpdate )
-		{
-			updateCentroid();
-		}
 
 		const ptype* const cp = getCentroid();
 
@@ -1165,7 +1166,8 @@ protected:
 			Params[ i ] = (ptype) NewValues[ i ];
 		}
 
-		const double gm = 2.0 / sqrt( (double) NumSols );
+		static const double Spans[ 4 ] = { 1.5, 2.0, 2.5, 3.0 };
+		const double gm = Spans[ select( Gen8SpanHist, rnd )] * sqrt( m );
 
 		for( j = 0; j < NumSols; j++ )
 		{
@@ -1174,7 +1176,7 @@ protected:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] -= (ptype) (( NewValues[ i ] - rp0[ i ]) * r );
+				Params[ i ] += (ptype) (( rp0[ i ] - NewValues[ i ]) * r );
 			}
 		}
 	}
