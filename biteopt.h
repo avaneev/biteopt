@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.13"
+#define BITEOPT_VERSION "2022.14"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -85,13 +85,9 @@ public:
 		addHist( Gen1MoveAsyncHist, "Gen1MoveAsyncHist" );
 		addHist( Gen1MoveSpanHist, "Gen1MoveSpanHist" );
 		addHist( Gen4MixFacHist, "Gen4MixFacHist" );
-		addHist( Gen5BinvHist, "Gen5BinvHist" );
 		addHist( Gen7PowFacHist, "Gen7PowFacHist" );
 		addHist( Gen8NumHist, "Gen8NumHist" );
 		addHist( Gen8SpanHist, "Gen8SpanHist" );
-		addHist( *ParOpt.getHists()[ 0 ], "ParOpt.CentPowHist" );
-		addHist( *ParOpt.getHists()[ 1 ], "ParOpt.RadPowHist" );
-		addHist( *ParOpt.getHists()[ 2 ], "ParOpt.EvalFacHist" );
 	}
 
 	/**
@@ -107,7 +103,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			13 + aParamCount * 3 );
+			10 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -117,11 +113,11 @@ public:
 		initBuffers( aParamCount, aPopSize );
 
 		ParOpt.Owner = this;
-		ParOpt.updateDims( aParamCount );
+		ParOpt.updateDims( aParamCount, 11 + aPopSize / 3 );
 		ParOptPop.initBuffers( aParamCount, aPopSize );
 
 		ParOpt2.Owner = this;
-		ParOpt2.updateDims( aParamCount );
+		ParOpt2.updateDims( aParamCount, aPopSize * 4 / 3 );
 		ParOpt2Pop.initBuffers( aParamCount, aPopSize );
 
 		OldPop.initBuffers( aParamCount, aPopSize );
@@ -191,7 +187,7 @@ public:
 
 		updateCentroid();
 
-		AllpProbDamp = 1.8 / ParamCount;
+		AllpProbDamp = 1.8 * ParamCountI;
 		CentUpdateCtr = 0;
 
 		ParOpt.init( rnd, InitParams, InitRadius );
@@ -351,9 +347,9 @@ public:
 					UseParOpt = 1; // On stall, select optimizer 2.
 				}
 
-				if( sc > ParamCount * 64 )
+				if( sc > ParamCount * 32 )
 				{
-					ParOpt.init( rnd, getBestParams() );
+					ParOpt.init( rnd, ParOpt.getBestParams(), 0.5 );
 					ParOptPop.resetCurPopPos();
 				}
 
@@ -368,9 +364,9 @@ public:
 					UseParOpt = 0; // On stall, select optimizer 1.
 				}
 
-				if( sc > ParamCount * 16 )
+				if( sc > ParamCount * 8 )
 				{
-					ParOpt2.init( rnd, getBestParams(), -1.0 );
+					ParOpt2.init( rnd, ParOpt2.getBestParams(), 1.0 );
 					ParOpt2Pop.resetCurPopPos();
 				}
 
@@ -418,7 +414,7 @@ public:
 					// Increase population size on fail.
 
 					incrCurPopSize( CurPopSize1 -
-						(int) ( rnd.getRndValueSqr() * CurPopSize ));
+						rnd.getSqrInt( CurPopSize ));
 				}
 			}
 		}
@@ -433,15 +429,15 @@ public:
 				StallCount = 0;
 			}
 
-			if( rnd.getRndValue() < 1.0 / ParamCount )
+			if( rnd.get() < ParamCountI )
 			{
 				OldPop.updatePop( PopCosts[ CurPopSize1 ],
 					PopParams[ CurPopSize1 ], false, true );
 			}
 
 			const int p = updatePop( NewCost, TmpParams, true, false );
-			const double pv = (double) p / CurPopSize1;
-			applyHistsIncr( rnd, 1.0 - pv * pv );
+			const double pv = 1.0 - p * CurPopSizeI;
+			applyHistsIncr( rnd, pv );
 
 			if( PushOpt != NULL && PushOpt != this &&
 				!PushOpt -> DoInitEvals && NewCost > PopCosts[ 0 ])
@@ -546,9 +542,6 @@ protected:
 	CBiteOptHist< 4 > Gen4MixFacHist; ///< Generator method 4's mixing
 		///< count histogram.
 		///<
-	CBiteOptHist< 2 > Gen5BinvHist; ///< Generator method 5's random
-		///< inversion technique histogram.
-		///<
 	CBiteOptHist< 4 > Gen7PowFacHist; ///< Generator method 7's Power
 		///< histogram.
 		///<
@@ -635,7 +628,7 @@ protected:
 	{
 		if( select( ParPopPHist[ gi ], rnd ))
 		{
-			return( *ParPops[ (int) ( rnd.getRndValue() * ParPopCount )]);
+			return( *ParPops[ rnd.getInt( ParPopCount )]);
 		}
 
 		return( *this );
@@ -684,7 +677,7 @@ protected:
 	int getMinSolIndex( const int gi, CBiteRnd& rnd, const int ps )
 	{
 		static const double pp[ 4 ] = { 0.05, 0.125, 0.25, 0.5 };
-		const double r = ps * pow( rnd.getRndValue(),
+		const double r = ps * pow( rnd.get(),
 			ps * pp[ select( MinSolPwrHist[ gi ], rnd )]);
 
 		static const double rm[ 4 ] = { 0.0, 0.125, 0.25, 0.5 };
@@ -716,7 +709,7 @@ protected:
 		int b;
 		bool DoAllp = false;
 
-		if( rnd.getRndValue() < AllpProbDamp )
+		if( rnd.get() < AllpProbDamp )
 		{
 			if( select( Gen1AllpHist, rnd ))
 			{
@@ -731,19 +724,19 @@ protected:
 		}
 		else
 		{
-			a = (int) ( rnd.getRndValue() * ParamCount );
+			a = rnd.getInt( ParamCount );
 			b = a + 1;
 		}
 
 		// Bitmask inversion operation, works as the main "driver" of
 		// optimization process.
 
-		const double r1 = rnd.getRndValue();
+		const double r1 = rnd.get();
 		const double r12 = r1 * r1;
 		const int ims = (int) ( r12 * r12 * 48.0 );
 		const ptype imask = (ptype) ( IntMantMask >> ims );
 
-		const int im2s = (int) ( rnd.getRndValueSqr() * 96.0 );
+		const int im2s = rnd.getSqrInt( 96 );
 		const ptype imask2 = (ptype) ( im2s > 63 ? 0 : IntMantMask >> im2s );
 
 		const int si1 = (int) ( r1 * r12 * CurPopSize );
@@ -757,7 +750,7 @@ protected:
 
 		if( select( Gen1MoveHist, rnd ))
 		{
-			const int si2 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+			const int si2 = rnd.getSqrInt( CurPopSize );
 			const ptype* const rp2 = getParamsOrdered( si2 );
 
 			if( select( Gen1MoveAsyncHist, rnd ))
@@ -794,10 +787,10 @@ protected:
 		const ptype* const rp1 = getParamsOrdered( si1 );
 		const ptype* const rp3 = getParamsOrdered( CurPopSize1 - si1 );
 
-		const int si2 = 1 + (int) ( rnd.getRndValue() * CurPopSize1 );
+		const int si2 = 1 + rnd.getInt( CurPopSize1 );
 		const ptype* const rp2 = getParamsOrdered( si2 );
 
-		const int si4 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+		const int si4 = rnd.getSqrInt( CurPopSize );
 		const ptype* const rp4 = getParamsOrdered( si4 );
 		const ptype* const rp5 = getParamsOrdered( CurPopSize1 - si4 );
 
@@ -828,13 +821,13 @@ protected:
 		const int si1 = getMinSolIndex( 2, rnd, CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
 
-		const int si2 = (int) ( rnd.getRndValue() * CurPopSize );
+		const int si2 = rnd.getInt( CurPopSize );
 		const ptype* const rp2 = getParamsOrdered( si2 );
 		const ptype* const rp3 = getParamsOrdered( CurPopSize1 - si2 );
 
 		const CBiteOptPop& AltPop = selectAltPop( 0, rnd );
 
-		const int si4 = (int) ( rnd.getRndValue() * CurPopSize * 0.5 );
+		const int si4 = rnd.getInt( CurPopSize / 2 );
 		const ptype* const rp4 = AltPop.getParamsOrdered( si4 );
 		const ptype* const rp5 = AltPop.getParamsOrdered( CurPopSize1 - si4 );
 
@@ -858,33 +851,45 @@ protected:
 
 		memset( Params, 0, ParamCount * sizeof( Params[ 0 ]));
 
-		const int si1 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+		const int si1 = rnd.getSqrInt( CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
 
 		const int PairCount = 3;
-		int PopIdx[ 1 + 2 * PairCount ];
+		const int pc = 1 + 2 * PairCount;
+		int PopIdx[ pc ];
 		PopIdx[ 0 ] = si1;
 
 		int pp = 1;
 		int i;
 		int j;
 
-		while( pp < 1 + 2 * PairCount )
+		if( CurPopSize1 <= pc )
 		{
-			const int sii = (int) ( rnd.getRndValue() * CurPopSize );
-
-			for( j = 0; j < pp; j++ )
+			while( pp < pc )
 			{
-				if( PopIdx[ j ] == sii )
-				{
-					break;
-				}
-			}
-
-			if( j == pp )
-			{
-				PopIdx[ pp ] = sii;
+				PopIdx[ pp ] = rnd.getInt( CurPopSize );
 				pp++;
+			}
+		}
+		else
+		{
+			while( pp < pc )
+			{
+				const int sii = rnd.getInt( CurPopSize );
+
+				for( j = 0; j < pp; j++ )
+				{
+					if( PopIdx[ j ] == sii )
+					{
+						break;
+					}
+				}
+
+				if( j == pp )
+				{
+					PopIdx[ pp ] = sii;
+					pp++;
+				}
 			}
 		}
 
@@ -898,19 +903,16 @@ protected:
 				Params[ i ] += rp2[ i ] - rp3[ i ];
 			}
 
-			if( rnd.getBit() )
-			{
-				const int k = (int) ( rnd.getRndValue() * ParamCount );
-				const int b = (int) ( rnd.getRndValue() * IntMantBits );
+			const int k = rnd.getInt( ParamCount );
+			const int b = rnd.getInt( IntMantBits );
 
-				Params[ k ] &= ~( (ptype) 1 << b );
-				Params[ k ] |= (ptype) rnd.getBit() << b;
-			}
+			Params[ k ] += ( (ptype) rnd.getBit() << b ) -
+				( (ptype) rnd.getBit() << b );
 		}
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			Params[ i ] = rp1[ i ] + ( Params[ i ] >> 2 );
+			Params[ i ] = rp1[ i ] + ( Params[ i ] >> 1 );
 		}
 	}
 
@@ -929,7 +931,7 @@ protected:
 
 		const ptype* const cp = getCentroid();
 
-		const int si1 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+		const int si1 = rnd.getSqrInt( CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
 		int i;
 
@@ -965,7 +967,7 @@ protected:
 		const int km = 3 + ( select( Gen4MixFacHist, rnd ) << 1 );
 
 		int p = rnd.getBit();
-		int si1 = (int) ( rnd.getRndValueSqr() * UseSize[ p ]);
+		int si1 = rnd.getSqrInt( UseSize[ p ]);
 		const ptype* rp1 = UseParams[ p ][ si1 ];
 
 		memcpy( Params, rp1, ParamCount * sizeof( Params[ 0 ]));
@@ -975,7 +977,7 @@ protected:
 		for( k = 1; k < km; k++ )
 		{
 			p = rnd.getBit();
-			si1 = (int) ( rnd.getRndValueSqr() * UseSize[ p ]);
+			si1 = rnd.getSqrInt( UseSize[ p ]);
 			rp1 = UseParams[ p ][ si1 ];
 
 			int i;
@@ -1003,26 +1005,26 @@ protected:
 
 		const CBiteOptPop& ParPop = selectParPop( 2, rnd );
 
-		const ptype* const CrossParams1 = ParPop.getParamsOrdered(
-			(int) ( rnd.getRndValueSqr() * ParPop.getCurPopSize() ));
+		const int si1 = rnd.getSqrInt( ParPop.getCurPopSize() );
+		const ptype* const CrossParams1 = ( rnd.getBit() ?
+			ParPop.getParamsOrdered( si1 ) :
+			ParPop.getParamsOrdered( ParPop.getCurPopSize() - 1 - si1 ));
 
 		const CBiteOptPop& AltPop = selectAltPop( 2, rnd );
 
 		const ptype* const CrossParams2 = AltPop.getParamsOrdered(
-			(int) ( rnd.getRndValueSqr() * CurPopSize ));
+			rnd.getSqrInt( CurPopSize ));
 
-		const bool UseInv = select( Gen5BinvHist, rnd );
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			// Produce a random bit mixing mask.
 
-			const ptype crpl = (ptype) ( rnd.getUniformRaw2() & IntMantMask );
+			const ptype crpl = (ptype) ( rnd.getRaw() & IntMantMask );
 
 			const ptype v1 = CrossParams1[ i ];
-			const ptype v2 = ( UseInv && rnd.getBit() ?
-				~CrossParams2[ i ] : CrossParams2[ i ]);
+			const ptype v2 = CrossParams2[ i ];
 
 			Params[ i ] = ( v1 & crpl ) | ( v2 & ~crpl );
 
@@ -1030,10 +1032,10 @@ protected:
 			{
 				// Randomize a single bit, with 50% probability.
 
-				const int b = (int) ( rnd.getRndValue() * IntMantBits );
+				const int b = rnd.getInt( IntMantBits );
 
-				Params[ i ] &= ~( (ptype) 1 << b );
-				Params[ i ] |= (ptype) rnd.getBit() << b;
+				Params[ i ] += ( (ptype) rnd.getBit() << b ) -
+					( (ptype) rnd.getBit() << b );
 			}
 		}
 	}
@@ -1051,12 +1053,20 @@ protected:
 		const CBiteOptPop& ParPop = selectParPop( 2, rnd );
 
 		CrossParams[ 0 ] = ParPop.getParamsOrdered(
-			(int) ( rnd.getRndValueSqr() * ParPop.getCurPopSize() ));
+			rnd.getSqrInt( ParPop.getCurPopSize() ));
 
 		const CBiteOptPop& AltPop = selectAltPop( 2, rnd );
 
-		CrossParams[ 1 ] = AltPop.getParamsOrdered(
-			(int) ( rnd.getRndValueSqr() * CurPopSize ));
+		if( rnd.getBit() )
+		{
+			CrossParams[ 1 ] = AltPop.getParamsOrdered(
+				CurPopSize1 - rnd.getSqrInt( CurPopSize ));
+		}
+		else
+		{
+			CrossParams[ 1 ] = AltPop.getParamsOrdered(
+				rnd.getSqrInt( CurPopSize ));
+		}
 
 		int i;
 
@@ -1076,10 +1086,10 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const double r = rnd.getRndValueSqr();
+		const double r = rnd.getSqr();
 		const int si = (int) ( r * r * CurPopSize );
 		const double v = getRealValue( getParamsOrdered( si ),
-			(int) ( rnd.getRndValue() * ParamCount ));
+			rnd.getInt( ParamCount ));
 
 		int i;
 
@@ -1101,13 +1111,13 @@ protected:
 		ptype* const Params = TmpParams;
 
 		const bool UseOldPop = ( OldPop.getCurPopPos() > 2 );
-		static const double p[ 4 ] = { 1.0, 1.5, 2.0, 2.5 };
+		static const double p[ 4 ] = { 1.5, 1.75, 2.0, 2.25 };
 		const double pwr = p[ select( Gen7PowFacHist, rnd )];
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			const double rv = pow( rnd.getRndValue(), pwr );
+			const double rv = pow( rnd.get(), pwr );
 
 			if( UseOldPop && rnd.getBit() && rnd.getBit() )
 			{
@@ -1133,12 +1143,12 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const int NumSols = 4 + select( Gen8NumHist, rnd );
-		const ptype* rp[ 7 ];
+		const int NumSols = 5 + select( Gen8NumHist, rnd );
+		const ptype* rp[ 8 ];
 
 		// Calculate centroid of a number of selected solutions.
 
-		int si0 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+		int si0 = rnd.getSqrInt( CurPopSize );
 		const ptype* rp0 = getParamsOrdered( si0 );
 		rp[ 0 ] = rp0;
 		memcpy( Params, rp0, ParamCount * sizeof( Params[ 0 ]));
@@ -1148,7 +1158,7 @@ protected:
 
 		for( j = 1; j < NumSols; j++ )
 		{
-			si0 = (int) ( rnd.getRndValueSqr() * CurPopSize );
+			si0 = rnd.getSqrInt( CurPopSize );
 			rp0 = getParamsOrdered( si0 );
 			rp[ j ] = rp0;
 
@@ -1166,7 +1176,7 @@ protected:
 			Params[ i ] = (ptype) NewValues[ i ];
 		}
 
-		static const double Spans[ 4 ] = { 1.5, 2.0, 2.5, 3.0 };
+		static const double Spans[ 4 ] = { 2.0, 2.5, 3.0, 3.5 };
 		const double gm = Spans[ select( Gen8SpanHist, rnd )] * sqrt( m );
 
 		for( j = 0; j < NumSols; j++ )
@@ -1334,7 +1344,7 @@ public:
 		{
 			while( true )
 			{
-				PushOpt = Opts[ (int) ( rnd.getRndValue() * OptCount )];
+				PushOpt = Opts[ rnd.getInt( OptCount )];
 
 				if( PushOpt != CurOpt )
 				{

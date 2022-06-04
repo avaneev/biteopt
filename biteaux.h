@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.12
+ * @version 2022.14
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -43,19 +43,17 @@
  * of the default PRNG. Note that if the external produces 64-bit random
  * values, they can be safely truncated/typecasted to the "uint32_t" type. If
  * the external PRNG produces floating-point values, they should be scaled to
- * the 32-bit unsigned integer range.
+ * the 32-bit unsigned integer range. 32-bit PRNG output is required for
+ * compatibility with older 32-bit PRNGs (but CBiteRnd is 64-bit PRNG).
  */
 
 typedef uint32_t( *biteopt_rng )( void* rng_data );
 
 /**
  * Class that implements a pseudo-random number generator (PRNG). The default
- * implementation includes a relatively fast PRNG that uses a classic formula
- * "seed = ( a * seed + c ) % m" (LCG), in a rearranged form. This
- * implementation uses bits 35-63 (29 bits) of the state variable as a random
- * output. See
- * https://en.wikipedia.org/wiki/Linear_congruential_generator for more
- * details.
+ * implementation includes a fast high-quality PRNG that uses a reduced
+ * PRVHASH core function (with 2^95 period). See
+ * https://github.com/avaneev/prvhash for more details.
  */
 
 class CBiteRnd
@@ -98,6 +96,7 @@ public:
 
 		BitsLeft = 0;
 		Seed = (uint64_t) NewSeed;
+		lcg = 0;
 
 		// Skip first values to make PRNG "settle down".
 
@@ -108,57 +107,56 @@ public:
 	}
 
 	/**
-	 * @return Inverse scale of "raw" random values returned by functions with
-	 * the "raw" suffix.
-	 */
-
-	inline static double getRawScaleInv()
-	{
-		static const double m = 0.5 / ( 1ULL << ( raw_bits - 1 ));
-
-		return( m );
-	}
-
-	/**
 	 * @return Random number in the range [0; 1).
 	 */
 
-	double getRndValue()
+	double get()
 	{
-		return( advance() * getRawScaleInv() );
+		return(( advance() >> ( 64 - 53 )) * 0x1p-53 );
 	}
 
 	/**
-	 * @return Random number in the range [0; 1), squared.
+	 * @param N1 Integer value range.
+	 * @return Random integer number in the range [0; N1). N1 denotes the
+	 * number of bins, not the maximal returned value.
 	 */
 
-	double getRndValueSqr()
+	int getInt( const int N1 )
 	{
-		const double v = advance() * getRawScaleInv();
+		return( (int) ( get() * N1 ));
+	}
+
+	/**
+	 * @return Random number in the range [0; 1). Beta distribution with
+	 * Alpha=0.5, Beta=1 (squared).
+	 */
+
+	double getSqr()
+	{
+		const double v = ( advance() >> ( 64 - 53 )) * 0x1p-53;
 
 		return( v * v );
+	}
+
+	/**
+	 * @param N1 Integer value range.
+	 * @return Random integer number in the range [0; N1). Beta distribution
+	 * with Alpha=0.5, Beta=1 (squared). N1 denotes the number of bins, not
+	 * the maximal returned value.
+	 */
+
+	int getSqrInt( const int N1 )
+	{
+		return( (int) ( getSqr() * N1 ));
 	}
 
 	/**
 	 * @return Uniformly-distributed random number in the "raw" scale.
 	 */
 
-	uint32_t getUniformRaw()
+	uint64_t getRaw()
 	{
 		return( advance() );
-	}
-
-	/**
-	 * @return Dual bit-size uniformly-distributed random number in the "raw"
-	 * scale.
-	 */
-
-	uint64_t getUniformRaw2()
-	{
-		uint64_t v = (uint64_t) advance();
-		v |= (uint64_t) advance() << raw_bits;
-
-		return( v );
 	}
 
 	/**
@@ -167,37 +165,10 @@ public:
 
 	double getTPDF()
 	{
-		const int64_t v1 = (int64_t) advance();
-		const int64_t v2 = (int64_t) advance();
+		const int64_t v1 = (int64_t) ( advance() >> ( 64 - 53 ));
+		const int64_t v2 = (int64_t) ( advance() >> ( 64 - 53 ));
 
-		return(( v1 - v2 ) * getRawScaleInv() );
-	}
-
-	/**
-	 * Function returns the next random bit, usually used for 50% probability
-	 * evaluations efficiently.
-	 */
-
-	int getBit()
-	{
-		if( BitsLeft == 0 )
-		{
-			BitPool = getUniformRaw();
-
-			const int b = ( BitPool & 1 );
-
-			BitsLeft = raw_bits - 1;
-			BitPool >>= 1;
-
-			return( b );
-		}
-
-		const int b = ( BitPool & 1 );
-
-		BitsLeft--;
-		BitPool >>= 1;
-
-		return( b );
+		return(( v1 - v2 ) * 0x1p-53 );
 	}
 
 	/**
@@ -215,10 +186,10 @@ public:
 
 		do
 		{
-			u = getRndValue();
-			v = getRndValue();
+			u = get();
+			v = get();
 
-			if( u <= 0.0 || v <= 0.0 )
+			if( u == 0.0 || v == 0.0 )
 			{
 				u = 1.0;
 				v = 1.0;
@@ -233,30 +204,48 @@ public:
 			{
 				break;
 			}
-		} while(( q > 0.27846 ) || ( v * v > -4.0 * log( u ) * u * u ));
+
+		} while( q > 0.27846 || v * v > -4.0 * log( u ) * u * u );
 
 		return( v / u );
 	}
 
+	/**
+	 * Function returns the next random bit, usually used for 50% probability
+	 * evaluations efficiently.
+	 */
+
+	int getBit()
+	{
+		if( BitsLeft == 0 )
+		{
+			BitPool = advance();
+
+			const int b = (int) ( BitPool & 1 );
+
+			BitsLeft = 63;
+			BitPool >>= 1;
+
+			return( b );
+		}
+
+		const int b = (int) ( BitPool & 1 );
+
+		BitsLeft--;
+		BitPool >>= 1;
+
+		return( b );
+	}
+
 protected:
-	static const int raw_bits = 29; ///< The number of higher bits used for
-		///< PRNG output.
-		///<
-	static const int raw_shift = sizeof( uint64_t ) * 8 - raw_bits; ///<
-		///< "seed" value's bit shift to obtain the output value.
-		///<
-	static const int raw_shift32 = sizeof( uint32_t ) * 8 - raw_bits; ///<
-		///< Value's bit shift to obtain the output value from an external
-		///< RNG.
-		///<
 	biteopt_rng rf; ///< External random number generator to use; NULL: use
 		///< the default PRNG.
 		///<
 	void* rdata; ///< Data pointer to pass to the "rf" function.
 		///<
-	uint64_t Seed; ///< The current random seed value.
+	uint64_t Seed, lcg; ///< PRNG state variables.
 		///<
-	uint32_t BitPool; ///< Bit pool.
+	uint64_t BitPool; ///< Bit pool.
 		///<
 	int BitsLeft; ///< The number of bits left in the bit pool.
 		///<
@@ -265,23 +254,32 @@ protected:
 	 * Function advances the PRNG and returns the next PRNG value.
 	 */
 
-	uint32_t advance()
+	uint64_t advance()
 	{
 		if( rf != NULL )
 		{
-			return(( *rf )( rdata ) >> raw_shift32 );
+			uint64_t r = ( *rf )( rdata );
+			r |= (uint64_t) ( *rf )( rdata ) << 32;
+
+			return( r );
 		}
 
-		Seed = ( Seed + 15509ULL ) * 11627070389458151377ULL;
+		Seed *= lcg * 2 + 1;
+		const uint64_t rs = Seed >> 32 | Seed << 32;
+		lcg += Seed + 0x5555555555555555;
+		Seed = rs + 0xAAAAAAAAAAAAAAAA;
 
-		return( (uint32_t) ( Seed >> raw_shift ));
+		return( lcg );
 	}
 };
 
 /**
  * Histogram class. Used to keep track of success of various choices. Updates
- * probabilities of future choices based on the current histogram state. Uses
- * a self-optimization technique for internal parameters.
+ * probabilities of future choices based on the selection outcome.
+ *
+ * Called "histogram" for historic reasons. The current implementation uses
+ * bubble-sort-alike method to update a vector of possible choices. The
+ * selection is made as a weighted-random value draw from this vector.
  */
 
 class CBiteOptHistBase
@@ -295,40 +293,56 @@ public:
 
 	CBiteOptHistBase( const int aCount )
 		: Count( aCount )
-		, Count1( aCount - 1 )
-		, m( 1.0 / aCount )
+		, CountSp( Count * SparseMul )
+		, CountSp1( CountSp - 1 )
 	{
 	}
 
 	/**
-	 * This function resets histogram, should be called before calling other
-	 * functions, including after object's construction.
+	 * This function resets *this object, should be called before calling
+	 * other functions, including after object's construction.
 	 *
 	 * @param rnd PRNG object.
 	 */
 
 	void reset( CBiteRnd& rnd )
 	{
-		const int b = rnd.getBit();
-		IncrDecrHist[ 1 ] = b;
-		IncrDecrHist[ 2 ] = 1 - b;
-		IncrDecr = 2 - b;
+		int j;
 
-		int i;
-
-		for( i = 0; i < Count; i++ )
+		for( j = 0; j < SlotCount; j++ )
 		{
-			HistIncr[ i ] = 1;
-			HistSum[ i ] = 1;
+			int i;
+
+			for( i = 0; i < Count; i++ )
+			{
+				int k;
+
+				for( k = 0; k < SparseMul; k++ )
+				{
+					Sels[ j ][ i * SparseMul + k ] = i;
+				}
+			}
+
+			// Randomized swap-mixing.
+
+			for( i = 0; i < CountSp * SparseMul; i++ )
+			{
+				const int i1 = rnd.getInt( CountSp );
+				const int i2 = rnd.getInt( CountSp );
+
+				const int t = Sels[ j ][ i1 ];
+				Sels[ j ][ i1 ] = Sels[ j ][ i2 ];
+				Sels[ j ][ i2 ] = t;
+			}
 		}
 
-		updateProbs();
+		Slot = 0;
 
 		select( rnd );
 	}
 
 	/**
-	 * An auxiliary function that returns histogram's choice count.
+	 * An auxiliary function that returns choice count.
 	 */
 
 	int getChoiceCount() const
@@ -346,13 +360,16 @@ public:
 
 	void incr( CBiteRnd& rnd, const double v = 1.0 )
 	{
-		IncrDecrHist[ IncrDecr ]++;
-		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
+		if( Selp > 0 && rnd.get() < v * v )
+		{
+			Sels[ Slot ][ Selp ] = Sels[ Slot ][ Selp - 1 ];
+			Sels[ Slot ][ Selp - 1 ] = Sel;
 
-		HistIncr[ Sel ] += v * IncrDecr;
-		HistSum[ Sel ] += IncrDecr;
-
-		updateProbs();
+			if( Slot + 1 < SlotCount )
+			{
+				Slot++;
+			}
+		}
 	}
 
 	/**
@@ -364,38 +381,33 @@ public:
 
 	void decr( CBiteRnd& rnd )
 	{
-		IncrDecrHist[ IncrDecr ]--;
-		IncrDecr = 1 + ( IncrDecrHist[ 2 ] > IncrDecrHist[ 1 ]);
+		if( Selp < CountSp1 )
+		{
+			Sels[ Slot ][ Selp ] = Sels[ Slot ][ Selp + 1 ];
+			Sels[ Slot ][ Selp + 1 ] = Sel;
+		}
 
-		HistSum[ Sel ] += IncrDecr;
-
-		updateProbs();
+		if( Slot > 0 )
+		{
+			Slot--;
+		}
 	}
 
 	/**
-	 * Function produces a random choice index based on the current histogram
-	 * state. Note that "select" functions can only be called once for a given
-	 * histogram during the optimize() function call.
+	 * Function produces a random choice index based on the current *this
+	 * object's state. Note that "select" functions can only be called once
+	 * for a given *this object during the optimize() function call.
 	 *
 	 * @param rnd PRNG object.
 	 */
 
 	int select( CBiteRnd& rnd )
 	{
-		const double rv = rnd.getUniformRaw() * ProbSum;
-		int i;
+		const double r = rnd.get();
+		Selp = (int) ( r * sqrt( r ) * CountSp );
+		Sel = Sels[ Slot ][ Selp ];
 
-		for( i = 0; i < Count1; i++ )
-		{
-			if( rv < Probs[ i ])
-			{
-				Sel = i;
-				return( i );
-			}
-		}
-
-		Sel = Count1;
-		return( Count1 );
+		return( Sel );
 	}
 
 	/**
@@ -408,53 +420,30 @@ public:
 	}
 
 protected:
-	static const int MaxCount = 8; ///< The maximal number of choices
+	static const int MaxCount = 4; ///< The maximal number of choices
 		///< supported.
+		///<
+	static const int SparseMul = 4; ///< Multiplier used to obtain an actual
+		///< length of the choice vector.
+		///<
+	static const int SlotCount = 4; ///< The number of choice vectors in use.
 		///<
 	int Count; ///< The number of choices in use.
 		///<
-	int Count1; ///< Equals Count-1.
+	int CountSp; ///< = Count * SparseMul. The actual length of the choice
+		///< vector.
 		///<
-	double m; ///< Multiplier (depends on Count).
+	int CountSp1; ///< = CountSp - 1.
 		///<
-	double HistIncr[ MaxCount ]; ///< Increments histogram.
-		///<
-	double HistSum[ MaxCount ]; ///< Increase+decrease sum histogram.
-		///<
-	int IncrDecrHist[ 3 ]; ///< IncrDecr self-optimization histogram, element
-		///< 0 not used for efficiency.
-		///<
-	int IncrDecr; ///< Histogram-driven increment or decrement, can be equal
-		///< to 1 or 2.
-		///<
-	double Probs[ MaxCount ]; ///< Probabilities, cumulative.
-		///<
-	double ProbSum; ///< Sum of probabilities, for random variable scaling.
+	int Sels[ SlotCount ][ MaxCount * SparseMul ]; ///< Choice vector.
 		///<
 	int Sel; ///< The latest selected choice. Available only after the
 		///< select() function calls.
 		///<
-
-	/**
-	 * Function updates probabilities of choices based on the histogram state.
-	 */
-
-	void updateProbs()
-	{
-		const double mh = m * IncrDecr;
-		ProbSum = 0.0;
-		int i;
-
-		for( i = 0; i < Count; i++ )
-		{
-			const double h = HistIncr[ i ] / HistSum[ i ];
-			const double v = ( h < mh ? mh : h ) + ProbSum;
-			Probs[ i ] = v;
-			ProbSum = v;
-		}
-
-		ProbSum *= CBiteRnd :: getRawScaleInv();
-	}
+	int Selp; ///< The index of the choice in the Sels vector.
+		///<
+	int Slot; ///< The current Sels vector, depending on incr/decr.
+		///<
 };
 
 /**
@@ -535,8 +524,10 @@ public:
 		deleteBuffers();
 
 		ParamCount = aParamCount;
+		ParamCountI = 1.0 / ParamCount;
 		PopSize = aPopSize;
 		CurPopSize = aPopSize;
+		CurPopSizeI = 1.0 / CurPopSize;
 		CurPopSize1 = aPopSize - 1;
 
 		PopParamsBuf = new ptype[( aPopSize + 1 ) * aParamCount ];
@@ -570,6 +561,7 @@ public:
 		}
 
 		CurPopSize = s.CurPopSize;
+		CurPopSizeI = s.CurPopSizeI;
 		CurPopSize1 = s.CurPopSize1;
 		CurPopPos = s.CurPopPos;
 		NeedCentUpdate = s.NeedCentUpdate;
@@ -602,7 +594,7 @@ public:
 		NeedCentUpdate = false;
 
 		const int BatchCount = ( 1 << IntOverBits ) - 1;
-		const double m = 1.0 / CurPopSize;
+		const double m = CurPopSizeI;
 		ptype* const cp = CentParams;
 		int i;
 		int j;
@@ -795,7 +787,7 @@ public:
 		if( DoUpdateCentroid )
 		{
 			ptype* const cp = CentParams;
-			const double m = 1.0 / CurPopSize;
+			const double m = CurPopSizeI;
 			int i;
 
 			for( i = 0; i < ParamCount; i++ )
@@ -833,6 +825,7 @@ public:
 		}
 
 		CurPopSize++;
+		CurPopSizeI = 1.0 / CurPopSize;
 		CurPopSize1++;
 		NeedCentUpdate = true;
 	}
@@ -845,6 +838,7 @@ public:
 	void decrCurPopSize()
 	{
 		CurPopSize--;
+		CurPopSizeI = 1.0 / CurPopSize;
 		CurPopSize1--;
 		NeedCentUpdate = true;
 	}
@@ -874,11 +868,15 @@ protected:
 
 	int ParamCount; ///< The total number of internal parameter values in use.
 		///<
+	double ParamCountI; ///< = 1.0 / ParamCount.
+		///<
 	int PopSize; ///< The size of population in use (maximal).
 		///<
 	int CurPopSize; ///< Current population size.
 		///<
 	int CurPopSize1; ///< = CurPopSize - 1.
+		///<
+	double CurPopSizeI; ///< = 1.0 / CurPopSize.
 		///<
 	int CurPopPos; ///< Current population position, for initial population
 		///< update. This variable should be initialized by the optimizer.
@@ -963,10 +961,10 @@ protected:
 			{
 				if( v > IntMantMultM )
 				{
-					return( (ptype) ( rnd.getRndValue() * -v ));
+					return( (ptype) ( rnd.get() * -v ));
 				}
 
-				return( (ptype) ( rnd.getUniformRaw2() & IntMantMask ));
+				return( (ptype) ( rnd.getRaw() & IntMantMask ));
 			}
 
 			if( v > IntMantMult )
@@ -974,10 +972,10 @@ protected:
 				if( v < IntMantMult2 )
 				{
 					return( (ptype) ( IntMantMult -
-						rnd.getRndValue() * ( v - IntMantMult )));
+						rnd.get() * ( v - IntMantMult )));
 				}
 
-				return( (ptype) ( rnd.getUniformRaw2() & IntMantMask ));
+				return( (ptype) ( rnd.getRaw() & IntMantMask ));
 			}
 
 			return( v );
@@ -988,20 +986,20 @@ protected:
 			{
 				if( v > -1.0 )
 				{
-					return( (ptype) ( rnd.getRndValue() * -v ));
+					return( (ptype) ( rnd.get() * -v ));
 				}
 
-				return( (ptype) rnd.getRndValue() );
+				return( (ptype) rnd.get() );
 			}
 
 			if( v > 1.0 )
 			{
 				if( v < 2.0 )
 				{
-					return( (ptype) ( 1.0 - rnd.getRndValue() * ( v - 1.0 )));
+					return( (ptype) ( 1.0 - rnd.get() * ( v - 1.0 )));
 				}
 
-				return( (ptype) rnd.getRndValue() );
+				return( (ptype) rnd.get() );
 			}
 
 			return( v );
@@ -1356,6 +1354,7 @@ protected:
 	using CBiteOptParPops< ptype > :: ParamCount;
 	using CBiteOptParPops< ptype > :: PopSize;
 	using CBiteOptParPops< ptype > :: CurPopSize;
+	using CBiteOptParPops< ptype > :: CurPopSizeI;
 	using CBiteOptParPops< ptype > :: CurPopSize1;
 	using CBiteOptParPops< ptype > :: CurPopPos;
 	using CBiteOptParPops< ptype > :: NeedCentUpdate;
@@ -1438,6 +1437,7 @@ protected:
 		resetCurPopPos();
 
 		CurPopSize = PopSize;
+		CurPopSizeI = 1.0 / PopSize;
 		CurPopSize1 = PopSize - 1;
 		BestCost = 1e300;
 		StallCount = 0;
@@ -1536,10 +1536,10 @@ protected:
 
 			if( v > minv - dv )
 			{
-				return( minv + rnd.getRndValue() * ( minv - v ));
+				return( minv + rnd.get() * ( minv - v ));
 			}
 
-			return( minv + rnd.getRndValue() * dv );
+			return( minv + rnd.get() * dv );
 		}
 
 		const double maxv = MaxValues[ i ];
@@ -1550,10 +1550,10 @@ protected:
 
 			if( v < maxv + dv )
 			{
-				return( maxv - rnd.getRndValue() * ( v - dv ));
+				return( maxv - rnd.get() * ( v - dv ));
 			}
 
-			return( maxv - rnd.getRndValue() * dv );
+			return( maxv - rnd.get() * dv );
 		}
 
 		return( v );

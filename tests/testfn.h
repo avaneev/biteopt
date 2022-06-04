@@ -2648,7 +2648,7 @@ static double calcStochastic( const double* const x, const int N )
 
 	for( i = 0; i < N; i++ )
 	{
-		s += fnrnd.getRndValue()*fabs(x[i]-1.0/(i+1));
+		s += fnrnd.get()*fabs(x[i]-1.0/(i+1));
 	}
 
 	return( s );
@@ -2664,7 +2664,7 @@ static double calcXinSheYang01( const double* const x, const int N )
 
 	for( i = 0; i < N; i++ )
 	{
-		s += fnrnd.getRndValue()*pow(fabs(x[i]),i+1);
+		s += fnrnd.get()*pow(fabs(x[i]),i+1);
 	}
 
 	return( s );

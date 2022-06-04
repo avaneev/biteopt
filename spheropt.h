@@ -7,7 +7,7 @@
  *
  * @section license License
  *
- * Copyright (c) 2016-2021 Aleksey Vaneev
+ * Copyright (c) 2016-2022 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2021.17
+ * @version 2022.14
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -44,19 +44,10 @@
 class CSpherOpt : public CBiteOptBase< double >
 {
 public:
-	double Jitter; ///< Solution sampling random jitter, improves convergence
-		///< at low dimensions. Usually, a fixed value.
-		///<
-
 	CSpherOpt()
 		: WPopCent( NULL )
 		, WPopRad( NULL )
 	{
-		Jitter = 2.5;
-
-		addHist( CentPowHist, "CentPowHist" );
-		addHist( RadPowHist, "RadPowHist" );
-		addHist( EvalFacHist, "EvalFacHist" );
 	}
 
 	/**
@@ -78,7 +69,7 @@ public:
 
 		initBuffers( aParamCount, aPopSize );
 
-		JitMult = 2.0 * Jitter / aParamCount;
+		JitMult = 5.0 / aParamCount;
 		JitOffs = 1.0 - JitMult * 0.5;
 	}
 
@@ -164,7 +155,7 @@ public:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = rnd.getRndValue() - 0.5;
+				Params[ i ] = rnd.get() - 0.5;
 				s2 += Params[ i ] * Params[ i ];
 			}
 
@@ -184,7 +175,7 @@ public:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					const double m = JitOffs + rnd.getRndValue() * JitMult;
+					const double m = JitOffs + rnd.get() * JitMult;
 
 					Params[ i ] = wrapParam( rnd,
 						CentParams[ i ] + Params[ i ] * d * m );
@@ -278,12 +269,6 @@ protected:
 	bool DoCentEval; ///< "True" if an initial objective function evaluation
 		///< at centroid point is required.
 		///<
-	CBiteOptHist< 4 > CentPowHist; ///< Centroid power factor histogram.
-		///<
-	CBiteOptHist< 4 > RadPowHist; ///< Radius power factor histogram.
-		///<
-	CBiteOptHist< 3 > EvalFacHist; ///< EvalFac histogram.
-		///<
 
 	virtual void initBuffers( const int aParamCount, const int aPopSize )
 	{
@@ -309,13 +294,9 @@ protected:
 
 	void update( CBiteRnd& rnd )
 	{
-		static const double WCent[ 4 ] = { 4.5, 6.0, 7.5, 10.0 };
-		static const double WRad[ 4 ] = { 14.0, 16.0, 18.0, 20.0 };
-		static const double EvalFacs[ 3 ] = { 2.1, 2.0, 1.9 };
-
-		const double CentFac = WCent[ select( CentPowHist, rnd )];
-		const double RadFac = WRad[ select( RadPowHist, rnd )];
-		EvalFac = EvalFacs[ select( EvalFacHist, rnd )];
+		const double CentFac = 6.0;
+		const double RadFac = 18.0;
+		EvalFac = 2.0;
 
 		const double lm = 1.0 / curem;
 		double s1 = 0.0;

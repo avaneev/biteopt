@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.3
+ * @version 2022.14
  */
 
 #ifndef NMSOPT_INCLUDED
@@ -121,8 +121,7 @@ public:
 
 				for( i = 0; i < N; i++ )
 				{
-					xj[ i ] = MinValues[ i ] + DiffValues[ i ] *
-						rnd.getRndValue();
+					xj[ i ] = MinValues[ i ] + DiffValues[ i ] * rnd.get();
 				}
 			}
 		}
@@ -320,7 +319,7 @@ private:
 		///<
 	int M; ///< The number of points in a simplex.
 		///<
-	double M1m; ///< = 1 / ( M - 1 ).
+	double M1m; ///< = 1.0 / ( M - 1 ).
 		///<
 	int xlo; ///< Current lowest cost parameter vector.
 		///<

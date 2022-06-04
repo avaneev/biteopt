@@ -10,11 +10,12 @@
 #include "../deopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CDEOpt//CNMSeqOpt//CSpherOpt//CCMAESOpt//CSMAESOpt//CBiteOptDeep//
+#define OPT_CLASS CBiteOpt//CDEOpt//CSMAESOpt//CSpherOpt//CBiteOptDeep//CNMSeqOpt//CCMAESOpt//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
-//#define OPT_PLATEAU_MUL 64 // Uncomment to enable plateau check.
+//#define OPT_PLATEAU_MUL 256 // Uncomment to enable plateau check.
 //#define EVALBINS 1
 #define OPT_STATS 0 // Set to 1 to enable histogram statistics output.
+#define OPT_TIME 0 // Set to 1 to evaluate timings.
 
 #if 0
 	#define OPT_THREADS 1
@@ -40,11 +41,16 @@ public:
 	int SumIt; ///< The overall number of performed function evaluations in
 		///< successful attempts.
 		///<
+	int SumItAll; ///< The overall number of performed function evaluations in
+		///< all attempts.
+		///<
 	double SumIt_l10n; ///< = sum( log( It ) / log( 10 )) in completed
 		///< attempts.
 		///<
 	int SumItImpr; ///< Sum of improving iterations across successful
 		///< attempts.
+		///<
+	int SumItImprAll; ///< Sum of improving iterations across all attempts.
 		///<
 	double SumRjCost; ///< Summary unbiased costs detected in all rejected
 		///< attempts.
@@ -85,11 +91,20 @@ public:
 			///<
 	#endif // OPT_STATS
 
+	#if OPT_TIME
+		double TimeOpt; ///< Overall time spent in optimize() function,
+			///< seconds.
+		double TimeFunc; ///< Overall time spent in objective function,
+			///< seconds.
+	#endif // OPT_TIME
+
 	void clear()
 	{
 		SumIt = 0;
+		SumItAll = 0;
 		SumIt_l10n = 0.0;
 		SumItImpr = 0;
+		SumItImprAll = 0;
 		SumRjCost = 0.0;
 		SumRMS = 0.0;
 		SumRMS_l10n = 0.0;
@@ -115,6 +130,11 @@ public:
 		memset( SumAvgSels, 0, sizeof( SumAvgSels ));
 		memset( SumDevSels, 0, sizeof( SumDevSels ));
 		#endif // OPT_STATS
+
+		#if OPT_TIME
+		TimeOpt = 0.0;
+		TimeFunc = 0.0;
+		#endif // OPT_TIME
 	}
 };
 
@@ -211,6 +231,11 @@ public:
 		///<
 	#endif // OPT_STATS
 
+	#if OPT_THREADS && OPT_TIME
+		double funct; ///< Function evaluation timing.
+			///<
+	#endif // OPT_THREADS && OPT_TIME
+
 	CTestOpt()
 		: Dims( 0 )
 		, minv( NULL )
@@ -293,9 +318,19 @@ public:
 
 	virtual double optcost( const double* const p )
 	{
+		#if OPT_THREADS && OPT_TIME
+			TClock t1( CSystem :: getClock() );
+		#endif // OPT_THREADS && OPT_TIME
+
 		if( !DoRandomize )
 		{
-			return( (*fn -> CalcFunc)( p, Dims ));
+			const double fv = (*fn -> CalcFunc)( p, Dims );
+
+			#if OPT_THREADS && OPT_TIME
+				funct += CSystem :: getClockDiffSec( t1 );
+			#endif // OPT_THREADS && OPT_TIME
+
+			return( fv );
 		}
 
 		int i;
@@ -307,7 +342,13 @@ public:
 
 		if( !DoRandomizeAll )
 		{
-			return( (*fn -> CalcFunc)( tp2, Dims ));
+			const double fv = (*fn -> CalcFunc)( tp2, Dims );
+
+			#if OPT_THREADS && OPT_TIME
+				funct += CSystem :: getClockDiffSec( t1 );
+			#endif // OPT_THREADS && OPT_TIME
+
+			return( fv );
 		}
 
 		for( i = 0; i < Dims; i++ )
@@ -321,7 +362,13 @@ public:
 			}
 		}
 
-		return( (*fn -> CalcFunc)( tp, Dims ));
+		const double fv = (*fn -> CalcFunc)( tp, Dims );
+
+		#if OPT_THREADS && OPT_TIME
+			funct += CSystem :: getClockDiffSec( t1 );
+		#endif // OPT_THREADS && OPT_TIME
+
+		return( fv );
 	}
 
 	#if OPT_STATS
@@ -367,9 +414,22 @@ public:
 		int i = 0;
 		int ImprIters = 0;
 
+		#if OPT_THREADS && OPT_TIME
+			double optt = 0.0;
+			funct = 0.0;
+		#endif // OPT_THREADS && OPT_TIME
+
 		while( true )
 		{
+			#if OPT_THREADS && OPT_TIME
+				TClock t1( CSystem :: getClock() );
+			#endif // OPT_THREADS && OPT_TIME
+
 			const int sc = optimize( rnd );
+
+			#if OPT_THREADS && OPT_TIME
+				optt += CSystem :: getClockDiffSec( t1 );
+			#endif // OPT_THREADS && OPT_TIME
 
 			#if OPT_STATS
 				CBiteOptHistBase** const h = getHists();
@@ -405,6 +465,11 @@ public:
 
 				#if OPT_THREADS
 					VOXSYNC( StatsSync );
+
+					#if OPT_TIME
+					SumStats -> TimeOpt += optt;
+					SumStats -> TimeFunc += funct;
+					#endif // OPT_TIME
 				#endif // OPT_THREADS
 
 				if( getBestCost() < FuncStats -> MinCost )
@@ -417,7 +482,9 @@ public:
 				FuncStats -> SumItCompl += i;
 				SumStats -> ComplAttempts++;
 				SumStats -> SumIt += i;
+				SumStats -> SumItAll += i;
 				SumStats -> SumItImpr += ImprIters;
+				SumStats -> SumItImprAll += ImprIters;
 				SumStats -> SumIt_l10n += log( (double) i / Dims ) /
 					log( 10.0 );
 
@@ -450,6 +517,11 @@ public:
 			{
 				#if OPT_THREADS
 					VOXSYNC( StatsSync );
+
+					#if OPT_TIME
+					SumStats -> TimeOpt += optt;
+					SumStats -> TimeFunc += funct;
+					#endif // OPT_TIME
 				#endif // OPT_THREADS
 
 				if( getBestCost() < FuncStats -> MinCost )
@@ -459,6 +531,8 @@ public:
 
 				Iters[ Index ] = -1;
 				FuncStats -> SumRjCost += getBestCost();
+				SumStats -> SumItAll += i;
+				SumStats -> SumItImprAll += ImprIters;
 				SumStats -> SumRjCost += getBestCost() - optv;
 
 				break;
@@ -657,13 +731,13 @@ public:
 							( opt -> maxv[ i ] - opt -> minv[ i ]) * 0.5;
 
 						opt -> shifts[ i ] = d *
-							( opt -> rnd.getRndValue() - 0.5 ) * 2.0;
+							( opt -> rnd.get() - 0.5 ) * 2.0;
+
+						opt -> signs[ i ] = 1.0 +
+							opt -> rnd.get() * 0.5;
 
 						opt -> minv[ i ] -= d * 2.5;
 						opt -> maxv[ i ] += d * 2.5;
-
-						opt -> signs[ i ] = 1.0 +
-						opt -> rnd.getRndValue() * 0.5;
 					}
 				}
 
@@ -782,9 +856,9 @@ public:
 			printf( "Func count: %i, Attempts: %i, MaxIters/Attempt: %i\n",
 				FnCount, IterCount, InnerIterCount );
 
-			printf( "GoodItersAvg: %.2f%% (percent of improving "
-				"iterations in successful attempts)\n",
-				100.0 * SumStats.SumItImpr / SumStats.SumIt );
+			printf( "GoodItersAvg: %.2f%% (percent of improving iterations "
+				"in all attempts)\n",
+				100.0 * SumStats.SumItImprAll / SumStats.SumItAll );
 
 			printf( "Func success: %.2f%%\n", SuccessFn );
 			printf( "Attempts success: %.2f%%\n", SuccessAt );
@@ -802,6 +876,13 @@ public:
 
 			printf( "AvgRjCost: %.6f (avg unbiased reject cost)\n",
 				AvgRjCost );
+
+			#if OPT_TIME
+			printf( "TimeOpt: %.3f (time in optimize)\n", SumStats.TimeOpt );
+			printf( "TimeFunc: %.3f (time in objfunc)\n", SumStats.TimeFunc );
+			printf( "Overhead: %.1f%% (optimize overhead)\n", 100.0 - 100.0 *
+				SumStats.TimeFunc / SumStats.TimeOpt );
+			#endif // OPT_TIME
 
 			#if defined( OPT_PERF )
 			LARGE_INTEGER t2;
@@ -953,14 +1034,14 @@ protected:
 		{
 			for( j = 0; j < _DIM; j++ )
 			{
-				double unif = rrnd.getRndValue();
+				double unif = rrnd.get();
 
 				if( unif == 0.0 )
 				{
 					unif = 1e-99;
 				}
 
-				double unif2 = rrnd.getRndValue();
+				double unif2 = rrnd.get();
 
 				if( unif2 == 0.0 )
 				{
@@ -1046,8 +1127,7 @@ protected:
 			}
 		}
 
-		const int ri = (int) ( rrnd.getRndValue() *
-			CRotMatCacheItem :: EntryCount );
+		const int ri = rrnd.getInt( CRotMatCacheItem :: EntryCount );
 
 		if( Cache -> rm[ ri ] == NULL )
 		{
