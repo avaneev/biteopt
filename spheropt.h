@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.14
+ * @version 2022.15
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -48,6 +48,9 @@ public:
 		: WPopCent( NULL )
 		, WPopRad( NULL )
 	{
+		addHist( CentPowHist, "CentPowHist" );
+		addHist( RadPowHist, "RadPowHist" );
+		addHist( EvalFacHist, "EvalFacHist" );
 	}
 
 	/**
@@ -69,7 +72,7 @@ public:
 
 		initBuffers( aParamCount, aPopSize );
 
-		JitMult = 5.0 / aParamCount;
+		JitMult = 5.0 * ParamCountI;
 		JitOffs = 1.0 - JitMult * 0.5;
 	}
 
@@ -269,6 +272,12 @@ protected:
 	bool DoCentEval; ///< "True" if an initial objective function evaluation
 		///< at centroid point is required.
 		///<
+	CBiteOptHist< 4 > CentPowHist; ///< Centroid power factor histogram.
+		///<
+	CBiteOptHist< 4 > RadPowHist; ///< Radius power factor histogram.
+		///<
+	CBiteOptHist< 3 > EvalFacHist; ///< EvalFac histogram.
+		///<
 
 	virtual void initBuffers( const int aParamCount, const int aPopSize )
 	{
@@ -294,9 +303,13 @@ protected:
 
 	void update( CBiteRnd& rnd )
 	{
-		const double CentFac = 6.0;
-		const double RadFac = 18.0;
-		EvalFac = 2.0;
+		static const double WCent[ 4 ] = { 4.5, 6.0, 7.5, 10.0 };
+		static const double WRad[ 4 ] = { 14.0, 16.0, 18.0, 20.0 };
+		static const double EvalFacs[ 3 ] = { 2.1, 2.0, 1.9 };
+
+		const double CentFac = WCent[ select( CentPowHist, rnd )];
+		const double RadFac = WRad[ select( RadPowHist, rnd )];
+		EvalFac = EvalFacs[ select( EvalFacHist, rnd )];
 
 		const double lm = 1.0 / curem;
 		double s1 = 0.0;

@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.14"
+#define BITEOPT_VERSION "2022.15"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -347,7 +347,7 @@ public:
 					UseParOpt = 1; // On stall, select optimizer 2.
 				}
 
-				if( sc > ParamCount * 32 )
+				if( sc > ParamCount * 64 )
 				{
 					ParOpt.init( rnd, ParOpt.getBestParams(), 0.5 );
 					ParOptPop.resetCurPopPos();
@@ -364,7 +364,7 @@ public:
 					UseParOpt = 0; // On stall, select optimizer 1.
 				}
 
-				if( sc > ParamCount * 8 )
+				if( sc > ParamCount * 16 )
 				{
 					ParOpt2.init( rnd, ParOpt2.getBestParams(), 1.0 );
 					ParOpt2Pop.resetCurPopPos();

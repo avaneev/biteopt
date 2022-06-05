@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.14
+ * @version 2022.15
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -51,8 +51,7 @@ typedef uint32_t( *biteopt_rng )( void* rng_data );
 
 /**
  * Class that implements a pseudo-random number generator (PRNG). The default
- * implementation includes a fast high-quality PRNG that uses a reduced
- * PRVHASH core function (with 2^95 period). See
+ * implementation includes a fast high-quality PRNG (2^159 period). See
  * https://github.com/avaneev/prvhash for more details.
  */
 
@@ -97,13 +96,16 @@ public:
 		BitsLeft = 0;
 		Seed = (uint64_t) NewSeed;
 		lcg = 0;
+		Hash = 0;
 
 		// Skip first values to make PRNG "settle down".
 
-		advance();
-		advance();
-		advance();
-		advance();
+		int i;
+
+		for( i = 0; i < 5; i++ )
+		{
+			advance();
+		}
 	}
 
 	/**
@@ -243,7 +245,7 @@ protected:
 		///<
 	void* rdata; ///< Data pointer to pass to the "rf" function.
 		///<
-	uint64_t Seed, lcg; ///< PRNG state variables.
+	uint64_t Seed, lcg, Hash; ///< PRNG state variables.
 		///<
 	uint64_t BitPool; ///< Bit pool.
 		///<
@@ -266,10 +268,11 @@ protected:
 
 		Seed *= lcg * 2 + 1;
 		const uint64_t rs = Seed >> 32 | Seed << 32;
+		Hash += rs + 0xAAAAAAAAAAAAAAAA;
 		lcg += Seed + 0x5555555555555555;
-		Seed = rs + 0xAAAAAAAAAAAAAAAA;
+		Seed ^= Hash;
 
-		return( lcg );
+		return( lcg ^ rs );
 	}
 };
 
@@ -364,11 +367,11 @@ public:
 		{
 			Sels[ Slot ][ Selp ] = Sels[ Slot ][ Selp - 1 ];
 			Sels[ Slot ][ Selp - 1 ] = Sel;
+		}
 
-			if( Slot + 1 < SlotCount )
-			{
-				Slot++;
-			}
+		if( Selp > CountSp / 2 && Slot + 1 < SlotCount )
+		{
+			Slot++;
 		}
 	}
 
@@ -387,7 +390,7 @@ public:
 			Sels[ Slot ][ Selp + 1 ] = Sel;
 		}
 
-		if( Slot > 0 )
+		if( Selp < CountSp / 2 && Slot > 0 )
 		{
 			Slot--;
 		}
@@ -420,10 +423,10 @@ public:
 	}
 
 protected:
-	static const int MaxCount = 4; ///< The maximal number of choices
+	static const int MaxCount = 8; ///< The maximal number of choices
 		///< supported.
 		///<
-	static const int SparseMul = 4; ///< Multiplier used to obtain an actual
+	static const int SparseMul = 5; ///< Multiplier used to obtain an actual
 		///< length of the choice vector.
 		///<
 	static const int SlotCount = 4; ///< The number of choice vectors in use.
