@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.15"
+#define BITEOPT_VERSION "2022.16"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -68,10 +68,12 @@ public:
 		addHist( ParPopPHist[ 0 ], "ParPopPHist[ 0 ]" );
 		addHist( ParPopPHist[ 1 ], "ParPopPHist[ 1 ]" );
 		addHist( ParPopPHist[ 2 ], "ParPopPHist[ 2 ]" );
+		addHist( ParPopPHist[ 3 ], "ParPopPHist[ 3 ]" );
 		addHist( AltPopPHist, "AltPopPHist" );
 		addHist( AltPopHist[ 0 ], "AltPopHist[ 0 ]" );
 		addHist( AltPopHist[ 1 ], "AltPopHist[ 1 ]" );
 		addHist( AltPopHist[ 2 ], "AltPopHist[ 2 ]" );
+		addHist( AltPopHist[ 3 ], "AltPopHist[ 3 ]" );
 		addHist( MinSolPwrHist[ 0 ], "MinSolPwrHist[ 0 ]" );
 		addHist( MinSolPwrHist[ 1 ], "MinSolPwrHist[ 1 ]" );
 		addHist( MinSolPwrHist[ 2 ], "MinSolPwrHist[ 2 ]" );
@@ -436,8 +438,7 @@ public:
 			}
 
 			const int p = updatePop( NewCost, TmpParams, true, false );
-			const double pv = 1.0 - p * CurPopSizeI;
-			applyHistsIncr( rnd, pv );
+			applyHistsIncr( rnd, 1.0 - p * CurPopSizeI );
 
 			if( PushOpt != NULL && PushOpt != this &&
 				!PushOpt -> DoInitEvals && NewCost > PopCosts[ 0 ])
@@ -512,13 +513,13 @@ protected:
 	CBiteOptHist< 2 > ParOpt2Hist; ///< Parallel optimizer 2 use
 		///< histogram.
 		///<
-	CBiteOptHist< 2 > ParPopPHist[ 3 ]; ///< Parallel population use
+	CBiteOptHist< 2 > ParPopPHist[ 4 ]; ///< Parallel population use
 		///< probability histogram.
 		///<
 	CBiteOptHist< 2 > AltPopPHist; ///< Alternative population use
 		///< histogram.
 		///<
-	CBiteOptHist< 2 > AltPopHist[ 3 ]; ///< Alternative population type use
+	CBiteOptHist< 2 > AltPopHist[ 4 ]; ///< Alternative population type use
 		///< histogram.
 		///<
 	CBiteOptHist< 4 > MinSolPwrHist[ 4 ]; ///< Index of least-cost
@@ -620,7 +621,7 @@ protected:
 	 * With certain probability, *this object's own population will be
 	 * returned instead of parallel population.
 	 *
-	 * @param gi Solution generator index (0-2).
+	 * @param gi Solution generator index (0-3).
 	 * @param rnd PRNG object.
 	 */
 
@@ -638,7 +639,7 @@ protected:
 	 * Function selects an alternative, parallel optimizer's, population, to
 	 * use in some solution generators.
 	 *
-	 * @param gi Solution generator index (0-2).
+	 * @param gi Solution generator index (0-3).
 	 * @param rnd PRNG object.
 	 */
 
@@ -669,7 +670,7 @@ protected:
 	 * Function returns a dynamically-selected minimal population index, used
 	 * in some solution generation methods.
 	 *
-	 * @param gi Solution generator index (0-2).
+	 * @param gi Solution generator index (0-3).
 	 * @param rnd PRNG object.
 	 * @param ps Population size.
 	 */
@@ -827,7 +828,7 @@ protected:
 
 		const CBiteOptPop& AltPop = selectAltPop( 0, rnd );
 
-		const int si4 = rnd.getInt( CurPopSize / 2 );
+		const int si4 = rnd.getInt( CurPopSize );
 		const ptype* const rp4 = AltPop.getParamsOrdered( si4 );
 		const ptype* const rp5 = AltPop.getParamsOrdered( CurPopSize1 - si4 );
 
@@ -964,7 +965,7 @@ protected:
 		UseParams[ 0 ] = AltPop.getPopParams();
 		UseParams[ 1 ] = ParPop.getPopParams();
 
-		const int km = 3 + ( select( Gen4MixFacHist, rnd ) << 1 );
+		const int km = 5 + ( select( Gen4MixFacHist, rnd ) << 1 );
 
 		int p = rnd.getBit();
 		int si1 = rnd.getSqrInt( UseSize[ p ]);
@@ -1050,12 +1051,12 @@ protected:
 		ptype* const Params = TmpParams;
 		const ptype* CrossParams[ 2 ];
 
-		const CBiteOptPop& ParPop = selectParPop( 2, rnd );
+		const CBiteOptPop& ParPop = selectParPop( 3, rnd );
 
 		CrossParams[ 0 ] = ParPop.getParamsOrdered(
 			rnd.getSqrInt( ParPop.getCurPopSize() ));
 
-		const CBiteOptPop& AltPop = selectAltPop( 2, rnd );
+		const CBiteOptPop& AltPop = selectAltPop( 3, rnd );
 
 		if( rnd.getBit() )
 		{
@@ -1176,7 +1177,7 @@ protected:
 			Params[ i ] = (ptype) NewValues[ i ];
 		}
 
-		static const double Spans[ 4 ] = { 2.0, 2.5, 3.0, 3.5 };
+		static const double Spans[ 4 ] = { 1.5, 2.5, 3.5, 4.5 };
 		const double gm = Spans[ select( Gen8SpanHist, rnd )] * sqrt( m );
 
 		for( j = 0; j < NumSols; j++ )

@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.15
+ * @version 2022.16
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -282,7 +282,7 @@ protected:
  *
  * Called "histogram" for historic reasons. The current implementation uses
  * bubble-sort-alike method to update a vector of possible choices. The
- * selection is made as a weighted-random value draw from this vector.
+ * selection is made as a weighted-random draw of a value from this vector.
  */
 
 class CBiteOptHistBase
@@ -363,7 +363,7 @@ public:
 
 	void incr( CBiteRnd& rnd, const double v = 1.0 )
 	{
-		if( Selp > 0 && rnd.get() < v * v )
+		if( Selp > 0 && rnd.get() < v * v ) // Boost choice with a good cost.
 		{
 			Sels[ Slot ][ Selp ] = Sels[ Slot ][ Selp - 1 ];
 			Sels[ Slot ][ Selp - 1 ] = Sel;
@@ -384,7 +384,7 @@ public:
 
 	void decr( CBiteRnd& rnd )
 	{
-		if( Selp < CountSp1 )
+		if( Selp < CountSp1 ) // Demote inefficient choice.
 		{
 			Sels[ Slot ][ Selp ] = Sels[ Slot ][ Selp + 1 ];
 			Sels[ Slot ][ Selp + 1 ] = Sel;
@@ -423,7 +423,7 @@ public:
 	}
 
 protected:
-	static const int MaxCount = 8; ///< The maximal number of choices
+	static const int MaxCount = 4; ///< The maximal number of choices
 		///< supported.
 		///<
 	static const int SparseMul = 5; ///< Multiplier used to obtain an actual
@@ -438,7 +438,7 @@ protected:
 		///<
 	int CountSp1; ///< = CountSp - 1.
 		///<
-	int Sels[ SlotCount ][ MaxCount * SparseMul ]; ///< Choice vector.
+	int Sels[ SlotCount ][ MaxCount * SparseMul ]; ///< Choice vectors.
 		///<
 	int Sel; ///< The latest selected choice. Available only after the
 		///< select() function calls.
