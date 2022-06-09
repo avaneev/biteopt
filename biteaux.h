@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.16
+ * @version 2022.17
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -283,6 +283,15 @@ protected:
  * Called "histogram" for historic reasons. The current implementation uses
  * bubble-sort-alike method to update a vector of possible choices. The
  * selection is made as a weighted-random draw of a value from this vector.
+ * Previously, the class used simple statistical accumulation of optimization
+ * outcomes, to derive probabilites. The current approach is superior in that
+ * it has no "memory effects" associated with accumulation.
+ *
+ * The purpose of the class is to increase a chance of generating an
+ * acceptable solution. In practice, this class provides 10-15% more "good"
+ * solutions compared to uniformly-random choice selection. This, in turn,
+ * improves convergence smoothness and produces more diversity in outcomes in
+ * multiple solution attempts (retries) of complex multi-modal problems.
  */
 
 class CBiteOptHistBase
@@ -298,6 +307,7 @@ public:
 		: Count( aCount )
 		, CountSp( Count * SparseMul )
 		, CountSp1( CountSp - 1 )
+		, SelpThrs( CountSp * 2 / 3 )
 	{
 	}
 
@@ -369,7 +379,7 @@ public:
 			Sels[ Slot ][ Selp - 1 ] = Sel;
 		}
 
-		if( Selp > CountSp / 2 && Slot + 1 < SlotCount )
+		if( Selp > SelpThrs && Slot + 1 < SlotCount )
 		{
 			Slot++;
 		}
@@ -390,7 +400,7 @@ public:
 			Sels[ Slot ][ Selp + 1 ] = Sel;
 		}
 
-		if( Selp < CountSp / 2 && Slot > 0 )
+		if( Selp < SelpThrs && Slot > 0 )
 		{
 			Slot--;
 		}
@@ -437,6 +447,8 @@ protected:
 		///< vector.
 		///<
 	int CountSp1; ///< = CountSp - 1.
+		///<
+	int SelpThrs; ///< Threshold value for Slot switching.
 		///<
 	int Sels[ SlotCount ][ MaxCount * SparseMul ]; ///< Choice vectors.
 		///<

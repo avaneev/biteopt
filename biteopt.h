@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.16"
+#define BITEOPT_VERSION "2022.17"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -351,7 +351,7 @@ public:
 
 				if( sc > ParamCount * 64 )
 				{
-					ParOpt.init( rnd, ParOpt.getBestParams(), 0.5 );
+					ParOpt.init( rnd, getBestParams(), 0.5 );
 					ParOptPop.resetCurPopPos();
 				}
 
@@ -368,7 +368,7 @@ public:
 
 				if( sc > ParamCount * 16 )
 				{
-					ParOpt2.init( rnd, ParOpt2.getBestParams(), 1.0 );
+					ParOpt2.init( rnd, getBestParams(), 1.0 );
 					ParOpt2Pop.resetCurPopPos();
 				}
 
@@ -1137,7 +1137,8 @@ protected:
 	 * Solution generator that is DE-alike in its base. It calculates a
 	 * centroid of a number of best solutions, and then applies "mutation"
 	 * operation between the centroid and the solutions, using a random
-	 * multiplier.
+	 * multiplier. This generator is similar to the "move" operation of
+	 * generator 1.
 	 */
 
 	void generateSol8( CBiteRnd& rnd )
@@ -1187,7 +1188,7 @@ protected:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] += (ptype) (( rp0[ i ] - NewValues[ i ]) * r );
+				Params[ i ] += (ptype) (( NewValues[ i ] - rp0[ i ]) * r );
 			}
 		}
 	}
