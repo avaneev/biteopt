@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.18"
+#define BITEOPT_VERSION "2022.18.1"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -1533,14 +1533,17 @@ public:
  * @param rf Random number generator function; 0: use the default BiteOpt
  * PRNG. Note that the external RNG should be seeded externally.
  * @param rdata Data pointer to pass to the "rf" function.
+ * @param f_min If non-zero, a pointer to the stopping value: optimization
+ * will stop when this objective value was reached.
  * @return The total number of function evaluations performed; useful if the
- * "stopc" was used.
+ * "stopc" and/or "f_min" were used.
  */
 
 inline int biteopt_minimize( const int N, biteopt_func f, void* data,
 	const double* lb, const double* ub, double* x, double* minf,
 	const int iter, const int M = 1, const int attc = 10,
-	const int stopc = 0, biteopt_rng rf = 0, void* rdata = 0 )
+	const int stopc = 0, biteopt_rng rf = 0, void* rdata = 0,
+	double* f_min = 0 )
 {
 	CBiteOptMinimize opt;
 	opt.N = N;
@@ -1562,11 +1565,19 @@ inline int biteopt_minimize( const int N, biteopt_func f, void* data,
 	{
 		opt.init( rnd );
 
+		bool IsFinished = false;
 		int i;
 
 		for( i = 0; i < useiter; i++ )
 		{
 			const int sc = opt.optimize( rnd );
+
+			if( f_min != 0 && opt.getBestCost() <= *f_min )
+			{
+				evals++;
+				IsFinished = true;
+				break;
+			}
 
 			if( sct > 0 && sc >= sct )
 			{
@@ -1581,6 +1592,11 @@ inline int biteopt_minimize( const int N, biteopt_func f, void* data,
 		{
 			memcpy( x, opt.getBestParams(), N * sizeof( x[ 0 ]));
 			*minf = opt.getBestCost();
+		}
+
+		if( IsFinished )
+		{
+			break;
 		}
 	}
 

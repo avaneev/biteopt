@@ -340,9 +340,11 @@ reaction kinetics (non-linear least squares problem).
     rf    Random number generator function; 0: use the default BiteOpt PRNG.
           Note that the external RNG should be seeded externally.
     rdata Data pointer to pass to the "rf" function.
+    f_min If non-zero, a pointer to the stopping value: optimization will stop
+          when this objective value was reached.
 
     This function returns the total number of function evaluations performed;
-    useful if the "stopc>0" was used.
+    useful if the "stopc>0" and/or "f_min" were used.
 
 `test2.cpp` is a convergence test for all available functions. Performs many
 optimization attempts on all functions. Prints various performance
