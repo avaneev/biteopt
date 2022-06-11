@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.17"
+#define BITEOPT_VERSION "2022.18"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -88,8 +88,10 @@ public:
 		addHist( Gen1MoveSpanHist, "Gen1MoveSpanHist" );
 		addHist( Gen4MixFacHist, "Gen4MixFacHist" );
 		addHist( Gen7PowFacHist, "Gen7PowFacHist" );
+		addHist( Gen8ModeHist, "Gen8ModeHist" );
 		addHist( Gen8NumHist, "Gen8NumHist" );
-		addHist( Gen8SpanHist, "Gen8SpanHist" );
+		addHist( Gen8SpanHist[ 0 ], "Gen8SpanHist[ 0 ]" );
+		addHist( Gen8SpanHist[ 1 ], "Gen8SpanHist[ 1 ]" );
 	}
 
 	/**
@@ -496,9 +498,9 @@ protected:
 		///<
 	CBiteOptHist< 3 > M1BHist; ///< Method 1's sub-sub-method B histogram.
 		///<
-	CBiteOptHist< 2 > M1BAHist; ///< Method 1's sub-sub-method A2 histogram.
+	CBiteOptHist< 2 > M1BAHist; ///< Method 1's sub-sub-method BA histogram.
 		///<
-	CBiteOptHist< 2 > M1BBHist; ///< Method 1's sub-sub-method B2 histogram.
+	CBiteOptHist< 2 > M1BBHist; ///< Method 1's sub-sub-method BB histogram.
 		///<
 	CBiteOptHist< 2 > M2Hist; ///< Method 2's sub-method histogram.
 		///<
@@ -546,11 +548,13 @@ protected:
 	CBiteOptHist< 4 > Gen7PowFacHist; ///< Generator method 7's Power
 		///< histogram.
 		///<
+	CBiteOptHist< 2 > Gen8ModeHist; ///< Generator method 8's mode histogram.
+		///<
 	CBiteOptHist< 4 > Gen8NumHist; ///< Generator method 8's NumSols
 		///< histogram.
 		///<
-	CBiteOptHist< 4 > Gen8SpanHist; ///< Generator method 8's random span
-		///< histogram.
+	CBiteOptHist< 4 > Gen8SpanHist[ 2 ]; ///< Generator method 8's random span
+		///< histograms.
 		///<
 	int CentUpdateCtr; ///< Centroid update counter.
 		///<
@@ -1145,13 +1149,13 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
+		const int Mode = select( Gen8ModeHist, rnd );
 		const int NumSols = 5 + select( Gen8NumHist, rnd );
 		const ptype* rp[ 8 ];
 
 		// Calculate centroid of a number of selected solutions.
 
-		int si0 = rnd.getSqrInt( CurPopSize );
-		const ptype* rp0 = getParamsOrdered( si0 );
+		const ptype* rp0 = getParamsOrdered( rnd.getSqrInt( CurPopSize ));
 		rp[ 0 ] = rp0;
 		memcpy( Params, rp0, ParamCount * sizeof( Params[ 0 ]));
 
@@ -1160,8 +1164,7 @@ protected:
 
 		for( j = 1; j < NumSols; j++ )
 		{
-			si0 = rnd.getSqrInt( CurPopSize );
-			rp0 = getParamsOrdered( si0 );
+			rp0 = getParamsOrdered( rnd.getSqrInt( CurPopSize ));
 			rp[ j ] = rp0;
 
 			for( i = 0; i < ParamCount; i++ )
@@ -1178,17 +1181,39 @@ protected:
 			Params[ i ] = (ptype) NewValues[ i ];
 		}
 
-		static const double Spans[ 4 ] = { 1.5, 2.5, 3.5, 4.5 };
-		const double gm = Spans[ select( Gen8SpanHist, rnd )] * sqrt( m );
+		// Apply "move" operations in one of two modes.
 
-		for( j = 0; j < NumSols; j++ )
+		if( Mode == 0 )
 		{
-			const double r = rnd.getGaussian() * gm;
-			rp0 = rp[ j ];
+			static const double Spans[ 4 ] = { 1.5, 2.5, 3.5, 4.5 };
+			const double gm = Spans[ select( Gen8SpanHist[ Mode ], rnd )] *
+				sqrt( m );
 
-			for( i = 0; i < ParamCount; i++ )
+			for( j = 0; j < NumSols; j++ )
 			{
-				Params[ i ] += (ptype) (( NewValues[ i ] - rp0[ i ]) * r );
+				const double r = rnd.getGaussian() * gm;
+				rp0 = rp[ j ];
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] += (ptype) (( NewValues[ i ] - rp0[ i ]) * r );
+				}
+			}
+		}
+		else
+		{
+			static const double Spans[ 4 ] = { 0.5, 1.5, 2.5, 3.5 };
+			const double gm = Spans[ select( Gen8SpanHist[ Mode ], rnd )];
+
+			for( j = 0; j < NumSols; j++ )
+			{
+				const double r = rnd.getGaussian() * gm;
+				rp0 = rp[ j ];
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] += (ptype) (( Params[ i ] - rp0[ i ]) * r );
+				}
 			}
 		}
 	}
