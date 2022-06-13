@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.19
+ * @version 2022.19.1
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -703,6 +703,16 @@ public:
 	const ptype* getParamsOrdered( const int i ) const
 	{
 		return( PopParams[ i ]);
+	}
+
+	/**
+	 * Function returns a pointer to array of population vector pointers,
+	 * which are sorted in the ascending cost order.
+	 */
+
+	const ptype** getPopParams() const
+	{
+		return( (const ptype**) PopParams );
 	}
 
 	/**
