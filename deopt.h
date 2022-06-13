@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.14
+ * @version 2022.19
  */
 
 #ifndef DEOPT_INCLUDED
@@ -166,8 +166,7 @@ public:
 
 			if( OutValues != NULL )
 			{
-				memcpy( OutValues, NewValues,
-					ParamCount * sizeof( OutValues[ 0 ]));
+				copyValues( OutValues, NewValues );
 			}
 
 			CurPopPos++;
@@ -180,7 +179,7 @@ public:
 			return( 0 );
 		}
 
-		memset( TmpParams, 0, ParamCount * sizeof( TmpParams[ 0 ]));
+		zeroParams( TmpParams );
 
 		const double r1 = rnd.getSqr();
 		const int si1 = (int) ( r1 * r1 * CurPopSize );
@@ -266,17 +265,14 @@ public:
 
 		if( OutValues != NULL )
 		{
-			memcpy( OutValues, NewValues,
-				ParamCount * sizeof( OutValues[ 0 ]));
+			copyValues( OutValues, NewValues );
 		}
 
 		updateBestCost( NewCost, NewValues );
 
 		if( isAcceptedCost( NewCost ))
 		{
-			memcpy( PopParams[ CurPopSize1 ], TmpParams,
-				ParamCount * sizeof( PopParams[ 0 ][ 0 ]));
-
+			copyParams( PopParams[ CurPopSize1 ], TmpParams );
 			sortPop( NewCost, CurPopSize1 );
 			StallCount = 0;
 		}

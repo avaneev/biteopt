@@ -49,11 +49,11 @@ static keyword keywds[] = {	/* must be in alphabetical order */
 };
 
 static char biteoptvers[] =
-	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.17\n";
+	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.19\n";
 
 static Option_Info Oinfo = {
-	"biteoptampl", "BITEOPT-2022.17", "biteopt_options", keywds, nkeywds, 1.,
-	biteoptvers, 0,0,0,0,0, 202217
+	"biteoptampl", "BITEOPT-2022.19", "biteopt_options", keywds, nkeywds, 1.,
+	biteoptvers, 0,0,0,0,0, 202219
 };
 
 int xround( real* x, int n )
@@ -131,39 +131,25 @@ static double objfn( int N, const double* const x )
 			{
 				fc[ i ] = 0.0;
 
-				if( fabs( LUrhs[ i ] - Urhsx[ i ]) <= tol )
+				if( LUrhs[ i ] > negInfinity && tmpcon[ i ] < LUrhs[ i ])
 				{
-					double a = fabs(( LUrhs[ i ] + Urhsx[ i ]) * 0.5 -
-						tmpcon[ i ]);
+					double a = LUrhs[ i ] - tmpcon[ i ];
 
 					if( a > tol )
 					{
-						fc[ i ] = a;
+						fc[ i ] = a - tol;
 						con_notmet++;
 					}
 				}
-				else
+
+				if( Urhsx[ i ] < Infinity && tmpcon[ i ] > Urhsx[ i ])
 				{
-					if( LUrhs[ i ] > negInfinity && tmpcon[ i ] < LUrhs[ i ])
+					double a = tmpcon[ i ] - Urhsx[ i ];
+
+					if( a > tol )
 					{
-						double a = LUrhs[ i ] - tmpcon[ i ];
-
-						if( a > tol )
-						{
-							fc[ i ] = a;
-							con_notmet++;
-						}
-					}
-
-					if( Urhsx[ i ] < Infinity && tmpcon[ i ] > Urhsx[ i ])
-					{
-						double a = tmpcon[ i ] - Urhsx[ i ];
-
-						if( a > tol )
-						{
-							fc[ i ] = a;
-							con_notmet++;
-						}
+						fc[ i ] = a - tol;
+						con_notmet++;
 					}
 				}
 			}
@@ -199,20 +185,25 @@ public:
 	virtual double optcost( const double* const p )
 	{
 		last_ov = objfn( n_var, p );
-		double pns = 0.0;
 
-		if( n_con > 0 )
+		if( con_notmet > 0 )
 		{
 			const double ps = pow( 3.0, 1.0 / n_con );
+			const double pnsi = 1.0 / sqrt( (double) n_con );
+			double pns = 0.0;
+			double pnsm = 0.0;
 			int i;
 
 			for( i = 0; i < n_con; i++ )
 			{
-				pns = pns * ps + fc[ i ] + fc[ i ] * fc[ i ] * fc[ i ];
+				pns = pns * ps + pnsi + fc[ i ] + fc[ i ] * fc[ i ] * fc[ i ];
+				pnsm = pnsm * ps + pnsi;
 			}
+
+			return( last_ov + 1e10 * ( 1.0 + ( pns - pnsm )));
 		}
 
-		return( last_ov + 1e10 * ( con_notmet + pns ));
+		return( last_ov );
 	}
 };
 
@@ -324,7 +315,7 @@ start:
 	const int hardlim = (int) ( 1000.0 * itmult * pow( (double) n_var, p ) *
 		sqrt( (double) depth ));
 
-	const int sc_thresh = n_var * 256;
+	const int sc_thresh = n_var * 512;
 
 	#if USE_SOLDB
 		bool UseBestSol = false;

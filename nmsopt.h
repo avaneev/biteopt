@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.14
+ * @version 2022.19
  */
 
 #ifndef NMSOPT_INCLUDED
@@ -101,7 +101,7 @@ public:
 
 		if( InitParams != NULL )
 		{
-			memcpy( xx, InitParams, N * sizeof( x[ 0 ]));
+			copyParams( xx, InitParams );
 		}
 		else
 		{
@@ -461,7 +461,7 @@ private:
 		double* const xH = x[ xhi ];
 		int i;
 
-		memcpy( xH, ip, N * sizeof( xH[ 0 ]));
+		copyParams( xH, ip );
 		findhi();
 
 		const double* const nxH = x[ xhi ];
@@ -506,7 +506,7 @@ private:
 
 		if( OutValues != NULL )
 		{
-			memcpy( OutValues, NewValues, N * sizeof( OutValues[ 0 ]));
+			copyValues( OutValues, NewValues );
 		}
 
 		updateBestCost( cost, NewValues );

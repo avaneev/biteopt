@@ -240,30 +240,38 @@ Equality and non-equality constraints can be implemented as penalties. The
 author has found a general effective method to apply value constraints via
 penalties. In the code below, `n_con` is the number of constraints,
 `con_notmet` is the number of constraints not meeting tolerances, and the
-`pn[]` is the array of linear penalty values for each constraint; a penalty
-value should be set to 0 if it meets the tolerance. For derivative-free
-methods, a suggested constraint tolerance is 10<sup>-4</sup>, but a more
-common 10<sup>-6</sup> can be also used; lower values are not advised for use.
-Models with up to 190 constraints, both equalities and non-equalities, were
-tested with this method. In practice, on a large set of problems, this method
-finds a feasible solution in up to 94% of cases.
+`pn[]` is the array of linear, positive penalty values for each constraint;
+a penalty value should be set to 0 if it meets the tolerance (a penalty value
+should be offseted by tolerance factor to make smooth approach towards 0). For
+derivative-free methods, a suggested constraint tolerance is 10<sup>-4</sup>,
+but a more common 10<sup>-6</sup> can be also used; lower values are not
+advised for use. Models with up to 200 constraints, both equalities and
+non-equalities, were tested with this method. In practice, on a large set of
+problems, this method finds a feasible solution in up to 97% of cases.
 
-	const double ps = pow( 3.0, 1.0 / n_con );
-	double pns = 0.0;
-	int i;
+	real_value = cost;
 
-	for( i = 0; i < n_con; i++ )
+	if( con_notmet > 0 )
 	{
-		pns = pns * ps + pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
-	}
+		const double ps = pow( 3.0, 1.0 / n_con );
+		const double pnsi = 1.0 / sqrt( (double) n_con );
+		double pns = 0.0;
+		double pnsm = 0.0;
+		int i;
 
-    real_value = cost;
-	cost += 1e10 * ( con_notmet + pns );
+		for( i = 0; i < n_con; i++ )
+		{
+			pns = pns * ps + pnsi + pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
+			pnsm = pnsm * ps + pnsi;
+		}
+
+		cost += 1e10 * ( 1.0 + ( pns - pnsm ));
+	}
 
 In essence, this method transforms each penalty value into a cubic penalty
 value, places each penalty value into its own "stratum", and also applies a
-"barrier value" that depends on the number of constraints not met. The barrier
-value is suitably large for most practical constraint programming problems.
+"barrier value". The barrier value is suitably large for most practical
+constraint programming problems.
 
 See `constr.cpp` for an example of constraint programming. `constr2.cpp` is an
 example of non-linear constraint programming with both non-equalities and

@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.18.1"
+#define BITEOPT_VERSION "2022.19"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -702,9 +702,8 @@ protected:
 
 		const CBiteOptPop& ParPop = selectParPop( 0, rnd );
 
-		memcpy( Params, ParPop.getParamsOrdered(
-			getMinSolIndex( 0, rnd, ParPop.getCurPopSize() )),
-			ParamCount * sizeof( Params[ 0 ]));
+		copyParams( Params, ParPop.getParamsOrdered(
+			getMinSolIndex( 0, rnd, ParPop.getCurPopSize() )));
 
 		// Select a single random parameter or all parameters for further
 		// operations.
@@ -853,8 +852,7 @@ protected:
 	void generateSol2c( CBiteRnd& rnd )
 	{
 		ptype* const Params = TmpParams;
-
-		memset( Params, 0, ParamCount * sizeof( Params[ 0 ]));
+		zeroParams( Params );
 
 		const int si1 = rnd.getSqrInt( CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
@@ -958,32 +956,28 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		CBiteOptPop& AltPop = selectAltPop( 1, rnd );
-		CBiteOptPop& ParPop = selectParPop( 1, rnd );
+		const CBiteOptPop* UsePops[ 2 ];
+		UsePops[ 0 ] = &selectAltPop( 1, rnd );
+		UsePops[ 1 ] = &selectParPop( 1, rnd );
 
 		int UseSize[ 2 ];
 		UseSize[ 0 ] = CurPopSize;
-		UseSize[ 1 ] = ParPop.getCurPopSize();
-
-		const ptype** UseParams[ 2 ];
-		UseParams[ 0 ] = AltPop.getPopParams();
-		UseParams[ 1 ] = ParPop.getPopParams();
+		UseSize[ 1 ] = UsePops[ 1 ] -> getCurPopSize();
 
 		const int km = 5 + ( select( Gen4MixFacHist, rnd ) << 1 );
 
 		int p = rnd.getBit();
-		int si1 = rnd.getSqrInt( UseSize[ p ]);
-		const ptype* rp1 = UseParams[ p ][ si1 ];
+		const ptype* rp1 = UsePops[ p ] -> getParamsOrdered(
+			rnd.getSqrInt( UseSize[ p ]));
 
-		memcpy( Params, rp1, ParamCount * sizeof( Params[ 0 ]));
-
+		copyParams( Params, rp1 );
 		int k;
 
 		for( k = 1; k < km; k++ )
 		{
 			p = rnd.getBit();
-			si1 = rnd.getSqrInt( UseSize[ p ]);
-			rp1 = UseParams[ p ][ si1 ];
+			rp1 = UsePops[ p ] -> getParamsOrdered(
+				rnd.getSqrInt( UseSize[ p ]));
 
 			int i;
 
@@ -1157,7 +1151,7 @@ protected:
 
 		const ptype* rp0 = getParamsOrdered( rnd.getSqrInt( CurPopSize ));
 		rp[ 0 ] = rp0;
-		memcpy( Params, rp0, ParamCount * sizeof( Params[ 0 ]));
+		copyParams( Params, rp0 );
 
 		int j;
 		int i;

@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.15
+ * @version 2022.19
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -197,8 +197,7 @@ public:
 
 		if( OutValues != NULL )
 		{
-			memcpy( OutValues, NewValues,
-				ParamCount * sizeof( OutValues[ 0 ]));
+			copyValues( OutValues, NewValues );
 		}
 
 		updateBestCost( NewCost, NewValues );
@@ -212,9 +211,7 @@ public:
 		{
 			if( isAcceptedCost( NewCost ))
 			{
-				memcpy( PopParams[ CurPopSize1 ], Params,
-					ParamCount * sizeof( PopParams[ 0 ][ 0 ]));
-
+				copyParams( PopParams[ CurPopSize1 ], Params );
 				sortPop( NewCost, CurPopSize1 );
 			}
 		}
@@ -240,8 +237,8 @@ public:
 				applyHistsDecr( rnd );
 			}
 
+			resetCurPopPos();
 			AvgCost = 0.0;
-			CurPopPos = 0;
 			cure = 0;
 
 			update( rnd );

@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.3
+ * @version 2022.19
  */
 
 #ifndef BITEOPTORT_INCLUDED
@@ -204,9 +204,7 @@ public:
 
 		// Store older centroid and calculate new centroid.
 
-		memcpy( PrevCentParams, CentParams,
-			ParamCount * sizeof( PrevCentParams[ 0 ]));
-
+		copyParams( PrevCentParams, CentParams );
 		calcCent( ExtParams, UsePopSize );
 
 		// Update covariance matrix, the left-handed triangle only. Uses leaky

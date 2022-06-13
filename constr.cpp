@@ -57,10 +57,12 @@ public:
 
 	double penalty( double v )
 	{
-		if( v > 1e-15 )
+		static const double tol = 1e-15;
+
+		if( v > tol )
 		{
 			con_notmet++;
-			return( v );
+			return( v - tol );
 		}
 
 		return( 0.0 );
@@ -100,16 +102,23 @@ public:
 		pn[ 7 ] = penalty( -2.0*p[5]-p[6]+p[10] );
 		pn[ 8 ] = penalty( -2.0*p[7]-p[8]+p[11] );
 
-		const double ps = pow( 3.0, 1.0 / n_con );
-		double pns = 0.0;
-
-		for( i = 0; i < n_con; i++ )
-		{
-			pns = pns * ps + pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
-		}
-
 		real_value = cost;
-		cost += 1e10 * ( con_notmet + pns );
+
+		if( con_notmet > 0 )
+		{
+			const double ps = pow( 3.0, 1.0 / n_con );
+			const double pnsi = 1.0 / sqrt( (double) n_con );
+			double pns = 0.0;
+			double pnsm = 0.0;
+
+			for( i = 0; i < n_con; i++ )
+			{
+				pns = pns * ps + pnsi + pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
+				pnsm = pnsm * ps + pnsi;
+			}
+
+			cost += 1e10 * ( 1.0 + ( pns - pnsm ));
+		}
 
 		return( cost );
 	}

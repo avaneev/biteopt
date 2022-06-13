@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.17
+ * @version 2022.19
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -585,16 +585,14 @@ public:
 
 		for( i = 0; i < CurPopSize; i++ )
 		{
-			memcpy( PopParams[ i ], s.PopParams[ i ],
-				ParamCount * sizeof( PopParams[ i ][ 0 ]));
+			copyParams( PopParams[ i ], s.PopParams[ i ]);
 		}
 
 		memcpy( PopCosts, s.PopCosts, CurPopSize * sizeof( PopCosts[ 0 ]));
 
 		if( !NeedCentUpdate )
 		{
-			memcpy( CentParams, s.CentParams, ParamCount *
-				sizeof( CentParams[ 0 ]));
+			copyParams( CentParams, s.CentParams );
 		}
 	}
 
@@ -616,7 +614,7 @@ public:
 
 		if( CurPopSize <= BatchCount )
 		{
-			memcpy( cp, PopParams[ 0 ], ParamCount * sizeof( cp[ 0 ]));
+			copyParams( cp, PopParams[ 0 ]);
 
 			for( j = 1; j < CurPopSize; j++ )
 			{
@@ -649,7 +647,7 @@ public:
 				pl -= c;
 				c--;
 
-				memcpy( tp, PopParams[ j ], ParamCount * sizeof( tp[ 0 ]));
+				copyParams( tp, PopParams[ j ]);
 
 				while( c > 0 )
 				{
@@ -705,16 +703,6 @@ public:
 	const ptype* getParamsOrdered( const int i ) const
 	{
 		return( PopParams[ i ]);
-	}
-
-	/**
-	 * Function returns a pointer to array of population vector pointers,
-	 * which are sorted in the ascending cost order.
-	 */
-
-	const ptype** getPopParams() const
-	{
-		return( (const ptype**) PopParams );
 	}
 
 	/**
@@ -780,8 +768,7 @@ public:
 	{
 		if( CurPopPos < CurPopSize )
 		{
-			memcpy( PopParams[ CurPopPos ], UpdParams,
-				ParamCount * sizeof( PopParams[ CurPopPos ][ 0 ]));
+			copyParams( PopParams[ CurPopPos ], UpdParams );
 
 			const int p = sortPop( NewCost, CurPopPos );
 			CurPopPos++;
@@ -813,7 +800,7 @@ public:
 		}
 		else
 		{
-			memcpy( rp, UpdParams, ParamCount * sizeof( rp[ 0 ]));
+			copyParams( rp, UpdParams );
 			NeedCentUpdate = true;
 		}
 
@@ -835,8 +822,7 @@ public:
 		if( CopyVec >= 0 )
 		{
 			PopCosts[ CurPopSize ] = PopCosts[ CurPopSize1 ];
-			memcpy( PopParams[ CurPopSize ], PopParams[ CopyVec ],
-				ParamCount * sizeof( PopParams[ CurPopSize ][ 0 ]));
+			copyParams( PopParams[ CurPopSize ], PopParams[ CopyVec ]);
 		}
 
 		CurPopSize++;
@@ -956,6 +942,41 @@ protected:
 		PopParams[ i ] = InsertParams;
 
 		return( i );
+	}
+
+	/**
+	 * An aux function that resets a parameter vector to zero values.
+	 *
+	 * @param[out] dst Destination vector.
+	 */
+
+	void zeroParams( ptype* const dst ) const
+	{
+		memset( dst, 0, ParamCount * sizeof( dst[ 0 ]));
+	}
+
+	/**
+	 * An aux function that copies a parameter vector.
+	 *
+	 * @param[out] dst Destination vector.
+	 * @param[in] src Source vector.
+	 */
+
+	void copyParams( ptype* const dst, const ptype* const src ) const
+	{
+		memcpy( dst, src, ParamCount * sizeof( dst[ 0 ]));
+	}
+
+	/**
+	 * An aux function that copies a real solution vector.
+	 *
+	 * @param[out] dst Destination vector.
+	 * @param[in] src Source vector.
+	 */
+
+	void copyValues( double* const dst, const double* const src ) const
+	{
+		memcpy( dst, src, ParamCount * sizeof( dst[ 0 ]));
 	}
 
 	/**
@@ -1374,6 +1395,7 @@ protected:
 	using CBiteOptParPops< ptype > :: CurPopPos;
 	using CBiteOptParPops< ptype > :: NeedCentUpdate;
 	using CBiteOptParPops< ptype > :: resetCurPopPos;
+	using CBiteOptParPops< ptype > :: copyValues;
 
 	double* MinValues; ///< Minimal parameter values.
 		///<
@@ -1501,19 +1523,18 @@ protected:
 	 * Function updates BestCost value and BestValues array, if the specified
 	 * NewCost is better.
 	 *
-	 * @param NewCost New solution's cost.
+	 * @param UpdCost New solution's cost.
 	 * @param UpdValues New solution's values. The values should be in the
 	 * "real" value range.
 	 */
 
-	void updateBestCost( const double NewCost, const double* const UpdValues )
+	void updateBestCost( const double UpdCost, const double* const UpdValues )
 	{
-		if( NewCost <= BestCost )
+		if( UpdCost <= BestCost )
 		{
-			BestCost = NewCost;
+			BestCost = UpdCost;
 
-			memcpy( BestValues, UpdValues,
-				ParamCount * sizeof( BestValues[ 0 ]));
+			copyValues( BestValues, UpdValues );
 		}
 	}
 
