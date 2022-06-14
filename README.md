@@ -247,7 +247,7 @@ derivative-free methods, a suggested constraint tolerance is 10<sup>-4</sup>,
 but a more common 10<sup>-6</sup> can be also used; lower values are not
 advised for use. Models with up to 200 constraints, both equalities and
 non-equalities, were tested with this method. In practice, on a large set of
-problems, this method finds a feasible solution in up to 97% of cases.
+problems, this method finds a feasible solution in up to 98% of cases.
 
 	real_value = cost;
 

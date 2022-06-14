@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.21
+ * @version 2022.21.1
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -824,14 +824,14 @@ public:
 
 		ptype* const rp = PopParams[ ri ];
 
-		for( i = ri; i > p; i-- )
-		{
-			PopCosts[ i ] = PopCosts[ i - 1 ];
-			PopParams[ i ] = PopParams[ i - 1 ];
-		}
+		const int mc = ri - p;
+		double* const pc = PopCosts + p;
+		ptype** const pp = PopParams + p;
+		memmove( pc + 1, pc, mc * sizeof( pc[ 0 ]));
+		memmove( pp + 1, pp, mc * sizeof( pp[ 0 ]));
 
-		PopCosts[ p ] = UpdCost;
-		PopParams[ p ] = rp;
+		*pc = UpdCost;
+		*pp = rp;
 
 		if( rp != UpdParams )
 		{
@@ -1160,10 +1160,10 @@ protected:
 	 *
 	 * @param Cost Cost of parameter vector, used to filter considered
 	 * parallel population pool.
-	 * @param p Parameter vector.
+	 * @param Params Parameter vector.
 	 */
 
-	int getMinDistParPop( const double Cost, const ptype* const p ) const
+	int getMinDistParPop( const double Cost, const ptype* const Params ) const
 	{
 		int ppi[ MaxParPopCount ];
 		int ppc = 0;
@@ -1200,7 +1200,7 @@ protected:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const ptype v = p[ i ];
+				const ptype v = Params[ i ];
 				const double d0 = (double) ( v - c0[ i ]);
 				const double d1 = (double) ( v - c1[ i ]);
 				const double d2 = (double) ( v - c2[ i ]);
@@ -1228,7 +1228,7 @@ protected:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const ptype v = p[ i ];
+				const ptype v = Params[ i ];
 				const double d0 = (double) ( v - c0[ i ]);
 				const double d1 = (double) ( v - c1[ i ]);
 				const double d2 = (double) ( v - c2[ i ]);
@@ -1251,7 +1251,7 @@ protected:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const ptype v = p[ i ];
+				const ptype v = Params[ i ];
 				const double d0 = (double) ( v - c0[ i ]);
 				const double d1 = (double) ( v - c1[ i ]);
 				s0 += d0 * d0;
