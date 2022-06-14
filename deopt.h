@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.20
+ * @version 2022.21
  */
 
 #ifndef DEOPT_INCLUDED
@@ -267,7 +267,7 @@ public:
 			copyValues( OutValues, NewValues );
 		}
 
-		const int p = updatePop( NewCost, TmpParams, false );
+		const int p = updatePop( NewCost, TmpParams, false, false );
 
 		if( p < CurPopSize )
 		{

@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.20"
+#define BITEOPT_VERSION "2022.21"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -60,7 +60,6 @@ public:
 		addHist( M1BHist, "M1BHist" );
 		addHist( M1BAHist, "M1BAHist" );
 		addHist( M1BBHist, "M1BBHist" );
-		addHist( M1BCHist, "M1BCHist" );
 		addHist( M2Hist, "M2Hist" );
 		addHist( M2BHist, "M2BHist" );
 		addHist( PopChangeIncrHist, "PopChangeIncrHist" );
@@ -108,7 +107,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			9 + aParamCount * 3 );
+			7 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -305,14 +304,7 @@ public:
 				}
 				else
 				{
-					if( select( M1BCHist, rnd ))
-					{
-						generateSol6( rnd );
-					}
-					else
-					{
-						generateSol6b( rnd );
-					}
+					generateSol6b( rnd );
 				}
 			}
 		}
@@ -506,8 +498,6 @@ protected:
 	CBiteOptHist< 2 > M1BAHist; ///< Method 1's sub-sub-method BA histogram.
 		///<
 	CBiteOptHist< 2 > M1BBHist; ///< Method 1's sub-sub-method BB histogram.
-		///<
-	CBiteOptHist< 2 > M1BCHist; ///< Method 1's sub-sub-method BC histogram.
 		///<
 	CBiteOptHist< 2 > M2Hist; ///< Method 2's sub-method histogram.
 		///<
@@ -1086,6 +1076,8 @@ protected:
 	 * A short-cut solution generator. Parameter value short-cuts: they
 	 * considerably reduce convergence time for some functions while not
 	 * severely impacting performance for other functions.
+	 *
+	 * Not currently in use.
 	 */
 
 	void generateSol6( CBiteRnd& rnd )
@@ -1106,8 +1098,8 @@ protected:
 	}
 
 	/**
-	 * A variation of the generator 6, but with randomization of two values,
-	 * and slight move towards zero.
+	 * A variation of the generator 6, but with randomization between two
+	 * values, and a slight move towards real 0.
 	 */
 
 	void generateSol6b( CBiteRnd& rnd )
@@ -1126,7 +1118,7 @@ protected:
 			rnd.getInt( ParamCount ));
 
 		const double m = 1.0 - r2 * r2;
-		v[ 0 ] *= m; // Move towards real 0, for some functions.
+		v[ 0 ] *= m; // Move towards real 0, useful for some functions.
 		v[ 1 ] *= m;
 
 		int i;

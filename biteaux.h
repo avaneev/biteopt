@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.20
+ * @version 2022.21
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -757,20 +757,21 @@ public:
 	 * @param UpdParams New parameter values.
 	 * @param DoUpdateCentroid "True" if centroid should be updated using
 	 * running sum. This update is done for parallel populations.
+	 * @param CanRejectCost If "true", solution with a duplicate cost will be
+	 * rejected; this may provide a performance improvement. Solutions can
+	 * only be rejected when the whole population was filled.
 	 * @return Insertion position, ">=CurPopSize" if the cost constraint was
 	 * not met.
 	 */
 
 	int updatePop( double UpdCost, const ptype* const UpdParams,
-		const bool DoUpdateCentroid )
+		const bool DoUpdateCentroid, const bool CanRejectCost = true )
 	{
-		int p;
-		int i;
+		int ri; // Index of population vector to be replaced.
 
 		if( CurPopPos < PopSize )
 		{
-			p = CurPopPos;
-			CurPopPos++;
+			ri = CurPopPos;
 
 			if( UpdCost != UpdCost ) // Handle NaN.
 			{
@@ -779,30 +780,54 @@ public:
 		}
 		else
 		{
-			p = PopSize1;
+			ri = PopSize1;
 
 			if( UpdCost != UpdCost || // Check for NaN.
-				UpdCost > PopCosts[ p ])
+				UpdCost > PopCosts[ ri ])
 			{
 				return( PopSize );
 			}
 		}
 
-		ptype* const rp = PopParams[ p ];
+		// Perform binary search of a cost within the population.
 
-		while( p > 0 )
+		int p = 0;
+		int i = ri;
+
+		while( p < i )
 		{
-			const int p1 = p - 1;
-			const double c1 = PopCosts[ p1 ];
+			const int mid = ( p + i ) >> 1;
 
-			if( c1 < UpdCost )
+			if( PopCosts[ mid ] >= UpdCost )
 			{
-				break;
+				i = mid;
 			}
+			else
+			{
+				p = mid + 1;
+			}
+		}
 
-			PopCosts[ p ] = c1;
-			PopParams[ p ] = PopParams[ p1 ];
-			p--;
+		if( CurPopPos < PopSize )
+		{
+			CurPopPos++;
+		}
+		else
+		{
+			if( CanRejectCost && PopCosts[ p ] == UpdCost )
+			{
+				// Reject same-cost solution.
+
+				return( PopSize );
+			}
+		}
+
+		ptype* const rp = PopParams[ ri ];
+
+		for( i = ri; i > p; i-- )
+		{
+			PopCosts[ i ] = PopCosts[ i - 1 ];
+			PopParams[ i ] = PopParams[ i - 1 ];
 		}
 
 		PopCosts[ p ] = UpdCost;
