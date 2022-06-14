@@ -329,7 +329,8 @@ reaction kinetics (non-linear least squares problem).
     int biteopt_minimize( const int N, biteopt_func f, void* data,
         const double* lb, const double* ub, double* x, double* minf,
         const int iter, const int M = 1, const int attc = 10,
-        const int stopc = 0, biteopt_rng rf = 0, void* rdata = 0 )
+        const int stopc = 0, biteopt_rng rf = 0, void* rdata = 0,
+        double* f_min = 0 )
 
     N     The number of parameters in an objective function.
     f     Objective function.
@@ -349,7 +350,7 @@ reaction kinetics (non-linear least squares problem).
           Note that the external RNG should be seeded externally.
     rdata Data pointer to pass to the "rf" function.
     f_min If non-zero, a pointer to the stopping value: optimization will stop
-          when this objective value was reached.
+          when this objective value is reached.
 
     This function returns the total number of function evaluations performed;
     useful if the "stopc>0" and/or "f_min" were used.

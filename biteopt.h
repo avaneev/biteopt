@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.19"
+#define BITEOPT_VERSION "2022.20"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -60,6 +60,7 @@ public:
 		addHist( M1BHist, "M1BHist" );
 		addHist( M1BAHist, "M1BAHist" );
 		addHist( M1BBHist, "M1BBHist" );
+		addHist( M1BCHist, "M1BCHist" );
 		addHist( M2Hist, "M2Hist" );
 		addHist( M2BHist, "M2BHist" );
 		addHist( PopChangeIncrHist, "PopChangeIncrHist" );
@@ -107,7 +108,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			10 + aParamCount * 3 );
+			9 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -189,8 +190,6 @@ public:
 			}
 		}
 
-		updateCentroid();
-
 		AllpProbDamp = 1.8 * ParamCountI;
 		CentUpdateCtr = 0;
 
@@ -229,21 +228,21 @@ public:
 
 		if( DoInitEvals )
 		{
-			const ptype* const p = PopParams[ CurPopPos ];
+			const ptype* const Params = PopParams[ CurPopPos ];
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				NewValues[ i ] = getRealValue( p, i );
+				NewValues[ i ] = getRealValue( Params, i );
 			}
 
 			const double NewCost = optcost( NewValues );
-			sortPop( NewCost, CurPopPos );
-			updateBestCost( NewCost, NewValues );
-
-			CurPopPos++;
+			updateBestCost( NewCost, NewValues,
+				updatePop( NewCost, Params, false ));
 
 			if( CurPopPos == PopSize )
 			{
+				updateCentroid();
+
 				for( i = 0; i < ParPopCount; i++ )
 				{
 					ParPops[ i ] -> copy( *this );
@@ -306,7 +305,14 @@ public:
 				}
 				else
 				{
-					generateSol6( rnd );
+					if( select( M1BCHist, rnd ))
+					{
+						generateSol6( rnd );
+					}
+					else
+					{
+						generateSol6b( rnd );
+					}
 				}
 			}
 		}
@@ -383,7 +389,7 @@ public:
 					MinValues[ i ]) * DiffValuesI[ i ]);
 			}
 
-			UpdPop -> updatePop( NewCost, TmpParams, false, true );
+			UpdPop -> updatePop( NewCost, TmpParams, false );
 		}
 
 		if( DoEval )
@@ -401,9 +407,9 @@ public:
 			NewCost = optcost( NewValues );
 		}
 
-		updateBestCost( NewCost, NewValues );
+		const int p = updatePop( NewCost, TmpParams, true );
 
-		if( !isAcceptedCost( NewCost ))
+		if( p > CurPopSize1 )
 		{
 			// Upper bound cost constraint check failed, reject this solution.
 
@@ -417,14 +423,16 @@ public:
 				{
 					// Increase population size on fail.
 
-					incrCurPopSize( CurPopSize1 -
-						rnd.getSqrInt( CurPopSize ));
+					incrCurPopSize();
 				}
 			}
 		}
 		else
 		{
-			if( NewCost == PopCosts[ CurPopSize1 ])
+			updateBestCost( NewCost, NewValues, p );
+			applyHistsIncr( rnd, 1.0 - p * CurPopSizeI );
+
+			if( PopCosts[ 0 ] == PopCosts[ CurPopSize1 ])
 			{
 				StallCount++;
 			}
@@ -436,16 +444,13 @@ public:
 			if( rnd.get() < ParamCountI )
 			{
 				OldPop.updatePop( PopCosts[ CurPopSize1 ],
-					PopParams[ CurPopSize1 ], false, true );
+					PopParams[ CurPopSize1 ], false );
 			}
 
-			const int p = updatePop( NewCost, TmpParams, true, false );
-			applyHistsIncr( rnd, 1.0 - p * CurPopSizeI );
-
 			if( PushOpt != NULL && PushOpt != this &&
-				!PushOpt -> DoInitEvals && NewCost > PopCosts[ 0 ])
+				!PushOpt -> DoInitEvals && p > 0 )
 			{
-				PushOpt -> updatePop( NewCost, TmpParams, true, true );
+				PushOpt -> updatePop( NewCost, TmpParams, true );
 				PushOpt -> updateParPop( NewCost, TmpParams );
 			}
 
@@ -501,6 +506,8 @@ protected:
 	CBiteOptHist< 2 > M1BAHist; ///< Method 1's sub-sub-method BA histogram.
 		///<
 	CBiteOptHist< 2 > M1BBHist; ///< Method 1's sub-sub-method BB histogram.
+		///<
+	CBiteOptHist< 2 > M1BCHist; ///< Method 1's sub-sub-method BC histogram.
 		///<
 	CBiteOptHist< 2 > M2Hist; ///< Method 2's sub-method histogram.
 		///<
@@ -606,17 +613,17 @@ protected:
 	/**
 	 * Function updates an appropriate parallel population.
 	 *
-	 * @param NewCost Cost of the new solution.
+	 * @param UpdCost Cost of the new solution.
 	 * @param UpdParams New parameter values.
 	 */
 
-	void updateParPop( const double NewCost, const ptype* const UpdParams )
+	void updateParPop( const double UpdCost, const ptype* const UpdParams )
 	{
-		const int p = getMinDistParPop( NewCost, UpdParams );
+		const int p = getMinDistParPop( UpdCost, UpdParams );
 
 		if( p >= 0 )
 		{
-			ParPops[ p ] -> updatePop( NewCost, UpdParams, true, true );
+			ParPops[ p ] -> updatePop( UpdCost, UpdParams, true );
 		}
 	}
 
@@ -708,7 +715,6 @@ protected:
 		// Select a single random parameter or all parameters for further
 		// operations.
 
-		int i;
 		int a;
 		int b;
 		bool DoAllp = false;
@@ -745,6 +751,7 @@ protected:
 
 		const int si1 = (int) ( r1 * r12 * CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
+		int i;
 
 		for( i = a; i < b; i++ )
 		{
@@ -754,8 +761,8 @@ protected:
 
 		if( select( Gen1MoveHist, rnd ))
 		{
-			const int si2 = rnd.getSqrInt( CurPopSize );
-			const ptype* const rp2 = getParamsOrdered( si2 );
+			const ptype* const rp2 = getParamsOrdered(
+				rnd.getSqrInt( CurPopSize ));
 
 			if( select( Gen1MoveAsyncHist, rnd ))
 			{
@@ -1071,7 +1078,7 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			Params[ i ] = CrossParams[ rnd.getBit()][ i ];
+			Params[ i ] = CrossParams[ rnd.getBit() ][ i ];
 		}
 	}
 
@@ -1095,6 +1102,39 @@ protected:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			Params[ i ] = (ptype) (( v - MinValues[ i ]) * DiffValuesI[ i ]);
+		}
+	}
+
+	/**
+	 * A variation of the generator 6, but with randomization of two values,
+	 * and slight move towards zero.
+	 */
+
+	void generateSol6b( CBiteRnd& rnd )
+	{
+		ptype* const Params = TmpParams;
+
+		const double r = rnd.getSqr();
+		const double r2 = r * r;
+		const int si = (int) ( r2 * CurPopSize );
+
+		double v[ 2 ];
+		v[ 0 ] = getRealValue( getParamsOrdered( si ),
+			rnd.getInt( ParamCount ));
+
+		v[ 1 ] = getRealValue( getParamsOrdered( si ),
+			rnd.getInt( ParamCount ));
+
+		const double m = 1.0 - r2 * r2;
+		v[ 0 ] *= m; // Move towards real 0, for some functions.
+		v[ 1 ] *= m;
+
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			Params[ i ] = (ptype) (( v[ rnd.getBit() ] - MinValues[ i ]) *
+				DiffValuesI[ i ]);
 		}
 	}
 
@@ -1528,7 +1568,7 @@ public:
  * PRNG. Note that the external RNG should be seeded externally.
  * @param rdata Data pointer to pass to the "rf" function.
  * @param f_min If non-zero, a pointer to the stopping value: optimization
- * will stop when this objective value was reached.
+ * will stop when this objective value is reached.
  * @return The total number of function evaluations performed; useful if the
  * "stopc" and/or "f_min" were used.
  */

@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.19
+ * @version 2022.20
  */
 
 #ifndef NMSOPT_INCLUDED
@@ -36,7 +36,9 @@
 #include "biteaux.h"
 
 /**
- * Sequential Nelder-Mead simplex method.
+ * Sequential Nelder-Mead simplex method. Features custom coefficients tuned
+ * to provide better convergence at higher dimensions. Also implements various
+ * algorithmic optimizations.
  *
  * Description is available at https://github.com/avaneev/biteopt
  */
@@ -69,7 +71,8 @@ public:
 
 		N = aParamCount;
 		M = aPopSize;
-		M1m = 1.0 / ( M - 1 );
+		M1 = aPopSize - 1;
+		M1i = 1.0 / M1;
 
 		initBuffers( N, M );
 	}
@@ -150,9 +153,9 @@ public:
 	 * objective function evaluation.
 	 *
 	 * @param rnd Random number generator.
-	 * @param OutCost If not NULL, pointer to variable that receives cost
+	 * @param[out] OutCost If not NULL, pointer to variable that receives cost
 	 * of the newly-evaluated solution.
-	 * @param OutValues If not NULL, pointer to array that receives
+	 * @param[out] OutValues If not NULL, pointer to array that receives
 	 * newly-evaluated parameter vector, in real scale.
 	 * @return The number of non-improving iterations so far.
 	 */
@@ -184,10 +187,12 @@ public:
 
 		StallCount++;
 
+		const double sn = 0.5 * sqrt( ParamCountI );
+
 		static const double alpha = 1.0; // Reflection coeff.
-		static const double gamma = 2.0; // Expansion coeff.
-		static const double rho = -0.5; // Contraction coeff.
-		static const double sigma = 0.5; // Reduction coeff.
+		const double gamma = 1.5 + sn; // Expansion coeff.
+		const double rho = -0.75 + sn; // Contraction coeff.
+		const double sigma = 1.0 - sn; // Reduction coeff.
 
 		double* const xH = x[ xhi ]; // Highest cost parameter vector.
 
@@ -202,17 +207,16 @@ public:
 
 				y1 = eval( rnd, x1, OutCost, OutValues );
 
-				if( y1 >= y[ xlo ] && y1 < y[ xhi2 ])
+				if( y1 > y[ xlo ] && y1 < y[ xhi2 ])
 				{
 					copy( x1, y1 );
-					StallCount = 0;
 				}
 				else
 				{
 					if( y1 < y[ xlo ])
 					{
 						State = stExpansion;
-						StallCount = 0;
+						StallCount--;
 					}
 					else
 					{
@@ -264,7 +268,6 @@ public:
 
 					copy( x2, y2 );
 					State = stReflection;
-					StallCount = 0;
 				}
 				else
 				{
@@ -301,7 +304,7 @@ public:
 
 				rj++;
 
-				if( rj == M || ( rj == M - 1 && x[ rj ] == rx ))
+				if( rj == M || ( rj == M1 && x[ rj ] == rx ))
 				{
 					calccent();
 					State = stReflection;
@@ -319,13 +322,15 @@ private:
 		///<
 	int M; ///< The number of points in a simplex.
 		///<
-	double M1m; ///< = 1.0 / ( M - 1 ).
+	int M1; ///< = M - 1.
 		///<
-	int xlo; ///< Current lowest cost parameter vector.
+	double M1i; ///< = 1.0 / ( M - 1 ).
 		///<
-	int xhi; ///< Current highest cost parameter vector.
+	int xlo; ///< Current lowest-cost parameter vector.
 		///<
-	int xhi2; ///< Current second highest cost parameter vector.
+	int xhi; ///< Current highest-cost parameter vector.
+		///<
+	int xhi2; ///< Current second-highest-cost parameter vector.
 		///<
 	double** x; ///< Parameter vectors for all points.
 		///<
@@ -333,15 +338,16 @@ private:
 		///<
 	double* x0; // Centroid parameter vector.
 		///<
-	double* x1; ///< Temporary parameter vector 1.
+	double* x1; ///< Temporary parameter vector 1. Passed to stExpansion.
 		///<
-	double y1; ///< Cost of temporary parameter vector 1.
+	double y1; ///< Cost of temporary parameter vector 1. Passed to
+		///< stExpansion.
 		///<
 	double* x2; ///< Temporary parameter vector 2.
 		///<
-	double* rx; ///< Lowest cost parameter vector used during reduction.
+	double* rx; ///< Lowest-cost parameter vector used during reduction.
 		///<
-	int rj; ///< Current vector during reduction.
+	int rj; ///< Current vector index during reduction.
 		///<
 	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
 		///<
@@ -385,16 +391,8 @@ private:
 
 	void findhi()
 	{
-		if( y[ 0 ] > y[ 1 ])
-		{
-			xhi = 0;
-			xhi2 = 1;
-		}
-		else
-		{
-			xhi = 1;
-			xhi2 = 0;
-		}
+		xhi2 = ( y[ 0 ] > y[ 1 ]);
+		xhi = 1 - xhi2;
 
 		int j;
 
@@ -414,52 +412,66 @@ private:
 	}
 
 	/**
-	 * Function calculates the centroid vector.
+	 * Function calculates the centroid vector that excludes a highest-cost
+	 * parameter vector.
 	 */
 
 	void calccent()
 	{
 		findhi();
+
+		double* const xc = x0;
+		int j;
 		int i;
 
-		for( i = 0; i < N; i++ )
+		if( xhi == 0 )
 		{
-			x0[ i ] = 0.0;
+			copyParams( xc, x[ 1 ]);
+			j = 1;
 		}
-
-		int j;
-
-		for( j = 0; j < M; j++ )
+		else
 		{
-			if( j != xhi )
+			copyParams( xc, x[ 0 ]);
+
+			for( j = 1; j < xhi; j++ )
 			{
 				const double* const xx = x[ j ];
 
 				for( i = 0; i < N; i++ )
 				{
-					x0[ i ] += xx[ i ];
+					xc[ i ] += xx[ i ];
 				}
+			}
+		}
+
+		for( j = j + 1; j < M; j++ )
+		{
+			const double* const xx = x[ j ];
+
+			for( i = 0; i < N; i++ )
+			{
+				xc[ i ] += xx[ i ];
 			}
 		}
 
 		for( i = 0; i < N; i++ )
 		{
-			x0[ i ] *= M1m;
+			xc[ i ] *= M1i;
 		}
 	}
 
 	/**
-	 * Function replaces the highest-cost vector with a new vector.
+	 * Function replaces the highest-cost vector with a new vector. Function
+	 * also resets the StallCount to 0.
 	 *
 	 * @param ip Input vector.
-	 * @param cost Input vector's cost.
+	 * @param Cost Input vector's cost.
 	 */
 
-	void copy( const double* const ip, const double cost )
+	void copy( const double* const ip, const double Cost )
 	{
-		y[ xhi ] = cost;
+		y[ xhi ] = Cost;
 		double* const xH = x[ xhi ];
-		int i;
 
 		copyParams( xH, ip );
 		findhi();
@@ -468,11 +480,15 @@ private:
 
 		if( xH != nxH )
 		{
+			int i;
+
 			for( i = 0; i < N; i++ )
 			{
-				x0[ i ] += ( xH[ i ] - nxH[ i ]) * M1m;
+				x0[ i ] += ( xH[ i ] - nxH[ i ]) * M1i;
 			}
 		}
+
+		StallCount = 0;
 	}
 
 	/**
@@ -480,28 +496,28 @@ private:
 	 * also records a new best solution.
 	 *
 	 * @param rnd Random number generator.
-	 * @param p Parameter vector to evaluate.
-	 * @param OutCost If not NULL, pointer to variable that receives cost
+	 * @param Params Parameter vector to evaluate.
+	 * @param[out] OutCost If not NULL, pointer to variable that receives cost
 	 * of the newly-evaluated solution.
-	 * @param OutValues If not NULL, pointer to array that receives
+	 * @param[out] OutValues If not NULL, pointer to array that receives
 	 * newly-evaluated parameter vector, in real scale.
 	 */
 
-	double eval( CBiteRnd& rnd, const double* p,
+	double eval( CBiteRnd& rnd, const double* const Params,
 		double* const OutCost = NULL, double* const OutValues = NULL )
 	{
 		int i;
 
 		for( i = 0; i < N; i++ )
 		{
-			NewValues[ i ] = wrapParamReal( rnd, p[ i ], i );
+			NewValues[ i ] = wrapParamReal( rnd, Params[ i ], i );
 		}
 
-		const double cost = optcost( NewValues );
+		const double Cost = optcost( NewValues );
 
 		if( OutCost != NULL )
 		{
-			*OutCost = cost;
+			*OutCost = Cost;
 		}
 
 		if( OutValues != NULL )
@@ -509,9 +525,9 @@ private:
 			copyValues( OutValues, NewValues );
 		}
 
-		updateBestCost( cost, NewValues );
+		updateBestCost( Cost, NewValues );
 
-		return( cost );
+		return( Cost );
 	}
 };
 
