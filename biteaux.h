@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.21.1
+ * @version 2022.22
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -497,6 +497,7 @@ public:
 		, PopCosts( NULL )
 		, CentParams( NULL )
 		, NeedCentUpdate( false )
+		, CentMult( 1.0 )
 	{
 	}
 
@@ -549,7 +550,7 @@ public:
 		PopParamsBuf = new ptype[( aPopSize + 1 ) * aParamCount ];
 		PopParams = new ptype*[ aPopSize + 1 ]; // Last element is temporary.
 		PopCosts = new double[ aPopSize ];
-		CentParams = new ptype[ aParamCount ];
+		CentParams = new double[ aParamCount ];
 
 		int i;
 
@@ -581,6 +582,7 @@ public:
 		CurPopSize1 = s.CurPopSize1;
 		CurPopPos = s.CurPopPos;
 		NeedCentUpdate = s.NeedCentUpdate;
+		CentMult = s.CentMult;
 
 		int i;
 
@@ -593,29 +595,31 @@ public:
 
 		if( !NeedCentUpdate )
 		{
-			copyParams( CentParams, s.CentParams );
+			copyValues( CentParams, s.CentParams );
 		}
 	}
 
 	/**
 	 * Function recalculates centroid based on the current population size.
 	 * The NeedCentUpdate variable can be checked if centroid update is
-	 * needed. This function resets the NeedCentUpdate to "false".
+	 * needed. This function resets the NeedCentUpdate to "false". This
+	 * function should only be called after the population is filled.
 	 */
 
 	void updateCentroid()
 	{
 		NeedCentUpdate = false;
+		CentMult = CurPopSizeI;
 
 		const int BatchCount = ( 1 << IntOverBits ) - 1;
-		const double m = CurPopSizeI;
-		ptype* const cp = CentParams;
+		double* const cp = CentParams;
+		ptype* const tp = TmpParams;
 		int i;
 		int j;
 
 		if( CurPopSize <= BatchCount )
 		{
-			copyParams( cp, PopParams[ 0 ]);
+			copyParams( tp, PopParams[ 0 ]);
 
 			for( j = 1; j < CurPopSize; j++ )
 			{
@@ -623,13 +627,13 @@ public:
 
 				for( i = 0; i < ParamCount; i++ )
 				{
-					cp[ i ] += p[ i ];
+					tp[ i ] += p[ i ];
 				}
 			}
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				cp[ i ] = (ptype) ( cp[ i ] * m );
+				cp[ i ] = (double) tp[ i ];
 			}
 		}
 		else
@@ -637,7 +641,6 @@ public:
 			// Batched centroid calculation, for more precision and no integer
 			// overflows.
 
-			ptype* const tp = TmpParams;
 			int pl = CurPopSize;
 			j = 0;
 			bool DoCopy = true;
@@ -669,14 +672,14 @@ public:
 
 					for( i = 0; i < ParamCount; i++ )
 					{
-						cp[ i ] = (ptype) ( tp[ i ] * m );
+						cp[ i ] = (double) tp[ i ];
 					}
 				}
 				else
 				{
 					for( i = 0; i < ParamCount; i++ )
 					{
-						cp[ i ] += (ptype) ( tp[ i ] * m );
+						cp[ i ] += (double) tp[ i ];
 					}
 				}
 			}
@@ -686,12 +689,22 @@ public:
 	/**
 	 * Function returns pointer to the centroid vector. The NeedUpdateCent
 	 * should be checked and and if it is equal to "true", the
-	 * updateCentroid() function called.
+	 * updateCentroid() function called. Note that the centroid is not
+	 * normalized by CurPopSizeI.
 	 */
 
-	const ptype* getCentroid() const
+	const double* getCentroid() const
 	{
 		return( CentParams );
+	}
+
+	/**
+	 * Function returns multiplier that normalizes centroid values.
+	 */
+
+	double getCentroidMult() const
+	{
+		return( CentMult );
 	}
 
 	/**
@@ -837,12 +850,11 @@ public:
 		{
 			if( DoUpdateCentroid )
 			{
-				ptype* const cp = CentParams;
-				const double m = CurPopSizeI;
+				double* const cp = CentParams;
 
 				for( i = 0; i < ParamCount; i++ )
 				{
-					cp[ i ] += (ptype) (( UpdParams[ i ] - rp[ i ]) * m );
+					cp[ i ] += UpdParams[ i ] - rp[ i ];
 					rp[ i ] = UpdParams[ i ];
 				}
 			}
@@ -854,20 +866,7 @@ public:
 		}
 		else
 		{
-			if( DoUpdateCentroid )
-			{
-				ptype* const cp = CentParams;
-				const double m = CurPopSizeI;
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					cp[ i ] += (ptype) ( UpdParams[ i ] * m );
-				}
-			}
-			else
-			{
-				NeedCentUpdate = true;
-			}
+			NeedCentUpdate = true;
 		}
 
 		return( p );
@@ -876,7 +875,7 @@ public:
 	/**
 	 * Function increases current population size, and updates the required
 	 * variables. This function can only be called if CurPopSize is less than
-	 * PopSize.
+	 * PopSize, and previously the whole population was filled.
 	 */
 
 	void incrCurPopSize()
@@ -890,7 +889,7 @@ public:
 	/**
 	 * Function decreases current population size, and updates the required
 	 * variables. This function can only be called if CurPopSize is greater
-	 * than 1.
+	 * than 1, and the whole population was filled.
 	 */
 
 	void decrCurPopSize()
@@ -903,8 +902,8 @@ public:
 
 protected:
 	static const int IntOverBits = ( sizeof( ptype ) > 4 ? 5 : 3 ); ///< The
-		///< number of bits of precision required for centroid calculation and
-		///< overflows.
+		///< number of bits of precision required for integer centroid
+		///< calculation and overflows.
 		///<
 	static const int IntMantBits = sizeof( ptype ) * 8 - 1 - IntOverBits; ///<
 		///< Mantissa size of the integer parameter values (higher by 1 bit in
@@ -949,9 +948,14 @@ protected:
 	double* PopCosts; ///< Costs of population parameter vectors, sorting
 		///< order corresponds to PopParams.
 		///<
-	ptype* CentParams; ///< Centroid of the current parameter vectors.
+	double* CentParams; ///< Centroid of the current parameter vectors. Note
+		///< that the centroid is not normalized, stored in ptype's value
+		///< scale.
 		///<
 	bool NeedCentUpdate; ///< "True" if centroid update is needed.
+		///<
+	double CentMult; ///< Centroid multiplier, used for centroid values
+		///< normalization. Updated in the updateCentroid() function.
 		///<
 	ptype* TmpParams; ///< Temporary parameter vector, points to the last
 		///< element of the PopParams array.
@@ -1120,6 +1124,7 @@ public:
 
 protected:
 	using CBiteOptPop< ptype > :: ParamCount;
+	using CBiteOptPop< ptype > :: PopSize;
 
 	static const int MaxParPopCount = 8; ///< The maximal number of parallel
 		///< population supported.
@@ -1165,34 +1170,16 @@ protected:
 
 	int getMinDistParPop( const double Cost, const ptype* const Params ) const
 	{
-		int ppi[ MaxParPopCount ];
-		int ppc = 0;
+		double s[ MaxParPopCount ];
+		const double pm = -PopSize;
 		int i;
 
-		for( i = 0; i < ParPopCount; i++ )
+		if( ParPopCount == 4 )
 		{
-			ppi[ ppc ] = i;
-			ppc++;
-		}
-
-		if( ppc == 0 )
-		{
-			return( -1 );
-		}
-
-		if( ppc == 1 )
-		{
-			return( ppi[ 0 ]);
-		}
-
-		double s[ MaxParPopCount ];
-
-		if( ppc == 4 )
-		{
-			const ptype* const c0 = ParPops[ ppi[ 0 ]] -> getCentroid();
-			const ptype* const c1 = ParPops[ ppi[ 1 ]] -> getCentroid();
-			const ptype* const c2 = ParPops[ ppi[ 2 ]] -> getCentroid();
-			const ptype* const c3 = ParPops[ ppi[ 3 ]] -> getCentroid();
+			const double* const c0 = ParPops[ 0 ] -> getCentroid();
+			const double* const c1 = ParPops[ 1 ] -> getCentroid();
+			const double* const c2 = ParPops[ 2 ] -> getCentroid();
+			const double* const c3 = ParPops[ 3 ] -> getCentroid();
 			double s0 = 0.0;
 			double s1 = 0.0;
 			double s2 = 0.0;
@@ -1200,13 +1187,14 @@ protected:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const ptype v = Params[ i ];
-				const double d0 = (double) ( v - c0[ i ]);
-				const double d1 = (double) ( v - c1[ i ]);
-				const double d2 = (double) ( v - c2[ i ]);
-				const double d3 = (double) ( v - c3[ i ]);
+				const double v = Params[ i ] * pm;
+				const double d0 = v + c0[ i ];
+				const double d1 = v + c1[ i ];
 				s0 += d0 * d0;
 				s1 += d1 * d1;
+
+				const double d2 = v + c2[ i ];
+				const double d3 = v + c3[ i ];
 				s2 += d2 * d2;
 				s3 += d3 * d3;
 			}
@@ -1217,23 +1205,24 @@ protected:
 			s[ 3 ] = s3;
 		}
 		else
-		if( ppc == 3 )
+		if( ParPopCount == 3 )
 		{
-			const ptype* const c0 = ParPops[ ppi[ 0 ]] -> getCentroid();
-			const ptype* const c1 = ParPops[ ppi[ 1 ]] -> getCentroid();
-			const ptype* const c2 = ParPops[ ppi[ 2 ]] -> getCentroid();
+			const double* const c0 = ParPops[ 0 ] -> getCentroid();
+			const double* const c1 = ParPops[ 1 ] -> getCentroid();
+			const double* const c2 = ParPops[ 2 ] -> getCentroid();
 			double s0 = 0.0;
 			double s1 = 0.0;
 			double s2 = 0.0;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const ptype v = Params[ i ];
-				const double d0 = (double) ( v - c0[ i ]);
-				const double d1 = (double) ( v - c1[ i ]);
-				const double d2 = (double) ( v - c2[ i ]);
+				const double v = Params[ i ] * pm;
+				const double d0 = v + c0[ i ];
+				const double d1 = v + c1[ i ];
 				s0 += d0 * d0;
 				s1 += d1 * d1;
+
+				const double d2 = v + c2[ i ];
 				s2 += d2 * d2;
 			}
 
@@ -1242,18 +1231,18 @@ protected:
 			s[ 2 ] = s2;
 		}
 		else
-		if( ppc == 2 )
+		if( ParPopCount == 2 )
 		{
-			const ptype* const c0 = ParPops[ ppi[ 0 ]] -> getCentroid();
-			const ptype* const c1 = ParPops[ ppi[ 1 ]] -> getCentroid();
+			const double* const c0 = ParPops[ 0 ] -> getCentroid();
+			const double* const c1 = ParPops[ 1 ] -> getCentroid();
 			double s0 = 0.0;
 			double s1 = 0.0;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const ptype v = Params[ i ];
-				const double d0 = (double) ( v - c0[ i ]);
-				const double d1 = (double) ( v - c1[ i ]);
+				const double v = Params[ i ] * pm;
+				const double d0 = v + c0[ i ];
+				const double d1 = v + c1[ i ];
 				s0 += d0 * d0;
 				s1 += d1 * d1;
 			}
@@ -1265,7 +1254,7 @@ protected:
 		int pp = 0;
 		double d = s[ pp ];
 
-		for( i = 1; i < ppc; i++ )
+		for( i = 1; i < ParPopCount; i++ )
 		{
 			if( s[ i ] <= d )
 			{
@@ -1274,7 +1263,7 @@ protected:
 			}
 		}
 
-		return( ppi[ pp ]);
+		return( pp );
 	}
 };
 

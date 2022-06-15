@@ -49,11 +49,11 @@ static keyword keywds[] = {	/* must be in alphabetical order */
 };
 
 static char biteoptvers[] =
-	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.20\n";
+	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.22\n";
 
 static Option_Info Oinfo = {
-	"biteoptampl", "BITEOPT-2022.20", "biteopt_options", keywds, nkeywds, 1.,
-	biteoptvers, 0,0,0,0,0, 202220
+	"biteoptampl", "BITEOPT-2022.22", "biteopt_options", keywds, nkeywds, 1.,
+	biteoptvers, 0,0,0,0,0, 202222
 };
 
 int xround( real* x, int n )

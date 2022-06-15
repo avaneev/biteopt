@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.21"
+#define BITEOPT_VERSION "2022.22"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -929,7 +929,8 @@ protected:
 		const ptype* const MinParams = getParamsOrdered(
 			getMinSolIndex( 3, rnd, CurPopSize ));
 
-		const ptype* const cp = getCentroid();
+		const double* const cp = getCentroid();
+		const double cm = getCentroidMult();
 
 		const int si1 = rnd.getSqrInt( CurPopSize );
 		const ptype* const rp1 = getParamsOrdered( si1 );
@@ -937,7 +938,7 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			Params[ i ] = ( rnd.getBit() ? cp[ i ] :
+			Params[ i ] = ( rnd.getBit() ? (ptype) ( cp[ i ] * cm ) :
 				MinParams[ i ] + ( MinParams[ i ] - rp1[ i ]));
 		}
 	}
