@@ -255,13 +255,17 @@ problems, this method finds a feasible solution in up to 98% of cases.
 	{
 		const double ps = pow( 3.0, 1.0 / n_con );
 		const double pnsi = 1.0 / sqrt( (double) n_con );
+		const double pnm = pow( pnsi, 3.0 );
+
 		double pns = 0.0;
 		double pnsm = 0.0;
 		int i;
 
 		for( i = 0; i < n_con; i++ )
 		{
-			pns = pns * ps + pnsi + pn[ i ] + pn[ i ] * pn[ i ] * pn[ i ];
+			const double v = pn[ i ] * pnm;
+			const double v2 = v * v;
+			pns = pns * ps + pnsi + v + v2 + v * v2;
 			pnsm = pnsm * ps + pnsi;
 		}
 

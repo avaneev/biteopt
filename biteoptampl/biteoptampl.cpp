@@ -49,11 +49,11 @@ static keyword keywds[] = {	/* must be in alphabetical order */
 };
 
 static char biteoptvers[] =
-	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.22\n";
+	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.23\n";
 
 static Option_Info Oinfo = {
-	"biteoptampl", "BITEOPT-2022.22", "biteopt_options", keywds, nkeywds, 1.,
-	biteoptvers, 0,0,0,0,0, 202222
+	"biteoptampl", "BITEOPT-2022.23", "biteopt_options", keywds, nkeywds, 1.,
+	biteoptvers, 0,0,0,0,0, 202223
 };
 
 int xround( real* x, int n )
@@ -190,13 +190,17 @@ public:
 		{
 			const double ps = pow( 3.0, 1.0 / n_con );
 			const double pnsi = 1.0 / sqrt( (double) n_con );
+			const double pnm = pow( pnsi, 3.0 );
+
 			double pns = 0.0;
 			double pnsm = 0.0;
 			int i;
 
 			for( i = 0; i < n_con; i++ )
 			{
-				pns = pns * ps + pnsi + fc[ i ] + fc[ i ] * fc[ i ] * fc[ i ];
+				const double v = fc[ i ] * pnm;
+				const double v2 = v * v;
+				pns = pns * ps + pnsi + v + v2 + v * v2;
 				pnsm = pnsm * ps + pnsi;
 			}
 
@@ -336,6 +340,7 @@ start:
 	int f_notmet;
 	int f_iters;
 	int khl = 0;
+	bool IsFinished = false;
 	int k;
 
 	for( k = 0; k < attc; k++ )
@@ -361,7 +366,7 @@ start:
 				{
 					if( -last_ov >= MinObj - d )
 					{
-						k = attc;
+						IsFinished = true;
 						break;
 					}
 				}
@@ -369,7 +374,7 @@ start:
 				{
 					if( last_ov <= MinObj + d )
 					{
-						k = attc;
+						IsFinished = true;
 						break;
 					}
 				}
@@ -412,6 +417,11 @@ start:
 
 			f = nf;
 			f_notmet = con_notmet;
+		}
+
+		if( IsFinished )
+		{
+			break;
 		}
 	}
 
