@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.22"
+#define BITEOPT_VERSION "2022.23"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -86,6 +86,7 @@ public:
 		addHist( Gen1MoveHist, "Gen1MoveHist" );
 		addHist( Gen1MoveAsyncHist, "Gen1MoveAsyncHist" );
 		addHist( Gen1MoveSpanHist, "Gen1MoveSpanHist" );
+		addHist( Gen2ModeHist, "Gen2ModeHist" );
 		addHist( Gen4MixFacHist, "Gen4MixFacHist" );
 		addHist( Gen7PowFacHist, "Gen7PowFacHist" );
 		addHist( Gen8ModeHist, "Gen8ModeHist" );
@@ -530,14 +531,15 @@ protected:
 	CBiteOptHist< 2 > Gen1AllpHist; ///< Generator method 1's Allp
 		///< histogram.
 		///<
-	CBiteOptHist< 2 > Gen1MoveHist; ///< Generator method 1's Move
-		///< histogram.
+	CBiteOptHist< 2 > Gen1MoveHist; ///< Generator method 1's Move histogram.
 		///<
 	CBiteOptHist< 2 > Gen1MoveAsyncHist; ///< Generator method 1's Move
 		///< async histogram.
 		///<
 	CBiteOptHist< 4 > Gen1MoveSpanHist; ///< Generator method 1's Move span
 		///< histogram.
+		///<
+	CBiteOptHist< 2 > Gen2ModeHist; ///< Generator method 2's Mode histogram.
 		///<
 	CBiteOptHist< 4 > Gen4MixFacHist; ///< Generator method 4's mixing
 		///< count histogram.
@@ -777,7 +779,9 @@ protected:
 	}
 
 	/**
-	 * The "Differential Evolution"-based solution generator.
+	 * The "Differential Evolution"-based solution generator. Note that
+	 * compared to a usual DE, this generator does not use crossover, and
+	 * it uses one, or an average of two best solutions as the base.
 	 */
 
 	void generateSol2( CBiteRnd& rnd )
@@ -800,12 +804,27 @@ protected:
 		// the worst (maximal) parameter vector, plus a difference of two
 		// random vectors.
 
+		const int Mode = select( Gen2ModeHist, rnd );
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		if( Mode == 0 )
 		{
-			Params[ i ] = rp1[ i ] + ((( rp2[ i ] - rp3[ i ]) +
-				( rp4[ i ] - rp5[ i ])) >> 1 );
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = rp1[ i ] + ((( rp2[ i ] - rp3[ i ]) +
+					( rp4[ i ] - rp5[ i ])) >> 1 );
+			}
+		}
+		else
+		{
+			const ptype* const rp1b = getParamsOrdered(
+				rnd.getSqrInt( CurPopSize ));
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = (( rp1[ i ] + rp1b[ i ]) +
+					( rp2[ i ] - rp3[ i ]) + ( rp4[ i ] - rp5[ i ])) >> 1;
+			}
 		}
 	}
 
