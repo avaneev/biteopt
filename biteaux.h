@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.22
+ * @version 2022.24
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -305,10 +305,14 @@ public:
 
 	CBiteOptHistBase( const int aCount )
 		: Count( aCount )
-		, CountSp( Count * SparseMul )
-		, CountSp1( CountSp - 1 )
-		, SelpThrs( CountSp * 2 / 3 )
+		, SelBuf( NULL )
+		, SelBufCapacity( 0 )
 	{
+	}
+
+	~CBiteOptHistBase()
+	{
+		delete[] SelBuf;
 	}
 
 	/**
@@ -316,36 +320,56 @@ public:
 	 * other functions, including after object's construction.
 	 *
 	 * @param rnd PRNG object.
+	 * @param ParamCount The number of dimensions being optimized.
 	 */
 
-	void reset( CBiteRnd& rnd )
+	void reset( CBiteRnd& rnd, const int ParamCount )
 	{
+		SparseMul = 5;
+		CountSp = Count * SparseMul;
+		CountSp1 = CountSp - 1;
+		SelpThrs = CountSp * 2 / 3;
+
+		const int NewCapacity = SlotCount * CountSp;
+
+		if( NewCapacity > SelBufCapacity )
+		{
+			delete[] SelBuf;
+			SelBufCapacity = NewCapacity;
+			SelBuf = new int[ NewCapacity ];
+		}
+
 		int j;
 
 		for( j = 0; j < SlotCount; j++ )
 		{
+			// Fill slot vector with replicas of possible choices.
+
+			int* const sp = SelBuf + j * CountSp;
+			Sels[ j ] = sp;
 			int i;
 
 			for( i = 0; i < Count; i++ )
 			{
+				int* const spo = sp + i * SparseMul;
 				int k;
 
 				for( k = 0; k < SparseMul; k++ )
 				{
-					Sels[ j ][ i * SparseMul + k ] = i;
+					spo[ k ] = i;
 				}
 			}
 
 			// Randomized swap-mixing.
 
-			for( i = 0; i < CountSp * SparseMul; i++ )
+			for( i = 0; i < CountSp * 5; i++ )
 			{
 				const int i1 = rnd.getInt( CountSp );
 				const int i2 = rnd.getInt( CountSp );
 
-				const int t = Sels[ j ][ i1 ];
-				Sels[ j ][ i1 ] = Sels[ j ][ i2 ];
-				Sels[ j ][ i2 ] = t;
+				const int t = sp[ i1 ];
+				sp[ i1 ] = sp[ i2 ];
+				sp[ i2 ] = t;
 			}
 		}
 
@@ -368,12 +392,12 @@ public:
 	 * This function should only be called after a prior select() calls.
 	 *
 	 * @param rnd PRNG object. May not be used.
-	 * @param v Histogram increment value, [0; 1].
+	 * @param v Histogram increment value (success score), [0; 1].
 	 */
 
 	void incr( CBiteRnd& rnd, const double v = 1.0 )
 	{
-		if( Selp > 0 && rnd.get() < v * v ) // Boost choice with a good cost.
+		if( Selp > 0 && rnd.get() < v * v ) // Boost an efficient choice.
 		{
 			Sels[ Slot ][ Selp ] = Sels[ Slot ][ Selp - 1 ];
 			Sels[ Slot ][ Selp - 1 ] = Sel;
@@ -394,7 +418,7 @@ public:
 
 	void decr( CBiteRnd& rnd )
 	{
-		if( Selp < CountSp1 ) // Demote inefficient choice.
+		if( Selp < CountSp1 ) // Demote an inefficient choice.
 		{
 			Sels[ Slot ][ Selp ] = Sels[ Slot ][ Selp + 1 ];
 			Sels[ Slot ][ Selp + 1 ] = Sel;
@@ -433,15 +457,13 @@ public:
 	}
 
 protected:
-	static const int MaxCount = 4; ///< The maximal number of choices
-		///< supported.
-		///<
-	static const int SparseMul = 5; ///< Multiplier used to obtain an actual
-		///< length of the choice vector.
-		///<
 	static const int SlotCount = 4; ///< The number of choice vectors in use.
 		///<
 	int Count; ///< The number of choices in use.
+		///<
+	int SparseMul; ///< Multiplier used to obtain an actual length of the
+		///< choice vector. This multiplier replicates choices in the vector,
+		///< increasing precision of the resulting PDF and its stability.
 		///<
 	int CountSp; ///< = Count * SparseMul. The actual length of the choice
 		///< vector.
@@ -450,7 +472,11 @@ protected:
 		///<
 	int SelpThrs; ///< Threshold value for Slot switching.
 		///<
-	int Sels[ SlotCount ][ MaxCount * SparseMul ]; ///< Choice vectors.
+	int* Sels[ SlotCount ]; ///< Choice vectors.
+		///<
+	int* SelBuf; ///< A singular buffer for Sels vectors.
+		///<
+	int SelBufCapacity; ///< Capacity of SelBuf.
 		///<
 	int Sel; ///< The latest selected choice. Available only after the
 		///< select() function calls.
@@ -1499,7 +1525,7 @@ protected:
 
 		for( i = 0; i < HistCount; i++ )
 		{
-			Hists[ i ] -> reset( rnd );
+			Hists[ i ] -> reset( rnd, ParamCount );
 		}
 	}
 
