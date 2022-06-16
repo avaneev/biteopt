@@ -192,7 +192,10 @@ the global descent vanishes at some point and the method is left with an
 exponentially increasing number of local minima. However, BiteOpt is able
 to solve symmetric and asymmetric TSP problems even as large as 400-node ones,
 to within 2-6% of optimum (parameter values should be sorted to derive the
-node ordering).
+node ordering). A comparison to a specialized TSP solver like Concorde is not
+reasonable to do (BiteOpt is much slower), but BiteOpt permits solving
+non-conventional or mixed-field (e.g. noisy, scheduled, clustered) TSP
+problems.
 
 Similarly, problems with many competing minima without a pronounced global
 descent towards global minimum (e.g., Bukin N.6 problem) may not be solved
