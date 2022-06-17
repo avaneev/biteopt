@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.24
+ * @version 2022.25
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -853,11 +853,26 @@ public:
 		}
 		else
 		{
-			if( CanRejectCost && PopCosts[ p ] == UpdCost )
+			if( CanRejectCost )
 			{
-				// Reject same-cost solution.
+				// Reject same-cost solution using equality precision level.
 
-				return( PopSize );
+				static const double etol = 0x1p-52;
+				const double c = PopCosts[ p ];
+				const double cd = fabs( UpdCost - c );
+
+				if( cd == 0.0 )
+				{
+					return( PopSize );
+				}
+
+				const double auc = fabs( UpdCost );
+				const double cs = auc + fabs( c );
+
+				if( cs == 0.0 || cd / cs < etol )
+				{
+					return( PopSize );
+				}
 			}
 		}
 

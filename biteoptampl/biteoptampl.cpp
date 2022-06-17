@@ -49,11 +49,11 @@ static keyword keywds[] = {	/* must be in alphabetical order */
 };
 
 static char biteoptvers[] =
-	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.23\n";
+	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.25\n";
 
 static Option_Info Oinfo = {
-	"biteoptampl", "BITEOPT-2022.23", "biteopt_options", keywds, nkeywds, 1.,
-	biteoptvers, 0,0,0,0,0, 202223
+	"biteoptampl", "BITEOPT-2022.25", "biteopt_options", keywds, nkeywds, 1.,
+	biteoptvers, 0,0,0,0,0, 202225
 };
 
 int xround( real* x, int n )
@@ -190,7 +190,6 @@ public:
 		{
 			const double ps = pow( 3.0, 1.0 / n_con );
 			const double pnsi = 1.0 / sqrt( (double) n_con );
-			const double pnm = pow( pnsi, 3.0 );
 
 			double pns = 0.0;
 			double pnsm = 0.0;
@@ -198,7 +197,7 @@ public:
 
 			for( i = 0; i < n_con; i++ )
 			{
-				const double v = fc[ i ] * pnm;
+				const double v = fc[ i ];
 				const double v2 = v * v;
 				pns = pns * ps + pnsi + v + v2 + v * v2;
 				pnsm = pnsm * ps + pnsi;

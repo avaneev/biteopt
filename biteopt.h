@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.24"
+#define BITEOPT_VERSION "2022.25"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -60,8 +60,6 @@ public:
 		addHist( M1BHist, "M1BHist" );
 		addHist( M1BAHist, "M1BAHist" );
 		addHist( M1BBHist, "M1BBHist" );
-		addHist( M2Hist, "M2Hist" );
-		addHist( M2BHist, "M2BHist" );
 		addHist( PopChangeIncrHist, "PopChangeIncrHist" );
 		addHist( PopChangeDecrHist, "PopChangeDecrHist" );
 		addHist( ParOpt2Hist, "ParOpt2Hist" );
@@ -88,6 +86,8 @@ public:
 		addHist( Gen1MoveSpanHist, "Gen1MoveSpanHist" );
 		addHist( Gen2ModeHist, "Gen2ModeHist" );
 		addHist( Gen2bModeHist, "Gen2bModeHist" );
+		addHist( Gen2dModeHist, "Gen2dModeHist" );
+		addHist( Gen3ModeHist, "Gen3ModeHist" );
 		addHist( Gen4MixFacHist, "Gen4MixFacHist" );
 		addHist( Gen7PowFacHist, "Gen7PowFacHist" );
 		addHist( Gen8ModeHist, "Gen8ModeHist" );
@@ -268,13 +268,30 @@ public:
 		{
 			if( select( M1Hist, rnd ))
 			{
-				if( select( M1AHist, rnd ))
+				const int SelM1A = select( M1AHist, rnd );
+
+				if( SelM1A == 0 )
+				{
+					generateSol2b( rnd );
+				}
+				else
+				if( SelM1A == 1 )
 				{
 					generateSol2c( rnd );
 				}
 				else
+				if( SelM1A == 2 )
 				{
-					generateSol2b( rnd );
+					generateSol2d( rnd );
+				}
+				else
+				if( SelM1A == 3 )
+				{
+					generateSol3( rnd );
+				}
+				else
+				{
+					generateSol8( rnd );
 				}
 			}
 			else
@@ -313,21 +330,7 @@ public:
 		else
 		if( SelMethod == 2 )
 		{
-			if( select( M2Hist, rnd ))
-			{
-				generateSol1( rnd );
-			}
-			else
-			{
-				if( select( M2BHist, rnd ))
-				{
-					generateSol3( rnd );
-				}
-				else
-				{
-					generateSol8( rnd );
-				}
-			}
+			generateSol1( rnd );
 		}
 		else
 		{
@@ -493,17 +496,13 @@ protected:
 		///<
 	CBiteOptHist< 2 > M1Hist; ///< Method 1's sub-method histogram.
 		///<
-	CBiteOptHist< 2 > M1AHist; ///< Method 1's sub-sub-method A histogram.
+	CBiteOptHist< 5 > M1AHist; ///< Method 1's sub-sub-method A histogram.
 		///<
 	CBiteOptHist< 3 > M1BHist; ///< Method 1's sub-sub-method B histogram.
 		///<
 	CBiteOptHist< 2 > M1BAHist; ///< Method 1's sub-sub-method BA histogram.
 		///<
 	CBiteOptHist< 2 > M1BBHist; ///< Method 1's sub-sub-method BB histogram.
-		///<
-	CBiteOptHist< 2 > M2Hist; ///< Method 2's sub-method histogram.
-		///<
-	CBiteOptHist< 2 > M2BHist; ///< Method 2's sub-sub-method B histogram.
 		///<
 	CBiteOptHist< 2 > PopChangeIncrHist; ///< Population size change increase
 		///< histogram.
@@ -544,6 +543,11 @@ protected:
 		///<
 	CBiteOptHist< 2 > Gen2bModeHist; ///< Generator method 2b's Mode
 		///< histogram.
+		///<
+	CBiteOptHist< 2 > Gen2dModeHist; ///< Generator method 2d's Mode
+		///< histogram.
+		///<
+	CBiteOptHist< 4 > Gen3ModeHist; ///< Generator method 3's Mode histogram.
 		///<
 	CBiteOptHist< 4 > Gen4MixFacHist; ///< Generator method 4's mixing
 		///< count histogram.
@@ -955,6 +959,53 @@ protected:
 	}
 
 	/**
+	 * An alternative "Differential Evolution"-based solution generator that
+	 * uses "OldPop" population.
+	 */
+
+	void generateSol2d( CBiteRnd& rnd )
+	{
+		if( OldPop.getCurPopPos() < 3 )
+		{
+			generateSol2c( rnd );
+			return;
+		}
+
+		ptype* const Params = TmpParams;
+
+		const ptype* const rp1 = getParamsOrdered(
+			rnd.getSqrInt( CurPopSize ));
+
+		const ptype* const rp2 = getParamsOrdered(
+			rnd.getInt( CurPopSize ));
+
+		const ptype* const rp3 = OldPop.getParamsOrdered(
+			rnd.getInt( OldPop.getCurPopPos() ));
+
+		const int Mode = select( Gen2dModeHist, rnd );
+		int i;
+
+		if( Mode == 0 )
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = rp1[ i ] + (( rp2[ i ] - rp3[ i ]) >> 1 );
+			}
+		}
+		else
+		{
+			const ptype* const rp1b = getParamsOrdered(
+				rnd.getSqrInt( CurPopSize ));
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = (( rp1[ i ] + rp1b[ i ]) +
+					( rp2[ i ] - rp3[ i ])) >> 1;
+			}
+		}
+	}
+
+	/**
 	 * "Centroid mix with DE" solution generator, works well for convex
 	 * functions. For DE operation, uses a better solution and a random
 	 * previous solution.
@@ -967,18 +1018,32 @@ protected:
 		const ptype* const rp1 = getParamsOrdered(
 			getMinSolIndex( 3, rnd, CurPopSize ));
 
-		const double* const cp = getCentroid();
-		const double cm = getCentroidMult();
-
 		const ptype* const rp2 = getParamsOrdered(
 			rnd.getSqrInt( CurPopSize ));
 
+		const int Mode = select( Gen3ModeHist, rnd );
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		if( Mode == 0 )
 		{
-			Params[ i ] = ( rnd.getBit() ? (ptype) ( cp[ i ] * cm ) :
-				rp1[ i ] + ( rp1[ i ] - rp2[ i ]));
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = rp1[ i ] + ( rp1[ i ] - rp2[ i ]);
+			}
+		}
+		else
+		{
+			static const double CentProb[ 4 ] = { 0.0, 0.25, 0.5, 0.75 };
+			const double p = CentProb[ Mode ];
+
+			const double* const cp = getCentroid();
+			const double cm = getCentroidMult();
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = ( rnd.get() < p ? (ptype) ( cp[ i ] * cm ) :
+					rp1[ i ] + ( rp1[ i ] - rp2[ i ]));
+			}
 		}
 	}
 
