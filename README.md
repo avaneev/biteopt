@@ -163,12 +163,12 @@ solution which can be cross-checked with other solvers, but a solution of a
 new unexplored function must be treated as "asymptotically optimal".
 
 Also note that in some problem areas like [ESA GTOP](https://www.esa.int/gsp/ACT/projects/gtop/)
-problem suite the attempt budget should be as high as 2000 (beside using the
-BiteOptDeep depth of at least 8). At the same time, iteration budget per
-attempt can be kept moderate (100000), compared to usual techniques used to
-solve it. Despite a large attempt budget, on a 8-core processor, this still
+problem suite the attempt budget should be as high as 500 or more (beside
+using the BiteOptDeep depth of at least 8). At the same time, iteration budget
+per attempt can be kept moderate (500000), compared to usual techniques used
+to solve it. Despite a large attempt budget, on a 8-core processor, this still
 allows one to get good (not necessarily best-known) solutions in a matter of
-minutes.
+minutes per problem.
 
 ## Limitations ##
 
@@ -241,16 +241,20 @@ a sum of differences between bit values and continuous variables in the range
 
 Equality and non-equality constraints can be implemented as penalties. The
 author has found a general effective method to apply value constraints via
-penalties. In the code below, `n_con` is the number of constraints,
-`con_notmet` is the number of constraints not meeting tolerances, and the
-`pn[]` is the array of linear, positive penalty values for each constraint;
-a penalty value should be set to 0 if it meets the tolerance (a penalty value
-should be offseted by tolerance factor to make smooth approach towards 0). For
-derivative-free methods, a suggested constraint tolerance is 10<sup>-4</sup>,
-but a more common 10<sup>-6</sup> can be also used; lower values are not
-advised for use. Models with up to 200 constraints, both equalities and
-non-equalities, were tested with this method. In practice, on a large set of
-problems, this method finds a feasible solution in up to 98% of cases.
+penalties. While penalties are not well-regarded in research community,
+BiteOpt handles constraint penalties extremely well, but requires a very large
+iteration budget (suitable for inexpensive objective functions).
+
+In the code below, `n_con` is the number of constraints, `con_notmet` is the
+number of constraints not meeting tolerances, and the `pn[]` is the array of
+linear positive penalty values for each constraint; a penalty value should be
+set to 0 if it meets the tolerance (a penalty value should be offseted by
+tolerance factor to make smooth approach towards 0). For derivative-free
+methods, a suggested constraint tolerance is 10<sup>-4</sup>, but a more
+common 10<sup>-6</sup> can be also used; lower values are not advised for use.
+Models with up to 200 constraints, both equalities and non-equalities, were
+tested with this method. In practice, on a large set of problems, this method
+finds a feasible solution in up to 97% of cases.
 
 	real_value = cost;
 
@@ -258,23 +262,17 @@ problems, this method finds a feasible solution in up to 98% of cases.
 	{
 		const double ps = pow( 3.0, 1.0 / n_con );
 		const double pnsi = 1.0 / sqrt( (double) n_con );
-
 		double pns = 0.0;
-		double pnsm = 0.0;
-		int i;
 
-		for( i = 0; i < n_con; i++ )
+		for( int i = 0; i < n_con; i++ )
 		{
-			const double v = pn[ i ];
-			const double v2 = v * v;
-			pns = pns * ps + pnsi + v + v2 + v * v2;
-			pnsm = pnsm * ps + pnsi;
+			pns = pns * ps + pnsi + pn[ i ] + pn[ i ] * pn[ i ];
 		}
 
-		cost += 1e10 * ( 1.0 + ( pns - pnsm ));
+		cost += 1e10 * ( 1.0 + pns + pns * pns );
 	}
 
-In essence, this method transforms each penalty value into a cubic penalty
+In essence, this method transforms each penalty value into a quadratic penalty
 value, places each penalty value into its own "stratum", and also applies a
 "barrier value". The barrier value is suitably large for most practical
 constraint programming problems.
