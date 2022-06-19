@@ -190,20 +190,16 @@ public:
 		{
 			const double ps = pow( 3.0, 1.0 / n_con );
 			const double pnsi = 1.0 / sqrt( (double) n_con );
-
 			double pns = 0.0;
-			double pnsm = 0.0;
 			int i;
 
 			for( i = 0; i < n_con; i++ )
 			{
 				const double v = fc[ i ];
-				const double v2 = v * v;
-				pns = pns * ps + pnsi + v + v2 + v * v2;
-				pnsm = pnsm * ps + pnsi;
+				pns = pns * ps + pnsi + v + v * v;
 			}
 
-			return( last_ov + 1e10 * ( 1.0 + ( pns - pnsm )));
+			return( last_ov + 1e10 * ( 1.0 + pns + pns * pns ));
 		}
 
 		return( last_ov );

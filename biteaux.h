@@ -3,7 +3,7 @@
 /**
  * @file biteaux.h
  *
- * @brief The inclusion file for the CBiteRnd, CBiteOptPop, CBiteOptParPops,
+ * @brief The inclusion file for the CBiteRnd, CBitePop, CBiteParPops,
  * CBiteOptInterface, and CBiteOptBase classes.
  *
  * @section license License
@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.25
+ * @version 2022.25.1
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -277,24 +277,26 @@ protected:
 };
 
 /**
- * Histogram class. Used to keep track of success of various choices. Updates
- * probabilities of future choices based on the selection outcome.
+ * Probabilistic selector class. Used to keep track of success of various
+ * choices. Updates probabilities of future choices based on the selection
+ * outcome.
  *
- * Called "histogram" for historic reasons. The current implementation uses
- * bubble-sort-alike method to update a vector of possible choices. The
- * selection is made as a weighted-random draw of a value from this vector.
- * Previously, the class used simple statistical accumulation of optimization
- * outcomes, to derive probabilites. The current approach is superior in that
- * it has no "memory effects" associated with accumulation.
+ * The current implementation uses bubble-sort-alike method to update a sparse
+ * vector of possible choices. The selection is made as a weighted-random draw
+ * of a value from this vector. Previously, the class used simple statistical
+ * accumulation of optimization outcomes, to derive probabilites. The current
+ * approach is superior in that it has no "memory effects" associated with
+ * statistical accumulation.
  *
  * The purpose of the class is to increase a chance of generating an
  * acceptable solution. In practice, this class provides 10-15% more "good"
  * solutions compared to uniformly-random choice selection. This, in turn,
  * improves convergence smoothness and produces more diversity in outcomes in
- * multiple solution attempts (retries) of complex multi-modal problems.
+ * multiple solution attempts (retries) of complex multi-modal objective
+ * functions.
  */
 
-class CBiteOptHistBase
+class CBiteSelBase
 {
 public:
 	/**
@@ -303,14 +305,14 @@ public:
 	 * @param Count The number of possible choices, greater than 1.
 	 */
 
-	CBiteOptHistBase( const int aCount )
+	CBiteSelBase( const int aCount )
 		: Count( aCount )
 		, SelBuf( NULL )
 		, SelBufCapacity( 0 )
 	{
 	}
 
-	~CBiteOptHistBase()
+	~CBiteSelBase()
 	{
 		delete[] SelBuf;
 	}
@@ -392,7 +394,7 @@ public:
 	 * This function should only be called after a prior select() calls.
 	 *
 	 * @param rnd PRNG object. May not be used.
-	 * @param v Histogram increment value (success score), [0; 1].
+	 * @param v Selection increment value (success score), [0; 1].
 	 */
 
 	void incr( CBiteRnd& rnd, const double v = 1.0 )
@@ -488,18 +490,18 @@ protected:
 };
 
 /**
- * Templated histogram class, for convenient constructor's Count parameter
+ * Templated selector class, for convenient constructor's Count parameter
  * specification.
  *
  * @tparam tCount The number of possible choices, greater than 1.
  */
 
 template< int tCount >
-class CBiteOptHist : public CBiteOptHistBase
+class CBiteSel : public CBiteSelBase
 {
 public:
-	CBiteOptHist()
-		: CBiteOptHistBase( tCount )
+	CBiteSel()
+		: CBiteSelBase( tCount )
 	{
 	}
 };
@@ -512,37 +514,37 @@ public:
  */
 
 template< typename ptype >
-class CBiteOptPop
+class CBitePop
 {
 public:
-	CBiteOptPop()
+	CBitePop()
 		: ParamCount( 0 )
 		, PopSize( 0 )
+		, CnsCount( 0 )
+		, ObjCount( 0 )
 		, PopParamsBuf( NULL )
 		, PopParams( NULL )
-		, PopCosts( NULL )
 		, CentParams( NULL )
 		, NeedCentUpdate( false )
 		, CentMult( 1.0 )
 	{
 	}
 
-	CBiteOptPop( const CBiteOptPop& s )
+	CBitePop( const CBitePop& s )
 		: PopParamsBuf( NULL )
 		, PopParams( NULL )
-		, PopCosts( NULL )
 		, CentParams( NULL )
 	{
-		initBuffers( s.ParamCount, s.PopSize );
+		initBuffers( s.ParamCount, s.PopSize, s.CnsCount, s.ObjCount );
 		copy( s );
 	}
 
-	virtual ~CBiteOptPop()
+	virtual ~CBitePop()
 	{
 		deleteBuffers();
 	}
 
-	CBiteOptPop& operator = ( const CBiteOptPop& s )
+	CBitePop& operator = ( const CBitePop& s )
 	{
 		copy( s );
 		return( *this );
@@ -559,9 +561,13 @@ public:
 	 * @param aParamCount New parameter count.
 	 * @param aPopSize New population size. If <= 0, population buffers will
 	 * not be allocated.
+	 * @param aCnsCount New constraint value count.
+	 * @param aObjCount New objective value count. If equals 0, a rank element
+	 * will not be auto-added.
 	 */
 
-	virtual void initBuffers( const int aParamCount, const int aPopSize )
+	virtual void initBuffers( const int aParamCount, const int aPopSize,
+		const int aCnsCount = 0, const int aObjCount = 1 )
 	{
 		deleteBuffers();
 
@@ -569,20 +575,26 @@ public:
 		ParamCountI = 1.0 / ParamCount;
 		PopSize = aPopSize;
 		PopSize1 = aPopSize - 1;
+		CnsCount = aCnsCount;
+		ObjCount = aObjCount;
 		CurPopSize = aPopSize;
 		CurPopSizeI = 1.0 / CurPopSize;
 		CurPopSize1 = aPopSize - 1;
 
-		PopParamsBuf = new ptype[( aPopSize + 1 ) * aParamCount ];
+		PopCnsOffs = aParamCount * sizeof( ptype );
+		PopObjOffs = PopCnsOffs + aCnsCount * sizeof( double );
+		PopRankOffs = PopObjOffs + aObjCount * sizeof( double );
+		PopItemSize = PopRankOffs + ( aObjCount > 0 ? sizeof( double ) : 0 );
+
+		PopParamsBuf = new uint8_t[( aPopSize + 1 ) * PopItemSize ];
 		PopParams = new ptype*[ aPopSize + 1 ]; // Last element is temporary.
-		PopCosts = new double[ aPopSize ];
 		CentParams = new double[ aParamCount ];
 
 		int i;
 
 		for( i = 0; i <= aPopSize; i++ )
 		{
-			PopParams[ i ] = PopParamsBuf + i * aParamCount;
+			PopParams[ i ] = (ptype*) ( PopParamsBuf + i * PopItemSize );
 		}
 
 		TmpParams = PopParams[ aPopSize ];
@@ -596,11 +608,12 @@ public:
 	 * @param s Source population to copy. Should be initalized.
 	 */
 
-	void copy( const CBiteOptPop& s )
+	void copy( const CBitePop& s )
 	{
-		if( ParamCount != s.ParamCount || PopSize != s.PopSize )
+		if( ParamCount != s.ParamCount || PopSize != s.PopSize ||
+			CnsCount != s.CnsCount || ObjCount != s.ObjCount )
 		{
-			initBuffers( s.ParamCount, s.PopSize );
+			initBuffers( s.ParamCount, s.PopSize, s.CnsCount, s.ObjCount );
 		}
 
 		CurPopSize = s.CurPopSize;
@@ -614,10 +627,8 @@ public:
 
 		for( i = 0; i < CurPopSize; i++ )
 		{
-			copyParams( PopParams[ i ], s.PopParams[ i ]);
+			memcpy( PopParams[ i ], s.PopParams[ i ], PopItemSize );
 		}
-
-		memcpy( PopCosts, s.PopCosts, CurPopSize * sizeof( PopCosts[ 0 ]));
 
 		if( !NeedCentUpdate )
 		{
@@ -746,6 +757,55 @@ public:
 	}
 
 	/**
+	 * Function returns pointer to constraint values sub-array within the
+	 * specified population vector.
+	 *
+	 * @param pp Population vector pointer (usually within PopParams).
+	 */
+
+	double* getCnsPtr( ptype* const pp ) const
+	{
+		return( (double*) ( (uintptr_t) pp + (uintptr_t) PopCnsOffs ));
+	}
+
+	/**
+	 * Function returns pointer to objective values sub-array within the
+	 * specified population vector.
+	 *
+	 * @param pp Population vector pointer (usually within PopParams).
+	 */
+
+	double* getObjPtr( ptype* const pp ) const
+	{
+		return( (double*) ( (uintptr_t) pp + (uintptr_t) PopObjOffs ));
+	}
+
+	/**
+	 * Function returns pointer to the rank value sub-array within the
+	 * specified population vector.
+	 *
+	 * @param pp Population vector pointer (usually within PopParams).
+	 */
+
+	double* getRankPtr( ptype* const pp ) const
+	{
+		return( (double*) ( (uintptr_t) pp + (uintptr_t) PopRankOffs ));
+	}
+
+	/**
+	 * An aux function that advances the specified pointer, previously
+	 * obtained via either getCnsPtr(), getObjPtr(), or getRankPtr() function.
+	 * This can be useful for sorted enumeration of population values.
+	 *
+	 * @param[in,out] p Pointer variable to advance.
+	 */
+
+	void advancePtr( double*& p ) const
+	{
+		p = (double*) ( (uintptr_t) p + (uintptr_t) PopItemSize );
+	}
+
+	/**
 	 * Function returns a pointer to array of population vector pointers,
 	 * which are sorted in the ascending cost order.
 	 */
@@ -753,6 +813,17 @@ public:
 	const ptype** getPopParams() const
 	{
 		return( (const ptype**) PopParams );
+	}
+
+	/**
+	 * Function returns pointer to the next available parameter vector, at the
+	 * initialization stage. When the population was filled, the function
+	 * returns pointer to a temporary vector.
+	 */
+
+	ptype* getCurPosParams() const
+	{
+		return( PopParams[ CurPopPos ]);
 	}
 
 	/**
@@ -822,7 +893,7 @@ public:
 			ri = PopSize1;
 
 			if( UpdCost != UpdCost || // Check for NaN.
-				UpdCost > PopCosts[ ri ])
+				UpdCost >= *getObjPtr( PopParams[ ri ]))
 			{
 				return( PopSize );
 			}
@@ -837,7 +908,7 @@ public:
 		{
 			const int mid = ( p + i ) >> 1;
 
-			if( PopCosts[ mid ] >= UpdCost )
+			if( *getRankPtr( PopParams[ mid ]) >= UpdCost )
 			{
 				i = mid;
 			}
@@ -858,7 +929,7 @@ public:
 				// Reject same-cost solution using equality precision level.
 
 				static const double etol = 0x1p-52;
-				const double c = PopCosts[ p ];
+				const double c = *getObjPtr( PopParams[ p ]);
 				const double cd = fabs( UpdCost - c );
 
 				if( cd == 0.0 )
@@ -866,8 +937,7 @@ public:
 					return( PopSize );
 				}
 
-				const double auc = fabs( UpdCost );
-				const double cs = auc + fabs( c );
+				const double cs = fabs( UpdCost ) + fabs( c );
 
 				if( cs == 0.0 || cd / cs < etol )
 				{
@@ -879,13 +949,12 @@ public:
 		ptype* const rp = PopParams[ ri ];
 
 		const int mc = ri - p;
-		double* const pc = PopCosts + p;
 		ptype** const pp = PopParams + p;
-		memmove( pc + 1, pc, mc * sizeof( pc[ 0 ]));
 		memmove( pp + 1, pp, mc * sizeof( pp[ 0 ]));
 
-		*pc = UpdCost;
 		*pp = rp;
+		*getObjPtr( rp ) = UpdCost;
+		*getRankPtr( rp ) = UpdCost;
 
 		if( rp != UpdParams )
 		{
@@ -981,13 +1050,27 @@ protected:
 	int CurPopPos; ///< Current population position, for initial population
 		///< update. This variable should be initialized by the optimizer.
 		///<
-	ptype* PopParamsBuf; ///< Buffer for all PopParams vectors.
+	int CnsCount; ///< The number of constraints per solution.
+		///<
+	int ObjCount; ///< The number of objectives per solution.
+		///<
+	uint8_t* PopParamsBuf; ///< Buffer for all PopParams vectors.
 		///<
 	ptype** PopParams; ///< Population parameter vectors. Always kept sorted
-		///< in ascending cost order.
+		///< in ascending cost order. Each vector represents a complex item,
+		///< with additional data stored after parameter values (see Offs
+		///< constants).
 		///<
-	double* PopCosts; ///< Costs of population parameter vectors, sorting
-		///< order corresponds to PopParams.
+	size_t PopCnsOffs; ///< Byte offset to the constraint values within
+		///< a population item.
+		///<
+	size_t PopObjOffs; ///< Byte offset to the objective values within a
+		///< population item.
+		///<
+	size_t PopRankOffs; ///< Byte offset to the rank value within a population
+		///< item.
+		///<
+	size_t PopItemSize; ///< Size in bytes of population item.
 		///<
 	double* CentParams; ///< Centroid of the current parameter vectors. Note
 		///< that the centroid is not normalized, stored in ptype's value
@@ -1011,7 +1094,6 @@ protected:
 	{
 		delete[] PopParamsBuf;
 		delete[] PopParams;
-		delete[] PopCosts;
 		delete[] CentParams;
 	}
 
@@ -1145,15 +1227,15 @@ protected:
  */
 
 template< typename ptype >
-class CBiteOptParPops : virtual public CBiteOptPop< ptype >
+class CBiteParPops : virtual public CBitePop< ptype >
 {
 public:
-	CBiteOptParPops()
+	CBiteParPops()
 		: ParPopCount( 0 )
 	{
 	}
 
-	virtual ~CBiteOptParPops()
+	virtual ~CBiteParPops()
 	{
 		int i;
 
@@ -1164,14 +1246,14 @@ public:
 	}
 
 protected:
-	using CBiteOptPop< ptype > :: ParamCount;
-	using CBiteOptPop< ptype > :: PopSize;
+	using CBitePop< ptype > :: ParamCount;
+	using CBitePop< ptype > :: PopSize;
 
 	static const int MaxParPopCount = 8; ///< The maximal number of parallel
 		///< population supported.
 		///<
-	CBiteOptPop< ptype >* ParPops[ MaxParPopCount ]; ///< Parallel
-		///< population orbiting *this population.
+	CBitePop< ptype >* ParPops[ MaxParPopCount ]; ///< Parallel population
+		///< orbiting *this population.
 		///<
 	int ParPopCount; ///< Parallel population count. This variable should only
 		///< be changed via the setParPopCount() function.
@@ -1194,7 +1276,7 @@ protected:
 
 		while( ParPopCount < NewCount )
 		{
-			ParPops[ ParPopCount ] = new CBiteOptPop< ptype >();
+			ParPops[ ParPopCount ] = new CBitePop< ptype >();
 			ParPopCount++;
 		}
 	}
@@ -1371,7 +1453,7 @@ public:
 
 template< typename ptype >
 class CBiteOptBase : public CBiteOptInterface,
-	virtual protected CBiteOptParPops< ptype >
+	virtual protected CBiteParPops< ptype >
 {
 private:
 	CBiteOptBase( const CBiteOptBase& )
@@ -1393,7 +1475,7 @@ public:
 		, DiffValuesI( NULL )
 		, BestValues( NULL )
 		, NewValues( NULL )
-		, HistCount( 0 )
+		, SelCount( 0 )
 	{
 	}
 
@@ -1407,49 +1489,49 @@ public:
 		return( BestCost );
 	}
 
-	static const int MaxHistCount = 64; ///< The maximal number of histograms
-		///< that can be added (for static arrays).
+	static const int MaxSelCount = 64; ///< The maximal number of selectors
+		///< that can be added to *this object (for static arrays).
 		///<
 
 	/**
-	 * Function returns a pointer to an array of histograms in use.
+	 * Function returns a pointer to an array of selectors in use.
 	 */
 
-	CBiteOptHistBase** getHists()
+	CBiteSelBase** getSels()
 	{
-		return( Hists );
+		return( Sels );
 	}
 
 	/**
-	 * Function returns a pointer to an array of histogram names.
+	 * Function returns a pointer to an array of selector names.
 	 */
 
-	const char** getHistNames() const
+	const char** getSelNames() const
 	{
-		return( (const char**) HistNames );
+		return( (const char**) SelNames );
 	}
 
 	/**
-	 * Function returns the number of histograms in use.
+	 * Function returns the number of selectors in use.
 	 */
 
-	int getHistCount() const
+	int getSelCount() const
 	{
-		return( HistCount );
+		return( SelCount );
 	}
 
 protected:
-	using CBiteOptParPops< ptype > :: IntMantMult;
-	using CBiteOptParPops< ptype > :: ParamCount;
-	using CBiteOptParPops< ptype > :: PopSize;
-	using CBiteOptParPops< ptype > :: PopSize1;
-	using CBiteOptParPops< ptype > :: CurPopSize;
-	using CBiteOptParPops< ptype > :: CurPopSizeI;
-	using CBiteOptParPops< ptype > :: CurPopSize1;
-	using CBiteOptParPops< ptype > :: CurPopPos;
-	using CBiteOptParPops< ptype > :: NeedCentUpdate;
-	using CBiteOptParPops< ptype > :: resetCurPopPos;
-	using CBiteOptParPops< ptype > :: copyValues;
+	using CBiteParPops< ptype > :: IntMantMult;
+	using CBiteParPops< ptype > :: ParamCount;
+	using CBiteParPops< ptype > :: PopSize;
+	using CBiteParPops< ptype > :: PopSize1;
+	using CBiteParPops< ptype > :: CurPopSize;
+	using CBiteParPops< ptype > :: CurPopSizeI;
+	using CBiteParPops< ptype > :: CurPopSize1;
+	using CBiteParPops< ptype > :: CurPopPos;
+	using CBiteParPops< ptype > :: NeedCentUpdate;
+	using CBiteParPops< ptype > :: resetCurPopPos;
+	using CBiteParPops< ptype > :: copyValues;
 
 	double* MinValues; ///< Minimal parameter values.
 		///<
@@ -1474,26 +1556,28 @@ protected:
 	double AvgCost; ///< Average cost in the latest batch. May not be used by
 		///< the optimizer.
 		///<
-	CBiteOptHistBase* Hists[ MaxHistCount ]; ///< Pointers to histogram
-		///< objects, for indexed access in some cases.
+	CBiteSelBase* Sels[ MaxSelCount ]; ///< Pointers to selector objects, for
+		///< indexed access in some cases.
 		///<
-	const char* HistNames[ MaxHistCount ]; ///< Histogram names.
+	const char* SelNames[ MaxSelCount ]; ///< Selector names.
 		///<
-	int HistCount; ///< The number of histograms in use.
+	int SelCount; ///< The number of selectors in use.
 		///<
-	static const int MaxApplyHists = 32; /// The maximal number of histograms
-		///< that can be used during the optimize() function call.
+	static const int MaxApplySels = 32; /// The maximal number of selections
+		///< that can be used during a single optimize() function call.
 		///<
-	CBiteOptHistBase* ApplyHists[ MaxApplyHists ]; ///< Histograms used in
-		///< "selects" during the optimize() function call.
+	CBiteSelBase* ApplySels[ MaxApplySels ]; ///< Selectors that were used in
+		///< select() function calls during the optimize() function call.
 		///<
-	int ApplyHistsCount; ///< The number of "selects" used during the
+	int ApplySelsCount; ///< The number of select() calls performed during the
 		///< optimize() function call.
 		///<
 
-	virtual void initBuffers( const int aParamCount, const int aPopSize )
+	virtual void initBuffers( const int aParamCount, const int aPopSize,
+		const int aCnsCount = 0, const int aObjCount = 1 )
 	{
-		CBiteOptParPops< ptype > :: initBuffers( aParamCount, aPopSize );
+		CBiteParPops< ptype > :: initBuffers( aParamCount, aPopSize,
+			aCnsCount, aObjCount );
 
 		MinValues = new double[ ParamCount ];
 		MaxValues = new double[ ParamCount ];
@@ -1505,7 +1589,7 @@ protected:
 
 	virtual void deleteBuffers()
 	{
-		CBiteOptParPops< ptype > :: deleteBuffers();
+		CBiteParPops< ptype > :: deleteBuffers();
 
 		delete[] MinValues;
 		delete[] MaxValues;
@@ -1517,9 +1601,9 @@ protected:
 
 	/**
 	 * Function resets common variables used by optimizers to their default
-	 * values, including registered histograms, calls the resetCurPopPos()
-	 * and updateDiffValues() functions. This function is usually called in
-	 * the init() function of the optimizer.
+	 * values, including registered selectors, calls the resetCurPopPos() and
+	 * updateDiffValues() functions. This function is usually called in the
+	 * init() function of the optimizer.
 	 */
 
 	void resetCommonVars( CBiteRnd& rnd )
@@ -1534,13 +1618,13 @@ protected:
 		StallCount = 0;
 		HiBound = 1e300;
 		AvgCost = 0.0;
-		ApplyHistsCount = 0;
+		ApplySelsCount = 0;
 
 		int i;
 
-		for( i = 0; i < HistCount; i++ )
+		for( i = 0; i < SelCount; i++ )
 		{
-			Hists[ i ] -> reset( rnd, ParamCount );
+			Sels[ i ] -> reset( rnd, ParamCount );
 		}
 	}
 
@@ -1658,72 +1742,72 @@ protected:
 	}
 
 	/**
-	 * Function adds a histogram to the Hists list.
+	 * Function adds a selector to the Sels list.
 	 *
-	 * @param h Histogram object to add.
-	 * @param hname Histogram's name, should be a static constant.
+	 * @param s Selector object to add.
+	 * @param sname Selector's name, should be a static constant.
 	 */
 
-	void addHist( CBiteOptHistBase& h, const char* const hname )
+	void addSel( CBiteSelBase& s, const char* const sname )
 	{
-		Hists[ HistCount ] = &h;
-		HistNames[ HistCount ] = hname;
-		HistCount++;
+		Sels[ SelCount ] = &s;
+		SelNames[ SelCount ] = sname;
+		SelCount++;
 	}
 
 	/**
-	 * Function performs choice selection based on the specified histogram,
-	 * and adds the histogram to apply list.
+	 * Function performs choice selection based on the specified selector, and
+	 * adds the selector to apply list.
 	 *
-	 * @param Hist Histogram.
+	 * @param Sel Selector object.
 	 * @param rnd PRNG object.
 	 */
 
 	template< class T >
-	int select( T& Hist, CBiteRnd& rnd )
+	int select( T& Sel, CBiteRnd& rnd )
 	{
-		ApplyHists[ ApplyHistsCount ] = &Hist;
-		ApplyHistsCount++;
+		ApplySels[ ApplySelsCount ] = &Sel;
+		ApplySelsCount++;
 
-		return( Hist.select( rnd ));
+		return( Sel.select( rnd ));
 	}
 
 	/**
-	 * Function applies histogram increments on optimization success.
+	 * Function applies selector increments on optimization success.
 	 *
 	 * @param rnd PRNG object.
 	 * @param v Increment value, [0; 1].
 	 */
 
-	void applyHistsIncr( CBiteRnd& rnd, const double v = 1.0 )
+	void applySelsIncr( CBiteRnd& rnd, const double v = 1.0 )
 	{
-		const int c = ApplyHistsCount;
-		ApplyHistsCount = 0;
+		const int c = ApplySelsCount;
+		ApplySelsCount = 0;
 
 		int i;
 
 		for( i = 0; i < c; i++ )
 		{
-			ApplyHists[ i ] -> incr( rnd, v );
+			ApplySels[ i ] -> incr( rnd, v );
 		}
 	}
 
 	/**
-	 * Function applies histogram decrements on optimization fail.
+	 * Function applies selector decrements on optimization fail.
 	 *
 	 * @param rnd PRNG object.
 	 */
 
-	void applyHistsDecr( CBiteRnd& rnd )
+	void applySelsDecr( CBiteRnd& rnd )
 	{
-		const int c = ApplyHistsCount;
-		ApplyHistsCount = 0;
+		const int c = ApplySelsCount;
+		ApplySelsCount = 0;
 
 		int i;
 
 		for( i = 0; i < c; i++ )
 		{
-			ApplyHists[ i ] -> decr( rnd );
+			ApplySels[ i ] -> decr( rnd );
 		}
 	}
 };

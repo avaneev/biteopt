@@ -1,9 +1,9 @@
 //$ nocpp
 
 /**
- * @file biteoptort.h
+ * @file biteort.h
  *
- * @brief The inclusion file for the CBiteOptOrt class.
+ * @brief The inclusion file for the CBiteOrt class.
  *
  * @section license License
  *
@@ -27,11 +27,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.19
+ * @version 2022.25.1
  */
 
-#ifndef BITEOPTORT_INCLUDED
-#define BITEOPTORT_INCLUDED
+#ifndef BITEORT_INCLUDED
+#define BITEORT_INCLUDED
 
 #include "biteaux.h"
 
@@ -41,15 +41,15 @@
  * weighting to population.
  */
 
-class CBiteOptOrt : virtual public CBiteOptPop< double >
+class CBiteOrt : virtual public CBitePop< double >
 {
 private:
-	CBiteOptOrt( const CBiteOptOrt& )
+	CBiteOrt( const CBiteOrt& )
 	{
 		// Copy-construction unsupported.
 	}
 
-	CBiteOptOrt& operator = ( const CBiteOptOrt& )
+	CBiteOrt& operator = ( const CBiteOrt& )
 	{
 		// Copying unsupported.
 		return( *this );
@@ -72,7 +72,7 @@ public:
 		///< actual number of function evaluations performed, >=1.
 		///<
 
-	CBiteOptOrt()
+	CBiteOrt()
 		: CovParamsBuf( NULL )
 		, CovParams( NULL )
 		, BParamsBuf( NULL )
@@ -177,7 +177,7 @@ public:
 	 * @param ExtPop External population.
 	 */
 
-	void update( const CBiteOptPop& ExtPop )
+	void update( const CBitePop& ExtPop )
 	{
 		const int UsePopSize = ExtPop.getCurPopSize();
 		const double** const ExtParams = ExtPop.getPopParams();
@@ -444,9 +444,10 @@ protected:
 	double spc; ///< Distribution's sphericity coefficient. 1 - fully
 		///< spherical.
 
-	virtual void initBuffers( const int aParamCount, const int aPopSize )
+	virtual void initBuffers( const int aParamCount, const int aPopSize,
+		const int aCnsCount = 0, const int aObjCount = 0 )
 	{
-		CBiteOptPop :: initBuffers( aParamCount, aPopSize );
+		CBitePop :: initBuffers( aParamCount, aPopSize, 0, 0 );
 
 		CovParamsBuf = new double[ aParamCount * aParamCount ];
 		CovParams = new double*[ aParamCount ];
@@ -464,14 +465,15 @@ protected:
 		{
 			CovParams[ i ] = CovParamsBuf + i * aParamCount;
 			BParams[ i ] = BParamsBuf + i * aParamCount;
-			PopParams[ i ] = PopParamsBuf + i * aPopSize; // Rearrange
-				// population vectors.
+			PopParams[ i ] = (double*) ( PopParamsBuf +
+				i * aPopSize * sizeof( double )); // Rearrange population
+				// vectors.
 		}
 	}
 
 	virtual void deleteBuffers()
 	{
-		CBiteOptPop :: deleteBuffers();
+		CBitePop :: deleteBuffers();
 
 		delete[] CovParamsBuf;
 		delete[] CovParams;
@@ -814,4 +816,4 @@ protected:
 	}
 };
 
-#endif // BITEOPTORT_INCLUDED
+#endif // BITEORT_INCLUDED

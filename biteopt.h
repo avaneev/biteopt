@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.25"
+#define BITEOPT_VERSION "2022.25.1"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -54,46 +54,46 @@ public:
 	{
 		setParPopCount( 4 );
 
-		addHist( MethodHist, "MethodHist" );
-		addHist( M1Hist, "M1Hist" );
-		addHist( M1AHist, "M1AHist" );
-		addHist( M1BHist, "M1BHist" );
-		addHist( M1BAHist, "M1BAHist" );
-		addHist( M1BBHist, "M1BBHist" );
-		addHist( PopChangeIncrHist, "PopChangeIncrHist" );
-		addHist( PopChangeDecrHist, "PopChangeDecrHist" );
-		addHist( ParOpt2Hist, "ParOpt2Hist" );
-		addHist( ParPopPHist[ 0 ], "ParPopPHist[ 0 ]" );
-		addHist( ParPopPHist[ 1 ], "ParPopPHist[ 1 ]" );
-		addHist( ParPopPHist[ 2 ], "ParPopPHist[ 2 ]" );
-		addHist( ParPopPHist[ 3 ], "ParPopPHist[ 3 ]" );
-		addHist( AltPopPHist, "AltPopPHist" );
-		addHist( AltPopHist[ 0 ], "AltPopHist[ 0 ]" );
-		addHist( AltPopHist[ 1 ], "AltPopHist[ 1 ]" );
-		addHist( AltPopHist[ 2 ], "AltPopHist[ 2 ]" );
-		addHist( AltPopHist[ 3 ], "AltPopHist[ 3 ]" );
-		addHist( MinSolPwrHist[ 0 ], "MinSolPwrHist[ 0 ]" );
-		addHist( MinSolPwrHist[ 1 ], "MinSolPwrHist[ 1 ]" );
-		addHist( MinSolPwrHist[ 2 ], "MinSolPwrHist[ 2 ]" );
-		addHist( MinSolPwrHist[ 3 ], "MinSolPwrHist[ 3 ]" );
-		addHist( MinSolMulHist[ 0 ], "MinSolMulHist[ 0 ]" );
-		addHist( MinSolMulHist[ 1 ], "MinSolMulHist[ 1 ]" );
-		addHist( MinSolMulHist[ 2 ], "MinSolMulHist[ 2 ]" );
-		addHist( MinSolMulHist[ 3 ], "MinSolMulHist[ 3 ]" );
-		addHist( Gen1AllpHist, "Gen1AllpHist" );
-		addHist( Gen1MoveHist, "Gen1MoveHist" );
-		addHist( Gen1MoveAsyncHist, "Gen1MoveAsyncHist" );
-		addHist( Gen1MoveSpanHist, "Gen1MoveSpanHist" );
-		addHist( Gen2ModeHist, "Gen2ModeHist" );
-		addHist( Gen2bModeHist, "Gen2bModeHist" );
-		addHist( Gen2dModeHist, "Gen2dModeHist" );
-		addHist( Gen3ModeHist, "Gen3ModeHist" );
-		addHist( Gen4MixFacHist, "Gen4MixFacHist" );
-		addHist( Gen7PowFacHist, "Gen7PowFacHist" );
-		addHist( Gen8ModeHist, "Gen8ModeHist" );
-		addHist( Gen8NumHist, "Gen8NumHist" );
-		addHist( Gen8SpanHist[ 0 ], "Gen8SpanHist[ 0 ]" );
-		addHist( Gen8SpanHist[ 1 ], "Gen8SpanHist[ 1 ]" );
+		addSel( MethodSel, "MethodSel" );
+		addSel( M1Sel, "M1Sel" );
+		addSel( M1ASel, "M1ASel" );
+		addSel( M1BSel, "M1BSel" );
+		addSel( M1BASel, "M1BASel" );
+		addSel( M1BBSel, "M1BBSel" );
+		addSel( PopChangeIncrSel, "PopChangeIncrSel" );
+		addSel( PopChangeDecrSel, "PopChangeDecrSel" );
+		addSel( ParOpt2Sel, "ParOpt2Sel" );
+		addSel( ParPopPSel[ 0 ], "ParPopPSel[ 0 ]" );
+		addSel( ParPopPSel[ 1 ], "ParPopPSel[ 1 ]" );
+		addSel( ParPopPSel[ 2 ], "ParPopPSel[ 2 ]" );
+		addSel( ParPopPSel[ 3 ], "ParPopPSel[ 3 ]" );
+		addSel( AltPopPSel, "AltPopPSel" );
+		addSel( AltPopSel[ 0 ], "AltPopSel[ 0 ]" );
+		addSel( AltPopSel[ 1 ], "AltPopSel[ 1 ]" );
+		addSel( AltPopSel[ 2 ], "AltPopSel[ 2 ]" );
+		addSel( AltPopSel[ 3 ], "AltPopSel[ 3 ]" );
+		addSel( MinSolPwrSel[ 0 ], "MinSolPwrSel[ 0 ]" );
+		addSel( MinSolPwrSel[ 1 ], "MinSolPwrSel[ 1 ]" );
+		addSel( MinSolPwrSel[ 2 ], "MinSolPwrSel[ 2 ]" );
+		addSel( MinSolPwrSel[ 3 ], "MinSolPwrSel[ 3 ]" );
+		addSel( MinSolMulSel[ 0 ], "MinSolMulSel[ 0 ]" );
+		addSel( MinSolMulSel[ 1 ], "MinSolMulSel[ 1 ]" );
+		addSel( MinSolMulSel[ 2 ], "MinSolMulSel[ 2 ]" );
+		addSel( MinSolMulSel[ 3 ], "MinSolMulSel[ 3 ]" );
+		addSel( Gen1AllpSel, "Gen1AllpSel" );
+		addSel( Gen1MoveSel, "Gen1MoveSel" );
+		addSel( Gen1MoveAsyncSel, "Gen1MoveAsyncSel" );
+		addSel( Gen1MoveSpanSel, "Gen1MoveSpanSel" );
+		addSel( Gen2ModeSel, "Gen2ModeSel" );
+		addSel( Gen2bModeSel, "Gen2bModeSel" );
+		addSel( Gen2dModeSel, "Gen2dModeSel" );
+		addSel( Gen3ModeSel, "Gen3ModeSel" );
+		addSel( Gen4MixFacSel, "Gen4MixFacSel" );
+		addSel( Gen7PowFacSel, "Gen7PowFacSel" );
+		addSel( Gen8ModeSel, "Gen8ModeSel" );
+		addSel( Gen8NumSel, "Gen8NumSel" );
+		addSel( Gen8SpanSel[ 0 ], "Gen8SpanSel[ 0 ]" );
+		addSel( Gen8SpanSel[ 1 ], "Gen8SpanSel[ 1 ]" );
 	}
 
 	/**
@@ -257,7 +257,7 @@ public:
 
 		bool DoEval = true;
 		double NewCost;
-		const int SelMethod = select( MethodHist, rnd );
+		const int SelMethod = select( MethodSel, rnd );
 
 		if( SelMethod == 0 )
 		{
@@ -266,9 +266,9 @@ public:
 		else
 		if( SelMethod == 1 )
 		{
-			if( select( M1Hist, rnd ))
+			if( select( M1Sel, rnd ))
 			{
-				const int SelM1A = select( M1AHist, rnd );
+				const int SelM1A = select( M1ASel, rnd );
 
 				if( SelM1A == 0 )
 				{
@@ -296,11 +296,11 @@ public:
 			}
 			else
 			{
-				const int SelM1B = select( M1BHist, rnd );
+				const int SelM1B = select( M1BSel, rnd );
 
 				if( SelM1B == 0 )
 				{
-					if( select( M1BAHist, rnd ))
+					if( select( M1BASel, rnd ))
 					{
 						generateSol4( rnd );
 					}
@@ -312,7 +312,7 @@ public:
 				else
 				if( SelM1B == 1 )
 				{
-					if( select( M1BBHist, rnd ))
+					if( select( M1BBSel, rnd ))
 					{
 						generateSol5( rnd );
 					}
@@ -335,14 +335,14 @@ public:
 		else
 		{
 			DoEval = false;
-			CBiteOptPop* UpdPop;
+			CBitePop* UpdPop;
 
 			if( UseParOpt == 1 )
 			{
 				// Re-assign optimizer 2 based on comparison of its
 				// efficiency with optimizer 1.
 
-				UseParOpt = select( ParOpt2Hist, rnd );
+				UseParOpt = select( ParOpt2Sel, rnd );
 			}
 
 			if( UseParOpt == 0 )
@@ -410,13 +410,13 @@ public:
 		{
 			// Upper bound cost constraint check failed, reject this solution.
 
-			applyHistsDecr( rnd );
+			applySelsDecr( rnd );
 
 			StallCount++;
 
 			if( CurPopSize < PopSize )
 			{
-				if( select( PopChangeIncrHist, rnd ))
+				if( select( PopChangeIncrSel, rnd ))
 				{
 					// Increase population size on fail.
 
@@ -427,20 +427,13 @@ public:
 		else
 		{
 			updateBestCost( NewCost, NewValues, p );
-			applyHistsIncr( rnd, 1.0 - p * CurPopSizeI );
+			applySelsIncr( rnd, 1.0 - p * CurPopSizeI );
 
-			if( PopCosts[ 0 ] == PopCosts[ CurPopSize1 ])
-			{
-				StallCount++;
-			}
-			else
-			{
-				StallCount = 0;
-			}
+			StallCount = 0;
 
 			if( rnd.get() < ParamCountI )
 			{
-				OldPop.updatePop( PopCosts[ CurPopSize1 ],
+				OldPop.updatePop( *getObjPtr( PopParams[ CurPopSize1 ]),
 					PopParams[ CurPopSize1 ], false );
 			}
 
@@ -453,7 +446,7 @@ public:
 
 			if( CurPopSize > PopSize / 2 )
 			{
-				if( select( PopChangeDecrHist, rnd ))
+				if( select( PopChangeDecrSel, rnd ))
 				{
 					// Decrease population size on success.
 
@@ -491,83 +484,75 @@ protected:
 		///< dimensions as the "all parameter" randomization is ineffective in
 		///< the higher dimensions.
 		///<
-	CBiteOptHist< 4 > MethodHist; ///< Population generator 4-method
-		///< histogram.
+	CBiteSel< 4 > MethodSel; ///< Population generator 4-method selector.
 		///<
-	CBiteOptHist< 2 > M1Hist; ///< Method 1's sub-method histogram.
+	CBiteSel< 2 > M1Sel; ///< Method 1's sub-method selector.
 		///<
-	CBiteOptHist< 5 > M1AHist; ///< Method 1's sub-sub-method A histogram.
+	CBiteSel< 5 > M1ASel; ///< Method 1's sub-sub-method A selector.
 		///<
-	CBiteOptHist< 3 > M1BHist; ///< Method 1's sub-sub-method B histogram.
+	CBiteSel< 3 > M1BSel; ///< Method 1's sub-sub-method B selector.
 		///<
-	CBiteOptHist< 2 > M1BAHist; ///< Method 1's sub-sub-method BA histogram.
+	CBiteSel< 2 > M1BASel; ///< Method 1's sub-sub-method BA selector.
 		///<
-	CBiteOptHist< 2 > M1BBHist; ///< Method 1's sub-sub-method BB histogram.
+	CBiteSel< 2 > M1BBSel; ///< Method 1's sub-sub-method BB selector.
 		///<
-	CBiteOptHist< 2 > PopChangeIncrHist; ///< Population size change increase
-		///< histogram.
+	CBiteSel< 2 > PopChangeIncrSel; ///< Population size change increase
+		///< selector.
 		///<
-	CBiteOptHist< 2 > PopChangeDecrHist; ///< Population size change decrease
-		///< histogram.
+	CBiteSel< 2 > PopChangeDecrSel; ///< Population size change decrease
+		///< selector.
 		///<
-	CBiteOptHist< 2 > ParOpt2Hist; ///< Parallel optimizer 2 use
-		///< histogram.
+	CBiteSel< 2 > ParOpt2Sel; ///< Parallel optimizer 2 use selector.
 		///<
-	CBiteOptHist< 2 > ParPopPHist[ 4 ]; ///< Parallel population use
-		///< probability histogram.
+	CBiteSel< 2 > ParPopPSel[ 4 ]; ///< Parallel population use
+		///< probability selectors.
 		///<
-	CBiteOptHist< 2 > AltPopPHist; ///< Alternative population use
-		///< histogram.
+	CBiteSel< 2 > AltPopPSel; ///< Alternative population use selector.
 		///<
-	CBiteOptHist< 2 > AltPopHist[ 4 ]; ///< Alternative population type use
-		///< histogram.
+	CBiteSel< 2 > AltPopSel[ 4 ]; ///< Alternative population type use
+		///< selectors.
 		///<
-	CBiteOptHist< 4 > MinSolPwrHist[ 4 ]; ///< Index of least-cost
-		///< population, power factor.
+	CBiteSel< 4 > MinSolPwrSel[ 4 ]; ///< Power factor selectors, for
+		///< least-cost population index selection.
 		///<
-	CBiteOptHist< 4 > MinSolMulHist[ 4 ]; ///< Index of least-cost
-		///< population, multiplier.
+	CBiteSel< 4 > MinSolMulSel[ 4 ]; ///< Multiplier selectors, for
+		///< least-cost population index selection.
 		///<
-	CBiteOptHist< 2 > Gen1AllpHist; ///< Generator method 1's Allp
-		///< histogram.
+	CBiteSel< 2 > Gen1AllpSel; ///< Generator method 1's Allp selector.
 		///<
-	CBiteOptHist< 2 > Gen1MoveHist; ///< Generator method 1's Move histogram.
+	CBiteSel< 2 > Gen1MoveSel; ///< Generator method 1's Move selector.
 		///<
-	CBiteOptHist< 2 > Gen1MoveAsyncHist; ///< Generator method 1's Move
-		///< async histogram.
+	CBiteSel< 2 > Gen1MoveAsyncSel; ///< Generator method 1's Move async
+		///< selector.
 		///<
-	CBiteOptHist< 4 > Gen1MoveSpanHist; ///< Generator method 1's Move span
-		///< histogram.
+	CBiteSel< 4 > Gen1MoveSpanSel; ///< Generator method 1's Move span
+		///< selector.
 		///<
-	CBiteOptHist< 2 > Gen2ModeHist; ///< Generator method 2's Mode histogram.
+	CBiteSel< 2 > Gen2ModeSel; ///< Generator method 2's Mode selector.
 		///<
-	CBiteOptHist< 2 > Gen2bModeHist; ///< Generator method 2b's Mode
-		///< histogram.
+	CBiteSel< 2 > Gen2bModeSel; ///< Generator method 2b's Mode selector.
 		///<
-	CBiteOptHist< 2 > Gen2dModeHist; ///< Generator method 2d's Mode
-		///< histogram.
+	CBiteSel< 2 > Gen2dModeSel; ///< Generator method 2d's Mode selector.
 		///<
-	CBiteOptHist< 4 > Gen3ModeHist; ///< Generator method 3's Mode histogram.
+	CBiteSel< 4 > Gen3ModeSel; ///< Generator method 3's Mode selector.
 		///<
-	CBiteOptHist< 4 > Gen4MixFacHist; ///< Generator method 4's mixing
-		///< count histogram.
+	CBiteSel< 4 > Gen4MixFacSel; ///< Generator method 4's mixing count
+		///< selector.
 		///<
-	CBiteOptHist< 4 > Gen7PowFacHist; ///< Generator method 7's Power
-		///< histogram.
+	CBiteSel< 4 > Gen7PowFacSel; ///< Generator method 7's Power selector.
 		///<
-	CBiteOptHist< 2 > Gen8ModeHist; ///< Generator method 8's mode histogram.
+	CBiteSel< 2 > Gen8ModeSel; ///< Generator method 8's mode selector.
 		///<
-	CBiteOptHist< 4 > Gen8NumHist; ///< Generator method 8's NumSols
-		///< histogram.
+	CBiteSel< 4 > Gen8NumSel; ///< Generator method 8's NumSols selector.
 		///<
-	CBiteOptHist< 4 > Gen8SpanHist[ 2 ]; ///< Generator method 8's random span
-		///< histograms.
+	CBiteSel< 4 > Gen8SpanSel[ 2 ]; ///< Generator method 8's random span
+		///< selectors.
 		///<
 	int CentUpdateCtr; ///< Centroid update counter.
 		///<
 	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
 		///<
-	CBiteOptPop OldPop; ///< Population of older solutions, updated
+	CBitePop OldPop; ///< Population of older solutions, updated
 		///< probabilistically.
 		///<
 
@@ -599,13 +584,13 @@ protected:
 
 	CParOpt< CSpherOpt > ParOpt; ///< Parallel optimizer.
 		///<
-	CBiteOptPop ParOptPop; ///< Population of parallel optimizer's solutions.
+	CBitePop ParOptPop; ///< Population of parallel optimizer's solutions.
 		///< Includes only its solutions.
 		///<
 	CParOpt< CNMSeqOpt > ParOpt2; ///< Parallel optimizer2.
 		///<
-	CBiteOptPop ParOpt2Pop; ///< Population of parallel optimizer 2's
-		///< solutions. Includes only its solutions.
+	CBitePop ParOpt2Pop; ///< Population of parallel optimizer 2's solutions.
+		///< Includes only its solutions.
 		///<
 	int UseParOpt; ///< Parallel optimizer currently being in use.
 		///<
@@ -636,9 +621,9 @@ protected:
 	 * @param rnd PRNG object.
 	 */
 
-	CBiteOptPop& selectParPop( const int gi, CBiteRnd& rnd )
+	CBitePop& selectParPop( const int gi, CBiteRnd& rnd )
 	{
-		if( select( ParPopPHist[ gi ], rnd ))
+		if( select( ParPopPSel[ gi ], rnd ))
 		{
 			return( *ParPops[ rnd.getInt( ParPopCount )]);
 		}
@@ -654,11 +639,11 @@ protected:
 	 * @param rnd PRNG object.
 	 */
 
-	CBiteOptPop& selectAltPop( const int gi, CBiteRnd& rnd )
+	CBitePop& selectAltPop( const int gi, CBiteRnd& rnd )
 	{
-		if( select( AltPopPHist, rnd ))
+		if( select( AltPopPSel, rnd ))
 		{
-			if( select( AltPopHist[ gi ], rnd ))
+			if( select( AltPopSel[ gi ], rnd ))
 			{
 				if( ParOptPop.getCurPopPos() >= CurPopSize )
 				{
@@ -690,11 +675,11 @@ protected:
 	{
 		static const double pp[ 4 ] = { 0.05, 0.125, 0.25, 0.5 };
 		const double r = ps * pow( rnd.get(),
-			ps * pp[ select( MinSolPwrHist[ gi ], rnd )]);
+			ps * pp[ select( MinSolPwrSel[ gi ], rnd )]);
 
 		static const double rm[ 4 ] = { 0.0, 0.125, 0.25, 0.5 };
 
-		return( (int) ( r * rm[ select( MinSolMulHist[ gi ], rnd )]));
+		return( (int) ( r * rm[ select( MinSolMulSel[ gi ], rnd )]));
 	}
 
 	/**
@@ -707,7 +692,7 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const CBiteOptPop& ParPop = selectParPop( 0, rnd );
+		const CBitePop& ParPop = selectParPop( 0, rnd );
 
 		copyParams( Params, ParPop.getParamsOrdered(
 			getMinSolIndex( 0, rnd, ParPop.getCurPopSize() )));
@@ -721,7 +706,7 @@ protected:
 
 		if( rnd.get() < AllpProbDamp )
 		{
-			if( select( Gen1AllpHist, rnd ))
+			if( select( Gen1AllpSel, rnd ))
 			{
 				DoAllp = true;
 			}
@@ -759,12 +744,12 @@ protected:
 				( rp1[ i ] ^ imask2 )) >> 1;
 		}
 
-		if( select( Gen1MoveHist, rnd ))
+		if( select( Gen1MoveSel, rnd ))
 		{
 			const ptype* const rp2 = getParamsOrdered(
 				rnd.getSqrInt( CurPopSize ));
 
-			if( select( Gen1MoveAsyncHist, rnd ))
+			if( select( Gen1MoveAsyncSel, rnd ))
 			{
 				a = 0;
 				b = ParamCount;
@@ -774,7 +759,7 @@ protected:
 
 			static const double SpanMults[ 4 ] = { 0.5, 1.5, 2.0, 2.5 };
 
-			const double m = SpanMults[ select( Gen1MoveSpanHist, rnd )];
+			const double m = SpanMults[ select( Gen1MoveSpanSel, rnd )];
 			const double m1 = rnd.getTPDF() * m;
 			const double m2 = rnd.getTPDF() * m;
 
@@ -812,7 +797,7 @@ protected:
 		// the worst (maximal) parameter vector, plus a difference of two
 		// random vectors.
 
-		const int Mode = select( Gen2ModeHist, rnd );
+		const int Mode = select( Gen2ModeSel, rnd );
 		int i;
 
 		if( Mode == 0 )
@@ -853,13 +838,13 @@ protected:
 		const ptype* const rp2 = getParamsOrdered( si2 );
 		const ptype* const rp3 = getParamsOrdered( CurPopSize1 - si2 );
 
-		const CBiteOptPop& AltPop = selectAltPop( 0, rnd );
+		const CBitePop& AltPop = selectAltPop( 0, rnd );
 
 		const int si4 = rnd.getInt( CurPopSize );
 		const ptype* const rp4 = AltPop.getParamsOrdered( si4 );
 		const ptype* const rp5 = AltPop.getParamsOrdered( CurPopSize1 - si4 );
 
-		const int Mode = select( Gen2bModeHist, rnd );
+		const int Mode = select( Gen2bModeSel, rnd );
 		int i;
 
 		if( Mode == 0 )
@@ -982,7 +967,7 @@ protected:
 		const ptype* const rp3 = OldPop.getParamsOrdered(
 			rnd.getInt( OldPop.getCurPopPos() ));
 
-		const int Mode = select( Gen2dModeHist, rnd );
+		const int Mode = select( Gen2dModeSel, rnd );
 		int i;
 
 		if( Mode == 0 )
@@ -1021,7 +1006,7 @@ protected:
 		const ptype* const rp2 = getParamsOrdered(
 			rnd.getSqrInt( CurPopSize ));
 
-		const int Mode = select( Gen3ModeHist, rnd );
+		const int Mode = select( Gen3ModeSel, rnd );
 		int i;
 
 		if( Mode == 0 )
@@ -1058,7 +1043,7 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const CBiteOptPop* UsePops[ 2 ];
+		const CBitePop* UsePops[ 2 ];
 		UsePops[ 0 ] = &selectAltPop( 1, rnd );
 		UsePops[ 1 ] = &selectParPop( 1, rnd );
 
@@ -1066,7 +1051,7 @@ protected:
 		UseSize[ 0 ] = CurPopSize;
 		UseSize[ 1 ] = UsePops[ 1 ] -> getCurPopSize();
 
-		const int km = 5 + ( select( Gen4MixFacHist, rnd ) << 1 );
+		const int km = 5 + ( select( Gen4MixFacSel, rnd ) << 1 );
 
 		int p = rnd.getBit();
 		const ptype* rp1 = UsePops[ p ] -> getParamsOrdered(
@@ -1104,14 +1089,14 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const CBiteOptPop& ParPop = selectParPop( 2, rnd );
+		const CBitePop& ParPop = selectParPop( 2, rnd );
 
 		const int si1 = rnd.getSqrInt( ParPop.getCurPopSize() );
 		const ptype* const CrossParams1 = ( rnd.getBit() ?
 			ParPop.getParamsOrdered( si1 ) :
 			ParPop.getParamsOrdered( ParPop.getCurPopSize() - 1 - si1 ));
 
-		const CBiteOptPop& AltPop = selectAltPop( 2, rnd );
+		const CBitePop& AltPop = selectAltPop( 2, rnd );
 
 		const ptype* const CrossParams2 = AltPop.getParamsOrdered(
 			rnd.getSqrInt( CurPopSize ));
@@ -1149,12 +1134,12 @@ protected:
 		ptype* const Params = TmpParams;
 		const ptype* CrossParams[ 2 ];
 
-		const CBiteOptPop& ParPop = selectParPop( 3, rnd );
+		const CBitePop& ParPop = selectParPop( 3, rnd );
 
 		CrossParams[ 0 ] = ParPop.getParamsOrdered(
 			rnd.getSqrInt( ParPop.getCurPopSize() ));
 
-		const CBiteOptPop& AltPop = selectAltPop( 3, rnd );
+		const CBitePop& AltPop = selectAltPop( 3, rnd );
 
 		if( rnd.getBit() )
 		{
@@ -1246,7 +1231,7 @@ protected:
 
 		const bool UseOldPop = ( OldPop.getCurPopPos() > 2 );
 		static const double p[ 4 ] = { 1.5, 1.75, 2.0, 2.25 };
-		const double pwr = p[ select( Gen7PowFacHist, rnd )];
+		const double pwr = p[ select( Gen7PowFacSel, rnd )];
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
@@ -1278,8 +1263,8 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const int Mode = select( Gen8ModeHist, rnd );
-		const int NumSols = 5 + select( Gen8NumHist, rnd );
+		const int Mode = select( Gen8ModeSel, rnd );
+		const int NumSols = 5 + select( Gen8NumSel, rnd );
 		const ptype* rp[ 8 ];
 
 		// Calculate centroid of a number of selected solutions.
@@ -1315,7 +1300,7 @@ protected:
 		if( Mode == 0 )
 		{
 			static const double Spans[ 4 ] = { 1.5, 2.5, 3.5, 4.5 };
-			const double gm = Spans[ select( Gen8SpanHist[ Mode ], rnd )] *
+			const double gm = Spans[ select( Gen8SpanSel[ Mode ], rnd )] *
 				sqrt( m );
 
 			for( j = 0; j < NumSols; j++ )
@@ -1332,7 +1317,7 @@ protected:
 		else
 		{
 			static const double Spans[ 4 ] = { 0.5, 1.5, 2.5, 3.5 };
-			const double gm = Spans[ select( Gen8SpanHist[ Mode ], rnd )];
+			const double gm = Spans[ select( Gen8SpanSel[ Mode ], rnd )];
 
 			for( j = 0; j < NumSols; j++ )
 			{
@@ -1382,32 +1367,32 @@ public:
 	}
 
 	/**
-	 * Function returns a pointer to an array of histograms in use by the
+	 * Function returns a pointer to an array of selectors in use by the
 	 * current CBiteOpt object.
 	 */
 
-	CBiteOptHistBase** getHists()
+	CBiteSelBase** getSels()
 	{
-		return( CurOpt -> getHists() );
+		return( CurOpt -> getSels() );
 	}
 
 	/**
-	 * Function returns a pointer to an array of histogram names.
+	 * Function returns a pointer to an array of selector names.
 	 */
 
-	const char** getHistNames() const
+	const char** getSelNames() const
 	{
-		return( CurOpt -> getHistNames() );
+		return( CurOpt -> getSelNames() );
 	}
 
 	/**
-	 * Function returns the number of histograms in use by the current
-	 * CBiteOpt object.
+	 * Function returns the number of selectors in use by the current CBiteOpt
+	 * object.
 	 */
 
-	int getHistCount() const
+	int getSelCount() const
 	{
-		return( CurOpt -> getHistCount() );
+		return( CurOpt -> getSelCount() );
 	}
 
 	/**

@@ -27,13 +27,13 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.20
+ * @version 2022.25.1
  */
 
 #ifndef SMAESOPT_INCLUDED
 #define SMAESOPT_INCLUDED
 
-#include "biteoptort.h"
+#include "biteort.h"
 
 /**
  * Sigma Adaptation Evolution Strategy class. Fundamentally similar to CMA-ES,
@@ -170,7 +170,7 @@ public:
 	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
 		double* const OutValues = NULL )
 	{
-		double* const Params = PopParams[ CurPopPos ];
+		double* const Params = getCurPosParams();
 
 		sample( rnd, Params );
 
@@ -186,8 +186,8 @@ public:
 			copyValues( OutValues, Params );
 		}
 
-		updateBestCost( NewCost, Params,
-			updatePop( NewCost, Params, false ));
+		updatePop( NewCost, Params, false );
+		updateBestCost( NewCost, Params );
 
 		AvgCost += NewCost;
 		cure++;
@@ -217,7 +217,7 @@ public:
 	}
 
 protected:
-	CBiteOptOrt Ort; ///< Rotation vector and orthogonalization calculator.
+	CBiteOrt Ort; ///< Rotation vector and orthogonalization calculator.
 		///<
 	int cure; ///< Current evaluation index, greater or equal to
 		///< "curem" if population distribution needs to be updated.

@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.21
+ * @version 2022.25.1
  */
 
 #ifndef DEOPT_INCLUDED
@@ -268,19 +268,11 @@ public:
 		}
 
 		const int p = updatePop( NewCost, TmpParams, false, false );
+		updateBestCost( NewCost, NewValues );
 
 		if( p < CurPopSize )
 		{
-			updateBestCost( NewCost, NewValues, p );
-
-			if( PopCosts[ 0 ] == PopCosts[ CurPopSize1 ])
-			{
-				StallCount++;
-			}
-			else
-			{
-				StallCount = 0;
-			}
+			StallCount = 0;
 		}
 		else
 		{

@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.20
+ * @version 2022.25.1
  */
 
 #ifndef NMSOPT_INCLUDED
@@ -47,7 +47,8 @@ class CNMSeqOpt : public CBiteOptBase< double >
 {
 public:
 	CNMSeqOpt()
-		: x2( NULL )
+		: y( NULL )
+		, x2( NULL )
 	{
 	}
 
@@ -367,12 +368,14 @@ private:
 	EState State; ///< Current optimization state.
 		///<
 
-	virtual void initBuffers( const int aParamCount, const int aPopSize )
+	virtual void initBuffers( const int aParamCount, const int aPopSize,
+		const int aCnsCount = 0, const int aObjCount = 1 )
 	{
-		CBiteOptBase :: initBuffers( aParamCount, aPopSize );
+		CBiteOptBase :: initBuffers( aParamCount, aPopSize, aCnsCount,
+			aObjCount );
 
 		x = PopParams;
-		y = PopCosts;
+		y = new double[ M ];
 		x0 = CentParams;
 		x1 = TmpParams;
 		x2 = new double[ N ];
@@ -382,6 +385,7 @@ private:
 	{
 		CBiteOptBase :: deleteBuffers();
 
+		delete[] y;
 		delete[] x2;
 	}
 

@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.20
+ * @version 2022.25.1
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -48,9 +48,9 @@ public:
 		: WPopCent( NULL )
 		, WPopRad( NULL )
 	{
-		addHist( CentPowHist, "CentPowHist" );
-		addHist( RadPowHist, "RadPowHist" );
-		addHist( EvalFacHist, "EvalFacHist" );
+		addSel( CentPowSel, "CentPowSel" );
+		addSel( RadPowSel, "RadPowSel" );
+		addSel( EvalFacSel, "EvalFacSel" );
 	}
 
 	/**
@@ -139,7 +139,7 @@ public:
 	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
 		double* const OutValues = NULL )
 	{
-		double* const Params = PopParams[ CurPopPos ];
+		double* const Params = getCurPosParams();
 		int i;
 
 		if( DoCentEval )
@@ -200,8 +200,8 @@ public:
 			copyValues( OutValues, NewValues );
 		}
 
-		updateBestCost( NewCost, NewValues,
-			updatePop( NewCost, Params, false ));
+		updatePop( NewCost, Params, false );
+		updateBestCost( NewCost, NewValues );
 
 		AvgCost += NewCost;
 		cure++;
@@ -215,13 +215,13 @@ public:
 				HiBound = AvgCost;
 				StallCount = 0;
 
-				applyHistsIncr( rnd );
+				applySelsIncr( rnd );
 			}
 			else
 			{
 				StallCount += cure;
 
-				applyHistsDecr( rnd );
+				applySelsDecr( rnd );
 			}
 
 			resetCurPopPos();
@@ -256,16 +256,18 @@ protected:
 	bool DoCentEval; ///< "True" if an initial objective function evaluation
 		///< at centroid point is required.
 		///<
-	CBiteOptHist< 4 > CentPowHist; ///< Centroid power factor histogram.
+	CBiteSel< 4 > CentPowSel; ///< Centroid power factor selector.
 		///<
-	CBiteOptHist< 4 > RadPowHist; ///< Radius power factor histogram.
+	CBiteSel< 4 > RadPowSel; ///< Radius power factor selector.
 		///<
-	CBiteOptHist< 3 > EvalFacHist; ///< EvalFac histogram.
+	CBiteSel< 3 > EvalFacSel; ///< EvalFac selector.
 		///<
 
-	virtual void initBuffers( const int aParamCount, const int aPopSize )
+	virtual void initBuffers( const int aParamCount, const int aPopSize,
+		const int aCnsCount = 0, const int aObjCount = 1 )
 	{
-		CBiteOptBase< double > :: initBuffers( aParamCount, aPopSize );
+		CBiteOptBase< double > :: initBuffers( aParamCount, aPopSize,
+			aCnsCount, aObjCount );
 
 		WPopCent = new double[ aPopSize ];
 		WPopRad = new double[ aPopSize ];
@@ -291,9 +293,9 @@ protected:
 		static const double WRad[ 4 ] = { 14.0, 16.0, 18.0, 20.0 };
 		static const double EvalFacs[ 3 ] = { 2.1, 2.0, 1.9 };
 
-		const double CentFac = WCent[ select( CentPowHist, rnd )];
-		const double RadFac = WRad[ select( RadPowHist, rnd )];
-		EvalFac = EvalFacs[ select( EvalFacHist, rnd )];
+		const double CentFac = WCent[ select( CentPowSel, rnd )];
+		const double RadFac = WRad[ select( RadPowSel, rnd )];
+		EvalFac = EvalFacs[ select( EvalFacSel, rnd )];
 
 		const double lm = 1.0 / curem;
 		double s1 = 0.0;

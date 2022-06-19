@@ -10,11 +10,11 @@
 #include "../deopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CDEOpt//CSMAESOpt//CSpherOpt//CBiteOptDeep//CNMSeqOpt//CCMAESOpt//
+#define OPT_CLASS CBiteOpt//CSMAESOpt//CNMSeqOpt//CSpherOpt//CDEOpt//CBiteOptDeep//CCMAESOpt//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
 //#define OPT_PLATEAU_MUL 256 // Uncomment to enable plateau check.
 //#define EVALBINS 1
-#define OPT_STATS 0 // Set to 1 to enable histogram statistics output.
+#define OPT_STATS 0 // Set to 1 to enable selector statistics output.
 #define OPT_TIME 0 // Set to 1 to evaluate timings.
 
 #if 0
@@ -78,15 +78,15 @@ public:
 	#endif // defined( EVALBINS )
 
 	#if OPT_STATS
-		int SumSelsMap[ CBiteOpt :: MaxHistCount * 8 ]; ///< Sums of
-			///< individual choices associated with histograms over all
+		int SumSelsMap[ CBiteOpt :: MaxSelCount * 10 ]; ///< Sums of
+			///< individual choices associated with selectors over all
 			///< successful attempts.
 			///<
-		double SumAvgSels[ CBiteOpt :: MaxHistCount ]; ///< Sum of average
-			///< histogram choices over all successful attempts.
+		double SumAvgSels[ CBiteOpt :: MaxSelCount ]; ///< Sum of average
+			///< selector choices over all successful attempts.
 			///<
-		double SumDevSels[ CBiteOpt :: MaxHistCount ]; ///< Sum of average
-			///< histogram choice deviations (squared) over all successful
+		double SumDevSels[ CBiteOpt :: MaxSelCount ]; ///< Sum of average
+			///< selector choice deviations (squared) over all successful
 			///< attempts.
 			///<
 	#endif // OPT_STATS
@@ -222,9 +222,9 @@ public:
 		///<
 
 	#if OPT_STATS
-	int SumSels[ CBiteOpt :: MaxHistCount ]; ///< Sum of histogram choices.
+	int SumSels[ CBiteOpt :: MaxSelCount ]; ///< Sum of selector choices.
 		///<
-	int* Sels[ CBiteOpt :: MaxHistCount ]; ///< Histogram choices at each
+	int* Sels[ CBiteOpt :: MaxSelCount ]; ///< Selector choices at each
 		///< optimization step.
 		///<
 	int SelAlloc; ///< The number of items allocated in each Sels element.
@@ -265,7 +265,7 @@ public:
 		#if OPT_STATS
 		int i;
 
-		for( i = 0; i < getHistCount(); i++ )
+		for( i = 0; i < getSelCount(); i++ )
 		{
 			delete[] Sels[ i ];
 		}
@@ -401,7 +401,7 @@ public:
 		{
 			SelAlloc = MaxIters;
 
-			for( k = 0; k < getHistCount(); k++ )
+			for( k = 0; k < getSelCount(); k++ )
 			{
 				delete[] Sels[ k ];
 				Sels[ k ] = new int[ MaxIters ];
@@ -432,13 +432,13 @@ public:
 			#endif // OPT_THREADS && OPT_TIME
 
 			#if OPT_STATS
-				CBiteOptHistBase** const h = getHists();
+				CBiteSelBase** const s = getSels();
 
-				for( k = 0; k < getHistCount(); k++ )
+				for( k = 0; k < getSelCount(); k++ )
 				{
-					const int s = h[ k ] -> getSel();
-					Sels[ k ][ i ] = s;
-					SumSels[ k ] += s;
+					const int v = s[ k ] -> getSel();
+					Sels[ k ][ i ] = v;
+					SumSels[ k ] += v;
 				}
 			#endif // OPT_STATS
 
@@ -452,14 +452,14 @@ public:
 			if( getBestCost() <= CostThreshold )
 			{
 				#if OPT_STATS
-				double DevSels[ CBiteOpt :: MaxHistCount ];
-				int SumSelsMap[ CBiteOpt :: MaxHistCount * 8 ];
+				double DevSels[ CBiteOpt :: MaxSelCount ];
+				int SumSelsMap[ CBiteOpt :: MaxSelCount * 10 ];
 				memset( SumSelsMap, 0, sizeof( SumSelsMap ));
 
-				for( k = 0; k < getHistCount(); k++ )
+				for( k = 0; k < getSelCount(); k++ )
 				{
 					DevSels[ k ] = calcDevSel( k, i,
-						(double) SumSels[ k ] / i, SumSelsMap + k * 8 );
+						(double) SumSels[ k ] / i, SumSelsMap + k * 10 );
 				}
 				#endif // OPT_STATS
 
@@ -489,14 +489,14 @@ public:
 					log( 10.0 );
 
 				#if OPT_STATS
-				for( k = 0; k < getHistCount(); k++ )
+				for( k = 0; k < getSelCount(); k++ )
 				{
 					int j;
 
-					for( j = 0; j < 8; j++ )
+					for( j = 0; j < 10; j++ )
 					{
-						SumStats -> SumSelsMap[ k * 8 + j ] +=
-							SumSelsMap[ k * 8 + j ];
+						SumStats -> SumSelsMap[ k * 10 + j ] +=
+							SumSelsMap[ k * 10 + j ];
 					}
 
 					SumStats -> SumAvgSels[ k ] +=
@@ -678,7 +678,7 @@ public:
 				VOXERRSKIP( Threads.getIdleThread( opt ));
 				#endif // OPT_THREADS
 
-				opt -> rnd.init( k + j * 10000 );
+				opt -> rnd.init( k + 1 + ( j + 1 ) * 10000 );
 				opt -> updateDims( Dims );
 				opt -> fn = Funcs[ k ];
 				opt -> DoRandomize = fndata -> DoRandomize;
@@ -892,15 +892,15 @@ public:
 			#endif // defined( OPT_PERF )
 
 			#if OPT_STATS
-			CBiteOptHistBase** const h = opt -> getHists();
-			const char** const hnames = opt -> getHistNames();
+			CBiteSelBase** const s = opt -> getSels();
+			const char** const snames = opt -> getSelNames();
 
 			printf( "\nmin\tmax\tbias\tcount\t"
-				"sel0\tsel1\tsel2\tsel3\thist\n" );
+				"sel0\tsel1\tsel2\tsel3\tname\n" );
 
-			for( k = 0; k < opt -> getHistCount(); k++ )
+			for( k = 0; k < opt -> getSelCount(); k++ )
 			{
-				const int cc = h[ k ] -> getChoiceCount();
+				const int cc = s[ k ] -> getChoiceCount();
 				const double avg = SumStats.SumAvgSels[ k ] /
 					SumStats.ComplAttempts;
 
@@ -915,12 +915,12 @@ public:
 
 				int j;
 
-				for( j = 0; j < 4; j++ )
+				for( j = 0; j < 5; j++ )
 				{
-					if( SumStats.SumSelsMap[ k * 8 + j ] > 0 )
+					if( SumStats.SumSelsMap[ k * 10 + j ] > 0 )
 					{
 						printf( "\t%-5.1f", 100.0 *
-							SumStats.SumSelsMap[ k * 8 + j ] /
+							SumStats.SumSelsMap[ k * 10 + j ] /
 							SumStats.SumIt );
 					}
 					else
@@ -929,7 +929,7 @@ public:
 					}
 				}
 
-				printf( "\t%s\n", hnames[ k ]);
+				printf( "\t%s\n", snames[ k ]);
 			}
 			#endif // OPT_THREADS
 		}
