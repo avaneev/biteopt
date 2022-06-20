@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.25.1
+ * @version 2022.26
  */
 
 #ifndef DEOPT_INCLUDED
@@ -148,11 +148,11 @@ public:
 
 		if( DoInitEvals )
 		{
-			const ptype* const p = PopParams[ CurPopPos ];
+			const ptype* const Params = getCurParams();
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				NewValues[ i ] = getRealValue( p, i );
+				NewValues[ i ] = getRealValue( Params, i );
 			}
 
 			const double NewCost = optcost( NewValues );
@@ -168,7 +168,7 @@ public:
 			}
 
 			updateBestCost( NewCost, NewValues,
-				updatePop( NewCost, p, false ));
+				updatePop( NewCost, Params, false ));
 
 			if( CurPopPos == PopSize )
 			{
@@ -177,8 +177,6 @@ public:
 
 			return( 0 );
 		}
-
-		zeroParams( TmpParams );
 
 		const double r1 = rnd.getSqr();
 		const int si1 = (int) ( r1 * r1 * CurPopSize );
@@ -222,31 +220,54 @@ public:
 			}
 		}
 
-		for( j = 0; j < PairCount; j++ )
-		{
-			const ptype* const rp2 = getParamsOrdered( PopIdx[ 1 + j * 2 ]);
-			const ptype* const rp3 = getParamsOrdered( PopIdx[ 2 + j * 2 ]);
+		const ptype* const rp2 = getParamsOrdered( PopIdx[ 1 ]);
+		const ptype* const rp3 = getParamsOrdered( PopIdx[ 2 ]);
+		const ptype* const rp4 = getParamsOrdered( PopIdx[ 3 ]);
+		const ptype* const rp5 = getParamsOrdered( PopIdx[ 4 ]);
+		const ptype* const rp6 = getParamsOrdered( PopIdx[ 5 ]);
+		const ptype* const rp7 = getParamsOrdered( PopIdx[ 6 ]);
 
-			for( i = 0; i < ParamCount; i++ )
-			{
-				TmpParams[ i ] += rp2[ i ] - rp3[ i ];
-			}
+		for( i = 0; i < ParamCount; i++ )
+		{
+			TmpParams[ i ] = ( rp2[ i ] - rp3[ i ]) + ( rp4[ i ] - rp5[ i ]) +
+				( rp6[ i ] - rp7[ i ]);
 		}
 
 		// TPDF bit randomization.
 
-		if( rnd.getBit() )
+		if( rnd.getBit() && rnd.getBit() )
 		{
 			const int k = rnd.getInt( ParamCount );
-			const int b = rnd.getInt( IntMantBits );
 
-			TmpParams[ k ] += ( (ptype) rnd.getBit() << b ) -
-				( (ptype) rnd.getBit() << b );
+			// Produce sparsely-random bit-strings.
+
+			const ptype v1 = (ptype) ( rnd.getRaw() & rnd.getRaw() &
+				rnd.getRaw() & rnd.getRaw() & rnd.getRaw() & IntMantMask );
+
+			const ptype v2 = (ptype) ( rnd.getRaw() & rnd.getRaw() &
+				rnd.getRaw() & rnd.getRaw() & rnd.getRaw() & IntMantMask );
+
+			TmpParams[ k ] += v1 - v2; // Apply in TPDF manner.
 		}
 
-		for( i = 0; i < ParamCount; i++ )
+		if( rnd.getBit() )
 		{
-			TmpParams[ i ] = rp1[ i ] + ( TmpParams[ i ] >> 2 );
+			const double r2 = rnd.getSqr();
+			const int si2 = (int) ( r2 * r2 * CurPopSize );
+			const ptype* const rp1b = getParamsOrdered( si2 );
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				TmpParams[ i ] = (( rp1[ i ] + rp1b[ i ]) >> 1 ) +
+					( TmpParams[ i ] >> 2 );
+			}
+		}
+		else
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				TmpParams[ i ] = rp1[ i ] + ( TmpParams[ i ] >> 2 );
+			}
 		}
 
 		for( i = 0; i < ParamCount; i++ )
@@ -268,10 +289,10 @@ public:
 		}
 
 		const int p = updatePop( NewCost, TmpParams, false, false );
-		updateBestCost( NewCost, NewValues );
 
 		if( p < CurPopSize )
 		{
+			updateBestCost( NewCost, NewValues, p );
 			StallCount = 0;
 		}
 		else

@@ -112,10 +112,12 @@ public:
 
 			for( i = 0; i < n_con; i++ )
 			{
-				pns = pns * ps + pnsi + pn[ i ] + pn[ i ] * pn[ i ];
+				const double v = pn[ i ];
+				const double v2 = v * v;
+				pns = pns * ps + pnsi + v + v2 + v * v2;
 			}
 
-			cost += 1e10 * ( 1.0 + pns + pns * pns );
+			cost += 1e10 * ( 1.0 + pns );
 		}
 
 		return( cost );

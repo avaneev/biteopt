@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.25.1
+ * @version 2022.26
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -793,19 +793,6 @@ public:
 	}
 
 	/**
-	 * An aux function that advances the specified pointer, previously
-	 * obtained via either getCnsPtr(), getObjPtr(), or getRankPtr() function.
-	 * This can be useful for sorted enumeration of population values.
-	 *
-	 * @param[in,out] p Pointer variable to advance.
-	 */
-
-	void advancePtr( double*& p ) const
-	{
-		p = (double*) ( (uintptr_t) p + (uintptr_t) PopItemSize );
-	}
-
-	/**
 	 * Function returns a pointer to array of population vector pointers,
 	 * which are sorted in the ascending cost order.
 	 */
@@ -821,7 +808,7 @@ public:
 	 * returns pointer to a temporary vector.
 	 */
 
-	ptype* getCurPosParams() const
+	ptype* getCurParams() const
 	{
 		return( PopParams[ CurPopPos ]);
 	}

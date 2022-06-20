@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.25.1
+ * @version 2022.26
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -170,7 +170,7 @@ public:
 	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
 		double* const OutValues = NULL )
 	{
-		double* const Params = getCurPosParams();
+		double* const Params = getCurParams();
 
 		sample( rnd, Params );
 

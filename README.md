@@ -266,13 +266,15 @@ finds a feasible solution in up to 97% of cases.
 
 		for( int i = 0; i < n_con; i++ )
 		{
-			pns = pns * ps + pnsi + pn[ i ] + pn[ i ] * pn[ i ];
+			const double v = pn[ i ];
+			const double v2 = v * v;
+			pns = pns * ps + pnsi + v + v2 + v * v2;
 		}
 
-		cost += 1e10 * ( 1.0 + pns + pns * pns );
+		cost += 1e10 * ( 1.0 + pns );
 	}
 
-In essence, this method transforms each penalty value into a quadratic penalty
+In essence, this method transforms each penalty value into a cubic penalty
 value, places each penalty value into its own "stratum", and also applies a
 "barrier value". The barrier value is suitably large for most practical
 constraint programming problems.
@@ -465,14 +467,14 @@ diverge from both each other and the main population.
 Parameter values are internally normalized to [0; 1] range and, to stay in
 this range, are wrapped in a special manner before each function evaluation.
 Algorithm uses an alike of a probabilistic state-automata (by means of
-"histograms") to switch between algorithm flow-paths, depending on the
-candidate solutions' acceptance on previous iterations. Each histogram
+"selectors") to switch between algorithm flow-paths, depending on the
+candidate solutions' acceptance on previous iterations. Each selector
 represents a superposition of flow-paths, with each flow-path initially being
 equally-probable. Depending on the acceptance or rejection of the
-newly-generated candidate solution, the histogram is updated accordingly, and
+newly-generated candidate solution, the selector is updated accordingly, and
 the "probabilistic weight" of a recently used flow-path is adjusted. This
-approach increases the percentage of "good" solutions and produces a smoother
-smoother.
+approach increases the number of acceptable solutions, and produces a smoother
+descent.
 
 In many instances candidate solution generators use the square of the random
 variable to obtain solution's index: this has an effect of giving more weight
@@ -624,10 +626,10 @@ optimizer in BiteOpt.
 ## DEOpt ##
 
 The CDEOpt class implements a Differential Evolution-alike DFO solver, but in
-the population-handling framework of BiteOpt. "DE/best/3/bit". Mutation
+the population-handling framework of BiteOpt. "DE/best-2/3/bit". Mutation
 parameter is fixed, equals to 0.25. Instead of a crossover, the method uses
-1-bit randomization. Population size is equal to 30\*Dims, by default.
-Population is initialized with Gaussian sampling.
+randomization. Population size is equal to 30\*Dims, by default. Population is
+initialized with Gaussian sampling.
 
 ## Citing ##
 

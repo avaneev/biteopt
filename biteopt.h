@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.25.1"
+#define BITEOPT_VERSION "2022.26"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -89,6 +89,7 @@ public:
 		addSel( Gen2dModeSel, "Gen2dModeSel" );
 		addSel( Gen3ModeSel, "Gen3ModeSel" );
 		addSel( Gen4MixFacSel, "Gen4MixFacSel" );
+		addSel( Gen5bModeSel, "Gen5bModeSel" );
 		addSel( Gen7PowFacSel, "Gen7PowFacSel" );
 		addSel( Gen8ModeSel, "Gen8ModeSel" );
 		addSel( Gen8NumSel, "Gen8NumSel" );
@@ -229,7 +230,7 @@ public:
 
 		if( DoInitEvals )
 		{
-			const ptype* const Params = PopParams[ CurPopPos ];
+			const ptype* const Params = getCurParams();
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -538,6 +539,8 @@ protected:
 		///<
 	CBiteSel< 4 > Gen4MixFacSel; ///< Generator method 4's mixing count
 		///< selector.
+		///<
+	CBiteSel< 2 > Gen5bModeSel; ///< Generator method 5b's Mode selector.
 		///<
 	CBiteSel< 4 > Gen7PowFacSel; ///< Generator method 7's Power selector.
 		///<
@@ -920,16 +923,21 @@ protected:
 			}
 		}
 
-		for( j = 0; j < PairCount; j++ )
+		const ptype* const rp2 = getParamsOrdered( PopIdx[ 1 ]);
+		const ptype* const rp3 = getParamsOrdered( PopIdx[ 2 ]);
+		const ptype* const rp4 = getParamsOrdered( PopIdx[ 3 ]);
+		const ptype* const rp5 = getParamsOrdered( PopIdx[ 4 ]);
+		const ptype* const rp6 = getParamsOrdered( PopIdx[ 5 ]);
+		const ptype* const rp7 = getParamsOrdered( PopIdx[ 6 ]);
+
+		for( i = 0; i < ParamCount; i++ )
 		{
-			const ptype* const rp2 = getParamsOrdered( PopIdx[ 1 + j * 2 ]);
-			const ptype* const rp3 = getParamsOrdered( PopIdx[ 2 + j * 2 ]);
+			Params[ i ] = ( rp2[ i ] - rp3[ i ]) + ( rp4[ i ] - rp5[ i ]) +
+				( rp6[ i ] - rp7[ i ]);
+		}
 
-			for( i = 0; i < ParamCount; i++ )
-			{
-				Params[ i ] += rp2[ i ] - rp3[ i ];
-			}
-
+		for( i = 0; i < PairCount; i++ )
+		{
 			const int k = rnd.getInt( ParamCount );
 			const int b = rnd.getInt( IntMantBits );
 
@@ -1132,7 +1140,7 @@ protected:
 	void generateSol5b( CBiteRnd& rnd )
 	{
 		ptype* const Params = TmpParams;
-		const ptype* CrossParams[ 2 ];
+		const ptype* CrossParams[ 4 ];
 
 		const CBitePop& ParPop = selectParPop( 3, rnd );
 
@@ -1152,11 +1160,29 @@ protected:
 				rnd.getSqrInt( CurPopSize ));
 		}
 
+		const int Mode = select( Gen5bModeSel, rnd );
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		if( Mode == 0 )
 		{
-			Params[ i ] = CrossParams[ rnd.getBit() ][ i ];
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = CrossParams[ rnd.getBit() ][ i ];
+			}
+		}
+		else
+		{
+			CrossParams[ 2 ] = ParPop.getParamsOrdered(
+				rnd.getSqrInt( ParPop.getCurPopSize() ));
+
+			CrossParams[ 3 ] = AltPop.getParamsOrdered(
+				rnd.getSqrInt( CurPopSize ));
+
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = CrossParams[ rnd.getBit() << 1 |
+					rnd.getBit() ][ i ];
+			}
 		}
 	}
 
