@@ -196,10 +196,11 @@ public:
 			for( i = 0; i < n_con; i++ )
 			{
 				const double v = fc[ i ];
-				pns = pns * ps + pnsi + v + v * v;
+				const double v2 = v * v;
+				pns = pns * ps + pnsi + v + v2 + v * v2;
 			}
 
-			return( last_ov + 1e10 * ( 1.0 + pns + pns * pns ));
+			return( last_ov + 1e10 * ( 1.0 + pns ));
 		}
 
 		return( last_ov );

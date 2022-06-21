@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.26
+ * @version 2022.27
  */
 
 #ifndef DEOPT_INCLUDED
@@ -86,7 +86,7 @@ public:
 
 		resetCommonVars( rnd );
 
-		const double sd = 0.125 * InitRadius;
+		const double sd = 0x1p-4 * InitRadius;
 		int i;
 		int j;
 
@@ -178,8 +178,7 @@ public:
 			return( 0 );
 		}
 
-		const double r1 = rnd.getSqr();
-		const int si1 = (int) ( r1 * r1 * CurPopSize );
+		const int si1 = rnd.getPowInt( 4.0, CurPopSize / 2 );
 		const ptype* const rp1 = getParamsOrdered( si1 );
 
 		const int PairCount = 3;
@@ -252,8 +251,13 @@ public:
 
 		if( rnd.getBit() )
 		{
-			const double r2 = rnd.getSqr();
-			const int si2 = (int) ( r2 * r2 * CurPopSize );
+			int si2 = si1 + rnd.getBit() * 2 - 1;
+
+			if( si2 < 0 )
+			{
+				si2 = 1;
+			}
+
 			const ptype* const rp1b = getParamsOrdered( si2 );
 
 			for( i = 0; i < ParamCount; i++ )

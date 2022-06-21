@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.26
+ * @version 2022.27
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -355,10 +355,10 @@ protected:
 				s += d * d;
 			}
 
-			Radius += s * rc[ j ] * s2;
+			Radius += s * rc[ j ];
 		}
 
-		Radius = sqrt( Radius );
+		Radius = sqrt( Radius * s2 );
 	}
 };
 
