@@ -163,9 +163,9 @@ solution which can be cross-checked with other solvers, but a solution of a
 new unexplored function must be treated as "asymptotically optimal".
 
 Also note that in some problem areas like [ESA GTOP](https://www.esa.int/gsp/ACT/projects/gtop/)
-problem suite the attempt budget should be as high as 500 or more (beside
-using the BiteOptDeep depth of at least 8). At the same time, iteration budget
-per attempt can be kept moderate (500000), compared to usual techniques used
+problem suite the attempt budget should be as high as 1000 or more (beside
+using the BiteOptDeep depth of at least 6). At the same time, iteration budget
+per attempt can be kept moderate (250000), compared to usual techniques used
 to solve it. Despite a large attempt budget, on a 8-core processor, this still
 allows one to get good (not necessarily best-known) solutions in a matter of
 minutes per problem.

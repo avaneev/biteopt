@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.26
+ * @version 2022.28
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -80,10 +80,7 @@ public:
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL,
 		const double InitRadius = 1.0 )
 	{
-		getMinValues( MinValues );
-		getMaxValues( MaxValues );
-
-		resetCommonVars( rnd );
+		initCommonVars( rnd );
 
 		cure = 0;
 		curem = (int) ceil( CurPopSize * Ort.EvalFac );

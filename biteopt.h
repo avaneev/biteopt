@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.27"
+#define BITEOPT_VERSION "2022.28"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -58,8 +58,9 @@ public:
 		addSel( M1Sel, "M1Sel" );
 		addSel( M1ASel, "M1ASel" );
 		addSel( M1BSel, "M1BSel" );
-		addSel( M1BASel, "M1BASel" );
-		addSel( M1BBSel, "M1BBSel" );
+		addSel( M1CSel, "M1CSel" );
+		addSel( M2Sel, "M2Sel" );
+		addSel( M2BSel, "M2BSel" );
 		addSel( PopChangeIncrSel, "PopChangeIncrSel" );
 		addSel( PopChangeDecrSel, "PopChangeDecrSel" );
 		addSel( ParOpt2Sel, "ParOpt2Sel" );
@@ -81,7 +82,6 @@ public:
 		addSel( MinSolMulSel[ 2 ], "MinSolMulSel[ 2 ]" );
 		addSel( MinSolMulSel[ 3 ], "MinSolMulSel[ 3 ]" );
 		addSel( Gen1AllpSel, "Gen1AllpSel" );
-		addSel( Gen1MoveSel, "Gen1MoveSel" );
 		addSel( Gen1MoveAsyncSel, "Gen1MoveAsyncSel" );
 		addSel( Gen1MoveSpanSel, "Gen1MoveSpanSel" );
 		addSel( Gen2ModeSel, "Gen2ModeSel" );
@@ -145,10 +145,7 @@ public:
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL,
 		const double InitRadius = 1.0 )
 	{
-		getMinValues( MinValues );
-		getMaxValues( MaxValues );
-
-		resetCommonVars( rnd );
+		initCommonVars( rnd );
 
 		// Initialize solution vectors randomly, calculate objective function
 		// values of these solutions.
@@ -193,9 +190,6 @@ public:
 			}
 		}
 
-		AllpProbDamp = 1.8 * ParamCountI;
-		CentUpdateCtr = 0;
-
 		ParOpt.init( rnd, InitParams, InitRadius );
 		ParOpt2.init( rnd, InitParams, InitRadius );
 		UseParOpt = 0;
@@ -238,7 +232,7 @@ public:
 				NewValues[ i ] = getRealValue( Params, i );
 			}
 
-			const double NewCost = optcost( NewValues );
+			NewCost = optcost( NewValues );
 			updateBestCost( NewCost, NewValues,
 				updatePop( NewCost, Params, false ));
 
@@ -257,8 +251,8 @@ public:
 			return( 0 );
 		}
 
-		bool DoEval = true;
-		double NewCost;
+		DoEval = true;
+
 		const int SelMethod = select( MethodSel, rnd );
 
 		if( SelMethod == 0 )
@@ -268,7 +262,9 @@ public:
 		else
 		if( SelMethod == 1 )
 		{
-			if( select( M1Sel, rnd ))
+			const int SelM1 = select( M1Sel, rnd );
+
+			if( SelM1 == 0 )
 			{
 				const int SelM1A = select( M1ASel, rnd );
 
@@ -282,12 +278,49 @@ public:
 					generateSol2c( rnd );
 				}
 				else
-				if( SelM1A == 2 )
 				{
 					generateSol2d( rnd );
 				}
+			}
+			else
+			if( SelM1 == 1 )
+			{
+				if( select( M1BSel, rnd ))
+				{
+					generateSol4( rnd );
+				}
 				else
-				if( SelM1A == 3 )
+				{
+					generateSol5b( rnd );
+				}
+			}
+			else
+			if( SelM1 == 2 )
+			{
+				if( select( M1CSel, rnd ))
+				{
+					generateSol5( rnd );
+				}
+				else
+				{
+					generateSol7( rnd );
+				}
+			}
+			else
+			{
+				generateSol6b( rnd );
+			}
+		}
+		else
+		if( SelMethod == 2 )
+		{
+			if( select( M2Sel, rnd ))
+			{
+				generateSol1( rnd );
+			}
+			else
+			{
+				if( select( M2BSel, rnd ))
 				{
 					generateSol3( rnd );
 				}
@@ -296,99 +329,10 @@ public:
 					generateSol8( rnd );
 				}
 			}
-			else
-			{
-				const int SelM1B = select( M1BSel, rnd );
-
-				if( SelM1B == 0 )
-				{
-					if( select( M1BASel, rnd ))
-					{
-						generateSol4( rnd );
-					}
-					else
-					{
-						generateSol5b( rnd );
-					}
-				}
-				else
-				if( SelM1B == 1 )
-				{
-					if( select( M1BBSel, rnd ))
-					{
-						generateSol5( rnd );
-					}
-					else
-					{
-						generateSol7( rnd );
-					}
-				}
-				else
-				{
-					generateSol6b( rnd );
-				}
-			}
-		}
-		else
-		if( SelMethod == 2 )
-		{
-			generateSol1( rnd );
 		}
 		else
 		{
-			DoEval = false;
-			CBitePop* UpdPop;
-
-			if( UseParOpt == 1 )
-			{
-				// Re-assign optimizer 2 based on comparison of its
-				// efficiency with optimizer 1.
-
-				UseParOpt = select( ParOpt2Sel, rnd );
-			}
-
-			if( UseParOpt == 0 )
-			{
-				const int sc = ParOpt.optimize( rnd, &NewCost, NewValues );
-
-				if( sc > 0 )
-				{
-					UseParOpt = 1; // On stall, select optimizer 2.
-				}
-
-				if( sc > ParamCount * 64 )
-				{
-					ParOpt.init( rnd, getBestParams(), 0.5 );
-					ParOptPop.resetCurPopPos();
-				}
-
-				UpdPop = &ParOptPop;
-			}
-			else
-			{
-				const int sc = ParOpt2.optimize( rnd, &NewCost, NewValues );
-
-				if( sc > 0 )
-				{
-					UseParOpt = 0; // On stall, select optimizer 1.
-				}
-
-				if( sc > ParamCount * 16 )
-				{
-					ParOpt2.init( rnd, getBestParams(), 1.0 );
-					ParOpt2Pop.resetCurPopPos();
-				}
-
-				UpdPop = &ParOpt2Pop;
-			}
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				TmpParams[ i ] = (ptype) (( NewValues[ i ] -
-					MinValues[ i ]) * DiffValuesI[ i ]);
-			}
-
-			UpdPop -> updatePop( NewCost, TmpParams, false );
+			generateSolPar( rnd );
 		}
 
 		if( DoEval )
@@ -461,42 +405,23 @@ public:
 
 		updateParPop( NewCost, TmpParams );
 
-		CentUpdateCtr++;
-
-		if( CentUpdateCtr >= CurPopSize * 8 )
-		{
-			// Update centroids of populations that use running average, to
-			// reduce error accumulation.
-
-			CentUpdateCtr = 0;
-
-			updateCentroid();
-
-			for( i = 0; i < ParPopCount; i++ )
-			{
-				ParPops[ i ] -> updateCentroid();
-			}
-		}
-
 		return( StallCount );
 	}
 
 protected:
-	double AllpProbDamp; ///< Damped Allp probability. Applied for higher
-		///< dimensions as the "all parameter" randomization is ineffective in
-		///< the higher dimensions.
-		///<
 	CBiteSel< 4 > MethodSel; ///< Population generator 4-method selector.
 		///<
-	CBiteSel< 2 > M1Sel; ///< Method 1's sub-method selector.
+	CBiteSel< 4 > M1Sel; ///< Method 1's sub-method selector.
 		///<
-	CBiteSel< 5 > M1ASel; ///< Method 1's sub-sub-method A selector.
+	CBiteSel< 3 > M1ASel; ///< Method 1's sub-sub-method A selector.
 		///<
-	CBiteSel< 3 > M1BSel; ///< Method 1's sub-sub-method B selector.
+	CBiteSel< 2 > M1BSel; ///< Method 1's sub-sub-method B selector.
 		///<
-	CBiteSel< 2 > M1BASel; ///< Method 1's sub-sub-method BA selector.
+	CBiteSel< 2 > M1CSel; ///< Method 1's sub-sub-method C selector.
 		///<
-	CBiteSel< 2 > M1BBSel; ///< Method 1's sub-sub-method BB selector.
+	CBiteSel< 2 > M2Sel; ///< Method 2's sub-method selector.
+		///<
+	CBiteSel< 2 > M2BSel; ///< Method 2's sub-sub-method B selector.
 		///<
 	CBiteSel< 2 > PopChangeIncrSel; ///< Population size change increase
 		///< selector.
@@ -521,8 +446,6 @@ protected:
 		///< least-cost population index selection.
 		///<
 	CBiteSel< 2 > Gen1AllpSel; ///< Generator method 1's Allp selector.
-		///<
-	CBiteSel< 2 > Gen1MoveSel; ///< Generator method 1's Move selector.
 		///<
 	CBiteSel< 2 > Gen1MoveAsyncSel; ///< Generator method 1's Move async
 		///< selector.
@@ -554,12 +477,17 @@ protected:
 	CBiteSel< 4 > Gen8SpanSel[ 2 ]; ///< Generator method 8's random span
 		///< selectors.
 		///<
-	int CentUpdateCtr; ///< Centroid update counter.
+	CBitePop OldPop; ///< Population of older solutions, updated
+		///< probabilistically.
 		///<
 	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
 		///<
-	CBitePop OldPop; ///< Population of older solutions, updated
-		///< probabilistically.
+	bool DoEval; ///< Temporary variable which equals to "true" if the
+		///< newly-generated solution should be evaluated via the optcost()
+		///< function.
+		///<
+	double NewCost; ///< Temporary variable that receives objective function's
+		///< value (cost).
 		///<
 
 	/**
@@ -710,7 +638,7 @@ protected:
 		int b;
 		bool DoAllp = false;
 
-		if( rnd.get() < AllpProbDamp )
+		if( rnd.get() < 1.8 * ParamCountI )
 		{
 			if( select( Gen1AllpSel, rnd ))
 			{
@@ -740,8 +668,8 @@ protected:
 		const int im2s = rnd.getSqrInt( 96 );
 		const ptype imask2 = (ptype) ( im2s > 63 ? 0 : IntMantMask >> im2s );
 
-		const int si1 = (int) ( r1 * r12 * CurPopSize );
-		const ptype* const rp1 = getParamsOrdered( si1 );
+		const int si1 = (int) ( r1 * r12 * ParPop.getCurPopSize() );
+		const ptype* const rp1 = ParPop.getParamsOrdered( si1 );
 		int i;
 
 		for( i = a; i < b; i++ )
@@ -750,15 +678,18 @@ protected:
 				( rp1[ i ] ^ imask2 )) >> 1;
 		}
 
-		if( select( Gen1MoveSel, rnd ))
+		if( rnd.get() < 1.0 - ParamCountI )
 		{
 			const ptype* const rp2 = getParamsOrdered(
 				rnd.getSqrInt( CurPopSize ));
 
-			if( select( Gen1MoveAsyncSel, rnd ))
+			if( rnd.get() < sqrt( ParamCountI ))
 			{
-				a = 0;
-				b = ParamCount;
+				if( select( Gen1MoveAsyncSel, rnd ))
+				{
+					a = 0;
+					b = ParamCount;
+				}
 			}
 
 			// Random move around a random previous solution vector.
@@ -1059,12 +990,11 @@ protected:
 			static const double CentProb[ 4 ] = { 0.0, 0.25, 0.5, 0.75 };
 			const double p = CentProb[ Mode ];
 
-			const double* const cp = getCentroid();
-			const double cm = getCentroidMult();
+			const ptype* const cp = getCentroid();
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = ( rnd.get() < p ? (ptype) ( cp[ i ] * cm ) :
+				Params[ i ] = ( rnd.get() < p ? cp[ i ] :
 					rp1[ i ] + ( rp1[ i ] - rp2[ i ]));
 			}
 		}
@@ -1385,6 +1315,70 @@ protected:
 			}
 		}
 	}
+
+	/**
+	 * Solution generator that obtains solution from an independently-running
+	 * parallel optimizer.
+	 */
+
+	void generateSolPar( CBiteRnd& rnd )
+	{
+		DoEval = false;
+		CBitePop* UpdPop;
+
+		if( UseParOpt == 1 )
+		{
+			// Re-assign optimizer 2 based on comparison of its
+			// efficiency with optimizer 1.
+
+			UseParOpt = select( ParOpt2Sel, rnd );
+		}
+
+		if( UseParOpt == 0 )
+		{
+			const int sc = ParOpt.optimize( rnd, &NewCost, NewValues );
+
+			if( sc > 0 )
+			{
+				UseParOpt = 1; // On stall, select optimizer 2.
+			}
+
+			if( sc > ParamCount * 64 )
+			{
+				ParOpt.init( rnd, getBestParams(), 0.5 );
+				ParOptPop.resetCurPopPos();
+			}
+
+			UpdPop = &ParOptPop;
+		}
+		else
+		{
+			const int sc = ParOpt2.optimize( rnd, &NewCost, NewValues );
+
+			if( sc > 0 )
+			{
+				UseParOpt = 0; // On stall, select optimizer 1.
+			}
+
+			if( sc > ParamCount * 16 )
+			{
+				ParOpt2.init( rnd, getBestParams(), 1.0 );
+				ParOpt2Pop.resetCurPopPos();
+			}
+
+			UpdPop = &ParOpt2Pop;
+		}
+
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			TmpParams[ i ] = (ptype) (( NewValues[ i ] -
+				MinValues[ i ]) * DiffValuesI[ i ]);
+		}
+
+		UpdPop -> updatePop( NewCost, TmpParams, false );
+	}
 };
 
 /**
@@ -1456,10 +1450,10 @@ public:
 	 *
 	 * @param aParamCount The number of parameters being optimized.
 	 * @param M The number of CBiteOpt objects. This number depends on the
-	 * complexity of the problem, if the default value does not produce a good
-	 * solution, it should be increased together with the iteration count.
-	 * Minimal value is 1, in this case a plain CBiteOpt optimization will be
-	 * performed.
+	 * complexity of the objective function, if the default value does not
+	 * produce a good solution, it should be increased together with the
+	 * iteration count. Minimal value is 1, in this case a plain CBiteOpt
+	 * optimization will be performed.
 	 * @param PopSize0 The number of elements in population to use. If set to
 	 * 0, the default formula will be used.
 	 */
@@ -1655,22 +1649,12 @@ public:
 
 	virtual void getMinValues( double* const p ) const
 	{
-		int i;
-
-		for( i = 0; i < N; i++ )
-		{
-			p[ i ] = lb[ i ];
-		}
+		memcpy( p, lb, N * sizeof( p[ 0 ]));
 	}
 
 	virtual void getMaxValues( double* const p ) const
 	{
-		int i;
-
-		for( i = 0; i < N; i++ )
-		{
-			p[ i ] = ub[ i ];
-		}
+		memcpy( p, ub, N * sizeof( p[ 0 ]));
 	}
 
 	virtual double optcost( const double* const p )

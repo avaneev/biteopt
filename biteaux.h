@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.27
+ * @version 2022.28
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -602,8 +602,6 @@ public:
 		, PopParamsBuf( NULL )
 		, PopParams( NULL )
 		, CentParams( NULL )
-		, NeedCentUpdate( false )
-		, CentMult( 1.0 )
 	{
 	}
 
@@ -654,9 +652,8 @@ public:
 		PopSize1 = aPopSize - 1;
 		CnsCount = aCnsCount;
 		ObjCount = aObjCount;
-		CurPopSize = aPopSize;
-		CurPopSizeI = 1.0 / CurPopSize;
-		CurPopSize1 = aPopSize - 1;
+		NeedCentUpdate = false;
+		CentLPC = calcLP1Coeff( PopSize );
 
 		PopCnsOffs = aParamCount * sizeof( ptype );
 		PopObjOffs = PopCnsOffs + aCnsCount * sizeof( double );
@@ -665,7 +662,7 @@ public:
 
 		PopParamsBuf = new uint8_t[( aPopSize + 1 ) * PopItemSize ];
 		PopParams = new ptype*[ aPopSize + 1 ]; // Last element is temporary.
-		CentParams = new double[ aParamCount ];
+		CentParams = new ptype[ aParamCount ];
 
 		int i;
 
@@ -698,18 +695,18 @@ public:
 		CurPopSize1 = s.CurPopSize1;
 		CurPopPos = s.CurPopPos;
 		NeedCentUpdate = s.NeedCentUpdate;
-		CentMult = s.CentMult;
+		CentLPC = s.CentLPC;
 
 		int i;
 
-		for( i = 0; i < CurPopSize; i++ )
+		for( i = 0; i < PopSize; i++ )
 		{
 			memcpy( PopParams[ i ], s.PopParams[ i ], PopItemSize );
 		}
 
 		if( !NeedCentUpdate )
 		{
-			copyValues( CentParams, s.CentParams );
+			copyParams( CentParams, s.CentParams );
 		}
 	}
 
@@ -723,19 +720,19 @@ public:
 	void updateCentroid()
 	{
 		NeedCentUpdate = false;
-		CentMult = CurPopSizeI;
 
 		const int BatchCount = ( 1 << IntOverBits ) - 1;
-		double* const cp = CentParams;
+		ptype* const cp = CentParams;
+		const double cm = 1.0 / PopSize;
 		ptype* const tp = TmpParams;
 		int i;
 		int j;
 
-		if( CurPopSize <= BatchCount )
+		if( PopSize <= BatchCount )
 		{
 			copyParams( tp, PopParams[ 0 ]);
 
-			for( j = 1; j < CurPopSize; j++ )
+			for( j = 1; j < PopSize; j++ )
 			{
 				const ptype* const p = PopParams[ j ];
 
@@ -747,7 +744,7 @@ public:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				cp[ i ] = (double) tp[ i ];
+				cp[ i ] = (ptype) ( tp[ i ] * cm );
 			}
 		}
 		else
@@ -755,7 +752,7 @@ public:
 			// Batched centroid calculation, for more precision and no integer
 			// overflows.
 
-			int pl = CurPopSize;
+			int pl = PopSize;
 			j = 0;
 			bool DoCopy = true;
 
@@ -786,14 +783,14 @@ public:
 
 					for( i = 0; i < ParamCount; i++ )
 					{
-						cp[ i ] = (double) tp[ i ];
+						cp[ i ] = (ptype) ( tp[ i ] * cm );
 					}
 				}
 				else
 				{
 					for( i = 0; i < ParamCount; i++ )
 					{
-						cp[ i ] += (double) tp[ i ];
+						cp[ i ] += (ptype) ( tp[ i ] * cm );
 					}
 				}
 			}
@@ -803,22 +800,12 @@ public:
 	/**
 	 * Function returns pointer to the centroid vector. The NeedUpdateCent
 	 * should be checked and and if it is equal to "true", the
-	 * updateCentroid() function called. Note that the centroid is not
-	 * normalized by CurPopSizeI.
+	 * updateCentroid() function called.
 	 */
 
-	const double* getCentroid() const
+	const ptype* getCentroid() const
 	{
 		return( CentParams );
-	}
-
-	/**
-	 * Function returns multiplier that normalizes centroid values.
-	 */
-
-	double getCentroidMult() const
-	{
-		return( CentMult );
 	}
 
 	/**
@@ -909,16 +896,52 @@ public:
 	}
 
 	/**
-	 * Function resets the current population position to zero. This function
-	 * is usually called when the population needs to be completely changed.
-	 * This function should be called before any updates to *this population
-	 * (usually during optimizer's initialization).
+	 * Function resets the current population position to zero, and sets
+	 * CurPopSize to PopSize. This function is usually called when the
+	 * population needs to be completely changed. This function should be
+	 * called before any updates to *this population (usually during
+	 * optimizer's initialization).
 	 */
 
 	void resetCurPopPos()
 	{
+		CurPopSize = PopSize;
+		CurPopSizeI = 1.0 / PopSize;
+		CurPopSize1 = PopSize1;
+
 		CurPopPos = 0;
 		NeedCentUpdate = false;
+		CentLPC = calcLP1Coeff( CurPopSize );
+	}
+
+	/**
+	 * Function increases current population size, and updates the required
+	 * variables. This function can only be called if CurPopSize is less than
+	 * PopSize, and previously the whole population was filled.
+	 */
+
+	void incrCurPopSize()
+	{
+		CurPopSize++;
+		CurPopSizeI = 1.0 / CurPopSize;
+		CurPopSize1++;
+		NeedCentUpdate = true;
+		CentLPC = calcLP1Coeff( CurPopSize );
+	}
+
+	/**
+	 * Function decreases current population size, and updates the required
+	 * variables. This function can only be called if CurPopSize is greater
+	 * than 1, and the whole population was filled.
+	 */
+
+	void decrCurPopSize()
+	{
+		CurPopSize--;
+		CurPopSizeI = 1.0 / CurPopSize;
+		CurPopSize1--;
+		NeedCentUpdate = true;
+		CentLPC = calcLP1Coeff( CurPopSize );
 	}
 
 	/**
@@ -972,7 +995,7 @@ public:
 		{
 			const int mid = ( p + i ) >> 1;
 
-			if( *getRankPtr( PopParams[ mid ]) >= UpdCost )
+			if( *getObjPtr( PopParams[ mid ]) >= UpdCost )
 			{
 				i = mid;
 			}
@@ -1024,11 +1047,12 @@ public:
 		{
 			if( DoUpdateCentroid )
 			{
-				double* const cp = CentParams;
+				ptype* const cp = CentParams;
+				const double lpc = CentLPC;
 
 				for( i = 0; i < ParamCount; i++ )
 				{
-					cp[ i ] += UpdParams[ i ] - rp[ i ];
+					cp[ i ] += (ptype) (( UpdParams[ i ] - cp[ i ]) * lpc );
 					rp[ i ] = UpdParams[ i ];
 				}
 			}
@@ -1044,34 +1068,6 @@ public:
 		}
 
 		return( p );
-	}
-
-	/**
-	 * Function increases current population size, and updates the required
-	 * variables. This function can only be called if CurPopSize is less than
-	 * PopSize, and previously the whole population was filled.
-	 */
-
-	void incrCurPopSize()
-	{
-		CurPopSize++;
-		CurPopSizeI = 1.0 / CurPopSize;
-		CurPopSize1++;
-		NeedCentUpdate = true;
-	}
-
-	/**
-	 * Function decreases current population size, and updates the required
-	 * variables. This function can only be called if CurPopSize is greater
-	 * than 1, and the whole population was filled.
-	 */
-
-	void decrCurPopSize()
-	{
-		CurPopSize--;
-		CurPopSizeI = 1.0 / CurPopSize;
-		CurPopSize1--;
-		NeedCentUpdate = true;
 	}
 
 protected:
@@ -1136,14 +1132,11 @@ protected:
 		///<
 	size_t PopItemSize; ///< Size in bytes of population item.
 		///<
-	double* CentParams; ///< Centroid of the current parameter vectors. Note
-		///< that the centroid is not normalized, stored in ptype's value
-		///< scale.
+	ptype* CentParams; ///< Centroid of the parameter vectors.
 		///<
 	bool NeedCentUpdate; ///< "True" if centroid update is needed.
 		///<
-	double CentMult; ///< Centroid multiplier, used for centroid values
-		///< normalization. Updated in the updateCentroid() function.
+	double CentLPC; /// Centroid averaging filter coefficient.
 		///<
 	ptype* TmpParams; ///< Temporary parameter vector, points to the last
 		///< element of the PopParams array.
@@ -1281,6 +1274,21 @@ protected:
 			}
 		}
 	}
+
+	/**
+	 * Function calculates averaging coefficient of a "leaky integrator"
+	 * 1st order low-pass filter.
+	 *
+	 * @param Count An approximate number of samples to average.
+	 */
+
+	static double calcLP1Coeff( const double Count )
+	{
+		const double theta = 2.8 / Count;
+		const double costheta2 = 2.0 - cos( theta );
+
+		return( 1.0 - ( costheta2 - sqrt( costheta2 * costheta2 - 1.0 )));
+	}
 };
 
 /**
@@ -1358,15 +1366,14 @@ protected:
 	int getMinDistParPop( const double Cost, const ptype* const Params ) const
 	{
 		double s[ MaxParPopCount ];
-		const double pm = -PopSize;
 		int i;
 
 		if( ParPopCount == 4 )
 		{
-			const double* const c0 = ParPops[ 0 ] -> getCentroid();
-			const double* const c1 = ParPops[ 1 ] -> getCentroid();
-			const double* const c2 = ParPops[ 2 ] -> getCentroid();
-			const double* const c3 = ParPops[ 3 ] -> getCentroid();
+			const ptype* const c0 = ParPops[ 0 ] -> getCentroid();
+			const ptype* const c1 = ParPops[ 1 ] -> getCentroid();
+			const ptype* const c2 = ParPops[ 2 ] -> getCentroid();
+			const ptype* const c3 = ParPops[ 3 ] -> getCentroid();
 			double s0 = 0.0;
 			double s1 = 0.0;
 			double s2 = 0.0;
@@ -1374,14 +1381,14 @@ protected:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const double v = Params[ i ] * pm;
-				const double d0 = v + c0[ i ];
-				const double d1 = v + c1[ i ];
+				const ptype v = -Params[ i ];
+				const double d0 = (double) ( v + c0[ i ]);
+				const double d1 = (double) ( v + c1[ i ]);
 				s0 += d0 * d0;
 				s1 += d1 * d1;
 
-				const double d2 = v + c2[ i ];
-				const double d3 = v + c3[ i ];
+				const double d2 = (double) ( v + c2[ i ]);
+				const double d3 = (double) ( v + c3[ i ]);
 				s2 += d2 * d2;
 				s3 += d3 * d3;
 			}
@@ -1394,22 +1401,22 @@ protected:
 		else
 		if( ParPopCount == 3 )
 		{
-			const double* const c0 = ParPops[ 0 ] -> getCentroid();
-			const double* const c1 = ParPops[ 1 ] -> getCentroid();
-			const double* const c2 = ParPops[ 2 ] -> getCentroid();
+			const ptype* const c0 = ParPops[ 0 ] -> getCentroid();
+			const ptype* const c1 = ParPops[ 1 ] -> getCentroid();
+			const ptype* const c2 = ParPops[ 2 ] -> getCentroid();
 			double s0 = 0.0;
 			double s1 = 0.0;
 			double s2 = 0.0;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const double v = Params[ i ] * pm;
-				const double d0 = v + c0[ i ];
-				const double d1 = v + c1[ i ];
+				const ptype v = -Params[ i ];
+				const double d0 = (double) ( v + c0[ i ]);
+				const double d1 = (double) ( v + c1[ i ]);
 				s0 += d0 * d0;
 				s1 += d1 * d1;
 
-				const double d2 = v + c2[ i ];
+				const double d2 = (double) ( v + c2[ i ]);
 				s2 += d2 * d2;
 			}
 
@@ -1420,16 +1427,16 @@ protected:
 		else
 		if( ParPopCount == 2 )
 		{
-			const double* const c0 = ParPops[ 0 ] -> getCentroid();
-			const double* const c1 = ParPops[ 1 ] -> getCentroid();
+			const ptype* const c0 = ParPops[ 0 ] -> getCentroid();
+			const ptype* const c1 = ParPops[ 1 ] -> getCentroid();
 			double s0 = 0.0;
 			double s1 = 0.0;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const double v = Params[ i ] * pm;
-				const double d0 = v + c0[ i ];
-				const double d1 = v + c1[ i ];
+				const ptype v = -Params[ i ];
+				const double d0 = (double) ( v + c0[ i ]);
+				const double d1 = (double) ( v + c1[ i ]);
 				s0 += d0 * d0;
 				s1 += d1 * d1;
 			}
@@ -1587,13 +1594,6 @@ public:
 protected:
 	using CBiteParPops< ptype > :: IntMantMult;
 	using CBiteParPops< ptype > :: ParamCount;
-	using CBiteParPops< ptype > :: PopSize;
-	using CBiteParPops< ptype > :: PopSize1;
-	using CBiteParPops< ptype > :: CurPopSize;
-	using CBiteParPops< ptype > :: CurPopSizeI;
-	using CBiteParPops< ptype > :: CurPopSize1;
-	using CBiteParPops< ptype > :: CurPopPos;
-	using CBiteParPops< ptype > :: NeedCentUpdate;
 	using CBiteParPops< ptype > :: resetCurPopPos;
 	using CBiteParPops< ptype > :: copyValues;
 
@@ -1664,20 +1664,20 @@ protected:
 	}
 
 	/**
-	 * Function resets common variables used by optimizers to their default
-	 * values, including registered selectors, calls the resetCurPopPos() and
-	 * updateDiffValues() functions. This function is usually called in the
-	 * init() function of the optimizer.
+	 * Function initializes or resets common variables used by optimizers, to
+	 * their default values, including value bounds, registered selectors,
+	 * calls the resetCurPopPos() and updateDiffValues() functions. This
+	 * function is usually called in the init() function of an optimizer.
 	 */
 
-	void resetCommonVars( CBiteRnd& rnd )
+	void initCommonVars( CBiteRnd& rnd )
 	{
+		getMinValues( MinValues );
+		getMaxValues( MaxValues );
 		updateDiffValues();
+
 		resetCurPopPos();
 
-		CurPopSize = PopSize;
-		CurPopSizeI = 1.0 / PopSize;
-		CurPopSize1 = PopSize1;
 		BestCost = 1e300;
 		StallCount = 0;
 		HiBound = 1e300;

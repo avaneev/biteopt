@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.25.1
+ * @version 2022.28
  */
 
 #ifndef NMSOPT_INCLUDED
@@ -92,10 +92,7 @@ public:
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL,
 		const double InitRadius = 1.0 )
 	{
-		getMinValues( MinValues );
-		getMaxValues( MaxValues );
-
-		resetCommonVars( rnd );
+		initCommonVars( rnd );
 
 		// Initialize parameter vectors, costs and centroid.
 

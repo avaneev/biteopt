@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.27
+ * @version 2022.28
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -89,10 +89,7 @@ public:
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL,
 		const double InitRadius = 1.0 )
 	{
-		getMinValues( MinValues );
-		getMaxValues( MaxValues );
-
-		resetCommonVars( rnd );
+		initCommonVars( rnd );
 
 		Radius = 0.5 * InitRadius;
 		EvalFac = 2.0;

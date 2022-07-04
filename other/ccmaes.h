@@ -92,13 +92,13 @@ public:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			initial_solution[ i ] = MinValues[ i ] +
-				( MaxValues[ i ] - MinValues[ i ]) * rnd.getRndValue();
+				( MaxValues[ i ] - MinValues[ i ]) * rnd.get();
 
 			initial_sigma[ i ] = ( MaxValues[ i ] - MinValues[ i ]) / 6.0;
 		}
 
 		cmaes_init_para( &cma, ParamCount, initial_solution, initial_sigma,
-			1 + (int) ( rnd.getRndValue() * 1000000.0 ), lambda, "no" );
+			1 + (int) ( rnd.get() * 1000000.0 ), lambda, "no" );
 
 		cma.sp.filename = strdup( "no" );
 		y = cmaes_init_final( &cma );
