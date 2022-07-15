@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.28
+ * @version 2022.29
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -1014,6 +1014,8 @@ public:
 			if( CanRejectCost )
 			{
 				// Reject same-cost solution using equality precision level.
+				// This approach reduces search locality due to allowing older
+				// solutions to remain in population.
 
 				static const double etol = 0x1p-52;
 				const double c = *getObjPtr( PopParams[ p ]);
@@ -1023,12 +1025,14 @@ public:
 				{
 					return( PopSize );
 				}
-
-				const double cs = fabs( UpdCost ) + fabs( c );
-
-				if( cs == 0.0 || cd / cs < etol )
+				else
 				{
-					return( PopSize );
+					const double cs = fabs( UpdCost ) + fabs( c );
+
+					if( cs == 0.0 || cd / cs < etol )
+					{
+						return( PopSize );
+					}
 				}
 			}
 		}
