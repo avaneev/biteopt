@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.29
+ * @version 2022.30
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -1029,7 +1029,7 @@ public:
 				{
 					const double cs = fabs( UpdCost ) + fabs( c );
 
-					if( cs == 0.0 || cd / cs < etol )
+					if( cd < cs * etol )
 					{
 						return( PopSize );
 					}
