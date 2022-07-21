@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.30"
+#define BITEOPT_VERSION "2022.31"
 
 #include "spheropt.h"
 #include "nmsopt.h"

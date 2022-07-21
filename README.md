@@ -15,11 +15,11 @@ optimization attempts to reach optimum.
 
 Instead of iterating through different "starting guesses" to find optimum
 like in deterministic methods, this method requires optimization attempts
-(retries) with different random seeds. The stochastic nature of the method
-allows it to automatically "fall" into different competing minima with each
-retry. If there are no competing minima in a function available (or the
-true/global minimum is rogue and cannot be detected), this method in absolute
-majority of retries returns the same optimum.
+with different random seeds. The stochastic nature of the method allows it to
+automatically "fall" into different competing minima with each attempt. If
+there are no competing minima in a function available (or the true/global
+minimum is rogue and cannot be detected), this method in absolute majority of
+attempts returns the same optimum.
 
 BiteOpt uses self-optimization techniques making it objective
 function-agnostic. In its inner workings, BiteOpt uses objective function
@@ -116,7 +116,7 @@ fluctuations near the global solution, that are not very expensive to
 calculate and that have a large iteration budget. Tests have shown that on
 smooth functions that have many strongly competing minima this "deep" method
 considerably increases the chance to find a global solution, relative to the
-CBiteOpt class, but still requires several retries with different random
+CBiteOpt class, but still requires several attempts with different random
 seeds. When using this method, the required iteration budget usually increases
 by a factor of M<sup>0.5</sup>, but the number of the required optimization
 attempts usually decreases. In practice, it is not always possible to predict
@@ -138,9 +138,9 @@ optimization attempts is usually proportional to the number of strongly
 competing minima in a function. 
 
 This method is hugely-probabilistic, and it depends on its initial state,
-which is selected randomly. In most cases it is more efficient to retry the
-optimization with a new random seed than to wait for the optimization process
-to converge. Based on the results of optimization of the test corpus, for
+which is selected randomly. In most cases it is more efficient to attempt to
+optimize with a new random seed than to wait for the optimization process
+to converge. Based on the results of optimization of the test-set, for
 2-dimensional functions it is reasonable to expect convergence in 800
 iterations (in a successful attempt), for 10-dimensional functions it is
 reasonable to expect convergence in 8000 iterations (harder functions may
@@ -148,12 +148,12 @@ require more iterations to converge). Most classic 2-dimensional problems
 converge in 400 iterations or less, at 10<sup>-6</sup> precision. On average,
 every doubling of dimensions requires tripling of iteration budget.
 
-Each retry may generate an equally-usable candidate solution (not necessarily
-having the least cost), so the researcher may select solution from any retry
-based on his/her own considerations. In this light, it may be incorrect to
-assume that least-performing retries are "wasted". In practice,
-least-performing retries may give more acceptable parameter values within the
-search space compared to the best-performing retries.
+Each attempt may generate an equally-usable candidate solution (not
+necessarily having the least cost), so the researcher may select solution from
+any attempt based on his/her own considerations. In this light, it may be
+incorrect to assume that least-performing attempts are "wasted". In practice,
+least-performing attempts may give more acceptable parameter values within the
+search space compared to the best-performing attempts.
 
 Note that derivative-free optimization methods in general provide "asymptotic"
 solutions for complex functions. Thus it is reasonable to assume that BiteOpt
@@ -202,7 +202,7 @@ descent towards global minimum (e.g., Bukin N.6 problem) may not be solved
 acceptably as in most cases they require exhaustive search or a search
 involving knowledge of the structure of the problem. When the problem field
 requires one to locate such "rogue optimums", the best approach is to use a
-magnitudes larger attempt budget (a so called "parallel retry" approach).
+magnitudes larger attempt budget (a so called "parallel attempts" approach).
 With 5000 attempts and 100000 iterations per attempt budget, BiteOpt solves
 even the Bukin N.6 problem. It may seem excessive, but currently BiteOpt does
 not offer another way to solve such complex problems.
@@ -220,11 +220,11 @@ performed since it makes required budget unpredictable. But if several
 attempts are performed, it is a positive property: it means that in some
 optimization attempts BiteOpt converges faster and may find a better optimum
 with the same iteration budget per attempt. Based on `test2.cpp`
-(2-dimensional) and `test3.cpp` (14-dimensional) test corpuses, less than
-0.9% of attempts require more than 3\*sigma iterations, 54% of attempts
-require less than the mean. A typical probability distribution of percent of
-attempts/sigma is as follows (discretized, not centered around 0 because it
-deviates from the standard distribution, the mean corresponds to 0\*sigma):
+(2-dimensional) and `test3.cpp` (14-dimensional) test-sets, less than 0.9% of
+attempts require more than 3\*sigma iterations, 54% of attempts require less
+than the mean. A typical probability distribution of percent of attempts/sigma
+is as follows (discretized, not centered around 0 because it deviates from the
+standard distribution, the mean corresponds to 0\*sigma):
 
 ![PDF plot](https://github.com/avaneev/biteopt/blob/master/attempt_pdf_plot.png)
 

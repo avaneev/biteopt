@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.30
+ * @version 2022.31
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -368,8 +368,7 @@ protected:
  * acceptable solution. In practice, this class provides 10-15% more "good"
  * solutions compared to uniformly-random choice selection. This, in turn,
  * improves convergence smoothness and produces more diversity in outcomes in
- * multiple solution attempts (retries) of complex multi-modal objective
- * functions.
+ * multiple solution attempts of complex multi-modal objective functions.
  */
 
 class CBiteSelBase
