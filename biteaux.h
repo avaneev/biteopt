@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.31
+ * @version 2022.32
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -1799,7 +1799,7 @@ protected:
 
 			if( v < maxv + dv )
 			{
-				return( maxv - rnd.get() * ( v - dv ));
+				return( maxv - rnd.get() * ( v - maxv ));
 			}
 
 			return( maxv - rnd.get() * dv );
