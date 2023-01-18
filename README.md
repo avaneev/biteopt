@@ -26,9 +26,6 @@ function-agnostic. In its inner workings, BiteOpt uses objective function
 value's ranking, and not the actual value. BiteOpt is a multi-faceted example
 of a "probabilistic computing" system.
 
-Python wrapper is available [here](https://github.com/dschmitz89/scipybiteopt),
-via `pip install scipybiteopt`.
-
 ## Comparison ##
 
 This "black-box" optimization method was tested on 2000+ 1-60 dimensional
