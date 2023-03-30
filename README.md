@@ -182,16 +182,16 @@ a system may leave the "rogue" optimal regime easily).
 To a small degree, this method is immune to noise in the objective function.
 While this method was designed to be applied to continuous functions, it is
 immune to discontinuities, and it can solve problems that utilize parameter
-value rounding (integer parameters). This method can't acceptably solve
-high-dimensional problems that are implicitly or explicitly combinatorial
+value rounding (integer parameters). This method usually can't acceptably
+solve high-dimensional continuous problems that are implicitly combinatorial
 (e.g., Perm, and Lennard-Jones atom clustering problems) as in such problems
 the global descent vanishes at some point and the method is left with an
 exponentially increasing number of local minima. However, BiteOpt is able
 to solve symmetric and asymmetric TSP problems even as large as 400-node ones,
-to within 2-6% of optimum (parameter values should be sorted to derive the
+to within 3-8% of optimum (parameter values should be sorted to derive the
 node ordering). A comparison to a specialized TSP solver like Concorde is not
 reasonable to do (BiteOpt is much slower), but BiteOpt permits solving
-non-conventional or mixed-field (e.g. noisy, scheduled, clustered) TSP
+non-conventional or mixed-field (e.g. noisy, scheduled, clustered) discrete
 problems.
 
 Similarly, problems with many competing minima without a pronounced global
