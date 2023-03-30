@@ -7,7 +7,7 @@
  *
  * @section license License
  *
- * Copyright (c) 2016-2022 Aleksey Vaneev
+ * Copyright (c) 2016-2023 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2022.32"
+#define BITEOPT_VERSION "2023.1"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -320,13 +320,20 @@ public:
 			}
 			else
 			{
-				if( select( M2BSel, rnd ))
+				const int SelM2B = select( M2BSel, rnd );
+
+				if( SelM2B == 0 )
 				{
 					generateSol3( rnd );
 				}
 				else
+				if( SelM2B == 1 )
 				{
 					generateSol8( rnd );
+				}
+				else
+				{
+					generateSol9( rnd );
 				}
 			}
 		}
@@ -421,7 +428,7 @@ protected:
 		///<
 	CBiteSel< 2 > M2Sel; ///< Method 2's sub-method selector.
 		///<
-	CBiteSel< 2 > M2BSel; ///< Method 2's sub-sub-method B selector.
+	CBiteSel< 3 > M2BSel; ///< Method 2's sub-sub-method B selector.
 		///<
 	CBiteSel< 2 > PopChangeIncrSel; ///< Population size change increase
 		///< selector.
@@ -1091,8 +1098,11 @@ protected:
 		// Apply "bitmask inversion" to a single parameter, similar to
 		// generator 1.
 
-		const int k = rnd.getInt( ParamCount );
-		Params[ k ] = ~Params[ k ];
+		if( rnd.getBit() )
+		{
+			const int k = rnd.getInt( ParamCount );
+			Params[ k ] = ~Params[ k ];
+		}
 	}
 
 	/**
@@ -1316,6 +1326,30 @@ protected:
 					Params[ i ] += (ptype) (( Params[ i ] - rp0[ i ]) * r );
 				}
 			}
+		}
+	}
+
+	/**
+	 * A "water drain" solution generator: makes a fixed-multiplier step from
+	 * a better random solution 2 towards or away from random solution 1.
+	 * Moderately efficient on its own.
+	 */
+
+	void generateSol9( CBiteRnd& rnd )
+	{
+		ptype* const Params = TmpParams;
+
+		const int si1 = rnd.getInt( CurPopSize );
+		const ptype* const rp1 = getParamsOrdered( si1 );
+
+		const int si2 = rnd.getSqrInt( CurPopSize );
+		const ptype* const rp2 = getParamsOrdered( si2 );
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			Params[ i ] = rp2[ i ] + (( rp1[ i ] - rp2[ i ]) >> 1 ) *
+				( 1 - 2 * rnd.getBit() );
 		}
 	}
 
