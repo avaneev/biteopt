@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2023.1"
+#define BITEOPT_VERSION "2023.2"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -111,7 +111,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			7 + aParamCount * 3 );
+			9 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -308,7 +308,7 @@ public:
 			}
 			else
 			{
-				generateSol6b( rnd );
+				generateSol6( rnd );
 			}
 		}
 		else
@@ -367,7 +367,7 @@ public:
 
 			StallCount++;
 
-			if( CurPopSize < PopSize )
+			if( DoEval && CurPopSize < PopSize )
 			{
 				if( select( PopChangeIncrSel, rnd ))
 				{
@@ -397,7 +397,7 @@ public:
 				PushOpt -> updateParPop( NewCost, TmpParams );
 			}
 
-			if( CurPopSize > PopSize / 2 )
+			if( DoEval && CurPopSize > PopSize / 2 )
 			{
 				if( select( PopChangeDecrSel, rnd ))
 				{
@@ -1095,13 +1095,13 @@ protected:
 				( (ptype) rnd.getBit() << b );
 		}
 
-		// Apply "bitmask inversion" to a single parameter, similar to
-		// generator 1.
+		// Invert a single upper bit, this will force randomization of the
+		// parameter due to value wrapping.
 
 		if( rnd.getBit() )
 		{
 			const int k = rnd.getInt( ParamCount );
-			Params[ k ] = ~Params[ k ];
+			Params[ k ] = Params[ k ] ^ IntMantMult;
 		}
 	}
 
@@ -1164,31 +1164,11 @@ protected:
 	 * considerably reduce convergence time for some functions while not
 	 * severely impacting performance for other functions.
 	 *
-	 * Not currently in use.
+	 * Can use variation with randomization between two values, and a slight
+	 * move towards real 0.
 	 */
 
 	void generateSol6( CBiteRnd& rnd )
-	{
-		ptype* const Params = TmpParams;
-
-		const int si = rnd.getPowInt( 4.0, CurPopSize );
-		const double v = getRealValue( getParamsOrdered( si ),
-			rnd.getInt( ParamCount ));
-
-		int i;
-
-		for( i = 0; i < ParamCount; i++ )
-		{
-			Params[ i ] = (ptype) (( v - MinValues[ i ]) * DiffValuesI[ i ]);
-		}
-	}
-
-	/**
-	 * A variation of the generator 6, but with randomization between two
-	 * values, and a slight move towards real 0.
-	 */
-
-	void generateSol6b( CBiteRnd& rnd )
 	{
 		ptype* const Params = TmpParams;
 
@@ -1199,8 +1179,15 @@ protected:
 		v[ 0 ] = getRealValue( getParamsOrdered( si ),
 			rnd.getInt( ParamCount ));
 
-		v[ 1 ] = getRealValue( getParamsOrdered( si ),
-			rnd.getInt( ParamCount ));
+		if( rnd.getBit() )
+		{
+			v[ 1 ] = getRealValue( getParamsOrdered( si ),
+				rnd.getInt( ParamCount ));
+		}
+		else
+		{
+			v[ 1 ] = v[ 0 ];
+		}
 
 		const double m = 1.0 - r * r;
 		v[ 0 ] *= m; // Move towards real 0, useful for some functions.
@@ -1346,10 +1333,24 @@ protected:
 		const ptype* const rp2 = getParamsOrdered( si2 );
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		// Such overall sign inversion seems unuseful, but has benefits in
+		// practice.
+
+		if( rnd.getBit() )
 		{
-			Params[ i ] = rp2[ i ] + (( rp1[ i ] - rp2[ i ]) >> 1 ) *
-				( 1 - 2 * rnd.getBit() );
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = rp1[ i ] - (( rp2[ i ] - rp1[ i ]) >> 1 ) *
+					( 1 - 2 * rnd.getBit() );
+			}
+		}
+		else
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = rp1[ i ] + (( rp2[ i ] - rp1[ i ]) >> 1 ) *
+					( 1 - 2 * rnd.getBit() );
+			}
 		}
 	}
 

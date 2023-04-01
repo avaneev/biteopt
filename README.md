@@ -553,6 +553,13 @@ of a number of best solutions, and then applies "mutation" operation between
 the centroid and the solutions, using a random multiplier. This approach is
 similar to the "move" operation of generator 1.
 
+9. The "water drain" solution generator. It moves a better solution away or
+towards a worse solution, using a fixed step multiplier. This is reminiscent
+of a process of water drainage when a higher-elevation molecule excerts a
+gravity-induced pressure on a lower-elevation molecule, with two possible
+outcomes per parameter: either the lower-elevation molecule moves further down
+or bounces back upper.
+
 ## SMA-ES ##
 
 This is a working optimization method called "SigMa Adaptation Evolution
@@ -631,11 +638,11 @@ initialized with Gaussian sampling.
 ## Citing ##
 
 ```bibtex
-@misc{biteopt2022,
+@misc{biteopt2023,
     author = {Aleksey Vaneev},
     title = {{BITEOPT - Derivative-free optimization method}},
     note = {C++ source code, with description and examples},
-    year = {2022},
+    year = {2023},
     publisher = {GitHub},
     journal = {GitHub repository},
     howpublished = {Available at \url{https://github.com/avaneev/biteopt}},
