@@ -487,6 +487,12 @@ is replaced using the upper bound cost constraint.
 
 ### Solution Generators ###
 
+Note that most solution generators can be used on their own (with some minor
+tweaks) as lower-quality solvers, but some generators can't work well on their
+own, and are used to increase diversity of solution approaches. The
+availability of many solution generator seems to be essential for solving
+discrete combinatorial problems.
+
 1. A single (or all) parameter value randomization is performed using the
 "bitmask inversion" operation (which is approximately equivalent to `v=1-v`
 operation in normalized parameter space). Below, _i_ is either equal to
