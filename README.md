@@ -488,10 +488,13 @@ is replaced using the upper bound cost constraint.
 ### Solution Generators ###
 
 Note that most solution generators can be used on their own (with some minor
-tweaks) as lower-quality solvers, but some generators can't work well on their
-own, and are used to increase diversity of solution approaches. The
+tweaks, especially population size) as lower-quality solvers, but some
+generators can't work well on their own (they work due to synergistic
+effects), and are used to increase diversity of solution approaches. In some
+instances a generator may produce an acceptable solution only once per 50
+calls, but this solution may make a big difference in a long run. The
 availability of many solution generator seems to be essential for solving
-discrete combinatorial problems.
+discrete combinatorial problems. 
 
 1. A single (or all) parameter value randomization is performed using the
 "bitmask inversion" operation (which is approximately equivalent to `v=1-v`
