@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2023.2"
+#define BITEOPT_VERSION "2023.3"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -299,11 +299,11 @@ public:
 			{
 				if( select( M1CSel, rnd ))
 				{
-					generateSol5( rnd );
+					generateSol10( rnd );
 				}
 				else
 				{
-					generateSol7( rnd );
+					generateSol5( rnd );
 				}
 			}
 			else
@@ -332,8 +332,13 @@ public:
 					generateSol8( rnd );
 				}
 				else
+				if( SelM2B == 2 )
 				{
 					generateSol9( rnd );
+				}
+				else
+				{
+					generateSol7( rnd );
 				}
 			}
 		}
@@ -428,7 +433,7 @@ protected:
 		///<
 	CBiteSel< 2 > M2Sel; ///< Method 2's sub-method selector.
 		///<
-	CBiteSel< 3 > M2BSel; ///< Method 2's sub-sub-method B selector.
+	CBiteSel< 4 > M2BSel; ///< Method 2's sub-sub-method B selector.
 		///<
 	CBiteSel< 2 > PopChangeIncrSel; ///< Population size change increase
 		///< selector.
@@ -1067,9 +1072,7 @@ protected:
 		const CBitePop& ParPop = selectParPop( 2, rnd );
 
 		const int si1 = rnd.getSqrInt( ParPop.getCurPopSize() );
-		const ptype* const CrossParams1 = ( rnd.getBit() ?
-			ParPop.getParamsOrdered( si1 ) :
-			ParPop.getParamsOrdered( ParPop.getCurPopSize() - 1 - si1 ));
+		const ptype* const CrossParams1 = ParPop.getParamsOrdered( si1 );
 
 		const CBitePop& AltPop = selectAltPop( 2, rnd );
 
@@ -1093,15 +1096,6 @@ protected:
 
 			Params[ i ] += ( (ptype) rnd.getBit() << b ) -
 				( (ptype) rnd.getBit() << b );
-		}
-
-		// Invert a single upper bit, this will force randomization of the
-		// parameter due to value wrapping.
-
-		if( rnd.getBit() )
-		{
-			const int k = rnd.getInt( ParamCount );
-			Params[ k ] = Params[ k ] ^ IntMantMult;
 		}
 	}
 
@@ -1351,6 +1345,59 @@ protected:
 				Params[ i ] = rp1[ i ] + (( rp2[ i ] - rp1[ i ]) >> 1 ) *
 					( 1 - 2 * rnd.getBit() );
 			}
+		}
+	}
+
+	/**
+	 * Solution generator based on SpherOpt's converging hypersphere.
+	 */
+
+	void generateSol10( CBiteRnd& rnd )
+	{
+		ptype* const Params = TmpParams;
+
+		const int si1 = rnd.getSqrInt( CurPopSize );
+		const ptype* const rp1 = getParamsOrdered( si1 );
+
+		const int si2 = rnd.getSqrInt( CurPopSize );
+		const ptype* const rp2 = getParamsOrdered( CurPopSize1 - si2 );
+		int i;
+
+		// Calculate centroid.
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			Params[ i ] = ( rp1[ i ] + rp2[ i ]) >> 1;
+		}
+
+		// Calculate radius.
+
+		double Radius = 0.0;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			const ptype v1 = rp1[ i ] - Params[ i ];
+			const ptype v2 = rp2[ i ] - Params[ i ];
+			Radius += (double) v1 * v1 + 0.45 * v2 * v2;
+		}
+
+		// Select a point on a hypersphere.
+
+		double s2 = 1e-300;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			NewValues[ i ] = rnd.get() - 0.5;
+			s2 += NewValues[ i ] * NewValues[ i ];
+		}
+
+		// Add hypersphere-based offset to the centroid.
+
+		const double d = sqrt( Radius / s2 );
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			Params[ i ] += (ptype) ( NewValues[ i ] * d );
 		}
 	}
 

@@ -14,10 +14,10 @@ inline double sqr( const double x )
 	return( x * x );
 }
 
-template< class T >
+template< typename T >
 inline T roundf( const T d )
 {
-	return( d < 0.0 ? -floor( (T) 0.5 - d ) : floor( d + (T) 0.5 ));
+	return( d < (T) 0.0 ? -floor( (T) 0.5 - d ) : floor( d + (T) 0.5 ));
 }
 
 /**

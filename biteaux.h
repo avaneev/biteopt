@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.32
+ * @version 2023.3
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -453,6 +453,7 @@ public:
 		Slot = 0;
 
 		select( rnd );
+		IsSelected = false;
 	}
 
 	/**
@@ -521,6 +522,7 @@ public:
 		Selp = (int) ( r * sqrt( r ) * CountSp );
 
 		Sel = Sels[ Slot ][ Selp ];
+		IsSelected = true;
 
 		return( Sel );
 	}
@@ -532,6 +534,25 @@ public:
 	int getSel() const
 	{
 		return( Sel );
+	}
+
+	/**
+	 * Function sets IsSelected value to "false".
+	 */
+
+	void unsetIsSelected()
+	{
+		IsSelected = false;
+	}
+
+	/**
+	 * Function returns "true" if the selection was made since the recent
+	 * increment or decrement.
+	 */
+
+	bool getIsSelected() const
+	{
+		return( IsSelected );
 	}
 
 protected:
@@ -562,6 +583,8 @@ protected:
 	int Selp; ///< The index of the choice in the Sels vector.
 		///<
 	int Slot; ///< The current Sels vector, depending on incr/decr.
+		///<
+	bool IsSelected; ///< "True" if selection was recently made.
 		///<
 };
 

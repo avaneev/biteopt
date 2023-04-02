@@ -10,9 +10,9 @@
 #include "../deopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CSMAESOpt//CNMSeqOpt//CSpherOpt//CDEOpt//CBiteOptDeep//CCMAESOpt//
+#define OPT_CLASS CBiteOpt//CBiteOptDeep//CSpherOpt//CNMSeqOpt//CDEOpt//CBTOpt//CSMAESOpt//CNMSeqOpt//CCMAESOpt//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
-//#define OPT_PLATEAU_MUL 256 // Uncomment to enable plateau check.
+//#define OPT_PLATEAU_MUL 512 // Uncomment to enable plateau check.
 //#define EVALBINS 1
 #define OPT_STATS 0 // Set to 1 to enable selector statistics output.
 #define OPT_TIME 0 // Set to 1 to evaluate timings.
@@ -82,6 +82,14 @@ public:
 			///< individual choices associated with selectors over all
 			///< successful attempts.
 			///<
+		int SumSelIncrsMap[ CBiteOpt :: MaxSelCount * 10 ]; ///< Sums of
+			///< individual choice increments associated with selectors over
+			///< all successful attempts.
+			///<
+		int SumSelDecrsMap[ CBiteOpt :: MaxSelCount * 10 ]; ///< Sums of
+			///< individual choice decrements associated with selectors over
+			///< all successful attempts.
+			///<
 		double SumAvgSels[ CBiteOpt :: MaxSelCount ]; ///< Sum of average
 			///< selector choices over all successful attempts.
 			///<
@@ -127,6 +135,8 @@ public:
 
 		#if OPT_STATS
 		memset( SumSelsMap, 0, sizeof( SumSelsMap ));
+		memset( SumSelIncrsMap, 0, sizeof( SumSelIncrsMap ));
+		memset( SumSelDecrsMap, 0, sizeof( SumSelDecrsMap ));
 		memset( SumAvgSels, 0, sizeof( SumAvgSels ));
 		memset( SumDevSels, 0, sizeof( SumDevSels ));
 		#endif // OPT_STATS
@@ -223,6 +233,12 @@ public:
 
 	#if OPT_STATS
 	int SumSels[ CBiteOpt :: MaxSelCount ]; ///< Sum of selector choices.
+		///<
+	int SumSelIncrs[ CBiteOpt :: MaxSelCount ][ 10 ]; ///< Sum of selector
+		///< choice increments.
+		///<
+	int SumSelDecrs[ CBiteOpt :: MaxSelCount ][ 10 ]; ///< Sum of selector
+		///< choice decrements.
 		///<
 	int* Sels[ CBiteOpt :: MaxSelCount ]; ///< Selector choices at each
 		///< optimization step.
@@ -409,6 +425,8 @@ public:
 		}
 
 		memset( SumSels, 0, sizeof( SumSels ));
+		memset( SumSelIncrs, 0, sizeof( SumSelIncrs ));
+		memset( SumSelDecrs, 0, sizeof( SumSelDecrs ));
 		#endif // OPT_STATS
 
 		int i = 0;
@@ -439,6 +457,20 @@ public:
 					const int v = s[ k ] -> getSel();
 					Sels[ k ][ i ] = v;
 					SumSels[ k ] += v;
+
+					if( s[ k ] -> getIsSelected() )
+					{
+						if( sc == 0 )
+						{
+							SumSelIncrs[ k ][ v ]++;
+						}
+						else
+						{
+							SumSelDecrs[ k ][ v ]++;
+						}
+
+						s[ k ] -> unsetIsSelected();
+					}
 				}
 			#endif // OPT_STATS
 
@@ -454,12 +486,24 @@ public:
 				#if OPT_STATS
 				double DevSels[ CBiteOpt :: MaxSelCount ];
 				int SumSelsMap[ CBiteOpt :: MaxSelCount * 10 ];
+				int SumSelIncrsMap[ CBiteOpt :: MaxSelCount * 10 ];
+				int SumSelDecrsMap[ CBiteOpt :: MaxSelCount * 10 ];
 				memset( SumSelsMap, 0, sizeof( SumSelsMap ));
+				memset( SumSelIncrsMap, 0, sizeof( SumSelIncrsMap ));
+				memset( SumSelDecrsMap, 0, sizeof( SumSelDecrsMap ));
 
 				for( k = 0; k < getSelCount(); k++ )
 				{
 					DevSels[ k ] = calcDevSel( k, i,
 						(double) SumSels[ k ] / i, SumSelsMap + k * 10 );
+
+					int l;
+
+					for( l = 0; l < s[ k ] -> getChoiceCount(); l++ )
+					{
+						SumSelIncrsMap[ k * 10 + l ] += SumSelIncrs[ k ][ l ];
+						SumSelDecrsMap[ k * 10 + l ] += SumSelDecrs[ k ][ l ];
+					}
 				}
 				#endif // OPT_STATS
 
@@ -497,6 +541,12 @@ public:
 					{
 						SumStats -> SumSelsMap[ k * 10 + j ] +=
 							SumSelsMap[ k * 10 + j ];
+
+						SumStats -> SumSelIncrsMap[ k * 10 + j ] +=
+							SumSelIncrsMap[ k * 10 + j ];
+
+						SumStats -> SumSelDecrsMap[ k * 10 + j ] +=
+							SumSelDecrsMap[ k * 10 + j ];
 					}
 
 					SumStats -> SumAvgSels[ k ] +=
@@ -856,9 +906,11 @@ public:
 			printf( "Func count: %i, Attempts: %i, MaxIters/Attempt: %i\n",
 				FnCount, IterCount, InnerIterCount );
 
+			const double GoodItersAvg = 100.0 * SumStats.SumItImprAll /
+				SumStats.SumItAll;
+
 			printf( "GoodItersAvg: %.2f%% (percent of improving iterations "
-				"in all attempts)\n",
-				100.0 * SumStats.SumItImprAll / SumStats.SumItAll );
+				"in all attempts)\n", GoodItersAvg );
 
 			printf( "Func success: %.2f%%\n", SuccessFn );
 			printf( "Attempts success: %.2f%%\n", SuccessAt );
@@ -896,7 +948,7 @@ public:
 			const char** const snames = opt -> getSelNames();
 
 			printf( "\nmin\tmax\tbias\tcount\t"
-				"sel0\tsel1\tsel2\tsel3\tname\n" );
+				"sel0\tsel1\tsel2\tsel3\timp0\timp1\timp2\timp3\tname\n" );
 
 			for( k = 0; k < opt -> getSelCount(); k++ )
 			{
@@ -915,13 +967,28 @@ public:
 
 				int j;
 
-				for( j = 0; j < 5; j++ )
+				for( j = 0; j < 4; j++ )
 				{
 					if( SumStats.SumSelsMap[ k * 10 + j ] > 0 )
 					{
 						printf( "\t%-5.1f", 100.0 *
 							SumStats.SumSelsMap[ k * 10 + j ] /
 							SumStats.SumIt );
+					}
+					else
+					{
+						printf( "\t     " );
+					}
+				}
+
+				for( j = 0; j < 5; j++ )
+				{
+					const int si = SumStats.SumSelIncrsMap[ k * 10 + j ];
+					const int sd = SumStats.SumSelDecrsMap[ k * 10 + j ];
+
+					if( si + sd > 0 )
+					{
+						printf( "\t%-5.1f", 100.0 * si / ( si + sd ));
 					}
 					else
 					{

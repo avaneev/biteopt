@@ -493,7 +493,7 @@ generators can't work well on their own (they work due to synergistic
 effects), and are used to increase diversity of solution approaches. In some
 instances a generator may produce an acceptable solution only once per 50
 calls, but this solution may make a big difference in a long run. The
-availability of many solution generator seems to be essential for solving
+availability of many solution generators seems to be essential for solving
 discrete combinatorial problems. 
 
 1. A single (or all) parameter value randomization is performed using the
@@ -568,6 +568,8 @@ of a process of water drainage when a higher-elevation molecule excerts a
 gravity-induced pressure on a lower-elevation molecule, with two possible
 outcomes per parameter: either the lower-elevation molecule moves further down
 or bounces back upper.
+
+10. Solution generator based on SpherOpt's converging hypersphere.
 
 ## SMA-ES ##
 
