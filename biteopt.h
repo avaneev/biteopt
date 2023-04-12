@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2023.3"
+#define BITEOPT_VERSION "2023.4"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -299,11 +299,11 @@ public:
 			{
 				if( select( M1CSel, rnd ))
 				{
-					generateSol10( rnd );
+					generateSol5( rnd );
 				}
 				else
 				{
-					generateSol5( rnd );
+					generateSol10( rnd );
 				}
 			}
 			else
@@ -329,16 +329,16 @@ public:
 				else
 				if( SelM2B == 1 )
 				{
-					generateSol8( rnd );
+					generateSol7( rnd );
 				}
 				else
 				if( SelM2B == 2 )
 				{
-					generateSol9( rnd );
+					generateSol8( rnd );
 				}
 				else
 				{
-					generateSol7( rnd );
+					generateSol9( rnd );
 				}
 			}
 		}
@@ -1312,8 +1312,8 @@ protected:
 
 	/**
 	 * A "water drain" solution generator: makes a fixed-multiplier step from
-	 * a better random solution 2 towards or away from random solution 1.
-	 * Moderately efficient on its own.
+	 * a better random solution 1 towards or away from worse random solution
+	 * 2. Moderately efficient on its own.
 	 */
 
 	void generateSol9( CBiteRnd& rnd )
@@ -1324,7 +1324,7 @@ protected:
 		const ptype* const rp1 = getParamsOrdered( si1 );
 
 		const int si2 = rnd.getSqrInt( CurPopSize );
-		const ptype* const rp2 = getParamsOrdered( si2 );
+		const ptype* const rp2 = getParamsOrdered( CurPopSize1 - si2 );
 		int i;
 
 		// Such overall sign inversion seems unuseful, but has benefits in
@@ -1349,7 +1349,7 @@ protected:
 	}
 
 	/**
-	 * Solution generator based on SpherOpt's converging hypersphere.
+	 * Solution generator based on SpherOpt's converging hyper-spheroid.
 	 */
 
 	void generateSol10( CBiteRnd& rnd )
@@ -1381,7 +1381,7 @@ protected:
 			Radius += (double) v1 * v1 + 0.45 * v2 * v2;
 		}
 
-		// Select a point on a hypersphere.
+		// Select a point on a hyper-spheroid.
 
 		double s2 = 1e-300;
 
@@ -1391,7 +1391,7 @@ protected:
 			s2 += NewValues[ i ] * NewValues[ i ];
 		}
 
-		// Add hypersphere-based offset to the centroid.
+		// Add hyper-spheroid-based offset to the centroid.
 
 		const double d = sqrt( Radius / s2 );
 

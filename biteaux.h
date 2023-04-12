@@ -8,7 +8,7 @@
  *
  * @section license License
  * 
- * Copyright (c) 2016-2022 Aleksey Vaneev
+ * Copyright (c) 2016-2023 Aleksey Vaneev
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2023.3
+ * @version 2023.4
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -405,7 +405,6 @@ public:
 		SparseMul = 5;
 		CountSp = Count * SparseMul;
 		CountSp1 = CountSp - 1;
-		SelpThrs = CountSp * 2 / 3;
 
 		const int NewCapacity = SlotCount * CountSp;
 
@@ -475,15 +474,30 @@ public:
 
 	void incr( CBiteRnd& rnd, const double v = 1.0 )
 	{
-		if( Selp > 0 && rnd.get() < v * v ) // Boost an efficient choice.
+		const int dp = (int) ( -Selp * v * v );
+
+		if( dp < 0 ) // Boost an efficient choice.
 		{
-			Sels[ Slot ][ Selp ] = Sels[ Slot ][ Selp - 1 ];
-			Sels[ Slot ][ Selp - 1 ] = Sel;
+			if( dp == -1 )
+			{
+				Sels[ Slot ][ Selp ] = Sels[ Slot ][ Selp - 1 ];
+				Sels[ Slot ][ Selp - 1 ] = Sel;
+			}
+			else
+			{
+				const int np = Selp + dp;
+				memmove( Sels[ Slot ] + np + 1, Sels[ Slot ] + np,
+					-dp * sizeof( Sels[ Slot ][ 0 ]));
+
+				Sels[ Slot ][ np ] = Sel;
+			}
 		}
 
-		if( Selp > SelpThrs && Slot + 1 < SlotCount )
+		if( Slot > 0 )
 		{
-			Slot++;
+			int* const t = Sels[ Slot ];
+			Sels[ Slot ] = Sels[ Slot - 1 ];
+			Sels[ Slot - 1 ] = t;
 		}
 	}
 
@@ -502,9 +516,11 @@ public:
 			Sels[ Slot ][ Selp + 1 ] = Sel;
 		}
 
-		if( Selp < SelpThrs && Slot > 0 )
+		if( Slot < SlotCount - 1 )
 		{
-			Slot--;
+			int* const t = Sels[ Slot ];
+			Sels[ Slot ] = Sels[ Slot + 1 ];
+			Sels[ Slot + 1 ] = t;
 		}
 	}
 
@@ -518,8 +534,8 @@ public:
 
 	int select( CBiteRnd& rnd )
 	{
-		const double r = rnd.get();
-		Selp = (int) ( r * sqrt( r ) * CountSp );
+		Slot = rnd.getPowInt( 1.5, SlotCount );
+		Selp = rnd.getPowInt( 1.5, CountSp );
 
 		Sel = Sels[ Slot ][ Selp ];
 		IsSelected = true;
@@ -556,7 +572,7 @@ public:
 	}
 
 protected:
-	static const int SlotCount = 4; ///< The number of choice vectors in use.
+	static const int SlotCount = 5; ///< The number of choice vectors in use.
 		///<
 	int Count; ///< The number of choices in use.
 		///<
@@ -568,8 +584,6 @@ protected:
 		///< vector.
 		///<
 	int CountSp1; ///< = CountSp - 1.
-		///<
-	int SelpThrs; ///< Threshold value for Slot switching.
 		///<
 	int* Sels[ SlotCount ]; ///< Choice vectors.
 		///<
