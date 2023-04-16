@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2023.4
+ * @version 2023.4.1
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -205,6 +205,16 @@ public:
 	}
 
 	/**
+	 * @return Random number in the range (-1; 1) with approximately
+	 * logarithmic PDF, two-lobe with peak at 0.
+	 */
+
+	double getLog()
+	{
+		return( get() * sin( get() * 6.28318530717958648 ));
+	}
+
+	/**
 	 * @param N1 Integer value range.
 	 * @return Random integer number in the range [0; N1). Beta distribution
 	 * with Alpha=0.5, Beta=1 (squared). N1 denotes the number of bins, not
@@ -226,6 +236,17 @@ public:
 	int getPowInt( const double p, const int N1 )
 	{
 		return( (int) ( getPow( p ) * N1 ));
+	}
+
+	/**
+	 * @param N1 Integer value range.
+	 * @return Random integer number in the range [0; N1), with approximately
+	 * logarithmic PDF, peak at 0.
+	 */
+
+	int getLogInt( const int N1 )
+	{
+		return( (int) ( fabs( getLog() ) * N1 ));
 	}
 
 	/**

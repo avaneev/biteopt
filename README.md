@@ -28,7 +28,7 @@ of a "probabilistic computing" system.
 
 ## Comparison ##
 
-This "black-box" optimization method was tested on 2000+ 1-60 dimensional
+This "black-box" optimization method was tested on 2000+ 1- to 60-dimensional
 optimization problems and performed well, and it successfully solves even
 600-dimensional test problems found in some textbooks. But the main focus of
 the method is to provide fast solutions for computationally expensive
@@ -38,10 +38,10 @@ This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
 evaluated): [Comparison of derivative-free optimization
 algorithms](https://sahinidis.coe.gatech.edu/?q=dfocomp).
-This method was able to solve 75% of non-convex smooth problems in 10
+This method was able to solve 76% of non-convex smooth problems in 10
 attempts, 2500 iterations each. It comes 2nd in the comparison on non-convex
 smooth problems (see Fig.9 in the paper). With a huge iteration budget (up to
-1 million) this method solves 96% of problems.
+1 million) this method solves 97% of problems.
 
 On a comparable test function suite and conditions outlined at this page:
 [global_optimization](http://infinity77.net/global_optimization/multidimensional.html)
@@ -191,18 +191,18 @@ to solve symmetric and asymmetric TSP problems even as large as 400-node ones,
 to within 3-8% of optimum (parameter values should be sorted to derive the
 node ordering). A comparison to a specialized TSP solver like Concorde is not
 reasonable to do (BiteOpt is much slower), but BiteOpt permits solving
-non-conventional or mixed-field (e.g. noisy, scheduled, clustered) discrete
-problems.
+non-conventional or mixed-field (e.g., noisy, scheduled, clustered) discrete
+combinatorial problems.
 
-Similarly, problems with many competing minima without a pronounced global
-descent towards global minimum (e.g., Bukin N.6 problem) may not be solved
-acceptably as in most cases they require exhaustive search or a search
-involving knowledge of the structure of the problem. When the problem field
-requires one to locate such "rogue optimums", the best approach is to use a
-magnitudes larger attempt budget (a so called "parallel attempts" approach).
-With 5000 attempts and 100000 iterations per attempt budget, BiteOpt solves
-even the Bukin N.6 problem. It may seem excessive, but currently BiteOpt does
-not offer another way to solve such complex problems.
+Also, problems with many competing minima without a pronounced global descent
+towards global minimum (e.g., Bukin N.6 problem) may not be solved acceptably
+as in most cases they require exhaustive search or a search involving
+knowledge of the structure of the problem. When the problem field requires one
+to locate such "rogue optimums", the best approach is to use a magnitudes
+larger attempt budget (a so called "parallel attempts" approach). With 1000
+attempts and 250000 iterations per attempt budget, BiteOpt solves even the
+Bukin N.6 problem. It may seem excessive, but currently BiteOpt does not offer
+another way to solve such complex problems.
 
 Difference between upper and lower parameter bound values should be specified
 in a way to cover a wider value range, in order to reduce boundary effects
@@ -237,10 +237,10 @@ a sum of differences between bit values and continuous variables in the range
 [0; 1].
 
 Equality and non-equality constraints can be implemented as penalties. The
-author has found a general effective method to apply value constraints via
+author has found a general effective method to apply constraints via
 penalties. While penalties are not well-regarded in research community,
-BiteOpt handles constraint penalties extremely well, but requires a very large
-iteration budget (suitable for inexpensive objective functions).
+BiteOpt handles constraint penalties extremely well, but usually requiring a
+large iteration budget (suitable for inexpensive objective functions).
 
 In the code below, `n_con` is the number of constraints, `con_notmet` is the
 number of constraints not meeting tolerances, and the `pn[]` is the array of
@@ -313,6 +313,8 @@ symmetric FIR filters. Namely, in
 [r8brain-free-src](https://github.com/avaneev/r8brain-free-src)
 sample rate converter.
 
+* BiteOpt is featured as an optimizer in [M-Star CFD physical modeling system](http://docs.mstarcfd.com/10_Running_the_Solver/m-star-optimizer.html)
+
 BiteOpt is also referenced in these research papers:
 
 * [Password Strength Signaling: A Counter-Intuitive Defense Against Password
@@ -320,6 +322,9 @@ Cracking, Springer](https://link.springer.com/chapter/10.1007/978-3-030-90370-1_
 
 * [The CIP2A-TOPBP1 axis safeguards chromosome stability and is a synthetic
 lethal target for BRCA-mutated cancer, Nature Cancer](https://www.nature.com/articles/s43018-021-00266-w)
+
+* [Automating Building Damage Reconnaissance to Optimize Drone Mission
+Planning for Disaster Response, ASCE Library](https://ascelibrary.org/doi/abs/10.1061/%28ASCE%29CP.1943-5487.0001061)
 
 ## Examples ##
 
@@ -511,9 +516,10 @@ MantSizeSh\rfloor $$
 $$ x_\text{new}[i] = \frac{\lfloor x_\text{best}[i]\cdot 2^{IntMantBits}
 \rfloor \bigotimes mask }{2^{IntMantBits}} $$
 
-Plus, with `Move` probability the move around a random previous solution
-is performed, utilizing a TPDF random value. This operation is performed
-twice.
+Plus, with `1-1/Dims` probability the move around a random previous solution
+is performed, utilizing a TPDF random value (the difference between two
+solutions represents estimation of standard deviation). This operation is
+performed twice.
 
 $$ x_\text{new}[i]=x_\text{new}[i]-rand_{TPDF}(-1\ldots1)\cdot CentSpan\cdot
 (x_\text{new}[i]-x_\text{rand}[i]) $$
@@ -524,7 +530,7 @@ random solutions. This is conceptually similar to Differential Evolution's
 "mutation" operation. The worst solution is selected symmetrically relative to
 the chosen best solution.
 
-$$ x_\text{new}=x_\text{best}-\frac{(x_\text{worst}-x_\text{rand}-
+$$ x_\text{new}=x_\text{best}+\frac{(x_\text{rand}-x_\text{worst}+
 (x_\text{rand2}-x_\text{rand3}))}{2} $$
 
 3. Involves the best solution, centroid vector, and a random solution.
@@ -542,10 +548,8 @@ solutions, and a fewer number of bits without fitness certainty.
 5. A novel "Randomized bit crossing-over" candidate solution generation
 method. Effective, but on its own cannot stand coordinate system offsets,
 converges slowly. Completely mixes bits of two randomly-selected solutions,
-plus changes 1 random bit. Uses a random mix-mask.
-
-This method is similar to a biological DNA crossing-over, but on a
-single-bit scale.
+plus changes 1 random bit. Uses a random mix-mask. This method is similar to a
+biological DNA crossing-over, but on a single-bit scale.
 
 6. The "short-cut" parameter vector generation.
 
@@ -557,7 +561,7 @@ $$ x_\text{new}[i]=z, \quad i=1,\ldots,N $$
 "old" populations. Conceptually, it can be called a weighted-random
 crossover that combines solutions from diverse sources.
 
-8. Solution generator that is DE-alike in its base. It calculates a centroid
+8. Solution generator that is DE-alike at its base. It calculates a centroid
 of a number of best solutions, and then applies "mutation" operation between
 the centroid and the solutions, using a random multiplier. This approach is
 similar to the "move" operation of generator 1.
