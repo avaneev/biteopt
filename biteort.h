@@ -7,7 +7,7 @@
  *
  * @section license License
  *
- * Copyright (c) 2016-2022 Aleksey Vaneev
+ * Copyright (c) 2016-2023 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.25.1
+ * @version 2023.4
  */
 
 #ifndef BITEORT_INCLUDED
@@ -606,13 +606,30 @@ protected:
 	}
 
 	/**
-	 * sqrt(a^2 + b^2) with possible under/overflow. Adequate for this
-	 * method's purposes.
+	 * sqrt(a^2 + b^2) without under/overflow.
 	 */
 
 	static double hypot_( double a, double b )
 	{
-		return( sqrt( a * a + b * b ));
+		const double fa = fabs(a);
+		const double fb = fabs(b);
+		double r;
+		if (fa > fb)
+		{
+			r = b/a;
+			r = fa*sqrt(1.0+r*r);
+		}
+		else
+		if (b != 0.0)
+		{
+			r = a/b;
+			r = fb*sqrt(1.0+r*r);
+		}
+		else
+		{
+			r = 0.0;
+		}
+		return r;
 	}
 
 	/**
@@ -749,9 +766,9 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			if( DParams[ i ] < 1e-30 )
+			if( DParams[ i ] < 1e-60 )
 			{
-				DParams[ i ] = 1e-15;
+				DParams[ i ] = 1e-30;
 			}
 			else
 			{

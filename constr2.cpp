@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "biteopt.h"
 
+static const double tol = 1e-5;
 const int N = 4;
 
 class CTestOpt : public CBiteOptDeep
@@ -30,8 +31,6 @@ public:
 
 	double penalty( const double v )
 	{
-		static const double tol = 1e-6;
-
 		if( v > tol )
 		{
 			con_notmet++;
@@ -43,8 +42,6 @@ public:
 
 	double penalty0( double v )
 	{
-		static const double tol = 1e-6;
-
 		v = fabs( v );
 
 		if( v > tol )

@@ -8,6 +8,7 @@
 	#define sqr( x ) (( x ) * ( x ))
 #endif // !defined( sqr )
 
+static const double tol = 1e-15;
 const int N = 13;
 
 class CTestOpt : public CBiteOpt
@@ -57,8 +58,6 @@ public:
 
 	double penalty( double v )
 	{
-		static const double tol = 1e-15;
-
 		if( v > tol )
 		{
 			con_notmet++;

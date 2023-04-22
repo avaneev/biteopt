@@ -9,6 +9,7 @@
 	#define sqr( x ) (( x ) * ( x ))
 #endif // !defined( sqr )
 
+static const double tol = 1e-5;
 const int N = 10;
 
 inline double applyRound( double v )
@@ -46,8 +47,6 @@ public:
 
 	double penalty( const double v )
 	{
-		static const double tol = 1e-6;
-
 		if( v > tol )
 		{
 			con_notmet++;
