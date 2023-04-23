@@ -177,7 +177,9 @@ this method (this test function is solved by this method, but requires a lot
 of iterations). In practice, however, rogue optimums can be considered as
 undesired outliers that rely on unstable parameter values (if such parameters
 are used in a real-world system that has a certain parameter value precision,
-a system may leave the "rogue" optimal regime easily).
+a system may leave the "rogue" optimal regime easily). Another class of
+optimums the method cannot cope with well are "shadowed" optimums - the
+optimums that are located very close to opposite extremums.
 
 To a small degree, this method is immune to noise in the objective function.
 While this method was designed to be applied to continuous functions, it is
@@ -495,11 +497,13 @@ is replaced using the upper bound cost constraint.
 Note that most solution generators can be used on their own (with some minor
 tweaks, especially population size) as lower-quality solvers, but some
 generators can't work well on their own (they work due to synergistic
-effects), and are used to increase diversity of solution approaches. In some
-instances a generator may produce an acceptable solution only once per 50
+effects), and are used to increase the diversity of solution approaches. In
+some instances a generator may produce an acceptable solution only once per 50
 calls, but this solution may make a big difference in a long run. The
 availability of many solution generators seems to be essential for solving
-discrete combinatorial problems. 
+discrete combinatorial problems. While generators 1, 2, 3 can be considered
+"exploitation" generators as they provide faster convergence and better
+solution values, all other generators are "exploration" generators.
 
 1. A single (or all) parameter value randomization is performed using the
 "bitmask inversion" operation (which is approximately equivalent to `v=1-v`
