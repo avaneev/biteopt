@@ -49,11 +49,11 @@ static keyword keywds[] = {	/* must be in alphabetical order */
 };
 
 static char biteoptvers[] =
-	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2022.28\n";
+	"AMPL/BITEOPT\0\nAMPL/BITEOPT Driver Version 2023.5\n";
 
 static Option_Info Oinfo = {
-	"biteoptampl", "BITEOPT-2022.28", "biteopt_options", keywds, nkeywds, 1.,
-	biteoptvers, 0,0,0,0,0, 202228
+	"biteoptampl", "BITEOPT-2023.5", "biteopt_options", keywds, nkeywds, 1.,
+	biteoptvers, 0,0,0,0,0, 202305
 };
 
 int xround( real* x, int n )
@@ -333,8 +333,10 @@ start:
 	#endif // USE_SOLDB
 
 	double f;
-	int f_notmet;
-	int f_iters;
+	int f_notmet = 0;
+	int f_notmet_sum = 0;
+	int f_iters_sum = 0;
+	int f_count = 0;
 	int khl = 0;
 	bool IsFinished = false;
 	int k;
@@ -404,7 +406,9 @@ start:
 		if( k == 0 || con_notmet < f_notmet ||
 			( con_notmet == f_notmet && nf < f ))
 		{
-			f_iters = i;
+			f_count++;
+			f_iters_sum += i;
+			f_notmet_sum += con_notmet;
 
 			for( i = 0; i < n_var; i++ )
 			{
@@ -441,8 +445,9 @@ start:
 	}
 
 	#if USE_SOLDB
-		VOXERRSKIP( updateSol( stub, n_var, n_con, negate, f, f_notmet,
-			f_iters, khl ));
+		VOXERRSKIP( updateSol( stub, n_var, n_con, negate, f,
+			f_notmet, (double) f_notmet_sum / f_count, f_iters_sum / f_count,
+			khl ));
 	#endif // USE_SOLDB
 
 	solround( X0 );

@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2023.4"
+#define BITEOPT_VERSION "2023.5"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -48,7 +48,6 @@ class CBiteOpt : public CBiteOptBase< int64_t >
 public:
 	typedef int64_t ptype; ///< Parameter value storage type (should be a
 		///< signed integer type, same as CBiteOptBase template parameter).
-		///<
 
 	CBiteOpt()
 	{
@@ -422,85 +421,52 @@ public:
 
 protected:
 	CBiteSel< 4 > MethodSel; ///< Population generator 4-method selector.
-		///<
 	CBiteSel< 4 > M1Sel; ///< Method 1's sub-method selector.
-		///<
 	CBiteSel< 3 > M1ASel; ///< Method 1's sub-sub-method A selector.
-		///<
 	CBiteSel< 2 > M1BSel; ///< Method 1's sub-sub-method B selector.
-		///<
 	CBiteSel< 2 > M1CSel; ///< Method 1's sub-sub-method C selector.
-		///<
 	CBiteSel< 2 > M2Sel; ///< Method 2's sub-method selector.
-		///<
 	CBiteSel< 4 > M2BSel; ///< Method 2's sub-sub-method B selector.
-		///<
 	CBiteSel< 2 > PopChangeIncrSel; ///< Population size change increase
 		///< selector.
-		///<
 	CBiteSel< 2 > PopChangeDecrSel; ///< Population size change decrease
 		///< selector.
-		///<
 	CBiteSel< 2 > ParOpt2Sel; ///< Parallel optimizer 2 use selector.
-		///<
 	CBiteSel< 2 > ParPopPSel[ 4 ]; ///< Parallel population use
 		///< probability selectors.
-		///<
 	CBiteSel< 2 > AltPopPSel; ///< Alternative population use selector.
-		///<
 	CBiteSel< 2 > AltPopSel[ 4 ]; ///< Alternative population type use
 		///< selectors.
-		///<
 	CBiteSel< 4 > MinSolPwrSel[ 4 ]; ///< Power factor selectors, for
 		///< least-cost population index selection.
-		///<
 	CBiteSel< 4 > MinSolMulSel[ 4 ]; ///< Multiplier selectors, for
 		///< least-cost population index selection.
-		///<
 	CBiteSel< 2 > Gen1AllpSel; ///< Generator method 1's Allp selector.
-		///<
 	CBiteSel< 2 > Gen1MoveAsyncSel; ///< Generator method 1's Move async
 		///< selector.
-		///<
 	CBiteSel< 4 > Gen1MoveSpanSel; ///< Generator method 1's Move span
 		///< selector.
-		///<
 	CBiteSel< 2 > Gen2ModeSel; ///< Generator method 2's Mode selector.
-		///<
 	CBiteSel< 2 > Gen2bModeSel; ///< Generator method 2b's Mode selector.
-		///<
 	CBiteSel< 2 > Gen2cModeSel; ///< Generator method 2c's Mode selector.
-		///<
 	CBiteSel< 2 > Gen2dModeSel; ///< Generator method 2d's Mode selector.
-		///<
 	CBiteSel< 4 > Gen3ModeSel; ///< Generator method 3's Mode selector.
-		///<
 	CBiteSel< 4 > Gen4MixFacSel; ///< Generator method 4's mixing count
 		///< selector.
-		///<
 	CBiteSel< 2 > Gen5bModeSel; ///< Generator method 5b's Mode selector.
-		///<
 	CBiteSel< 4 > Gen7PowFacSel; ///< Generator method 7's Power selector.
-		///<
 	CBiteSel< 2 > Gen8ModeSel; ///< Generator method 8's mode selector.
-		///<
 	CBiteSel< 4 > Gen8NumSel; ///< Generator method 8's NumSols selector.
-		///<
 	CBiteSel< 4 > Gen8SpanSel[ 2 ]; ///< Generator method 8's random span
 		///< selectors.
-		///<
 	CBitePop OldPop; ///< Population of older solutions, updated
 		///< probabilistically.
-		///<
 	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
-		///<
 	bool DoEval; ///< Temporary variable which equals to "true" if the
 		///< newly-generated solution should be evaluated via the optcost()
 		///< function.
-		///<
 	double NewCost; ///< Temporary variable that receives objective function's
 		///< value (cost).
-		///<
 
 	/**
 	 * Parallel optimizer class.
@@ -529,17 +495,12 @@ protected:
 	};
 
 	CParOpt< CSpherOpt > ParOpt; ///< Parallel optimizer.
-		///<
 	CBitePop ParOptPop; ///< Population of parallel optimizer's solutions.
 		///< Includes only its solutions.
-		///<
 	CParOpt< CNMSeqOpt > ParOpt2; ///< Parallel optimizer2.
-		///<
 	CBitePop ParOpt2Pop; ///< Population of parallel optimizer 2's solutions.
 		///< Includes only its solutions.
-		///<
 	int UseParOpt; ///< Parallel optimizer currently being in use.
-		///<
 
 	/**
 	 * Function updates an appropriate parallel population.
@@ -1656,7 +1617,6 @@ protected:
 	{
 	public:
 		CBiteOptDeep* Owner; ///< Owner object.
-			///<
 
 		CBiteOptWrap( CBiteOptDeep* const aOwner )
 			: Owner( aOwner )
@@ -1680,17 +1640,11 @@ protected:
 	};
 
 	int ParamCount; ///< The total number of internal parameter values in use.
-		///<
 	int OptCount; ///< The total number of optimization objects in use.
-		///<
 	CBiteOptWrap** Opts; ///< Optimization objects.
-		///<
 	CBiteOptWrap* BestOpt; ///< Optimizer that contains the best solution.
-		///<
 	CBiteOptWrap* CurOpt; ///< Current optimizer object.
-		///<
 	int StallCount; ///< The number of iterations without improvement.
-		///<
 
 	/**
 	 * Function deletes previously allocated buffers.
@@ -1770,17 +1724,17 @@ public:
  * @param rf Random number generator function; 0: use the default BiteOpt
  * PRNG. Note that the external RNG should be seeded externally.
  * @param rdata Data pointer to pass to the "rf" function.
- * @param f_min If non-zero, a pointer to the stopping value: optimization
+ * @param f_minp If non-zero, a pointer to the stopping value: optimization
  * will stop when this objective value is reached.
  * @return The total number of function evaluations performed; useful if the
- * "stopc" and/or "f_min" were used.
+ * "stopc" and/or "*f_minp" were used.
  */
 
 inline int biteopt_minimize( const int N, biteopt_func f, void* data,
 	const double* lb, const double* ub, double* x, double* minf,
 	const int iter, const int M = 1, const int attc = 10,
 	const int stopc = 0, biteopt_rng rf = 0, void* rdata = 0,
-	double* f_min = 0 )
+	double* f_minp = 0 )
 {
 	CBiteOptMinimize opt;
 	opt.N = N;
@@ -1809,7 +1763,7 @@ inline int biteopt_minimize( const int N, biteopt_func f, void* data,
 		{
 			const int sc = opt.optimize( rnd );
 
-			if( f_min != 0 && opt.getBestCost() <= *f_min )
+			if( f_minp != 0 && opt.getBestCost() <= *f_minp )
 			{
 				evals++;
 				IsFinished = true;

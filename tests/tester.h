@@ -8,9 +8,12 @@
 #include "../smaesopt.h"
 #include "../nmsopt.h"
 #include "../deopt.h"
+//#include "../btopt.h"
+//#include "../dumpopt.h"
+//#include "../gaopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CBiteOptDeep//CSpherOpt//CNMSeqOpt//CDEOpt//CBTOpt//CSMAESOpt//CNMSeqOpt//CCMAESOpt//
+#define OPT_CLASS CBiteOpt//CDEOpt//CBiteOptDeep//CSpherOpt//CSMAESOpt//CCMAESOpt//CDumpOpt//CBTOpt//CGAOpt//CNMSeqOpt//CNMSeqOpt//
 #define OPT_DIMS_PARAMS Dims // updateDims() parameters.
 //#define OPT_PLATEAU_MUL 512 // Uncomment to enable plateau check.
 //#define EVALBINS 1
@@ -53,7 +56,7 @@ public:
 	int SumItImprAll; ///< Sum of improving iterations across all attempts.
 		///<
 	double SumRjCost; ///< Summary unbiased costs detected in all rejected
-		///< attempts.
+		///< attempts. Geometric mean.
 		///<
 	double SumRMS; ///< = sum( RMS ).
 		///<
@@ -583,7 +586,7 @@ public:
 				FuncStats -> SumRjCost += getBestCost();
 				SumStats -> SumItAll += i;
 				SumStats -> SumItImprAll += ImprIters;
-				SumStats -> SumRjCost += getBestCost() - optv;
+				SumStats -> SumRjCost += log( getBestCost() - optv );
 
 				break;
 			}
@@ -892,8 +895,8 @@ public:
 		AvgIt_l10n = SumStats.SumIt_l10n / SumStats.ComplAttempts;
 		AvgRMS = SumStats.SumRMS / SumStats.SumRMSCount;
 		AvgRMS_l10n = SumStats.SumRMS_l10n / SumStats.SumRMSCount;
-		AvgRjCost = SumStats.SumRjCost /
-			( SumStats.TotalAttempts - SumStats.ComplAttempts );
+		AvgRjCost = exp( SumStats.SumRjCost /
+			( SumStats.TotalAttempts - SumStats.ComplAttempts ));
 
 		if( DoPrint )
 		{
@@ -926,7 +929,7 @@ public:
 			printf( "AvgRMS_l10n: %.1f (avg log10(std.dev/N) of convergence time)\n",
 				AvgRMS_l10n );
 
-			printf( "AvgRjCost: %.6f (avg unbiased reject cost)\n",
+			printf( "AvgRjCost: %.6f (avg unbiased reject cost, geomean)\n",
 				AvgRjCost );
 
 			#if OPT_TIME
