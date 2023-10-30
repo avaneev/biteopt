@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.28
+ * @version 2023.6
  */
 
 #ifndef NMSOPT_INCLUDED
@@ -50,6 +50,12 @@ public:
 		: y( NULL )
 		, x2( NULL )
 	{
+	}
+
+	virtual ~CNMSeqOpt()
+	{
+		delete[] y;
+		delete[] x2;
 	}
 
 	/**
@@ -317,38 +323,22 @@ public:
 
 private:
 	int N; ///< The total number of internal parameter values in use.
-		///<
 	int M; ///< The number of points in a simplex.
-		///<
 	int M1; ///< = M - 1.
-		///<
 	double M1i; ///< = 1.0 / ( M - 1 ).
-		///<
 	int xlo; ///< Current lowest-cost parameter vector.
-		///<
 	int xhi; ///< Current highest-cost parameter vector.
-		///<
 	int xhi2; ///< Current second-highest-cost parameter vector.
-		///<
 	double** x; ///< Parameter vectors for all points.
-		///<
 	double* y; ///< Parameter vector costs.
-		///<
 	double* x0; // Centroid parameter vector.
-		///<
 	double* x1; ///< Temporary parameter vector 1. Passed to stExpansion.
-		///<
 	double y1; ///< Cost of temporary parameter vector 1. Passed to
 		///< stExpansion.
-		///<
 	double* x2; ///< Temporary parameter vector 2.
-		///<
 	double* rx; ///< Lowest-cost parameter vector used during reduction.
-		///<
 	int rj; ///< Current vector index during reduction.
-		///<
 	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
-		///<
 
 	/**
 	 * Algorithm's state automata states.
@@ -363,7 +353,6 @@ private:
 	};
 
 	EState State; ///< Current optimization state.
-		///<
 
 	virtual void initBuffers( const int aParamCount, const int aPopSize,
 		const int aCnsCount = 0, const int aObjCount = 1 )

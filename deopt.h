@@ -7,7 +7,7 @@
  *
  * @section license License
  *
- * Copyright (c) 2021-2022 Aleksey Vaneev
+ * Copyright (c) 2021-2023 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.28
+ * @version 2023.6
  */
 
 #ifndef DEOPT_INCLUDED
@@ -46,7 +46,6 @@ class CDEOpt : public CBiteOptBase< int64_t >
 public:
 	typedef int64_t ptype; ///< Parameter value storage type (should be a
 		///< signed integer type, same as CBiteOptBase template parameter).
-		///<
 
 	/**
 	 * Function updates dimensionality of *this object.
@@ -306,7 +305,6 @@ public:
 
 protected:
 	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
-		///<
 };
 
 #endif // DEOPT_INCLUDED

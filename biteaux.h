@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2023.5
+ * @version 2023.6
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -659,7 +659,8 @@ public:
 
 /**
  * Class implements storage of population parameter vectors, costs, centroid,
- * and ordering.
+ * and ordering. Note that the derived classes should delete allocated buffers
+ * in their destructors, not relying on a single deleteBuffers() call.
  *
  * @tparam ptype Parameter value storage type.
  */
@@ -1597,6 +1598,16 @@ public:
 		, NewValues( NULL )
 		, SelCount( 0 )
 	{
+	}
+
+	virtual ~CBiteOptBase()
+	{
+		delete[] MinValues;
+		delete[] MaxValues;
+		delete[] DiffValues;
+		delete[] DiffValuesI;
+		delete[] BestValues;
+		delete[] NewValues;
 	}
 
 	virtual const double* getBestParams() const

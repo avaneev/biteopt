@@ -7,7 +7,7 @@
  *
  * @section license License
  *
- * Copyright (c) 2016-2022 Aleksey Vaneev
+ * Copyright (c) 2016-2023 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.28
+ * @version 2023.6
  */
 
 #ifndef SPHEROPT_INCLUDED
@@ -51,6 +51,12 @@ public:
 		addSel( CentPowSel, "CentPowSel" );
 		addSel( RadPowSel, "RadPowSel" );
 		addSel( EvalFacSel, "EvalFacSel" );
+	}
+
+	virtual ~CSpherOpt()
+	{
+		delete[] WPopCent;
+		delete[] WPopRad;
 	}
 
 	/**
@@ -235,30 +241,18 @@ public:
 
 protected:
 	double* WPopCent; ///< Weighting coefficients for centroid.
-		///<
 	double* WPopRad; ///< Weighting coefficients for radius.
-		///<
 	double JitMult; ///< Jitter multiplier.
-		///<
 	double JitOffs; ///< Jitter multiplier offset.
-		///<
 	double Radius; ///< Current radius.
-		///<
 	double EvalFac; ///< Evaluations factor.
-		///<
 	int cure; ///< Current evaluation index.
-		///<
 	int curem; ///< "cure" value threshold.
-		///<
 	bool DoCentEval; ///< "True" if an initial objective function evaluation
 		///< at centroid point is required.
-		///<
 	CBiteSel< 4 > CentPowSel; ///< Centroid power factor selector.
-		///<
 	CBiteSel< 4 > RadPowSel; ///< Radius power factor selector.
-		///<
 	CBiteSel< 3 > EvalFacSel; ///< EvalFac selector.
-		///<
 
 	virtual void initBuffers( const int aParamCount, const int aPopSize,
 		const int aCnsCount = 0, const int aObjCount = 1 )

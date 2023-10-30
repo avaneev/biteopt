@@ -27,7 +27,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2022.28
+ * @version 2023.6
  */
 
 #ifndef SMAESOPT_INCLUDED
@@ -215,12 +215,9 @@ public:
 
 protected:
 	CBiteOrt Ort; ///< Rotation vector and orthogonalization calculator.
-		///<
 	int cure; ///< Current evaluation index, greater or equal to
 		///< "curem" if population distribution needs to be updated.
-		///<
 	int curem; ///< "cure" value threshold.
-		///<
 
 	/**
 	 * Function returns "true" if the supplied vector is feasible.
