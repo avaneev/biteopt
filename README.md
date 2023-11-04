@@ -26,6 +26,8 @@ function-agnostic. In its inner workings, BiteOpt uses objective function
 value's ranking, and not the actual value. BiteOpt is a multi-faceted example
 of a "probabilistic computing" system.
 
+Python binding is available as a part of [fcmaes library](https://github.com/dietmarwo/fast-cma-es)
+
 ## Comparison ##
 
 This "black-box" optimization method was tested on 2000+ 1- to 60-dimensional
