@@ -290,6 +290,15 @@ in model libraries to force integer or binary values, as such constraint
 formulation does not provide a useful global gradient. Instead, direct
 rounding should be used on integer variables.
 
+## Multi-Objective Optimization ##
+
+BiteOpt does not offer MOO "out of the box". However, BiteOpt can successfully
+solve MOO problems via direct hyper-volume optimization. This approach
+requires a hyper-volume tracker that keeps track of a certain number of
+improving solutions and updates its state (and hyper-volume estimate) on each
+objective function evaluation (optcost). The approach is demonstrated in
+[fcmaes tutorial quantumcomm.py](https://github.com/dietmarwo/fast-cma-es/blob/master/examples/esa2/quantumcomm.py).
+
 ## Convergence Proof ##
 
 Considering the structure of the method and the fact that on every iteration
