@@ -268,8 +268,7 @@ finds a feasible solution in up to 97% of cases.
 		for( int i = 0; i < n_con; i++ )
 		{
 			const double v = pn[ i ];
-			const double v2 = v * v;
-			pns = pns * ps + pnsi + v + v2 + v * v2;
+			pns = pns * ps + pnsi + v + v * v + v * v * v;
 		}
 
 		cost += 1e10 * ( 1.0 + pns );
@@ -327,6 +326,12 @@ symmetric FIR filters. Namely, in
 sample rate converter.
 
 * BiteOpt is featured as an optimizer in [M-Star CFD physical modeling system](http://docs.mstarcfd.com/10_Running_the_Solver/m-star-optimizer.html)
+
+* A variety of tutorial problems in fcmaes library:
+[5G network planning](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/5G.adoc),
+[Discrete clustering](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/Clustering.adoc),
+[Cryptocurrency trading](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/CryptoTrading.adoc),
+[Employee scheduling](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/Employee.adoc).
 
 BiteOpt is also referenced in these research papers:
 
@@ -588,7 +593,8 @@ excerts a gravity-induced pressure on a lower-elevation molecule, with two
 possible outcomes per parameter: either the lower-elevation molecule moves
 further down or bounces back upper.
 
-10. Solution generator based on SpherOpt's converging hyper-spheroid.
+10. Solution generator derived from SpherOpt's converging hyper-spheroid
+method.
 
 ## SMA-ES ##
 
