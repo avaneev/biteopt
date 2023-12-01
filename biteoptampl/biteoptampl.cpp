@@ -8,7 +8,7 @@
 // the `ampl -og` command.
 
 //$ lib "solvers/amplsolv"
-//$ skip_include "z|solvers/getstub.h"
+//$ skip_include "solvers/getstub.h"
 
 #define USE_SOLDB 0 // For internal use: 1 = use solution database.
 
@@ -196,8 +196,7 @@ public:
 			for( i = 0; i < n_con; i++ )
 			{
 				const double v = fc[ i ];
-				const double v2 = v * v;
-				pns = pns * ps + pnsi + v + v2 + v * v2;
+				pns = pns * ps + pnsi + v + v * v + v * v * v;
 			}
 
 			return( last_ov + 1e10 * ( 1.0 + pns ));

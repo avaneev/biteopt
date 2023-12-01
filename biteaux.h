@@ -28,7 +28,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
- * @version 2023.6
+ * @version 2023.7
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -421,7 +421,6 @@ public:
 		SparseMul = 5;
 		CountSp = Count * SparseMul;
 		CountSp1 = CountSp - 1;
-		AccumCoeff = 1.0 / sqrt( (double) ParamCount );
 
 		const int NewCapacity = SlotCount * CountSp;
 
@@ -440,7 +439,6 @@ public:
 
 			int* const sp = SelBuf + j * CountSp;
 			Sels[ j ] = sp;
-			SlotAccums[ j ] = 0.0;
 			int i;
 
 			for( i = 0; i < Count; i++ )
@@ -511,25 +509,11 @@ public:
 			}
 		}
 
-		SlotAccums[ Slot ] += AccumCoeff;
-
-		if( SlotAccums[ Slot ] >= 1.0 )
+		if( Slot > 0 )
 		{
-			const double a = SlotAccums[ Slot ] - 1.0;
-
-			if( Slot > 0 )
-			{
-				int* const t = Sels[ Slot ];
-				Sels[ Slot ] = Sels[ Slot - 1 ];
-				Sels[ Slot - 1 ] = t;
-
-				SlotAccums[ Slot ] = SlotAccums[ Slot - 1 ];
-				SlotAccums[ Slot - 1 ] = a;
-			}
-			else
-			{
-				SlotAccums[ Slot ] = a;
-			}
+			int* const t = Sels[ Slot ];
+			Sels[ Slot ] = Sels[ Slot - 1 ];
+			Sels[ Slot - 1 ] = t;
 		}
 	}
 
@@ -548,25 +532,11 @@ public:
 			Sels[ Slot ][ Selp + 1 ] = Sel;
 		}
 
-		SlotAccums[ Slot ] -= AccumCoeff;
-
-		if( SlotAccums[ Slot ] <= -1.0 )
+		if( Slot < SlotCount - 1 )
 		{
-			const double a = SlotAccums[ Slot ] + 1.0;
-
-			if( Slot < SlotCount - 1 )
-			{
-				int* const t = Sels[ Slot ];
-				Sels[ Slot ] = Sels[ Slot + 1 ];
-				Sels[ Slot + 1 ] = t;
-
-				SlotAccums[ Slot ] = SlotAccums[ Slot + 1 ];
-				SlotAccums[ Slot + 1 ] = a;
-			}
-			else
-			{
-				SlotAccums[ Slot ] = a;
-			}
+			int* const t = Sels[ Slot ];
+			Sels[ Slot ] = Sels[ Slot + 1 ];
+			Sels[ Slot + 1 ] = t;
 		}
 	}
 
@@ -626,10 +596,6 @@ protected:
 	int CountSp; ///< = Count * SparseMul. The actual length of the choice
 		///< vector.
 	int CountSp1; ///< = CountSp - 1.
-	double AccumCoeff; ///< Slot score accumulator coefficient, depends on
-		///< objective function's dimensions. Works as an "inertia" for the
-		///< slot's score.
-	double SlotAccums[ SlotCount ]; ///< Slot score accumulators.
 	int* Sels[ SlotCount ]; ///< Choice vectors.
 	int* SelBuf; ///< A singular buffer for Sels vectors.
 	int SelBufCapacity; ///< Capacity of SelBuf.
@@ -660,7 +626,8 @@ public:
 /**
  * Class implements storage of population parameter vectors, costs, centroid,
  * and ordering. Note that the derived classes should delete allocated buffers
- * in their destructors, not relying on a single deleteBuffers() call.
+ * in their destructors, and not relying on the automatic deleteBuffers()
+ * function call.
  *
  * @tparam ptype Parameter value storage type.
  */
@@ -691,7 +658,9 @@ public:
 
 	virtual ~CBitePop()
 	{
-		deleteBuffers();
+		delete[] PopParamsBuf;
+		delete[] PopParams;
+		delete[] CentParams;
 	}
 
 	CBitePop& operator = ( const CBitePop& s )
@@ -1025,7 +994,7 @@ public:
 	 * smaller than the PopSize, the new solution will be added to
 	 * population without any checks.
 	 *
-	 * @param UpdCost Cost of the new solution.
+	 * @param UpdCost Cost (rank) of the new solution.
 	 * @param UpdParams New parameter values.
 	 * @param DoUpdateCentroid "True" if centroid should be updated using
 	 * running sum. This update is done for parallel populations.
@@ -1055,7 +1024,7 @@ public:
 			ri = PopSize1;
 
 			if( UpdCost != UpdCost || // Check for NaN.
-				UpdCost >= *getObjPtr( PopParams[ ri ]))
+				UpdCost >= *getRankPtr( PopParams[ ri ]))
 			{
 				return( PopSize );
 			}
@@ -1070,7 +1039,7 @@ public:
 		{
 			const int mid = ( p + i ) >> 1;
 
-			if( *getObjPtr( PopParams[ mid ]) >= UpdCost )
+			if( *getRankPtr( PopParams[ mid ]) >= UpdCost )
 			{
 				i = mid;
 			}
@@ -1093,7 +1062,7 @@ public:
 				// solutions to remain in population.
 
 				static const double etol = 0x1p-52;
-				const double c = *getObjPtr( PopParams[ p ]);
+				const double c = *getRankPtr( PopParams[ p ]);
 				const double cd = fabs( UpdCost - c );
 
 				if( cd == 0.0 )

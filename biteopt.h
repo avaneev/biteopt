@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2023.6"
+#define BITEOPT_VERSION "2023.7"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -390,7 +390,7 @@ public:
 
 			if( rnd.get() < ParamCountI )
 			{
-				OldPop.updatePop( *getObjPtr( PopParams[ CurPopSize1 ]),
+				OldPop.updatePop( *getRankPtr( PopParams[ CurPopSize1 ]),
 					PopParams[ CurPopSize1 ], false );
 			}
 
