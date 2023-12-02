@@ -40,7 +40,7 @@ This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
 evaluated): [Comparison of derivative-free optimization
 algorithms](https://sahinidis.coe.gatech.edu/?q=dfocomp).
-This method was able to solve 76% of non-convex smooth problems in 10
+This method was able to solve 77% of non-convex smooth problems in 10
 attempts, 2500 iterations each. It comes 2nd in the comparison on non-convex
 smooth problems (see Fig.9 in the paper). With a huge iteration budget (up to
 1 million) this method solves 97% of problems.
@@ -56,8 +56,8 @@ At least in these comparisons, this method performs better than plain
 CMA-ES which is also a well-performing stochastic optimization method. As of
 version 2021.1, BiteOpt's "solvability" exceeds CMA-ES on synthetic function
 sets that involve random coordinate axis rotations and offsets (e.g., [BBOB
-suite](https://coco.gforge.inria.fr/)). BiteOptDeep (e.g., with M=8)
-considerably outperforms CMA-ES in "solvability".
+suite](https://numbbo.github.io/coco/testsuites/bbob)). BiteOptDeep (e.g.,
+with M=8) considerably outperforms CMA-ES in "solvability".
 
 As a matter of sport curiosity, BiteOpt is able to solve, in reasonable time,
 almost all functions proposed in classic academic literature on global
@@ -112,12 +112,12 @@ is able to solve complex multi-modal functions.
 
 This method is most effective on complex functions, possibly with noisy
 fluctuations near the global solution, that are not very expensive to
-calculate and that have a large iteration budget. Tests have shown that on
+evaluate and that have a large iteration budget. Tests have shown that on
 smooth functions that have many strongly competing minima this "deep" method
 considerably increases the chance to find a global solution, relative to the
 CBiteOpt class, but still requires several attempts with different random
 seeds. When using this method, the required iteration budget usually increases
-by a factor of M<sup>0.5</sup>, but the number of the required optimization
+by a factor of M<sup>0.5</sup>, but the number of required optimization
 attempts usually decreases. In practice, it is not always possible to predict
 the convergence time increase of the CBiteOptDeep class, but increase does
 correlate to its `M` parameter. For some complex functions the use of
@@ -140,19 +140,19 @@ This method is hugely-probabilistic, and it depends on its initial state,
 which is selected randomly. In most cases it is more efficient to attempt to
 optimize with a new random seed than to wait for the optimization process
 to converge. Based on the results of optimization of the test-set, for
-2-dimensional functions it is reasonable to expect convergence in 800
-iterations (in a successful attempt), for 10-dimensional functions it is
+2-dimensional functions, it is reasonable to expect convergence in 800
+iterations (in a successful attempt); for 10-dimensional functions, it is
 reasonable to expect convergence in 8000 iterations (harder functions may
 require more iterations to converge). Most classic 2-dimensional problems
 converge in 400 iterations or less, at 10<sup>-6</sup> precision. On average,
 every doubling of dimensions requires tripling of iteration budget.
 
 Each attempt may generate an equally-usable candidate solution (not
-necessarily having the least cost), so the researcher may select solution from
-any attempt based on his/her own considerations. In this light, it may be
-incorrect to assume that least-performing attempts are "wasted". In practice,
-least-performing attempts may give more acceptable parameter values within the
-search space compared to the best-performing attempts.
+necessarily having the least cost), permitting the researcher to select a
+solution from any attempt based on his/her own considerations. In this light,
+it may be incorrect to assume that least-performing attempts are "wasted".
+In practice, least-performing attempts may give more acceptable parameter
+values within the search space compared to the best-performing attempts.
 
 Note that derivative-free optimization methods in general provide "asymptotic"
 solutions for complex functions. Thus it is reasonable to assume that BiteOpt
@@ -163,25 +163,26 @@ new unexplored function must be treated as "asymptotically optimal".
 
 Also note that in some problem areas like [ESA GTOP](https://www.esa.int/gsp/ACT/projects/gtop/)
 problem suite the attempt budget should be as high as 1000 or more (beside
-using the BiteOptDeep depth of at least 6). At the same time, iteration budget
-per attempt can be kept moderate (250000), compared to usual techniques used
-to solve it. Despite a large attempt budget, on a 8-core processor, this still
-allows one to get good (not necessarily best-known) solutions in a matter of
-minutes per problem.
+using the BiteOptDeep depth of at least 6). At the same time, the iteration
+budget per attempt can be kept moderate (250000), compared to usual techniques
+used to solve these problems. Despite a large attempt budget, on a 8-core
+processor, this still allows one to get good (not necessarily best-known)
+solutions in a matter of minutes per problem.
 
 ## Limitations ##
 
 Rogue optimums may not be found by this method. A rogue optimum is an optimum
-that has a very small, almost undetectable area of descent and is placed apart
-from other competing minima. The method favors minimum with a larger area of
-descent. The Damavandi test function is a perfect example of the limitation of
-this method (this test function is solved by this method, but requires a lot
-of iterations). In practice, however, rogue optimums can be considered as
-undesired outliers that rely on unstable parameter values (if such parameters
-are used in a real-world system that has a certain parameter value precision,
-a system may leave the "rogue" optimal regime easily). Another class of
-optimums the method cannot cope with well are "shadowed" optimums - the
-optimums that are located very close to opposite extremums.
+that has a very small, almost undetectable area of descent, and is placed
+apart from other competing minima. The method favors minimum with a larger
+area of descent. The Damavandi test function is a perfect example of the
+limitation of this method (this test function is solved by this method, but
+requires a lot of iterations). In practice, however, rogue optimums can be
+considered as undesired outliers that rely on unstable parameter values:
+if such parameters are used in a real-world system that has a certain
+parameter value precision, a system may leave the "rogue" optimal regime
+easily. Another class of optimums the method cannot cope with well are
+"shadowed" optimums - the optimums that are located very close to opposite
+extremums.
 
 To a small degree, this method is immune to noise in the objective function.
 While this method was designed to be applied to continuous functions, it is
@@ -203,24 +204,25 @@ towards global minimum (e.g., Bukin N.6 problem) may not be solved acceptably
 as in most cases they require exhaustive search or a search involving
 knowledge of the structure of the problem. When the problem field requires one
 to locate such "rogue optimums", the best approach is to use a magnitudes
-larger attempt budget (a so called "parallel attempts" approach). With 1000
+larger attempt budget (preferrably using parallel computation like in the
+[fcmaes library](https://github.com/dietmarwo/fast-cma-es)). With 1000
 attempts and 250000 iterations per attempt budget, BiteOpt solves even the
 Bukin N.6 problem. It may seem excessive, but currently BiteOpt does not offer
-another way to solve such complex problems.
+another way to solve such extremal multi-modal problems.
 
-Difference between upper and lower parameter bound values should be specified
-in a way to cover a wider value range, in order to reduce boundary effects
-that may reduce convergence.
+A difference between upper and lower parameter bound values should be
+specified in a way to cover a wider value range, in order to reduce boundary
+effects that may reduce convergence.
 
 Tests have shown that in comparison to stochastic method like CMA-ES,
 BiteOpt's convergence time varies more from attempt to attempt. For example,
 on some problem CMA-ES's average convergence time may be 7000 iterations +/-
 1000 while BiteOpt's may be 7000 +/- 3000. Such higher standard deviation
 is mostly a negative property if only a single optimization attempt is
-performed since it makes required budget unpredictable. But if several
-attempts are performed, it is a positive property: it means that in some
-optimization attempts BiteOpt converges faster and may find a better optimum
-with the same iteration budget per attempt. Based on `test2.cpp`
+performed since it makes required iteration budget unpredictable. But if
+several attempts are performed, it is a positive property: it means that in
+some optimization attempts BiteOpt converges faster and may find a better
+optimum with the same iteration budget per attempt. Based on `test2.cpp`
 (2-dimensional) and `test3.cpp` (14-dimensional) test-sets, less than 0.9% of
 attempts require more than 3\*sigma iterations, 54% of attempts require less
 than the mean. A typical probability distribution of percent of attempts/sigma
@@ -241,7 +243,7 @@ a sum of differences between bit values and continuous variables in the range
 [0; 1].
 
 Equality and non-equality constraints can be implemented as penalties. The
-author has found a general effective method to apply constraints via
+author has found a general effective approach to apply constraints via
 penalties. While penalties are not well-regarded in research community,
 BiteOpt handles constraint penalties extremely well, but usually requiring a
 large iteration budget (suitable for inexpensive objective functions).
@@ -274,10 +276,10 @@ finds a feasible solution in up to 97% of cases.
 		cost += 1e10 * ( 1.0 + pns );
 	}
 
-In essence, this method transforms each penalty value into a cubic penalty
-value, places each penalty value into its own "stratum", and also applies a
-"barrier value". The barrier value is suitably large for most practical
-constraint programming problems.
+In essence, this approach transforms each penalty value into a cubic penalty
+value, places each penalty value into its own "stratum" (via "pnsi" offset),
+and also applies a "barrier value". The barrier value (1e10) is suitably large
+for most practical constraint programming problems.
 
 See `constr.cpp` for an example of constraint programming. `constr2.cpp` is an
 example of non-linear constraint programming with both non-equalities and
@@ -296,7 +298,7 @@ solve MOO problems via direct hyper-volume optimization. This approach
 requires a hyper-volume tracker that keeps track of a certain number of
 improving solutions and updates its state (and hyper-volume estimate) on each
 objective function evaluation (optcost). The approach is demonstrated in
-[fcmaes tutorial quantumcomm.py](https://github.com/dietmarwo/fast-cma-es/blob/master/examples/esa2/quantumcomm.py).
+[fcmaes tutorial - quantumcomm.py](https://github.com/dietmarwo/fast-cma-es/blob/master/examples/esa2/quantumcomm.py).
 
 ## Convergence Proof ##
 
@@ -417,7 +419,7 @@ all arguments are equal. It just often happens that such "short-cuts" provide
 useful "reference points" to the method. Removing these "short-cuts" will
 increase average convergence time of the method, but in most cases won't
 impact method's ability to find a global solution. "Short-cuts" are used only
-in 4% of objective function evaluations on average.
+in 4% of objective function evaluations, on average.
 
 ## Method's Philosophy ##
 
@@ -432,41 +434,41 @@ natural evolutionary environment which usually offers only a limited "living
 space" to its members. Least fit members have little chance to stay in this
 "living space".
 
-BiteOpt uses several methods to generate new solutions, each method taking
-various information from various internal populations. These methods are used
-in a probabilistic manner without any predefined preference.
+BiteOpt uses several functions to generate new solutions, each function taking
+various information from various internal populations. These functions are
+used in a probabilistic manner without any predefined preference.
 
 BiteOptDeep implements evolutionary method which can be seen in society and
 nature: exchange of solutions between independent populations. Such exchange
-allows to find better solutions in a teamwork of sufficiently diverse members,
-it also reduces time (but not human-hours) to find a better solution. This
-method is a model of Swiss presidency rotation (each independent population
-represents an independent human). Note that the very best solution found by
-a member is not shared with other members as to not speed-up the convergence
-unnecessarily.
+permits search of better solutions in a teamwork of sufficiently diverse
+members; it also reduces time (but not human-hours) to find a better solution.
+This method is a model of Swiss presidency rotation (each independent
+population represents an independent human). Note that the very best solution
+found by a member is not shared with other members as to not speed-up the
+convergence unnecessarily.
 
 The author did not originally employ results and reasoning available in papers
-on Differential Evolution. Author's use of DE operation is based on
+on Differential Evolution (DE). Author's use of DE operation is based on
 understanding that it provides an implicit gradient information. A candidate
 solution is generated as a sum of best solution and a difference between a
-random and the worst solution. Such difference between a random and the worst
-solution generates a probabilistically correct step towards the minimum of a
+random and the worst solution. Such difference (between a random and the worst
+solution) generates a probabilistically correct step towards the minimum of a
 function, relative to a better solution. Due to this understanding, it is
 impossible to employ various DE variants in BiteOpt, only the difference
 between high rank and low rank solutions generates a valuable information;
 moreover, only a difference multiplied by a factor of 0.5 works in practice.
-Since BiteOpt does not use random crossover in its DE-alike operations, the
-used approach is closer to an intermix of Nelder-Mead ("reduction") and DE
-(multi-vector "mutation").
+Since BiteOpt does not use a classic random crossover in its DE-alike
+operations, the used approach is closer to an intermix of Nelder-Mead
+("reduction") and DE (multi-vector "mutation").
 
-BiteOpt is more like a stochastic meta-method, it is incorrect to assume it
-leans towards some specific optimizer class: for example, it won't work
+BiteOpt is more like a stochastic meta-method, and it is incorrect to assume
+it leans towards some specific optimizer class: for example, it won't work
 acceptably if only DE-alike solution generators are used by it. BiteOpt
 encompasses Differential Evolution, Nelder-Mead, author's original SpherOpt,
-"bitmask inversion", and "bit mixing" solution generators. An initial success
-with the "bitmask inversion" operation (coupled with a stochastic "move"
-operation it looks quite a lot like a random search) was the main driver for
-BiteOpt's further development.
+"bitmask inversion", and "bit mixing" (genetic) solution generators.
+An initial success with the "bitmask inversion" operation (coupled with a
+stochastic "move" operation it looks quite a lot like a random search) was the
+main driver for BiteOpt's further development.
 
 ## Method's Description ##
 
@@ -486,11 +488,11 @@ diverge from both each other and the main population.
 
 Parameter values are internally normalized to [0; 1] range and, to stay in
 this range, are wrapped in a special manner before each function evaluation.
-Algorithm uses an alike of a probabilistic state-automata (by means of
+The method uses an alike of a probabilistic state-automata (by means of
 "selectors") to switch between algorithm flow-paths, depending on the
 candidate solutions' acceptance on previous iterations. Each selector
 represents a superposition of flow-paths, with each flow-path initially being
-equally-probable. Depending on the acceptance or rejection of the
+equally-probable. Depending on the acceptance or rejection of a
 newly-generated candidate solution, the selector is updated accordingly, and
 the "probabilistic weight" of a recently used flow-path is adjusted. This
 approach increases the number of acceptable solutions, and produces a smoother
@@ -676,7 +678,7 @@ initialized with Gaussian sampling.
 ```bibtex
 @misc{biteopt2023,
     author = {Aleksey Vaneev},
-    title = {{BITEOPT - Derivative-free optimization method}},
+    title = {{BITEOPT - Derivative-free global optimization method}},
     note = {C++ source code, with description and examples},
     year = {2023},
     publisher = {GitHub},
