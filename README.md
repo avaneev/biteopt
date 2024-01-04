@@ -259,22 +259,24 @@ Models with up to 200 constraints, both equalities and non-equalities, were
 tested with this method. In practice, on a large set of problems, this method
 finds a feasible solution in up to 97% of cases.
 
-	real_value = cost;
+```c
+real_value = cost;
 
-	if( con_notmet > 0 )
-	{
-		const double ps = pow( 3.0, 1.0 / n_con );
-		const double pnsi = 1.0 / sqrt( (double) n_con );
-		double pns = 0.0;
+if( con_notmet > 0 )
+{
+    const double ps = pow( 3.0, 1.0 / n_con );
+    const double pnsi = 1.0 / sqrt( (double) n_con );
+    double pns = 0.0;
 
-		for( int i = 0; i < n_con; i++ )
-		{
-			const double v = pn[ i ];
-			pns = pns * ps + pnsi + v + v * v + v * v * v;
-		}
+    for( int i = 0; i < n_con; i++ )
+    {
+        const double v = pn[ i ];
+        pns = pns * ps + pnsi + v + v * v + v * v * v;
+    }
 
-		cost += 1e10 * ( 1.0 + pns );
-	}
+    cost += 1e10 * ( 1.0 + pns );
+}
+```
 
 In essence, this approach transforms each penalty value into a cubic penalty
 value, places each penalty value into its own "stratum" (via "pnsi" offset),
@@ -354,34 +356,38 @@ The `example2.cpp` program is a usage example of a simple C-like function
 biteopt_minimize(). This is a minimization test for Hougen-Watson model for
 reaction kinetics (non-linear least squares problem).
 
-    int biteopt_minimize( const int N, biteopt_func f, void* data,
-        const double* lb, const double* ub, double* x, double* minf,
-        const int iter, const int M = 1, const int attc = 10,
-        const int stopc = 0, biteopt_rng rf = 0, void* rdata = 0,
-        double* f_minp = 0 )
+```c++
+int biteopt_minimize( const int N, biteopt_func f, void* data,
+    const double* lb, const double* ub, double* x, double* minf,
+    const int iter, const int M = 1, const int attc = 10,
+    const int stopc = 0, biteopt_rng rf = 0, void* rdata = 0,
+    double* f_minp = 0 )
+```
 
-    N     The number of parameters in an objective function.
-    f     Objective function.
-    data  Objective function's data.
-    lb    Lower bounds of obj function parameters, should not be infinite.
-    ub    Upper bounds of obj function parameters, should not be infinite.
-    x     Minimizer.
-    minf  Minimizer's value.
-    iter  The number of iterations to perform in a single attempt.
-          Corresponds to the number of obj function evaluations that are performed.
-    M     Depth to use, 1 for plain CBiteOpt algorithm, >1 for CBiteOptDeep
-          algorithm. Expected range is [1; 36]. Internally multiplies "iter"
-          by sqrt(M).
-    attc  The number of optimization attempts to perform.
-    stopc Stopping criteria (convergence check). 0: off, 1: 128*N, 2: 256*N.
-    rf    Random number generator function; 0: use the default BiteOpt PRNG.
-          Note that the external RNG should be seeded externally.
-    rdata Data pointer to pass to the "rf" function.
-    f_minp If non-zero, a pointer to the stopping value: optimization will
-          stop when this objective value is reached.
+```
+N     The number of parameters in an objective function.
+f     Objective function.
+data  Objective function's data.
+lb    Lower bounds of obj function parameters, should not be infinite.
+ub    Upper bounds of obj function parameters, should not be infinite.
+x     Minimizer.
+minf  Minimizer's value.
+iter  The number of iterations to perform in a single attempt.
+      Corresponds to the number of obj function evaluations that are performed.
+M     Depth to use, 1 for plain CBiteOpt algorithm, >1 for CBiteOptDeep
+      algorithm. Expected range is [1; 36]. Internally multiplies "iter"
+      by sqrt(M).
+attc  The number of optimization attempts to perform.
+stopc Stopping criteria (convergence check). 0: off, 1: 128*N, 2: 256*N.
+rf    Random number generator function; 0: use the default BiteOpt PRNG.
+      Note that the external RNG should be seeded externally.
+rdata Data pointer to pass to the "rf" function.
+f_minp If non-zero, a pointer to the stopping value: optimization will
+      stop when this objective value is reached.
 
-    This function returns the total number of function evaluations performed;
-    useful if the "stopc>0" and/or "f_minp" were used.
+This function returns the total number of function evaluations performed;
+useful if the "stopc>0" and/or "f_minp" were used.
+```
 
 `test2.cpp` is a convergence test for all available functions. Performs many
 optimization attempts on all functions. Prints various performance
