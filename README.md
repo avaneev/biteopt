@@ -348,6 +348,11 @@ lethal target for BRCA-mutated cancer, Nature Cancer](https://www.nature.com/art
 * [Automating Building Damage Reconnaissance to Optimize Drone Mission
 Planning for Disaster Response, ASCE Library](https://ascelibrary.org/doi/abs/10.1061/%28ASCE%29CP.1943-5487.0001061)
 
+* [Cost-Asymmetric Memory Hard Password Hashing, ACM DL](https://dl.acm.org/doi/10.1007/978-3-031-14791-3_2)
+
+* [Quantum Simulation of Spin-Boson Models with Structured Bath,
+arXiv](https://arxiv.org/pdf/2405.14624)
+
 ## Examples ##
 
 Use the `example.cpp` program to see the basic usage example of C++ interface.
@@ -682,11 +687,11 @@ initialized with Gaussian sampling.
 ## Citing ##
 
 ```bibtex
-@misc{biteopt2023,
+@misc{biteopt2024,
     author = {Aleksey Vaneev},
     title = {{BITEOPT - Derivative-free global optimization method}},
     note = {C++ source code, with description and examples},
-    year = {2023},
+    year = {2024},
     publisher = {GitHub},
     journal = {GitHub repository},
     howpublished = {Available at \url{https://github.com/avaneev/biteopt}},

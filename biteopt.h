@@ -7,7 +7,7 @@
  *
  * @section license License
  *
- * Copyright (c) 2016-2023 Aleksey Vaneev
+ * Copyright (c) 2016-2024 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -31,7 +31,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2023.7"
+#define BITEOPT_VERSION "2024.1"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -1549,6 +1549,23 @@ public:
 		BestOpt = Opts[ 0 ];
 		CurOpt = Opts[ 0 ];
 		StallCount = 0;
+
+		if( OptCount == 1 )
+		{
+			PushOpt = CurOpt;
+		}
+		else
+		{
+			while( true )
+			{
+				PushOpt = Opts[ rnd.getInt( OptCount )];
+
+				if( PushOpt != CurOpt )
+				{
+					break;
+				}
+			}
+		}
 	}
 
 	/**
@@ -1569,25 +1586,6 @@ public:
 			return( StallCount );
 		}
 
-		CBiteOptWrap* PushOpt;
-
-		if( OptCount == 2 )
-		{
-			PushOpt = Opts[ CurOpt == Opts[ 0 ]];
-		}
-		else
-		{
-			while( true )
-			{
-				PushOpt = Opts[ rnd.getInt( OptCount )];
-
-				if( PushOpt != CurOpt )
-				{
-					break;
-				}
-			}
-		}
-
 		const int sc = CurOpt -> optimize( rnd, PushOpt );
 
 		if( CurOpt -> getBestCost() <= BestOpt -> getBestCost() )
@@ -1601,8 +1599,25 @@ public:
 		}
 		else
 		{
-			CurOpt = PushOpt;
 			StallCount++;
+			CurOpt = PushOpt;
+
+			if( OptCount == 2 )
+			{
+				PushOpt = Opts[ CurOpt == Opts[ 0 ]];
+			}
+			else
+			{
+				while( true )
+				{
+					PushOpt = Opts[ rnd.getInt( OptCount )];
+
+					if( PushOpt != CurOpt )
+					{
+						break;
+					}
+				}
+			}
 		}
 
 		return( StallCount );
@@ -1644,6 +1659,7 @@ protected:
 	CBiteOptWrap** Opts; ///< Optimization objects.
 	CBiteOptWrap* BestOpt; ///< Optimizer that contains the best solution.
 	CBiteOptWrap* CurOpt; ///< Current optimizer object.
+	CBiteOptWrap* PushOpt; ///< Optimizer where solution is pushed to.
 	int StallCount; ///< The number of iterations without improvement.
 
 	/**
