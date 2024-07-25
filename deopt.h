@@ -3,11 +3,13 @@
 /**
  * @file deopt.h
  *
+ * @version 2024.2
+ *
  * @brief The inclusion file for the CDEOpt class.
  *
  * @section license License
  *
- * Copyright (c) 2021-2023 Aleksey Vaneev
+ * Copyright (c) 2021-2024 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -26,8 +28,6 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- *
- * @version 2023.6
  */
 
 #ifndef DEOPT_INCLUDED
@@ -82,44 +82,19 @@ public:
 	{
 		initCommonVars( rnd );
 
-		const double sd = 0x1p-4 * InitRadius;
-		int i;
-		int j;
+		StartSD = 0x1p-4 * InitRadius;
 
-		if( InitParams == NULL )
+		if( InitParams != NULL )
 		{
-			for( j = 0; j < PopSize; j++ )
-			{
-				ptype* const p = PopParams[ j ];
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					p[ i ] = wrapParam( rnd, getGaussianInt(
-						rnd, sd, IntMantMult >> 1 ));
-				}
-			}
-		}
-		else
-		{
-			ptype* const p0 = PopParams[ 0 ];
+			int i;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				p0[ i ] = wrapParam( rnd,
-					(ptype) (( InitParams[ i ] - MinValues[ i ]) /
-					DiffValues[ i ]));
+				StartParams[ i ] = (ptype) (( InitParams[ i ] -
+					MinValues[ i ]) / DiffValues[ i ]);
 			}
 
-			for( j = 1; j < PopSize; j++ )
-			{
-				ptype* const p = PopParams[ j ];
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					p[ i ] = wrapParam( rnd,
-						getGaussianInt( rnd, sd, p0[ i ]));
-				}
-			}
+			UseStartParams = true;
 		}
 
 		DoInitEvals = true;
@@ -144,12 +119,9 @@ public:
 
 		if( DoInitEvals )
 		{
-			const ptype* const Params = getCurParams();
+			ptype* const Params = getCurParams();
 
-			for( i = 0; i < ParamCount; i++ )
-			{
-				NewValues[ i ] = getRealValue( Params, i );
-			}
+			genInitParams( rnd, Params );
 
 			const double NewCost = optcost( NewValues );
 
@@ -163,8 +135,7 @@ public:
 				copyValues( OutValues, NewValues );
 			}
 
-			updateBestCost( NewCost, NewValues,
-				updatePop( NewCost, Params, false ));
+			updateBestCost( NewCost, NewValues, updatePop( NewCost, Params ));
 
 			if( CurPopPos == PopSize )
 			{
@@ -288,7 +259,7 @@ public:
 			copyValues( OutValues, NewValues );
 		}
 
-		const int p = updatePop( NewCost, TmpParams, false, false );
+		const int p = updatePop( NewCost, TmpParams );
 
 		if( p < CurPopSize )
 		{

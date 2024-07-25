@@ -5,6 +5,10 @@
  *
  * @brief The inclusion file for the CBiteOpt and CBiteOptDeep classes.
  *
+ * Description is available at https://github.com/avaneev/biteopt
+ *
+ * E-mail: aleksey.vaneev@gmail.com or info@voxengo.com
+ *
  * @section license License
  *
  * Copyright (c) 2016-2024 Aleksey Vaneev
@@ -31,7 +35,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2024.1"
+#define BITEOPT_VERSION "2024.2"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -67,6 +71,7 @@ public:
 		addSel( ParPopPSel[ 1 ], "ParPopPSel[ 1 ]" );
 		addSel( ParPopPSel[ 2 ], "ParPopPSel[ 2 ]" );
 		addSel( ParPopPSel[ 3 ], "ParPopPSel[ 3 ]" );
+		addSel( ParPopPSel[ 4 ], "ParPopPSel[ 4 ]" );
 		addSel( AltPopPSel, "AltPopPSel" );
 		addSel( AltPopSel[ 0 ], "AltPopSel[ 0 ]" );
 		addSel( AltPopSel[ 1 ], "AltPopSel[ 1 ]" );
@@ -110,7 +115,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			9 + aParamCount * 3 );
+			11 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -146,47 +151,19 @@ public:
 	{
 		initCommonVars( rnd );
 
-		// Initialize solution vectors randomly, calculate objective function
-		// values of these solutions.
+		StartSD = 0.25 * InitRadius;
 
-		const double sd = 0.25 * InitRadius;
-		int i;
-		int j;
-
-		if( InitParams == NULL )
+		if( InitParams != NULL )
 		{
-			for( j = 0; j < PopSize; j++ )
-			{
-				ptype* const p = PopParams[ j ];
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					p[ i ] = wrapParam( rnd, getGaussianInt(
-						rnd, sd, IntMantMult >> 1 ));
-				}
-			}
-		}
-		else
-		{
-			ptype* const p0 = PopParams[ 0 ];
+			int i;
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				p0[ i ] = wrapParam( rnd,
-					(ptype) (( InitParams[ i ] - MinValues[ i ]) /
-					DiffValues[ i ]));
+				StartParams[ i ] = (ptype) (( InitParams[ i ] -
+					MinValues[ i ]) / DiffValues[ i ]);
 			}
 
-			for( j = 1; j < PopSize; j++ )
-			{
-				ptype* const p = PopParams[ j ];
-
-				for( i = 0; i < ParamCount; i++ )
-				{
-					p[ i ] = wrapParam( rnd,
-						getGaussianInt( rnd, sd, p0[ i ]));
-				}
-			}
+			UseStartParams = true;
 		}
 
 		ParOpt.init( rnd, InitParams, InitRadius );
@@ -224,12 +201,9 @@ public:
 
 		if( DoInitEvals )
 		{
-			const ptype* const Params = getCurParams();
+			ptype* const Params = getCurParams();
 
-			for( i = 0; i < ParamCount; i++ )
-			{
-				NewValues[ i ] = getRealValue( Params, i );
-			}
+			genInitParams( rnd, Params );
 
 			NewCost = optcost( NewValues );
 			updateBestCost( NewCost, NewValues,
@@ -284,25 +258,39 @@ public:
 			else
 			if( SelM1 == 1 )
 			{
-				if( select( M1BSel, rnd ))
+				const int SelM1B = select( M1BSel, rnd );
+
+				if( SelM1B == 0 )
 				{
 					generateSol4( rnd );
 				}
 				else
+				if( SelM1B == 1 )
 				{
 					generateSol5b( rnd );
+				}
+				else
+				{
+					generateSol5c( rnd );
 				}
 			}
 			else
 			if( SelM1 == 2 )
 			{
-				if( select( M1CSel, rnd ))
+				const int SelM1C = select( M1CSel, rnd );
+
+				if( SelM1C == 0 )
 				{
 					generateSol5( rnd );
 				}
 				else
+				if( SelM1C == 1 )
 				{
 					generateSol10( rnd );
+				}
+				else
+				{
+					generateSol11( rnd );
 				}
 			}
 			else
@@ -336,8 +324,13 @@ public:
 					generateSol8( rnd );
 				}
 				else
+				if( SelM2B == 3 )
 				{
 					generateSol9( rnd );
+				}
+				else
+				{
+					generateSol12( rnd );
 				}
 			}
 		}
@@ -423,16 +416,16 @@ protected:
 	CBiteSel< 4 > MethodSel; ///< Population generator 4-method selector.
 	CBiteSel< 4 > M1Sel; ///< Method 1's sub-method selector.
 	CBiteSel< 3 > M1ASel; ///< Method 1's sub-sub-method A selector.
-	CBiteSel< 2 > M1BSel; ///< Method 1's sub-sub-method B selector.
-	CBiteSel< 2 > M1CSel; ///< Method 1's sub-sub-method C selector.
+	CBiteSel< 3 > M1BSel; ///< Method 1's sub-sub-method B selector.
+	CBiteSel< 3 > M1CSel; ///< Method 1's sub-sub-method C selector.
 	CBiteSel< 2 > M2Sel; ///< Method 2's sub-method selector.
-	CBiteSel< 4 > M2BSel; ///< Method 2's sub-sub-method B selector.
+	CBiteSel< 5 > M2BSel; ///< Method 2's sub-sub-method B selector.
 	CBiteSel< 2 > PopChangeIncrSel; ///< Population size change increase
 		///< selector.
 	CBiteSel< 2 > PopChangeDecrSel; ///< Population size change decrease
 		///< selector.
 	CBiteSel< 2 > ParOpt2Sel; ///< Parallel optimizer 2 use selector.
-	CBiteSel< 2 > ParPopPSel[ 4 ]; ///< Parallel population use
+	CBiteSel< 2 > ParPopPSel[ 5 ]; ///< Parallel population use
 		///< probability selectors.
 	CBiteSel< 2 > AltPopPSel; ///< Alternative population use selector.
 	CBiteSel< 2 > AltPopSel[ 4 ]; ///< Alternative population type use
@@ -524,7 +517,7 @@ protected:
 	 * With certain probability, *this object's own population will be
 	 * returned instead of parallel population.
 	 *
-	 * @param gi Solution generator index (0-3).
+	 * @param gi Solution generator index (0-4).
 	 * @param rnd PRNG object.
 	 */
 
@@ -1115,6 +1108,51 @@ protected:
 	}
 
 	/**
+	 * "Genetic crossing-over" candidate solution generation method.
+	 * Completely mixes parameter parts of two randomly-selected solutions,
+	 * at random crossover point, plus adds a random step. This method is
+	 * similar to generator 5.
+	 */
+
+	void generateSol5c( CBiteRnd& rnd )
+	{
+		ptype* const Params = TmpParams;
+
+		const CBitePop& ParPop = selectParPop( 4, rnd );
+
+		const ptype* const rp1 = ParPop.getParamsOrdered(
+			rnd.getSqrInt( ParPop.getCurPopSize() ));
+
+		const ptype* const rp2 = ParPop.getParamsOrdered(
+			rnd.getSqrInt( ParPop.getCurPopSize() ));
+
+		const ptype* const rp3 = ParPop.getParamsOrdered(
+			ParPop.getCurPopSize() - 1 -
+			rnd.getSqrInt( ParPop.getCurPopSize() ));
+
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			// Produce a bit-mixing mask.
+
+			ptype crm = ( (ptype) 1 << rnd.getInt( IntMantBits )) - 1;
+
+			if( rnd.getBit() )
+			{
+				crm ^= IntMantMask;
+			}
+
+			Params[ i ] = ( rp1[ i ] & crm ) | ( rp2[ i ] & ~crm );
+
+			// Randomize, depending on difference between better and worse
+			// parameter values.
+
+			Params[ i ] += (ptype) (( rp1[ i ] - rp3[ i ]) * rnd.getTPDF() );
+		}
+	}
+
+	/**
 	 * A short-cut solution generator. Parameter value short-cuts: they
 	 * considerably reduce convergence time for some functions while not
 	 * severely impacting performance for other functions.
@@ -1359,6 +1397,90 @@ protected:
 		for( i = 0; i < ParamCount; i++ )
 		{
 			Params[ i ] += (ptype) ( NewValues[ i ] * d );
+		}
+	}
+
+	/**
+	 * Stochastic PSO-alike solution generator. Moves a randomly-selected
+	 * existing solution towards a better solution, and at the same times
+	 * makes a move in a random direction having a magnitude derived as a
+	 * distance between a better and worse solutions (limits the magnitude to
+	 * the current basin of solutions).
+	 */
+
+	void generateSol11( CBiteRnd& rnd )
+	{
+		ptype* const Params = TmpParams;
+
+		const int si0 = rnd.getInt( CurPopSize );
+		const ptype* const rp0 = getParamsOrdered( si0 );
+
+		const ptype* const rp1 = getParamsOrdered(
+			rnd.getPowInt( 4.0, CurPopSize ));
+
+		const ptype* const rp2 = getParamsOrdered( CurPopSize1 -
+			rnd.getSqrInt( CurPopSize ));
+
+		double s1 = 1e-300;
+		double s2 = 1e-300;
+		double d;
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			d = rp1[ i ] - rp2[ i ];
+			s1 += d * d;
+
+			NewValues[ i ] = rnd.get() - 0.5;
+			s2 += NewValues[ i ] * NewValues[ i ];
+		}
+
+		const double m1 = sqrt( ParamCountI ) * 0.5;
+		const double m0 = 1.0 - m1;
+		d = sqrt( s1 * ParamCountI / s2 ) * 2.0;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			Params[ i ] = (ptype) ( rp0[ i ] * m0 + rp1[ i ] * m1 +
+				NewValues[ i ] * d );
+		}
+	}
+
+	/**
+	 * Solution generator that estimates population's standard deviation using
+	 * 4 solutions, and then generates a solution using Gaussian sampling
+	 * around centroid.
+	 */
+
+	void generateSol12( CBiteRnd& rnd )
+	{
+		ptype* const Params = TmpParams;
+
+		const int si1 = rnd.getPowInt( 3.0, CurPopSize );
+		const ptype* const rp1 = getParamsOrdered( si1 );
+		const ptype* const rp2 = getParamsOrdered( CurPopSize1 - si1 );
+
+		const int si3 = rnd.getPowInt( 3.0, CurPopSize );
+		const ptype* const rp3 = getParamsOrdered( si3 );
+		const ptype* const rp4 = getParamsOrdered( CurPopSize1 - si3 );
+
+		const ptype* const rpc = getCentroid();
+
+		double r = 0.0;
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			const double d1 = rp2[ i ] - rp1[ i ];
+			const double d2 = rp4[ i ] - rp3[ i ];
+			r += d1 * d1 + d2 * d2;
+		}
+
+		r = sqrt( r / ( ParamCount * 2 ));
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			Params[ i ] = rpc[ i ] + (ptype) ( rnd.getGaussian() * r );
 		}
 	}
 

@@ -3,11 +3,13 @@
 /**
  * @file biteort.h
  *
+ * @version 2024.2
+ *
  * @brief The inclusion file for the CBiteOrt class.
  *
  * @section license License
  *
- * Copyright (c) 2016-2023 Aleksey Vaneev
+ * Copyright (c) 2016-2024 Aleksey Vaneev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -26,8 +28,6 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- *
- * @version 2023.4
  */
 
 #ifndef BITEORT_INCLUDED
@@ -180,7 +180,8 @@ public:
 	void update( const CBitePop& ExtPop )
 	{
 		const int UsePopSize = ExtPop.getCurPopSize();
-		const double** const ExtParams = ExtPop.getPopParams();
+		const double** const ExtParams =
+			(const double**) ExtPop.getPopParams();
 
 		updateWeights( UsePopSize );
 

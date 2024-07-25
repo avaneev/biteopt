@@ -3,12 +3,14 @@
 /**
  * @file biteaux.h
  *
+ * @version 2024.2
+ *
  * @brief The inclusion file for the CBiteRnd, CBitePop, CBiteParPops,
  * CBiteOptInterface, and CBiteOptBase classes.
  *
  * @section license License
  * 
- * Copyright (c) 2016-2023 Aleksey Vaneev
+ * Copyright (c) 2016-2024 Aleksey Vaneev
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,8 +29,6 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- *
- * @version 2023.7
  */
 
 #ifndef BITEAUX_INCLUDED
@@ -464,8 +464,6 @@ public:
 				sp[ i2 ] = t;
 			}
 		}
-
-		Slot = 0;
 
 		select( rnd );
 		IsSelected = false;
@@ -905,9 +903,9 @@ public:
 	 * which are sorted in the ascending cost order.
 	 */
 
-	const ptype** getPopParams() const
+	ptype** getPopParams() const
 	{
-		return( (const ptype**) PopParams );
+		return( PopParams );
 	}
 
 	/**
@@ -998,15 +996,12 @@ public:
 	 * @param UpdParams New parameter values.
 	 * @param DoUpdateCentroid "True" if centroid should be updated using
 	 * running sum. This update is done for parallel populations.
-	 * @param CanRejectCost If "true", solution with a duplicate cost will be
-	 * rejected; this may provide a performance improvement. Solutions can
-	 * only be rejected when the whole population was filled.
-	 * @return Insertion position, ">=CurPopSize" if the cost constraint was
-	 * not met.
+	 * @return Insertion position - greater or equal to PopSize, if the cost
+	 * constraint was not met.
 	 */
 
 	int updatePop( double UpdCost, const ptype* const UpdParams,
-		const bool DoUpdateCentroid, const bool CanRejectCost = true )
+		const bool DoUpdateCentroid = false )
 	{
 		int ri; // Index of population vector to be replaced.
 
@@ -1052,33 +1047,6 @@ public:
 		if( CurPopPos < PopSize )
 		{
 			CurPopPos++;
-		}
-		else
-		{
-			if( CanRejectCost )
-			{
-				// Reject same-cost solution using equality precision level.
-				// This approach reduces search locality due to allowing older
-				// solutions to remain in population.
-
-				static const double etol = 0x1p-52;
-				const double c = *getRankPtr( PopParams[ p ]);
-				const double cd = fabs( UpdCost - c );
-
-				if( cd == 0.0 )
-				{
-					return( PopSize );
-				}
-				else
-				{
-					const double cs = fabs( UpdCost ) + fabs( c );
-
-					if( cd < cs * etol )
-					{
-						return( PopSize );
-					}
-				}
-			}
 		}
 
 		ptype* const rp = PopParams[ ri ];
@@ -1217,6 +1185,7 @@ protected:
 	 * boundaries using random operator. This operation improves convergence
 	 * in comparison to clamping.
 	 *
+	 * @param rnd PRNG object.
 	 * @param v Parameter value to wrap.
 	 * @return Wrapped parameter value.
 	 */
@@ -1278,7 +1247,7 @@ protected:
 	 * Function generates a Gaussian-distributed pseudo-random number, in
 	 * integer scale, with the specified mean and std.dev.
 	 *
-	 * @param rnd Uniform PRNG.
+	 * @param rnd PRNG object.
 	 * @param sd Standard deviation multiplier.
 	 * @param meanInt Mean value, in integer scale.
 	 */
@@ -1563,6 +1532,7 @@ public:
 		, MaxValues( NULL )
 		, DiffValues( NULL )
 		, DiffValuesI( NULL )
+		, StartParams( NULL )
 		, BestValues( NULL )
 		, NewValues( NULL )
 		, SelCount( 0 )
@@ -1575,6 +1545,7 @@ public:
 		delete[] MaxValues;
 		delete[] DiffValues;
 		delete[] DiffValuesI;
+		delete[] StartParams;
 		delete[] BestValues;
 		delete[] NewValues;
 	}
@@ -1622,14 +1593,20 @@ public:
 protected:
 	using CBiteParPops< ptype > :: IntMantMult;
 	using CBiteParPops< ptype > :: ParamCount;
+	using CBiteParPops< ptype > :: CurPopPos;
 	using CBiteParPops< ptype > :: resetCurPopPos;
 	using CBiteParPops< ptype > :: copyValues;
+	using CBiteParPops< ptype > :: wrapParam;
+	using CBiteParPops< ptype > :: getGaussianInt;
 
 	double* MinValues; ///< Minimal parameter values.
 	double* MaxValues; ///< Maximal parameter values.
 	double* DiffValues; ///< Difference between maximal and minimal parameter
 		///< values.
 	double* DiffValuesI; ///< Inverse DiffValues.
+	ptype* StartParams; ///< Starting parameter values.
+	bool UseStartParams; ///< "True" if StartParams are available.
+	double StartSD; ///< Starting standard deviation.
 	double* BestValues; ///< Best parameter vector.
 	double BestCost; ///< Cost of the best parameter vector.
 	double* NewValues; ///< Temporary new parameter buffer, with real values.
@@ -1659,6 +1636,7 @@ protected:
 		MaxValues = new double[ ParamCount ];
 		DiffValues = new double[ ParamCount ];
 		DiffValuesI = new double[ ParamCount ];
+		StartParams = new ptype[ ParamCount ];
 		BestValues = new double[ ParamCount ];
 		NewValues = new double[ ParamCount ];
 	}
@@ -1671,6 +1649,7 @@ protected:
 		delete[] MaxValues;
 		delete[] DiffValues;
 		delete[] DiffValuesI;
+		delete[] StartParams;
 		delete[] BestValues;
 		delete[] NewValues;
 	}
@@ -1680,6 +1659,7 @@ protected:
 	 * their default values, including value bounds, registered selectors,
 	 * calls the resetCurPopPos() and updateDiffValues() functions. This
 	 * function is usually called in the init() function of an optimizer.
+	 * Sets UseStartParams to "false".
 	 */
 
 	void initCommonVars( CBiteRnd& rnd )
@@ -1690,6 +1670,8 @@ protected:
 
 		resetCurPopPos();
 
+		UseStartParams = false;
+		StartSD = 0.25;
 		BestCost = 1e300;
 		StallCount = 0;
 		HiBound = 1e300;
@@ -1779,6 +1761,7 @@ protected:
 	 * using random operator. This operation improves convergence in
 	 * comparison to clamping.
 	 *
+	 * @param rnd PRNG object.
 	 * @param v Parameter value to wrap.
 	 * @param i Parameter index.
 	 * @return Wrapped parameter value.
@@ -1815,6 +1798,79 @@ protected:
 		}
 
 		return( v );
+	}
+
+	/**
+	 * Function generates a random initial solution with Gaussian sampling
+	 * using `StartSD` variance. The solution will be centered around the
+	 * `StartParams` point if the `UseStartParams` is `true`. The function
+	 * also fills the `NewValues` array.
+	 *
+	 * @param rnd PRNG object.
+	 * @param[out] Params Resulting parameter vector.
+	 */
+
+	void genInitParams( CBiteRnd& rnd, ptype* const Params ) const
+	{
+		int i;
+
+		if( UseStartParams )
+		{
+			if( CurPopPos == 0 )
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = wrapParam( rnd, StartParams[ i ]);
+					NewValues[ i ] = getRealValue( Params, i );
+				}
+			}
+			else
+			{
+				if( (ptype) 0.25 == 0 )
+				{
+					for( i = 0; i < ParamCount; i++ )
+					{
+						Params[ i ] = wrapParam( rnd, getGaussianInt( rnd,
+							StartSD, StartParams[ i ]));
+
+						NewValues[ i ] = getRealValue( Params, i );
+					}
+				}
+				else
+				{
+					for( i = 0; i < ParamCount; i++ )
+					{
+						Params[ i ] = wrapParam( rnd, rnd.getGaussian() *
+							StartSD + StartParams[ i ]);
+
+						NewValues[ i ] = getRealValue( Params, i );
+					}
+				}
+			}
+		}
+		else
+		{
+			if( (ptype) 0.25 == 0 )
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = wrapParam( rnd, getGaussianInt( rnd,
+						StartSD, IntMantMult >> 1 ));
+
+					NewValues[ i ] = getRealValue( Params, i );
+				}
+			}
+			else
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = wrapParam( rnd, rnd.getGaussian() * StartSD +
+						0.5 );
+
+					NewValues[ i ] = getRealValue( Params, i );
+				}
+			}
+		}
 	}
 
 	/**

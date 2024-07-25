@@ -145,7 +145,8 @@ iterations (in a successful attempt); for 10-dimensional functions, it is
 reasonable to expect convergence in 8000 iterations (harder functions may
 require more iterations to converge). Most classic 2-dimensional problems
 converge in 400 iterations or less, at 10<sup>-6</sup> precision. On average,
-every doubling of dimensions requires tripling of iteration budget.
+every doubling of dimensions requires tripling of iteration budget. Complex
+multi-modal problems require a magnitudes larger iteration and attempt budget.
 
 Each attempt may generate an equally-usable candidate solution (not
 necessarily having the least cost), permitting the researcher to select a
@@ -191,13 +192,7 @@ value rounding (integer parameters). This method usually can't acceptably
 solve high-dimensional continuous problems that are implicitly combinatorial
 (e.g., Perm, and Lennard-Jones atom clustering problems) as in such problems
 the global descent vanishes at some point and the method is left with an
-exponentially increasing number of local minima. However, BiteOpt is able
-to solve symmetric and asymmetric TSP problems even as large as 400-node ones,
-to within 3-8% of optimum (parameter values should be sorted to derive the
-node ordering). A comparison to a specialized TSP solver like Concorde is not
-reasonable to do (BiteOpt is much slower), but BiteOpt permits solving
-non-conventional or mixed-field (e.g., noisy, scheduled, clustered) discrete
-combinatorial problems.
+exponentially increasing number of local minima.
 
 Also, problems with many competing minima without a pronounced global descent
 towards global minimum (e.g., Bukin N.6 problem) may not be solved acceptably
@@ -231,6 +226,23 @@ standard distribution, the mean corresponds to 0\*sigma):
 
 ![PDF plot](https://github.com/avaneev/biteopt/blob/master/attempt_pdf_plot.png)
 
+## Traveling Salesman Problem (TSP) ##
+
+BiteOptDeep is able to solve symmetric and asymmetric TSP problems even as
+large as 400-node ones, to within 3-8% of optimum. A comparison to a
+specialized TSP solver like Concorde is not reasonable to do (BiteOpt is much
+slower), but BiteOpt permits solving non-conventional or mixed-field (e.g.,
+noisy, scheduled, clustered) discrete combinatorial problems.
+
+To obtain node ordering when solving TSP (normal or clustered) problems, the
+parameters related to a corresponding cluster should be sorted in an ascending
+order. Each parameter corresponds to a node. As a result, BiteOpt "optimizes"
+the ranks of nodes in a cluster. Minimal parameter bounds can be all set to 0,
+while maximal bounds can be all set to 1.
+
+Note that iteration and attempt budgets are needed to be quite large, to reach
+good results or an optimum.
+
 ## Constraint Programming ##
 
 Mixed integer programming can be achieved by using rounded parameter values in
@@ -260,12 +272,12 @@ tested with this method. In practice, on a large set of problems, this method
 finds a feasible solution in up to 97% of cases.
 
 ```c
-real_value = cost;
+real_cost = cost;
 
 if( con_notmet > 0 )
 {
     const double ps = pow( 3.0, 1.0 / n_con );
-    const double pnsi = 1.0 / sqrt( (double) n_con );
+	const double pnsi = 1.0 / sqrt( (double) n_con );
     double pns = 0.0;
 
     for( int i = 0; i < n_con; i++ )
@@ -280,8 +292,8 @@ if( con_notmet > 0 )
 
 In essence, this approach transforms each penalty value into a cubic penalty
 value, places each penalty value into its own "stratum" (via "pnsi" offset),
-and also applies a "barrier value". The barrier value (1e10) is suitably large
-for most practical constraint programming problems.
+and also applies a "barrier value". The barrier value (1e10) is suitably
+large for most practical constraint programming problems.
 
 See `constr.cpp` for an example of constraint programming. `constr2.cpp` is an
 example of non-linear constraint programming with both non-equalities and
@@ -509,9 +521,9 @@ the "probabilistic weight" of a recently used flow-path is adjusted. This
 approach increases the number of acceptable solutions, and produces a smoother
 descent.
 
-In many instances candidate solution generators use the square of the random
-variable to obtain solution's index: this has an effect of giving more weight
-to better solutions.
+In many instances candidate solution generators use the squared, power'ed or
+logarithmic random variable to obtain solution's index: this has an effect of
+giving more weight to better solutions.
 
 With some probability, an independent, algorithmically different, parallel
 optimizer is engaged whose solution is evaluated for inclusion into the
@@ -528,9 +540,10 @@ tweaks, especially population size) as lower-quality solvers, but some
 generators can't work well on their own (they work due to synergistic
 effects), and are used to increase the diversity of solution approaches. In
 some instances a generator may produce an acceptable solution only once per 50
-calls, but this solution may make a big difference in a long run. The
-availability of many solution generators seems to be essential for solving
-discrete combinatorial problems. While generators 1, 2, 3 can be considered
+calls, but this solution may make a big difference in a long run.
+
+The availability of many solution generators seems to be essential for solving
+discrete and noisy problems. While generators 1, 2, 3 can be considered
 "exploitation" generators as they provide faster convergence and better
 solution values, all other generators are "exploration" generators.
 
@@ -609,6 +622,16 @@ further down or bounces back upper.
 10. Solution generator derived from SpherOpt's converging hyper-spheroid
 method.
 
+11. Stochastic PSO-alike solution generator. Moves a randomly-selected
+existing solution towards a better solution, and at the same times makes a
+move in a random direction having a magnitude derived as a distance between a
+better and worse solutions (limits the magnitude to the current basin of
+solutions).
+
+12. Solution generator that estimates population's standard deviation using 4
+solutions, and then generates a solution using Gaussian sampling around
+centroid.
+
 ## SMA-ES ##
 
 This is a working optimization method called "SigMa Adaptation Evolution
@@ -683,6 +706,12 @@ the population-handling framework of BiteOpt. "DE/best-2/3/bit". Mutation
 parameter is fixed, equals to 0.25. Instead of a crossover, the method uses
 randomization. Population size is equal to 30\*Dims, by default. Population is
 initialized with Gaussian sampling.
+
+## Sponsoring ##
+
+If you are regularly using BiteOpt in a commercial environment, you may
+consider donating/sponsoring the project. Please contact the author via
+aleksey.vaneev@gmail.com or info@voxengo.com.
 
 ## Citing ##
 
