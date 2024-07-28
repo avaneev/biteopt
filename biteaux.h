@@ -3,7 +3,7 @@
 /**
  * @file biteaux.h
  *
- * @version 2024.2
+ * @version 2024.3
  *
  * @brief The inclusion file for the CBiteRnd, CBitePop, CBiteParPops,
  * CBiteOptInterface, and CBiteOptBase classes.
@@ -1180,6 +1180,34 @@ protected:
 	}
 
 	/**
+	 * Function compares two floating-point values for equality.
+	 *
+	 * @param a Value 1.
+	 * @param b Value 2.
+	 * @return "True" if values are equal.
+	 */
+
+	static bool isEqual( const double a, const double b )
+	{
+		static const double etol = 0x1p-52;
+		const double d = fabs( b - a );
+
+		if( d == 0.0 )
+		{
+			return( true );
+		}
+
+		const double s = fabs( b ) + fabs( a );
+
+		if( d < s * etol )
+		{
+			return( true );
+		}
+
+		return( false );
+	}
+
+	/**
 	 * Function wraps the specified parameter value so that it stays in the
 	 * [0.0; 1.0] range (including in integer range), by wrapping it over the
 	 * boundaries using random operator. This operation improves convergence
@@ -1201,7 +1229,7 @@ protected:
 					return( (ptype) ( rnd.get() * -v ));
 				}
 
-				return( (ptype) ( rnd.getRaw() & IntMantMask ));
+				return( rnd.getRaw() & IntMantMask );
 			}
 
 			if( v > IntMantMult )
@@ -1212,7 +1240,7 @@ protected:
 						rnd.get() * ( v - IntMantMult )));
 				}
 
-				return( (ptype) ( rnd.getRaw() & IntMantMask ));
+				return( rnd.getRaw() & IntMantMask );
 			}
 
 			return( v );

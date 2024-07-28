@@ -35,7 +35,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2024.2"
+#define BITEOPT_VERSION "2024.3"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -388,7 +388,7 @@ public:
 			}
 
 			if( PushOpt != NULL && PushOpt != this &&
-				!PushOpt -> DoInitEvals && p > 0 )
+				!PushOpt -> DoInitEvals && p > 1 )
 			{
 				PushOpt -> updatePop( NewCost, TmpParams, true );
 				PushOpt -> updateParPop( NewCost, TmpParams );
@@ -629,10 +629,10 @@ protected:
 		const double r1 = rnd.get();
 		const double r12 = r1 * r1;
 		const int ims = (int) ( r12 * r12 * 48.0 );
-		const ptype imask = (ptype) ( IntMantMask >> ims );
+		const ptype imask = IntMantMask >> ims;
 
 		const int im2s = rnd.getSqrInt( 96 );
-		const ptype imask2 = (ptype) ( im2s > 63 ? 0 : IntMantMask >> im2s );
+		const ptype imask2 = ( im2s > 63 ? 0 : IntMantMask >> im2s );
 
 		const int si1 = (int) ( r1 * r12 * ParPop.getCurPopSize() );
 		const ptype* const rp1 = ParPop.getParamsOrdered( si1 );
@@ -754,8 +754,8 @@ protected:
 		{
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = rp1[ i ] + (( rp2[ i ] - rp3[ i ]) +
-					( rp4[ i ] - rp5[ i ]));
+				Params[ i ] = rp1[ i ] + ((( rp2[ i ] - rp3[ i ]) +
+					( rp4[ i ] - rp5[ i ])) >> 1 );
 			}
 		}
 		else
@@ -765,8 +765,8 @@ protected:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				Params[ i ] = (( rp1[ i ] + rp1b[ i ]) >> 1 ) +
-					( rp2[ i ] - rp3[ i ]) + ( rp4[ i ] - rp5[ i ]);
+				Params[ i ] = ( rp1[ i ] + rp1b[ i ] +
+					( rp2[ i ] - rp3[ i ]) + ( rp4[ i ] - rp5[ i ])) >> 1;
 			}
 		}
 	}
@@ -842,11 +842,11 @@ protected:
 
 			// Produce sparsely-random bit-strings.
 
-			const ptype v1 = (ptype) ( rnd.getRaw() & rnd.getRaw() &
-				rnd.getRaw() & rnd.getRaw() & rnd.getRaw() & IntMantMask );
+			const ptype v1 = rnd.getRaw() & rnd.getRaw() & rnd.getRaw() &
+				rnd.getRaw() & rnd.getRaw() & IntMantMask;
 
-			const ptype v2 = (ptype) ( rnd.getRaw() & rnd.getRaw() &
-				rnd.getRaw() & rnd.getRaw() & rnd.getRaw() & IntMantMask );
+			const ptype v2 = rnd.getRaw() & rnd.getRaw() & rnd.getRaw() &
+				rnd.getRaw() & rnd.getRaw() & IntMantMask;
 
 			Params[ k ] += v1 - v2; // Apply in TPDF manner.
 		}
@@ -985,7 +985,7 @@ protected:
 		UseSize[ 0 ] = CurPopSize;
 		UseSize[ 1 ] = UsePops[ 1 ] -> getCurPopSize();
 
-		const int km = 5 + ( select( Gen4MixFacSel, rnd ) << 1 );
+		const int km = 3 + ( select( Gen4MixFacSel, rnd ) << 1 );
 
 		int p = rnd.getBit();
 		const ptype* rp1 = UsePops[ p ] -> getParamsOrdered(
@@ -1007,6 +1007,11 @@ protected:
 				Params[ i ] ^= rp1[ i ];
 			}
 		}
+
+		// Simple XOR randomize.
+
+		Params[ rnd.getInt( ParamCount )] ^=
+			( rnd.getRaw() & IntMantMask ) >> rnd.getSqrInt( 54 );
 	}
 
 	/**
@@ -1025,8 +1030,8 @@ protected:
 
 		const CBitePop& ParPop = selectParPop( 2, rnd );
 
-		const int si1 = rnd.getSqrInt( ParPop.getCurPopSize() );
-		const ptype* const CrossParams1 = ParPop.getParamsOrdered( si1 );
+		const ptype* const CrossParams1 = ParPop.getParamsOrdered(
+			rnd.getSqrInt( ParPop.getCurPopSize() ));
 
 		const CBitePop& AltPop = selectAltPop( 2, rnd );
 
@@ -1039,12 +1044,12 @@ protected:
 		{
 			// Produce a random bit-mixing mask.
 
-			const ptype crpl = (ptype) ( rnd.getRaw() & IntMantMask );
+			const ptype crpl = rnd.getRaw() & IntMantMask;
 
 			Params[ i ] = ( CrossParams1[ i ] & crpl ) |
 				( CrossParams2[ i ] & ~crpl );
 
-			// Randomize a single bit, with 50% probability.
+			// Randomize a single bit, in TPDF manner.
 
 			const int b = rnd.getInt( IntMantBits );
 
@@ -1105,6 +1110,11 @@ protected:
 					rnd.getBit() ][ i ];
 			}
 		}
+
+		// Simple XOR randomize.
+
+		Params[ rnd.getInt( ParamCount )] ^=
+			( rnd.getRaw() & IntMantMask ) >> rnd.getSqrInt( 54 );
 	}
 
 	/**
@@ -1319,11 +1329,12 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const int si1 = rnd.getInt( CurPopSize );
-		const ptype* const rp1 = getParamsOrdered( si1 );
+		const ptype* const rp1 = getParamsOrdered(
+			rnd.getInt( CurPopSize ));
 
-		const int si2 = rnd.getSqrInt( CurPopSize );
-		const ptype* const rp2 = getParamsOrdered( CurPopSize1 - si2 );
+		const ptype* const rp2 = getParamsOrdered( CurPopSize1 -
+			rnd.getSqrInt( CurPopSize ));
+
 		int i;
 
 		// Such overall sign inversion seems unuseful, but has benefits in
@@ -1355,11 +1366,12 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const int si1 = rnd.getSqrInt( CurPopSize );
-		const ptype* const rp1 = getParamsOrdered( si1 );
+		const ptype* const rp1 = getParamsOrdered(
+			rnd.getSqrInt( CurPopSize ));
 
-		const int si2 = rnd.getSqrInt( CurPopSize );
-		const ptype* const rp2 = getParamsOrdered( CurPopSize1 - si2 );
+		const ptype* const rp2 = getParamsOrdered( CurPopSize1 -
+			rnd.getSqrInt( CurPopSize ));
+
 		int i;
 
 		// Calculate centroid.
@@ -1412,8 +1424,8 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const int si0 = rnd.getInt( CurPopSize );
-		const ptype* const rp0 = getParamsOrdered( si0 );
+		const ptype* const rp0 = getParamsOrdered(
+			rnd.getInt( CurPopSize ));
 
 		const ptype* const rp1 = getParamsOrdered(
 			rnd.getPowInt( 4.0, CurPopSize ));
@@ -1448,35 +1460,31 @@ protected:
 
 	/**
 	 * Solution generator that estimates population's standard deviation using
-	 * 4 solutions, and then generates a solution using Gaussian sampling
-	 * around centroid.
+	 * better and worse solutions, and then generates a solution using
+	 * Gaussian sampling around centroid.
 	 */
 
 	void generateSol12( CBiteRnd& rnd )
 	{
 		ptype* const Params = TmpParams;
 
-		const int si1 = rnd.getPowInt( 3.0, CurPopSize );
-		const ptype* const rp1 = getParamsOrdered( si1 );
-		const ptype* const rp2 = getParamsOrdered( CurPopSize1 - si1 );
+		const ptype* const rp1 = getParamsOrdered(
+			rnd.getSqrInt( CurPopSize ));
 
-		const int si3 = rnd.getPowInt( 3.0, CurPopSize );
-		const ptype* const rp3 = getParamsOrdered( si3 );
-		const ptype* const rp4 = getParamsOrdered( CurPopSize1 - si3 );
+		const ptype* const rp2 = getParamsOrdered( CurPopSize1 -
+			rnd.getSqrInt( CurPopSize ));
 
 		const ptype* const rpc = getCentroid();
-
 		double r = 0.0;
 		int i;
 
 		for( i = 0; i < ParamCount; i++ )
 		{
 			const double d1 = rp2[ i ] - rp1[ i ];
-			const double d2 = rp4[ i ] - rp3[ i ];
-			r += d1 * d1 + d2 * d2;
+			r += d1 * d1;
 		}
 
-		r = sqrt( r / ( ParamCount * 2 ));
+		r = sqrt( r / ParamCount );
 
 		for( i = 0; i < ParamCount; i++ )
 		{
@@ -1541,8 +1549,8 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			TmpParams[ i ] = (ptype) (( NewValues[ i ] -
-				MinValues[ i ]) * DiffValuesI[ i ]);
+			TmpParams[ i ] = (ptype) (( NewValues[ i ] - MinValues[ i ]) *
+				DiffValuesI[ i ]);
 		}
 
 		UpdPop -> updatePop( NewCost, TmpParams, false );

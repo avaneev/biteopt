@@ -3,7 +3,7 @@
 ## Introduction ##
 
 BITEOPT is a free open-source stochastic non-linear bound-constrained
-derivative-free optimization method (algorithm, heuristic, or strategy), for
+derivative-free optimization method (algorithm, heuristic, or strategy) for
 global optimization. The name "BiteOpt" is an acronym for "BITmask Evolution
 OPTimization".
 
@@ -16,10 +16,10 @@ optimization attempts to reach optimum.
 Instead of iterating through different "starting guesses" to find optimum
 like in deterministic methods, this method requires optimization attempts
 with different random seeds. The stochastic nature of the method allows it to
-automatically "fall" into different competing minima with each attempt. If
-there are no competing minima in a function available (or the true/global
-minimum is rogue and cannot be detected), this method in absolute majority of
-attempts returns the same optimum.
+automatically "fall" into different competing minima at each attempt. If there
+are no competing minima in a function present (or the true/global minimum is
+rogue and cannot be detected), this method in absolute majority of attempts
+returns the same optimum.
 
 BiteOpt uses self-optimization techniques making it objective
 function-agnostic. In its inner workings, BiteOpt uses objective function
@@ -27,6 +27,12 @@ value's ranking, and not the actual value. BiteOpt is a multi-faceted example
 of a "probabilistic computing" system.
 
 Python binding is available as a part of [fcmaes library](https://github.com/dietmarwo/fast-cma-es)
+
+## Sponsoring ##
+
+If you are regularly using BiteOpt in a commercial environment, you may
+consider donating/sponsoring the project. Please contact the author via
+aleksey.vaneev@gmail.com or info@voxengo.com.
 
 ## Comparison ##
 
@@ -131,7 +137,7 @@ user-adjustable hyper-parameters. Even population size adjustments may not be
 effective.
 
 It is usually necessary to run the optimization process several times, with
-different random seeds, since the process may get stuck in a local minimum.
+different random seeds, since the process may get stuck at a local minimum.
 Running 10 times is a minimal general requirement. The required number of
 optimization attempts is usually proportional to the number of strongly
 competing minima in a function. 
@@ -185,7 +191,7 @@ easily. Another class of optimums the method cannot cope with well are
 "shadowed" optimums - the optimums that are located very close to opposite
 extremums.
 
-To a small degree, this method is immune to noise in the objective function.
+To some degree, this method is immune to noise in the objective function.
 While this method was designed to be applied to continuous functions, it is
 immune to discontinuities, and it can solve problems that utilize parameter
 value rounding (integer parameters). This method usually can't acceptably
@@ -272,28 +278,27 @@ tested with this method. In practice, on a large set of problems, this method
 finds a feasible solution in up to 97% of cases.
 
 ```c
-real_cost = cost;
+real_value = cost;
 
 if( con_notmet > 0 )
 {
-    const double ps = pow( 3.0, 1.0 / n_con );
-	const double pnsi = 1.0 / sqrt( (double) n_con );
+    const double ps = 1.0 + 1.0 / n_con;
     double pns = 0.0;
 
     for( int i = 0; i < n_con; i++ )
     {
         const double v = pn[ i ];
-        pns = pns * ps + pnsi + v + v * v + v * v * v;
+        pns = ( 1.0 + pns ) * ps + ( v + v * v + v * v * v ) * 0.33333;
     }
 
-    cost += 1e10 * ( 1.0 + pns );
+    cost += 1e10 * pns;
 }
 ```
 
 In essence, this approach transforms each penalty value into a cubic penalty
-value, places each penalty value into its own "stratum" (via "pnsi" offset),
-and also applies a "barrier value". The barrier value (1e10) is suitably
-large for most practical constraint programming problems.
+value, places each penalty value into its own "stratum" (via "1.0" offset and
+"ps" multiplier), and also applies a "barrier value". The barrier value (1e10)
+is suitably large for most practical constraint programming problems.
 
 See `constr.cpp` for an example of constraint programming. `constr2.cpp` is an
 example of non-linear constraint programming with both non-equalities and
@@ -309,8 +314,8 @@ rounding should be used on integer variables.
 
 BiteOpt does not offer MOO "out of the box". However, BiteOpt can successfully
 solve MOO problems via direct hyper-volume optimization. This approach
-requires a hyper-volume tracker that keeps track of a certain number of
-improving solutions and updates its state (and hyper-volume estimate) on each
+requires a hyper-volume tracker which keeps track of a certain number of
+improving solutions, and updates its state (and hyper-volume estimate) on each
 objective function evaluation (optcost). The approach is demonstrated in
 [fcmaes tutorial - quantumcomm.py](https://github.com/dietmarwo/fast-cma-es/blob/master/examples/esa2/quantumcomm.py).
 
@@ -341,7 +346,8 @@ symmetric FIR filters. Namely, in
 [r8brain-free-src](https://github.com/avaneev/r8brain-free-src)
 sample rate converter.
 
-* BiteOpt is featured as an optimizer in [M-Star CFD physical modeling system](http://docs.mstarcfd.com/10_Running_the_Solver/m-star-optimizer.html)
+* BiteOpt is featured as an optimizer in
+[M-Star CFD physical modeling system](http://docs.mstarcfd.com/10_Running_the_Solver/m-star-optimizer.html)
 
 * A variety of tutorial problems in fcmaes library:
 [5G network planning](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/5G.adoc),
@@ -449,13 +455,13 @@ in 4% of objective function evaluations, on average.
 BiteOpt is an evolutionary optimization method. Unlike many established
 optimization methods like CMA-ES where new populations are generated on each
 iteration, with or without combining with the previous generation, BiteOpt
-keeps and updates a single main population of solutions at any given time. A
-new solution either replaces a worst solution or is discarded. In common terms
-it means that population has some fixed "living space" which is only available
-to the best fit (least cost) solutions. Structurally, this is similar to a
-natural evolutionary environment which usually offers only a limited "living
-space" to its members. Least fit members have little chance to stay in this
-"living space".
+keeps and updates a single main population of solutions, at any given time. A
+new solution either replaces a worst solution or is discarded. In common
+terms, it means that population has some fixed "living space" which is only
+available to the best fit (least cost) solutions. Structurally, this is
+similar to a natural evolutionary environment which usually offers only a
+limited "living space" to its members. Least fit members have little chance to
+stay in this "living space".
 
 BiteOpt uses several functions to generate new solutions, each function taking
 various information from various internal populations. These functions are
@@ -501,11 +507,11 @@ A cost-ordered population of previous solutions is maintained. A solution
 is an independent parameter vector which can be used to generate/compose a new
 candidate solution by a selected solution generator. On every iteration, the
 method utilizes a probabilistically-chosen candidate solution generator. At
-start, the solution vectors are initialized at the center of the search space,
-using Gaussian sampling.
+the start, the solution vectors are initialized at the center of the search
+space, using Gaussian sampling.
 
 Beside the main population, the method keeps several "parallel populations"
-that are updated on the basis of proximity of candidate solution to a given
+that are updated on the basis of proximity of a candidate solution to a given
 population's centroid. As a result, these populations tend to slightly
 diverge from both each other and the main population.
 
@@ -531,7 +537,7 @@ population. The solutions of parallel optimizers are kept in additional
 independent populations, and they can be used by the solution generators.
 
 After each objective function evaluation, the highest-cost previous solution
-is replaced using the upper bound cost constraint.
+is replaced, if new solution's cost meets the upper bound cost constraint.
 
 ### Solution Generators ###
 
@@ -541,6 +547,13 @@ generators can't work well on their own (they work due to synergistic
 effects), and are used to increase the diversity of solution approaches. In
 some instances a generator may produce an acceptable solution only once per 50
 calls, but this solution may make a big difference in a long run.
+
+Some solution generators work well for discrete problems, but may perform
+poorly for continuous optimization; some are good for both. In the main
+4-method flow-path, paths 0, 2, and 3 feature solution generators that solve
+discrete problems well - they are staple solution generators, while path 1
+includes additional, less important, generators. An ability to solve discrete
+problems improves method's tolerance to noise.
 
 The availability of many solution generators seems to be essential for solving
 discrete and noisy problems. While generators 1, 2, 3 can be considered
@@ -579,7 +592,7 @@ the chosen best solution.
 $$ x_\text{new}=x_\text{best}+\frac{(x_\text{rand}-x_\text{worst}+
 (x_\text{rand2}-x_\text{rand3}))}{2} $$
 
-3. Involves the best solution, centroid vector, and a random solution.
+3. Involves a better solution, centroid vector, and a random worse solution.
 
 $$ x_\text{new}[i]=x_\text{best}[i]+x_\text{rand}[i]+(-1)^{s}(x_\text{cent}[i]-
 x_\text{rand}[i]), \quad i=1,\ldots,N,\\ \quad s\in\{1,2\}=
@@ -628,9 +641,9 @@ move in a random direction having a magnitude derived as a distance between a
 better and worse solutions (limits the magnitude to the current basin of
 solutions).
 
-12. Solution generator that estimates population's standard deviation using 4
-solutions, and then generates a solution using Gaussian sampling around
-centroid.
+12. Solution generator that estimates population's standard deviation using
+better and worse solutions, and then generates a solution using Gaussian
+sampling around centroid.
 
 ## SMA-ES ##
 
@@ -706,12 +719,6 @@ the population-handling framework of BiteOpt. "DE/best-2/3/bit". Mutation
 parameter is fixed, equals to 0.25. Instead of a crossover, the method uses
 randomization. Population size is equal to 30\*Dims, by default. Population is
 initialized with Gaussian sampling.
-
-## Sponsoring ##
-
-If you are regularly using BiteOpt in a commercial environment, you may
-consider donating/sponsoring the project. Please contact the author via
-aleksey.vaneev@gmail.com or info@voxengo.com.
 
 ## Citing ##
 

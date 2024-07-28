@@ -105,18 +105,16 @@ public:
 
 		if( con_notmet > 0 )
 		{
-			const double ps = pow( 3.0, 1.0 / n_con );
-			const double pnsi = 1.0 / sqrt( (double) n_con );
+			const double ps = 1.0 + 1.0 / n_con;
 			double pns = 0.0;
 
 			for( i = 0; i < n_con; i++ )
 			{
 				const double v = pn[ i ];
-				const double v2 = v * v;
-				pns = pns * ps + pnsi + v + v2 + v * v2;
+				pns = ( 1.0 + pns ) * ps + ( v + v * v + v * v * v ) * 0.33333;
 			}
 
-			cost += 1e10 * ( 1.0 + pns );
+			cost += 1e10 * pns;
 		}
 
 		return( cost );
