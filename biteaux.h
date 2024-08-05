@@ -3,7 +3,7 @@
 /**
  * @file biteaux.h
  *
- * @version 2024.3
+ * @version 2024.4
  *
  * @brief The inclusion file for the CBiteRnd, CBitePop, CBiteParPops,
  * CBiteOptInterface, and CBiteOptBase classes.
@@ -82,7 +82,7 @@ public:
 	 * Function initializes *this PRNG object.
 	 *
 	 * @param NewSeed New random seed value. Ignored, if "arf" is non-NULL.
-     * @param arf External random number generator to use; NULL: use the
+	 * @param arf External random number generator to use; NULL: use the
 	 * default PRNG. Note that the external RNG should be seeded externally.
 	 * @param ardata Data pointer to pass to the "arf" function.
 	 */
@@ -635,7 +635,9 @@ class CBitePop
 {
 public:
 	CBitePop()
-		: ParamCount( 0 )
+		: MantMult( IntMantMult )
+		, MantMultInv( 1.0 / IntMantMult )
+		, ParamCount( 0 )
 		, PopSize( 0 )
 		, CnsCount( 0 )
 		, ObjCount( 0 )
@@ -841,8 +843,8 @@ public:
 
 	/**
 	 * Function returns pointer to the centroid vector. The NeedUpdateCent
-	 * should be checked and and if it is equal to "true", the
-	 * updateCentroid() function called.
+	 * may needed to be checked, and if it is equal to "true", the
+	 * updateCentroid() function should be called in advance.
 	 */
 
 	const ptype* getCentroid() const
@@ -857,7 +859,7 @@ public:
 	 * @param i Parameter vector index.
 	 */
 
-	const ptype* getParamsOrdered( const int i ) const
+	ptype* getParamsOrdered( const int i ) const
 	{
 		return( PopParams[ i ]);
 	}
@@ -959,7 +961,9 @@ public:
 	/**
 	 * Function increases current population size, and updates the required
 	 * variables. This function can only be called if CurPopSize is less than
-	 * PopSize, and previously the whole population was filled.
+	 * PopSize, and previously the whole population was filled. Note that
+	 * if centroid update is needed, the NeedCentUpdate should be explicitly
+	 * set to "true".
 	 */
 
 	void incrCurPopSize()
@@ -967,14 +971,15 @@ public:
 		CurPopSize++;
 		CurPopSizeI = 1.0 / CurPopSize;
 		CurPopSize1++;
-		NeedCentUpdate = true;
 		CentLPC = calcLP1Coeff( CurPopSize );
 	}
 
 	/**
 	 * Function decreases current population size, and updates the required
 	 * variables. This function can only be called if CurPopSize is greater
-	 * than 1, and the whole population was filled.
+	 * than 1, and the whole population was filled. Note that if centroid
+	 * update is needed, the NeedCentUpdate should be explicitly set to
+	 * "true".
 	 */
 
 	void decrCurPopSize()
@@ -982,8 +987,34 @@ public:
 		CurPopSize--;
 		CurPopSizeI = 1.0 / CurPopSize;
 		CurPopSize1--;
-		NeedCentUpdate = true;
 		CentLPC = calcLP1Coeff( CurPopSize );
+	}
+
+	/**
+	 * Function removes an item from the population.
+	 *
+	 * @param p Population's solution index, should be within
+	 * the [0; CurPopPos - 1] range.
+	 */
+
+	void removeSol( const int p )
+	{
+		if( CurPopPos == 0 )
+		{
+			return;
+		}
+
+		const int ri = CurPopPos - 1;
+
+		if( p < ri )
+		{
+			ptype** const pp = PopParams + p;
+			ptype* const rp = *pp;
+			memmove( pp, pp + 1, ( ri - p ) * sizeof( pp[ 0 ]));
+			PopParams[ ri ] = rp;
+		}
+
+		CurPopPos--;
 	}
 
 	/**
@@ -996,12 +1027,18 @@ public:
 	 * @param UpdParams New parameter values.
 	 * @param DoUpdateCentroid "True" if centroid should be updated using
 	 * running sum. This update is done for parallel populations.
+	 * @param ReplaceThrN8 Solution's index threshold as
+	 * CurPopSize mul ReplaceThrN8 div 8. If solution's index is below this
+	 * value, and new cost is same as existing cost, a new solution will
+	 * replace an existing solution in the population. Such replacing reduces
+	 * diversity of competing same-cost best solutions, and usually improves
+	 * convergence.
 	 * @return Insertion position - greater or equal to PopSize, if the cost
 	 * constraint was not met.
 	 */
 
 	int updatePop( double UpdCost, const ptype* const UpdParams,
-		const bool DoUpdateCentroid = false )
+		const bool DoUpdateCentroid = false, const int ReplaceThrN8 = 0 )
 	{
 		int ri; // Index of population vector to be replaced.
 
@@ -1019,7 +1056,7 @@ public:
 			ri = PopSize1;
 
 			if( UpdCost != UpdCost || // Check for NaN.
-				UpdCost >= *getRankPtr( PopParams[ ri ]))
+				UpdCost > *getRankPtr( PopParams[ ri ]))
 			{
 				return( PopSize );
 			}
@@ -1044,24 +1081,51 @@ public:
 			}
 		}
 
+		bool DoReplace = false;
+		bool IsEqualCost = false;
+
 		if( CurPopPos < PopSize )
 		{
 			CurPopPos++;
 		}
+		else
+		{
+			if( isEqual( UpdCost, *getRankPtr( PopParams[ p ])))
+			{
+				IsEqualCost = true;
 
-		ptype* const rp = PopParams[ ri ];
+				if( p != 0 && p < CurPopSize * ReplaceThrN8 / 8 &&
+					isParams1FartherThan2( PopParams[ p ], UpdParams,
+					PopParams[ 0 ]))
+				{
+					DoReplace = true;
+				}
+			}
+		}
 
-		const int mc = ri - p;
-		ptype** const pp = PopParams + p;
-		memmove( pp + 1, pp, mc * sizeof( pp[ 0 ]));
+		ptype* rp;
 
-		*pp = rp;
+		if( DoReplace )
+		{
+			rp = PopParams[ p ];
+		}
+		else
+		{
+			rp = PopParams[ ri ];
+
+			const int mc = ri - p;
+			ptype** const pp = PopParams + p;
+			memmove( pp + 1, pp, mc * sizeof( pp[ 0 ]));
+
+			*pp = rp;
+		}
+
 		*getObjPtr( rp ) = UpdCost;
 		*getRankPtr( rp ) = UpdCost;
 
 		if( rp != UpdParams )
 		{
-			if( DoUpdateCentroid )
+			if( DoUpdateCentroid && !NeedCentUpdate )
 			{
 				ptype* const cp = CentParams;
 				const double lpc = CentLPC;
@@ -1080,10 +1144,23 @@ public:
 		}
 		else
 		{
-			NeedCentUpdate = true;
+			if( DoUpdateCentroid && !NeedCentUpdate )
+			{
+				ptype* const cp = CentParams;
+				const double lpc = CentLPC;
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					cp[ i ] += (ptype) (( UpdParams[ i ] - cp[ i ]) * lpc );
+				}
+			}
+			else
+			{
+				NeedCentUpdate = true;
+			}
 		}
 
-		return( p );
+		return( IsEqualCost ? PopSize : p );
 	}
 
 protected:
@@ -1102,6 +1179,8 @@ protected:
 		///< IntMantMult * 2.
 	static const int64_t IntMantMask = IntMantMult - 1; ///< Mask that
 		///< corresponds to mantissa.
+	double MantMult; ///< = IntMantMult.
+	double MantMultInv; ///< = 1.0 / IntMantMult.
 
 	int ParamCount; ///< The total number of internal parameter values in use.
 	double ParamCountI; ///< = 1.0 / ParamCount.
@@ -1184,12 +1263,13 @@ protected:
 	 *
 	 * @param a Value 1.
 	 * @param b Value 2.
+	 * @param etol Value equality tolerance.
 	 * @return "True" if values are equal.
 	 */
 
-	static bool isEqual( const double a, const double b )
+	static bool isEqual( const double a, const double b,
+		const double etol = 0x1p-52 )
 	{
-		static const double etol = 0x1p-52;
 		const double d = fabs( b - a );
 
 		if( d == 0.0 )
@@ -1205,6 +1285,34 @@ protected:
 		}
 
 		return( false );
+	}
+
+	/**
+	 * Function compares distances of parameter vectors 1 and 2 to a reference
+	 * vector, and returns "true" if distance 1 is greater than 2.
+	 *
+	 * @param p1 Parameter vector 1.
+	 * @param p2 Parameter vector 2.
+	 * @param RefParams Reference parameter vector.
+	 */
+
+	bool isParams1FartherThan2( const ptype* const p1, const ptype* const p2,
+		const ptype* const RefParams ) const
+	{
+		double s0 = 0.0;
+		double s1 = 0.0;
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			const ptype v = RefParams[ i ];
+			const double d0 = (double) ( p1[ i ] - v );
+			const double d1 = (double) ( p2[ i ] - v );
+			s0 += d0 * d0;
+			s1 += d1 * d1;
+		}
+
+		return( s0 > s1 );
 	}
 
 	/**
@@ -1397,14 +1505,14 @@ protected:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const ptype v = -Params[ i ];
-				const double d0 = (double) ( v + c0[ i ]);
-				const double d1 = (double) ( v + c1[ i ]);
+				const ptype v = Params[ i ];
+				const double d0 = (double) ( c0[ i ] - v );
+				const double d1 = (double) ( c1[ i ] - v );
 				s0 += d0 * d0;
 				s1 += d1 * d1;
 
-				const double d2 = (double) ( v + c2[ i ]);
-				const double d3 = (double) ( v + c3[ i ]);
+				const double d2 = (double) ( c2[ i ] - v );
+				const double d3 = (double) ( c3[ i ] - v );
 				s2 += d2 * d2;
 				s3 += d3 * d3;
 			}
@@ -1426,13 +1534,13 @@ protected:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const ptype v = -Params[ i ];
-				const double d0 = (double) ( v + c0[ i ]);
-				const double d1 = (double) ( v + c1[ i ]);
+				const ptype v = Params[ i ];
+				const double d0 = (double) ( c0[ i ] - v );
+				const double d1 = (double) ( c1[ i ] - v );
 				s0 += d0 * d0;
 				s1 += d1 * d1;
 
-				const double d2 = (double) ( v + c2[ i ]);
+				const double d2 = (double) ( c2[ i ] - v );
 				s2 += d2 * d2;
 			}
 
@@ -1450,9 +1558,9 @@ protected:
 
 			for( i = 0; i < ParamCount; i++ )
 			{
-				const ptype v = -Params[ i ];
-				const double d0 = (double) ( v + c0[ i ]);
-				const double d1 = (double) ( v + c1[ i ]);
+				const ptype v = Params[ i ];
+				const double d0 = (double) ( c0[ i ] - v );
+				const double d1 = (double) ( c1[ i ] - v );
 				s0 += d0 * d0;
 				s1 += d1 * d1;
 			}
@@ -1620,6 +1728,8 @@ public:
 
 protected:
 	using CBiteParPops< ptype > :: IntMantMult;
+	using CBiteParPops< ptype > :: MantMult;
+	using CBiteParPops< ptype > :: MantMultInv;
 	using CBiteParPops< ptype > :: ParamCount;
 	using CBiteParPops< ptype > :: CurPopPos;
 	using CBiteParPops< ptype > :: resetCurPopPos;
@@ -1729,8 +1839,8 @@ protected:
 			{
 				const double d = MaxValues[ i ] - MinValues[ i ];
 
-				DiffValues[ i ] = d / IntMantMult;
-				DiffValuesI[ i ] = IntMantMult / d;
+				DiffValues[ i ] = d * MantMultInv;
+				DiffValuesI[ i ] = MantMult / d;
 			}
 		}
 		else
@@ -1892,8 +2002,8 @@ protected:
 			{
 				for( i = 0; i < ParamCount; i++ )
 				{
-					Params[ i ] = wrapParam( rnd, rnd.getGaussian() * StartSD +
-						0.5 );
+					Params[ i ] = wrapParam( rnd, rnd.getGaussian() *
+						StartSD + 0.5 );
 
 					NewValues[ i ] = getRealValue( Params, i );
 				}

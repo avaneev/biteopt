@@ -35,7 +35,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2024.3"
+#define BITEOPT_VERSION "2024.4"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -77,6 +77,7 @@ public:
 		addSel( AltPopSel[ 1 ], "AltPopSel[ 1 ]" );
 		addSel( AltPopSel[ 2 ], "AltPopSel[ 2 ]" );
 		addSel( AltPopSel[ 3 ], "AltPopSel[ 3 ]" );
+		addSel( OldPopSel, "OldPopSel" );
 		addSel( MinSolPwrSel[ 0 ], "MinSolPwrSel[ 0 ]" );
 		addSel( MinSolPwrSel[ 1 ], "MinSolPwrSel[ 1 ]" );
 		addSel( MinSolPwrSel[ 2 ], "MinSolPwrSel[ 2 ]" );
@@ -115,7 +116,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			11 + aParamCount * 3 );
+			10 + aParamCount * 3 );
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -132,7 +133,8 @@ public:
 		ParOpt2.updateDims( aParamCount, aPopSize * 4 / 3 );
 		ParOpt2Pop.initBuffers( aParamCount, aPopSize );
 
-		OldPop.initBuffers( aParamCount, aPopSize );
+		OldPops[ 0 ].initBuffers( aParamCount, aPopSize );
+		OldPops[ 1 ].initBuffers( aParamCount, aPopSize );
 	}
 
 	/**
@@ -172,7 +174,8 @@ public:
 
 		ParOptPop.resetCurPopPos();
 		ParOpt2Pop.resetCurPopPos();
-		OldPop.resetCurPopPos();
+		OldPops[ 0 ].resetCurPopPos();
+		OldPops[ 1 ].resetCurPopPos();
 
 		DoInitEvals = true;
 	}
@@ -354,7 +357,7 @@ public:
 			NewCost = optcost( NewValues );
 		}
 
-		const int p = updatePop( NewCost, TmpParams, true );
+		const int p = updatePop( NewCost, TmpParams, true, 3 );
 
 		if( p > CurPopSize1 )
 		{
@@ -381,16 +384,24 @@ public:
 
 			StallCount = 0;
 
+			ptype* const OldParams = getParamsOrdered( CurPopSize1 );
+
 			if( rnd.get() < ParamCountI )
 			{
-				OldPop.updatePop( *getRankPtr( PopParams[ CurPopSize1 ]),
-					PopParams[ CurPopSize1 ], false );
+				OldPops[ 0 ].updatePop( *getObjPtr( OldParams ), OldParams,
+					false );
+			}
+
+			if( rnd.get() < 2.0 * ParamCountI )
+			{
+				OldPops[ 1 ].updatePop( *getObjPtr( OldParams ), OldParams,
+					false );
 			}
 
 			if( PushOpt != NULL && PushOpt != this &&
 				!PushOpt -> DoInitEvals && p > 1 )
 			{
-				PushOpt -> updatePop( NewCost, TmpParams, true );
+				PushOpt -> updatePop( NewCost, TmpParams, true, 3 );
 				PushOpt -> updateParPop( NewCost, TmpParams );
 			}
 
@@ -430,6 +441,7 @@ protected:
 	CBiteSel< 2 > AltPopPSel; ///< Alternative population use selector.
 	CBiteSel< 2 > AltPopSel[ 4 ]; ///< Alternative population type use
 		///< selectors.
+	CBiteSel< 2 > OldPopSel; ///< Old population use selector.
 	CBiteSel< 4 > MinSolPwrSel[ 4 ]; ///< Power factor selectors, for
 		///< least-cost population index selection.
 	CBiteSel< 4 > MinSolMulSel[ 4 ]; ///< Multiplier selectors, for
@@ -452,7 +464,7 @@ protected:
 	CBiteSel< 4 > Gen8NumSel; ///< Generator method 8's NumSols selector.
 	CBiteSel< 4 > Gen8SpanSel[ 2 ]; ///< Generator method 8's random span
 		///< selectors.
-	CBitePop OldPop; ///< Population of older solutions, updated
+	CBitePop OldPops[ 2 ]; ///< Populations of older solutions, updated
 		///< probabilistically.
 	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
 	bool DoEval; ///< Temporary variable which equals to "true" if the
@@ -629,10 +641,10 @@ protected:
 		const double r1 = rnd.get();
 		const double r12 = r1 * r1;
 		const int ims = (int) ( r12 * r12 * 48.0 );
-		const ptype imask = IntMantMask >> ims;
+		const ptype imask = ( ims > IntMantBits ? 0 : IntMantMask >> ims );
 
 		const int im2s = rnd.getSqrInt( 96 );
-		const ptype imask2 = ( im2s > 63 ? 0 : IntMantMask >> im2s );
+		const ptype imask2 = ( im2s > IntMantBits ? 0 : IntMantMask >> im2s );
 
 		const int si1 = (int) ( r1 * r12 * ParPop.getCurPopSize() );
 		const ptype* const rp1 = ParPop.getParamsOrdered( si1 );
@@ -885,6 +897,8 @@ protected:
 
 	void generateSol2d( CBiteRnd& rnd )
 	{
+		const CBitePop& OldPop = OldPops[ select( OldPopSel, rnd )];
+
 		if( OldPop.getCurPopPos() < 3 )
 		{
 			generateSol2c( rnd );
@@ -938,7 +952,7 @@ protected:
 		const ptype* const rp1 = getParamsOrdered(
 			getMinSolIndex( 3, rnd, CurPopSize ));
 
-		const ptype* const rp2 = getParamsOrdered(
+		const ptype* const rp2 = getParamsOrdered( CurPopSize1 -
 			rnd.getSqrInt( CurPopSize ));
 
 		const int Mode = select( Gen3ModeSel, rnd );
@@ -1010,8 +1024,11 @@ protected:
 
 		// Simple XOR randomize.
 
+		int b = rnd.getSqrInt( 54 );
+		b = ( b > IntMantBits ? IntMantBits : b );
+
 		Params[ rnd.getInt( ParamCount )] ^=
-			( rnd.getRaw() & IntMantMask ) >> rnd.getSqrInt( 54 );
+			( rnd.getRaw() & IntMantMask ) >> b;
 	}
 
 	/**
@@ -1113,8 +1130,11 @@ protected:
 
 		// Simple XOR randomize.
 
+		int b = rnd.getSqrInt( 54 );
+		b = ( b > IntMantBits ? IntMantBits : b );
+
 		Params[ rnd.getInt( ParamCount )] ^=
-			( rnd.getRaw() & IntMantMask ) >> rnd.getSqrInt( 54 );
+			( rnd.getRaw() & IntMantMask ) >> b;
 	}
 
 	/**
@@ -1216,24 +1236,35 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const bool UseOldPop = ( OldPop.getCurPopPos() > 2 );
+		const CBitePop& OldPop = OldPops[ 1 ];
+		const int OldPopPos = OldPop.getCurPopPos();
+
 		static const double p[ 4 ] = { 1.5, 1.75, 2.0, 2.25 };
 		const double pwr = p[ select( Gen7PowFacSel, rnd )];
 		int i;
 
-		for( i = 0; i < ParamCount; i++ )
+		if( OldPopPos < 3 )
 		{
-			const double rv = rnd.getPow( pwr );
-
-			if( UseOldPop && rnd.getBit() && rnd.getBit() )
-			{
-				Params[ i ] = OldPop.getParamsOrdered(
-					(int) ( rv * OldPop.getCurPopPos() ))[ i ];
-			}
-			else
+			for( i = 0; i < ParamCount; i++ )
 			{
 				Params[ i ] = getParamsOrdered(
-					(int) ( rv * CurPopSize ))[ i ];
+					rnd.getPowInt( pwr, CurPopSize ))[ i ];
+			}
+		}
+		else
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				if( rnd.getBit() && rnd.getBit() )
+				{
+					Params[ i ] = OldPop.getParamsOrdered(
+						rnd.getPowInt( pwr, OldPopPos ))[ i ];
+				}
+				else
+				{
+					Params[ i ] = getParamsOrdered(
+						rnd.getPowInt( pwr, CurPopSize ))[ i ];
+				}
 			}
 		}
 	}

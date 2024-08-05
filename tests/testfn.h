@@ -4229,8 +4229,7 @@ const CTestFn* OptCorpusNDRotOfsSol[] = { &TestFnSchwefel220,
 
 // Failing functions.
 
-const CTestFn* TestCorpusFail[] = { &TestFnDamavandi, &TestFnBukin6,
-	&TestFnDeVilliersGlasser02, NULL };
+const CTestFn* TestCorpusFail[] = { &TestFnBukin6, NULL };
 
 // Failing functions requiring more than 2000 iterations to converge.
 
@@ -4244,26 +4243,27 @@ const CTestFn* TestCorpusFailTime[] = { &TestFnTrid10,
 
 // Test corpus including all solvable functions.
 
-const CTestFn* TestCorpusAll[] = { &TestFnTripod, &TestFnXor,
-	&TestFnLangerman5, &TestFnPowerSum, &TestFnTrefethen, &TestFnMishra03,
-	&TestFnEggHolder, &TestFnDolan, &TestFnZimmerman, &TestBiprime203,
-	&TestFnRipple01, &TestFnMishra04, &TestFnStochastic, &TestFnSchmidtVetters,
-	&TestFnHartman6, &TestFnKowalik, &TestFnPrice03, &TestFnMeyerRoth,
-	&TestFnMishra06, &TestFnBeale, &TestFnDeceptive, &TestFnBranin02,
-	&TestFnPeaks, &TestFnHansen, &TestFnComplexHolderTable, &TestFnAlpine2,
-	&TestFnUrsemWaves, &TestFnLevy05, &TestFnLunacekBiRastrigin,
-	&TestFnFreudensteinRoth, &TestFnShekel05, &TestFnShekel07,
-	&TestFnShekel10, &TestFnTrid6, &TestFnMishra05, &TestFnWhitley,
-	&TestFnCrossLegTable, &TestFnCrownedCross, &TestFnRana,
-	&TestFnElAttarVidyasDutta, &TestFnSchaffer03, &TestFnSchaffer04,
-	&TestFnOddSquare, &TestFnMishra09, &TestFnJudge, &TestFnTestTubeHolder,
-	&TestFnLangermann, &TestFnHelicalValley, &TestFnShubert01,
-	&TestFnPowellBadlyScaled, &TestFnAckley4, &TestFnColville,
-	&TestFnMichalewicz, &TestFnModifiedRosenbrock, &TestFnGoldsteinPrice,
-	&TestFnXinSheYang01, &TestFnChenBird, &TestFnZagros, &TestFnDeJong5,
-	&TestFnChichinadze, &TestFnLennardJones, &TestFnHartman3,
-	&TestFnMultiGaussian, &TestFnBranin01, &TestFnGear, &TestFnMullerBrown,
-	&TestFnTrigonometric01, &TestFnPeriodic,
+const CTestFn* TestCorpusAll[] = { &TestFnPowerSum, &TestFnXor,
+	&TestFnMishra03, &TestFnDolan, &TestFnTrefethen, &TestFnDamavandi,
+	&TestFnBranin02, &TestFnLangerman5, &TestFnEggHolder, &TestFnMishra04,
+	&TestFnZimmerman, &TestBiprime203, &TestFnModifiedRosenbrock,
+	&TestFnWhitley, &TestFnRipple01, &TestFnUrsemWaves, &TestFnBiggsExp4,
+	&TestFnHartman6, &TestFnTripod,	&TestFnStochastic,
+	&TestFnPowellBadlyScaled, &TestFnMishra05, &TestFnMeyerRoth,
+	&TestFnPrice03,	&TestFnRana, &TestFnKowalik, &TestFnDeceptive,
+	&TestFnHelicalValley, &TestFnTrid6, &TestFnLennardJones, &TestFnChenBird,
+	&TestFnHansen, &TestFnComplexHolderTable, &TestFnAlpine2, &TestFnLevy05,
+	&TestFnElAttarVidyasDutta, &TestFnLunacekBiRastrigin,
+	&TestFnLunacekBiSphere, &TestFnFreudensteinRoth, &TestFnShekel05,
+	&TestFnShekel07, &TestFnShekel10, &TestFnColville, &TestFnSchaffer03,
+	&TestFnSchaffer04, &TestFnMishra09, &TestFnLangermann, &TestFnAckley4,
+	&TestFnCrossLegTable, &TestFnCrownedCross, &TestFnOddSquare, &TestFnJudge,
+	&TestFnTestTubeHolder, &TestFnShubert01, &TestFnSchmidtVetters,
+	&TestFnMishra06, &TestFnBeale, &TestFnPeaks, &TestFnMichalewicz,
+	&TestFnGoldsteinPrice, &TestFnXinSheYang01, &TestFnZagros, &TestFnDeJong5,
+	&TestFnChichinadze, &TestFnHartman3, &TestFnMultiGaussian,
+	&TestFnBranin01, &TestFnGear, &TestFnMullerBrown, &TestFnTrigonometric01,
+	&TestFnPeriodic,
 
 	&TestFnChenV, &TestFnThreeHumpCamel, &TestFnBooth, &TestFnMatyas,
 	&TestFnSphere, &TestFnLevy13, &TestFnSchaffer01, &TestFnSchaffer02,
@@ -4307,9 +4307,8 @@ const CTestFn* TestCorpusAll[] = { &TestFnTripod, &TestFnXor,
 	&TestFnPermFunction01, &TestFnPermFunction02, &TestFnPinter,
 	&TestFnHolderTable1, &TestFnSchwefel225, &TestFnRosenbrockDisk,
 	&TestFnSineEnvelope, &TestFnPowellSingular, &TestFnBiggsExp2,
-	&TestFnBiggsExp3, &TestFnBiggsExp4, &TestFnHilbert,
-	&TestTridiagonalMatrix, &TestFnRipple25, &TestFnSargan, &TestFnFriedman,
-	&TestFnF2, &TestFnInvertedCosine, &TestFnSinusoidal,
-	&TestFnLunacekBiSphere, &TestSphericalSinc, &TestFnCigar, NULL };
+	&TestFnBiggsExp3, &TestFnHilbert, &TestTridiagonalMatrix, &TestFnRipple25,
+	&TestFnSargan, &TestFnFriedman, &TestFnF2, &TestFnInvertedCosine,
+	&TestFnSinusoidal, &TestSphericalSinc, &TestFnCigar, NULL };
 
 #endif // TESTFN_INCLUDED

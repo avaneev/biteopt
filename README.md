@@ -46,7 +46,7 @@ This method was compared with the results of this paper (on 244 published C
 non-convex smooth problems, convex and non-convex non-smooth problems were not
 evaluated): [Comparison of derivative-free optimization
 algorithms](https://sahinidis.coe.gatech.edu/?q=dfocomp).
-This method was able to solve 77% of non-convex smooth problems in 10
+This method was able to solve 76% of non-convex smooth problems in 10
 attempts, 2500 iterations each. It comes 2nd in the comparison on non-convex
 smooth problems (see Fig.9 in the paper). With a huge iteration budget (up to
 1 million) this method solves 97% of problems.
@@ -255,27 +255,25 @@ Mixed integer programming can be achieved by using rounded parameter values in
 the objective function. Note that using categorical variables may not be
 effective, because they require combinatorial search. Binary variables may be
 used, in small quantities (otherwise the problem usually transforms into
-a combinatorial problem as well). While not very fast, BiteOpt is able to
-solve binary combinatorial problems if the cost function is formulated as
-a sum of differences between bit values and continuous variables in the range
-[0; 1].
+a combinatorial problem as well).
 
-Equality and non-equality constraints can be implemented as penalties. The
-author has found a general effective approach to apply constraints via
-penalties. While penalties are not well-regarded in research community,
-BiteOpt handles constraint penalties extremely well, but usually requiring a
-large iteration budget (suitable for inexpensive objective functions).
+Equality and non-equality constraints - both linear and non-linear - can be
+implemented as penalties. The author has found a general effective approach to
+apply constraints via penalties. While penalties are not well-regarded in
+research community, BiteOpt handles constraint penalties extremely well, but
+usually requiring a large iteration budget (suitable for inexpensive objective
+functions).
 
 In the code below, `n_con` is the number of constraints, `con_notmet` is the
 number of constraints not meeting tolerances, and the `pn[]` is the array of
-linear positive penalty values for each constraint; a penalty value should be
-set to 0 if it meets the tolerance (a penalty value should be offseted by
-tolerance factor to make smooth approach towards 0). For derivative-free
-methods, a suggested constraint tolerance is 10<sup>-4</sup>, but a more
-common 10<sup>-6</sup> can be also used; lower values are not advised for use.
-Models with up to 200 constraints, both equalities and non-equalities, were
-tested with this method. In practice, on a large set of problems, this method
-finds a feasible solution in up to 97% of cases.
+positive penalty values for each constraint; a penalty value should be set to
+0, if it meets the tolerance (a penalty value should be offseted by tolerance
+factor to make smooth approach towards 0). For derivative-free methods, a
+suggested constraint tolerance is 10<sup>-4</sup>, but a more common
+10<sup>-6</sup> can be also used; lower values are not advised for use. Models
+with up to 200 constraints, both equalities and non-equalities, were tested
+with this method. In practice, on a large set of problems, this method finds a
+feasible solution in up to 96% of cases (with 20-30 attempts per problem).
 
 ```c
 real_value = cost;
@@ -301,14 +299,20 @@ value, places each penalty value into its own "stratum" (via "1.0" offset and
 is suitably large for most practical constraint programming problems.
 
 See `constr.cpp` for an example of constraint programming. `constr2.cpp` is an
-example of non-linear constraint programming with both non-equalities and
-equalities. To effectively solve constraint programming problems, the
+example of non-linear constraint programming with both equalities and
+non-equalities. To effectively solve constraint programming problems, the
 CBiteOptDeep class should be used, with M=6 or higher.
 
-It is not advisable to use constraints like (x1-round(x1)=0) commonly used
-in model libraries to force integer or binary values, as such constraint
-formulation does not provide a useful global gradient. Instead, direct
-rounding should be used on integer variables.
+It is not advisable to use constraints like (x1-round(x1)=0) for non-binary
+integer variables, commonly used in model libraries to force integer values,
+as such constraint formulation does not provide a useful global gradient.
+Instead, direct rounding should be used on integer variables.
+
+BiteOpt is able to solve binary combinatorial problems, if the cost function
+is formulated as a sum of differences between bit values and continuous
+variables in the range [0; 1] - these differences can be used as usual
+constraints while binary value equality tolerance can be set to as low as
+10<sup>-12/sup>.
 
 ## Multi-Objective Optimization ##
 
@@ -339,7 +343,8 @@ Namely, [AVIR](https://github.com/avaneev/avir) image resizing algorithm's
 hyper-parameters, digital audio limiter algorithm's parameters.
 
 * Non-linear least-squares problems, see the calcHougen and calcOsborne
-functions in the `testfn.h` file for example problems.
+functions in the `testfn.h` file for example problems, and also the suite of
+NIST/ITL StRD problems in `test_nist.cpp`.
 
 * BiteOptDeep was successfuly used for direct search of optimal short
 symmetric FIR filters. Namely, in
@@ -571,7 +576,6 @@ operations.
 
 $$ mask=(2^{IntMantBits}-1)\gg \lfloor rand(0\ldots1)^4\cdot
 MantSizeSh\rfloor $$
-
 $$ x_\text{new}[i] = \frac{\lfloor x_\text{best}[i]\cdot 2^{IntMantBits}
 \rfloor \bigotimes mask }{2^{IntMantBits}} $$
 
@@ -613,7 +617,6 @@ biological DNA crossing-over, but on a single-bit scale.
 6. The "short-cut" parameter vector generation.
 
 $$ z=x_\text{best}[\text{rand}(1\ldots N)] $$
-
 $$ x_\text{new}[i]=z, \quad i=1,\ldots,N $$
 
 7. A solution generator that randomly combines solutions from the main and

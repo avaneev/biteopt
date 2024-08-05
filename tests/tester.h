@@ -8,13 +8,12 @@
 #include "../smaesopt.h"
 #include "../nmsopt.h"
 #include "../deopt.h"
-//#include "../btopt.h"
 //#include "../dumpopt.h"
 //#include "../gaopt.h"
 //#include "../other/ccmaes.h"
 
-#define OPT_CLASS CBiteOpt//CDEOpt//CBiteOptDeep//CSpherOpt//CSMAESOpt//CCMAESOpt//CDumpOpt//CBTOpt//CGAOpt//CNMSeqOpt//CNMSeqOpt//
-#define OPT_DIMS_PARAMS Dims // updateDims() parameters.
+#define OPT_CLASS CBiteOpt//CBiteOptDeep//CDEOpt//CNMSeqOpt//CSpherOpt//CSMAESOpt//CGAOpt//CNMSeqOpt//CCMAESOpt//CDumpOpt//
+#define OPT_DIMS_PARAMS Dims// updateDims() parameters.
 //#define OPT_PLATEAU_MUL 512 // Uncomment to enable plateau check.
 //#define EVALBINS 1
 #define OPT_STATS 0 // Set to 1 to enable selector statistics output.
@@ -43,35 +42,23 @@ class CSumStats
 public:
 	int SumIt; ///< The overall number of performed function evaluations in
 		///< successful attempts.
-		///<
 	int SumItAll; ///< The overall number of performed function evaluations in
 		///< all attempts.
-		///<
 	double SumIt_l10n; ///< = sum( log( It ) / log( 10 )) in completed
 		///< attempts.
-		///<
 	int SumItImpr; ///< Sum of improving iterations across successful
 		///< attempts.
-		///<
 	int SumItImprAll; ///< Sum of improving iterations across all attempts.
-		///<
 	double SumRjCost; ///< Summary unbiased costs detected in all rejected
 		///< attempts. Geometric mean.
-		///<
 	double SumRMS; ///< = sum( RMS ).
-		///<
 	double SumRMS_l10n; ///< = sum( log( RMS / N ) / log( 10 )).
-		///<
 	int SumRMSCount; ///< The number of elements summed in the SumRMS.
-		///<
 	int TotalAttempts; ///< The overall number of function evaluation attempts.
 		///< Must be set externally.
-		///<
 	int ComplAttempts; ///< The overall number of successful function
 		///< attempts.
-		///<
 	int ComplFuncs; ///< The total number of optimized functions.
-		///<
 
 	#if defined( EVALBINS )
 		static const int binspan = 50;
@@ -84,22 +71,17 @@ public:
 		int SumSelsMap[ CBiteOpt :: MaxSelCount * 10 ]; ///< Sums of
 			///< individual choices associated with selectors over all
 			///< successful attempts.
-			///<
 		int SumSelIncrsMap[ CBiteOpt :: MaxSelCount * 10 ]; ///< Sums of
 			///< individual choice increments associated with selectors over
 			///< all successful attempts.
-			///<
 		int SumSelDecrsMap[ CBiteOpt :: MaxSelCount * 10 ]; ///< Sums of
 			///< individual choice decrements associated with selectors over
 			///< all successful attempts.
-			///<
 		double SumAvgSels[ CBiteOpt :: MaxSelCount ]; ///< Sum of average
 			///< selector choices over all successful attempts.
-			///<
 		double SumDevSels[ CBiteOpt :: MaxSelCount ]; ///< Sum of average
 			///< selector choice deviations (squared) over all successful
 			///< attempts.
-			///<
 	#endif // OPT_STATS
 
 	#if OPT_TIME
@@ -159,13 +141,9 @@ class CFuncStats
 {
 public:
 	double MinCost; ///< Minimal cost detected in all attempts.
-		///<
 	double SumRjCost; ///< Summary rejects cost.
-		///<
 	int ComplAttempts; ///< The number of completed attempts.
-		///<
 	int SumItCompl; ///< Sum of iterations in completed attempts.
-		///<
 
 	CFuncStats()
 	{
@@ -192,67 +170,42 @@ class CTestOpt : public OPT_CLASS
 {
 public:
 	const CTestFn* fn; ///< Test function.
-		///<
 	double CostThreshold; ///< Successful optimization attempt cost threshold.
-		///<
 	CSumStats* SumStats; ///< Pointer to summary statistics object.
-		///<
 	CFuncStats* FuncStats; ///< Pointer to function's statistics
 		///< object.
-		///<
 	CBiteRnd rnd; ///< Random number generator.
-		///<
 	int Dims; ///< Dimensions in the function.
-		///<
 	int MaxIters; ///< Maximal number of iterations per attempt.
-		///<
 	int Index; ///< Attempt index.
-		///<
 	int* Iters; ///< Pointer to array containing finishing iteration counts
 		///< for each attempt.
-		///<
 	double* minv; ///< Minimal parameter values.
-		///<
 	double* maxv; ///< Maximal parameter values.
-		///<
 	double optv; ///< Optimal value.
-		///<
 	double* shifts; ///< Shifts to apply to function parameters.
-		///<
 	double* signs; ///< Signs or scales to apply to function parameters.
-		///<
 	double** rots; ///< Rotation matrix to apply to function parameters,
 		///< should be provided externally if DoRandomizeAll == true.
-		///<
 	double* tp; ///< Temporary parameter storage.
-		///<
 	double* tp2; ///< Temporary parameter storage 2.
-		///<
 	bool DoRandomize; ///< Apply value randomization.
-		///<
 	bool DoRandomizeAll; ///< Apply all randomizations, "false" only
 		///< shift and scale randomizations will be applied.
-		///<
 
 	#if OPT_STATS
 	int SumSels[ CBiteOpt :: MaxSelCount ]; ///< Sum of selector choices.
-		///<
 	int SumSelIncrs[ CBiteOpt :: MaxSelCount ][ 10 ]; ///< Sum of selector
 		///< choice increments.
-		///<
 	int SumSelDecrs[ CBiteOpt :: MaxSelCount ][ 10 ]; ///< Sum of selector
 		///< choice decrements.
-		///<
 	int* Sels[ CBiteOpt :: MaxSelCount ]; ///< Selector choices at each
 		///< optimization step.
-		///<
 	int SelAlloc; ///< The number of items allocated in each Sels element.
-		///<
 	#endif // OPT_STATS
 
 	#if OPT_THREADS && OPT_TIME
 		double funct; ///< Function evaluation timing.
-			///<
 	#endif // OPT_THREADS && OPT_TIME
 
 	CTestOpt()
@@ -586,7 +539,9 @@ public:
 				FuncStats -> SumRjCost += getBestCost();
 				SumStats -> SumItAll += i;
 				SumStats -> SumItImprAll += ImprIters;
-				SumStats -> SumRjCost += log( getBestCost() - optv );
+
+				const double ulr = log( getBestCost() - optv );
+				SumStats -> SumRjCost += ulr;
 
 				break;
 			}
@@ -612,21 +567,13 @@ class CTester
 {
 public:
 	int DefDims; ///< The default number of dimensions to use.
-		///<
 	CSumStats SumStats; ///< Summary statistics.
-		///<
 	double SuccessAt; ///< Average Success attempts, available after run().
-		///<
 	double AvgIt; ///< Average Iters, available after run().
-		///<
 	double AvgIt_l10n; ///< Average Iters/ln(10), available after run().
-		///<
 	double AvgRMS; ///< Average RMS, available after run().
-		///<
 	double AvgRMS_l10n; ///< Average RMS/ln(10), available after run().
-		///<
 	double AvgRjCost; ///< Average reject cost, available after run().
-		///<
 
 	CTester()
 		: RMCacheCount( 0 )
@@ -765,10 +712,10 @@ public:
 				}
 				else
 				{
-					const double d = fabs( opt -> optv ) * -CostThreshold;
+					const double t = -CostThreshold;
+					const double d = fabs( opt -> optv ) * t;
 
-					opt -> CostThreshold =
-						opt -> optv + ( d < 0.01 ? 0.01 : d );
+					opt -> CostThreshold = opt -> optv + ( d < t ? t : d );
 				}
 
 				if( fndata -> DoRandomize )
@@ -1014,7 +961,6 @@ public:
 protected:
 	static const int MaxFuncs = 1000; ///< The maximal number of functions
 		///< possible to add to the tester.
-		///<
 
 	/**
 	 * Structure holds auxilliary function data.
@@ -1024,28 +970,19 @@ protected:
 	{
 		int DefDims; ///< The number of dimensions to use if function
 			///< supports any number of dimensions.
-			///<
 		bool DoRandomize; ///< Perform parameter shift randomization.
-			///<
 		bool DoRandomizeAll; ///< Use all randomization techniques, "false"
 			///< if only shift and scale.
-			///<
 	};
 
 	const CTestFn* Funcs[ MaxFuncs ]; ///< Test functions corpus.
-		///<
 	CTestFnData FuncData[ MaxFuncs ]; ///< Test function aux data.
-		///<
 	int FnCount; ///< Test function count.
-		///<
 	double CostThreshold; ///< Cost threshold (finish criteria).
-		///<
 	int IterCount; ///< Iteration count.
-		///<
 	int InnerIterCount; ///< Inner iteration count (the number of
 		///< optimization calls).
 	bool DoPrint; ///< Print results to stdout.
-		///<
 
 	/**
 	 * Structure that holds cached random rotation matrices for a specified
@@ -1055,13 +992,9 @@ protected:
 	struct CRotMatCacheItem
 	{
 		static const int EntryCount = 2048; ///< The number of cache entries.
-			///<
 		int Dims; ///< Dimension count.
-			///<
 		double* rmbuf[ EntryCount ]; ///< Rotation matrix buffer pointers.
-			///<
 		double** rm[ EntryCount ]; ///< Row-wise rotation matrices pointers.
-			///<
 
 		CRotMatCacheItem()
 			: Dims( 0 )
@@ -1084,12 +1017,9 @@ protected:
 
 	static const int RMCacheSize = 8; ///< The maximal number of different
 		///< dimensionalities supported by cache in the same run.
-		///<
 	int RMCacheCount; ///< The number of cache entires actually used.
-		///<
 	CRotMatCacheItem RMCache[ RMCacheSize ]; ///< Rotation matrix cache for
 		///< different dimensionalities.
-		///<
 
 	/**
 	 * Function creates random rotation matrix. Code from BBOB competition.
