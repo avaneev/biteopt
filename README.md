@@ -1,3 +1,5 @@
+<img src="other/biteopt-title-image.jpg" width="700">
+
 # BITEOPT - Derivative-Free Optimization Method #
 
 ## Introduction ##
