@@ -3,7 +3,7 @@
 /**
  * @file nmsopt.h
  *
- * @version 2024.2
+ * @version 2024.5
  *
  * @brief The inclusion file for the CNMSeqOpt class.
  *
@@ -149,7 +149,6 @@ public:
 		}
 
 		State = stReflection;
-		DoInitEvals = true;
 	}
 
 	/**
@@ -157,26 +156,16 @@ public:
 	 * objective function evaluation.
 	 *
 	 * @param rnd Random number generator.
-	 * @param[out] OutCost If not NULL, pointer to variable that receives cost
-	 * of the newly-evaluated solution.
-	 * @param[out] OutValues If not NULL, pointer to array that receives
-	 * newly-evaluated parameter vector, in real scale.
 	 * @return The number of non-improving iterations so far.
 	 */
 
-	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
-		double* const OutValues = NULL )
+	int optimize( CBiteRnd& rnd )
 	{
 		int i;
 
 		if( DoInitEvals )
 		{
-			y[ CurPopPos ] = eval( rnd, x[ CurPopPos ], OutCost, OutValues );
-
-			if( y[ CurPopPos ] != y[ CurPopPos ]) // Handle NaN.
-			{
-				y[ CurPopPos ] = 1e300;
-			}
+			y[ CurPopPos ] = eval( rnd, x[ CurPopPos ]);
 
 			if( y[ CurPopPos ] < y[ xlo ])
 			{
@@ -214,7 +203,7 @@ public:
 					x1[ i ] = x0[ i ] + alpha * ( x0[ i ] - xH[ i ]);
 				}
 
-				y1 = eval( rnd, x1, OutCost, OutValues );
+				y1 = eval( rnd, x1 );
 
 				if( y1 > y[ xlo ] && y1 < y[ xhi2 ])
 				{
@@ -243,7 +232,7 @@ public:
 					x2[ i ] = x0[ i ] + gamma * ( x0[ i ] - xH[ i ]);
 				}
 
-				const double y2 = eval( rnd, x2, OutCost, OutValues );
+				const double y2 = eval( rnd, x2 );
 				xlo = xhi;
 
 				if( y2 < y1 )
@@ -266,7 +255,7 @@ public:
 					x2[ i ] = x0[ i ] + rho * ( x0[ i ] - xH[ i ]);
 				}
 
-				const double y2 = eval( rnd, x2, OutCost, OutValues );
+				const double y2 = eval( rnd, x2 );
 
 				if( y2 < y[ xhi ])
 				{
@@ -303,7 +292,7 @@ public:
 					xx[ i ] = rx[ i ] + sigma * ( xx[ i ] - rx[ i ]);
 				}
 
-				y[ rj ] = eval( rnd, xx, OutCost, OutValues );
+				y[ rj ] = eval( rnd, xx );
 
 				if( y[ rj ] < y[ xlo ])
 				{
@@ -343,7 +332,6 @@ private:
 	double* x2; ///< Temporary parameter vector 2.
 	double* rx; ///< Lowest-cost parameter vector used during reduction.
 	int rj; ///< Current vector index during reduction.
-	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
 
 	/**
 	 * Algorithm's state automata states.
@@ -492,14 +480,9 @@ private:
 	 *
 	 * @param rnd Random number generator.
 	 * @param Params Parameter vector to evaluate.
-	 * @param[out] OutCost If not NULL, pointer to variable that receives cost
-	 * of the newly-evaluated solution.
-	 * @param[out] OutValues If not NULL, pointer to array that receives
-	 * newly-evaluated parameter vector, in real scale.
 	 */
 
-	double eval( CBiteRnd& rnd, const double* const Params,
-		double* const OutCost = NULL, double* const OutValues = NULL )
+	double eval( CBiteRnd& rnd, const double* const Params )
 	{
 		int i;
 
@@ -508,26 +491,12 @@ private:
 			NewValues[ i ] = wrapParamReal( rnd, Params[ i ], i );
 		}
 
-		double Cost = optcost( NewValues );
+		const double NewCost = fixCostNaN( optcost( NewValues ));
+		NewCosts[ 0 ] = NewCost;
 
-		if( Cost != Cost ) // Handle NaN.
-		{
-			Cost = 1e300;
-		}
+		updateBestCost( NewCost, NewValues );
 
-		if( OutCost != NULL )
-		{
-			*OutCost = Cost;
-		}
-
-		if( OutValues != NULL )
-		{
-			copyValues( OutValues, NewValues );
-		}
-
-		updateBestCost( Cost, NewValues );
-
-		return( Cost );
+		return( NewCost );
 	}
 };
 

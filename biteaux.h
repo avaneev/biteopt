@@ -3,7 +3,7 @@
 /**
  * @file biteaux.h
  *
- * @version 2024.4
+ * @version 2024.5
  *
  * @brief The inclusion file for the CBiteRnd, CBitePop, CBiteParPops,
  * CBiteOptInterface, and CBiteOptBase classes.
@@ -394,10 +394,14 @@ public:
 	 * Constructor.
 	 *
 	 * @param Count The number of possible choices, greater than 1.
+	 * @param spwr100 Selector's power factor multiplied by 100. At 100,
+	 * all choices are equally probable; at 150 the best choice may be
+	 * selected up to two times more often than any other choice.
 	 */
 
-	CBiteSelBase( const int aCount )
+	CBiteSelBase( const int aCount, const int spwr100 )
 		: Count( aCount )
+		, SelPower( spwr100 * 0.01 )
 		, SelBuf( NULL )
 		, SelBufCapacity( 0 )
 	{
@@ -549,7 +553,7 @@ public:
 	int select( CBiteRnd& rnd )
 	{
 		Slot = rnd.getPowInt( 1.5, SlotCount );
-		Selp = rnd.getPowInt( 1.5, CountSp );
+		Selp = rnd.getPowInt( SelPower, CountSp );
 
 		Sel = Sels[ Slot ][ Selp ];
 		IsSelected = true;
@@ -594,6 +598,7 @@ protected:
 	int CountSp; ///< = Count * SparseMul. The actual length of the choice
 		///< vector.
 	int CountSp1; ///< = CountSp - 1.
+	double SelPower; ///< Selector's power factor.
 	int* Sels[ SlotCount ]; ///< Choice vectors.
 	int* SelBuf; ///< A singular buffer for Sels vectors.
 	int SelBufCapacity; ///< Capacity of SelBuf.
@@ -609,14 +614,17 @@ protected:
  * specification.
  *
  * @tparam tCount The number of possible choices, greater than 1.
+ * @tparam spwr100 Selector's power factor multiplied by 100. At 100, all
+ * choices are equally probable; at 150 the best choice may be selected up to
+ * two times more often than any other choice.
  */
 
-template< int tCount >
+template< int tCount, int spwr100 = 150 >
 class CBiteSel : public CBiteSelBase
 {
 public:
 	CBiteSel()
-		: CBiteSelBase( tCount )
+		: CBiteSelBase( tCount, spwr100 )
 	{
 	}
 };
@@ -1023,7 +1031,8 @@ public:
 	 * smaller than the PopSize, the new solution will be added to
 	 * population without any checks.
 	 *
-	 * @param UpdCost Cost (rank) of the new solution.
+	 * @param UpdCost Cost (rank) of the new solution. This value should be
+	 * checked for NaN and fixed if needed.
 	 * @param UpdParams New parameter values.
 	 * @param DoUpdateCentroid "True" if centroid should be updated using
 	 * running sum. This update is done for parallel populations.
@@ -1045,18 +1054,12 @@ public:
 		if( CurPopPos < PopSize )
 		{
 			ri = CurPopPos;
-
-			if( UpdCost != UpdCost ) // Handle NaN.
-			{
-				UpdCost = 1e300;
-			}
 		}
 		else
 		{
 			ri = PopSize1;
 
-			if( UpdCost != UpdCost || // Check for NaN.
-				UpdCost > *getRankPtr( PopParams[ ri ]))
+			if( UpdCost > *getRankPtr( PopParams[ ri ]))
 			{
 				return( PopSize );
 			}
@@ -1614,6 +1617,22 @@ public:
 	virtual double getBestCost() const = 0;
 
 	/**
+	 * @return The pointer to array with cost(s) (objectives) obtained at the
+	 * latest optcost() function call. This pointer should be valid until
+	 * updateDims() or initBuffers() function calls.
+	 */
+
+	virtual const double* getLastCosts() const = 0;
+
+	/**
+	 * @return The pointer to array with parameter values obtained at the
+	 * latest `optcost()` function call. This pointer should be valid until
+	 * updateDims() or initBuffers() function calls.
+	 */
+
+	virtual const double* getLastValues() const = 0;
+
+	/**
 	 * Virtual function that should fill minimal parameter value vector.
 	 *
 	 * @param[out] p Minimal value vector.
@@ -1663,6 +1682,9 @@ private:
 	}
 
 public:
+	static const int MaxSelCount = 64; ///< The maximal number of selectors
+		///< that can be added to *this object (for static arrays).
+
 	CBiteOptBase()
 		: MinValues( NULL )
 		, MaxValues( NULL )
@@ -1696,8 +1718,15 @@ public:
 		return( BestCost );
 	}
 
-	static const int MaxSelCount = 64; ///< The maximal number of selectors
-		///< that can be added to *this object (for static arrays).
+	virtual const double* getLastCosts() const
+	{
+		return( LastCosts );
+	}
+
+	virtual const double* getLastValues() const
+	{
+		return( LastValues );
+	}
 
 	/**
 	 * Function returns a pointer to an array of selectors in use.
@@ -1726,6 +1755,15 @@ public:
 		return( SelCount );
 	}
 
+	/**
+	 * Returns the number of iterations without improvement.
+	 */
+
+	int getStallCount() const
+	{
+		return( StallCount );
+	}
+
 protected:
 	using CBiteParPops< ptype > :: IntMantMult;
 	using CBiteParPops< ptype > :: MantMult;
@@ -1747,7 +1785,16 @@ protected:
 	double StartSD; ///< Starting standard deviation.
 	double* BestValues; ///< Best parameter vector.
 	double BestCost; ///< Cost of the best parameter vector.
-	double* NewValues; ///< Temporary new parameter buffer, with real values.
+	double NewCosts[ 1 ]; ///< Temporary buffer to contain objective function
+		///< value(s). Pointer to this buffer is retained in init() call.
+	double* NewValues; ///< New parameter values buffer, with real values,
+		///< can be also used as a temporary buffer. Pointer to this buffer
+		///< is retained in init() call.
+	const double* LastCosts; ///< Cost(s) of the latest optcost() call. Points
+		///< to NewCosts by default.
+	const double* LastValues; ///< Parameter values of the latest optcost()
+		///< call. Points to NewValues by default.
+	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
 	int StallCount; ///< The number of iterations without improvement.
 	double HiBound; ///< Higher cost bound, for StallCount estimation. May not
 		///< be used by the optimizer.
@@ -1811,6 +1858,9 @@ protected:
 		UseStartParams = false;
 		StartSD = 0.25;
 		BestCost = 1e300;
+		LastCosts = NewCosts;
+		LastValues = NewValues;
+		DoInitEvals = true;
 		StallCount = 0;
 		HiBound = 1e300;
 		AvgCost = 0.0;
@@ -1865,19 +1915,34 @@ protected:
 	 */
 
 	void updateBestCost( const double UpdCost, const double* const UpdValues,
-		const int p = -1 )
+		int p = -1 )
 	{
-		if( UpdCost != UpdCost ) // Check for NaN.
+		if( p < 0 )
 		{
-			return;
+			if( UpdCost <= BestCost )
+			{
+				p = 0;
+			}
 		}
 
-		if( p == 0 || ( p < 0 && UpdCost <= BestCost ))
+		if( p == 0 )
 		{
 			BestCost = UpdCost;
 
 			copyValues( BestValues, UpdValues );
 		}
+	}
+
+	/**
+	 * Function checks the supplied cost value for NaN and returns a "fixed"
+	 * value.
+	 *
+	 * @param v Cost value to check.
+	 */
+
+	static double fixCostNaN( const double v )
+	{
+		return( v != v ? 1e300 : v );
 	}
 
 	/**

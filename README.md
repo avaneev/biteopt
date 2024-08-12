@@ -578,6 +578,7 @@ operations.
 
 $$ mask=(2^{IntMantBits}-1)\gg \lfloor rand(0\ldots1)^4\cdot
 MantSizeSh\rfloor $$
+
 $$ x_\text{new}[i] = \frac{\lfloor x_\text{best}[i]\cdot 2^{IntMantBits}
 \rfloor \bigotimes mask }{2^{IntMantBits}} $$
 
@@ -649,6 +650,10 @@ solutions).
 12. Solution generator that estimates population's standard deviation using
 better and worse solutions, and then generates a solution using Gaussian
 sampling around centroid.
+
+13. Solution generator that applies Differential Evolution in real parameter
+value space, in a randomized fashion: each parameter value receives a DE
+operation value of a randomly-chosen parameter.
 
 ## SMA-ES ##
 

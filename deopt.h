@@ -3,7 +3,7 @@
 /**
  * @file deopt.h
  *
- * @version 2024.2
+ * @version 2024.5
  *
  * @brief The inclusion file for the CDEOpt class.
  *
@@ -96,8 +96,6 @@ public:
 
 			UseStartParams = true;
 		}
-
-		DoInitEvals = true;
 	}
 
 	/**
@@ -105,15 +103,10 @@ public:
 	 * objective function evaluation.
 	 *
 	 * @param rnd Random number generator.
-	 * @param[out] OutCost If not NULL, pointer to variable that receives cost
-	 * of the newly-evaluated solution.
-	 * @param[out] OutValues If not NULL, pointer to array that receives a
-	 * newly-evaluated parameter vector, in real scale, in real value bounds.
 	 * @return The number of non-improving iterations so far.
 	 */
 
-	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
-		double* const OutValues = NULL )
+	int optimize( CBiteRnd& rnd )
 	{
 		int i;
 
@@ -123,17 +116,8 @@ public:
 
 			genInitParams( rnd, Params );
 
-			const double NewCost = optcost( NewValues );
-
-			if( OutCost != NULL )
-			{
-				*OutCost = NewCost;
-			}
-
-			if( OutValues != NULL )
-			{
-				copyValues( OutValues, NewValues );
-			}
+			const double NewCost = fixCostNaN( optcost( NewValues ));
+			NewCosts[ 0 ] = NewCost;
 
 			updateBestCost( NewCost, NewValues, updatePop( NewCost, Params ));
 
@@ -207,11 +191,11 @@ public:
 
 			// Produce sparsely-random bit-strings.
 
-			const ptype v1 = (ptype) ( rnd.getRaw() & rnd.getRaw() &
-				rnd.getRaw() & rnd.getRaw() & rnd.getRaw() & IntMantMask );
+			const ptype v1 = rnd.getRaw() & rnd.getRaw() & rnd.getRaw() &
+				rnd.getRaw() & rnd.getRaw() & IntMantMask;
 
-			const ptype v2 = (ptype) ( rnd.getRaw() & rnd.getRaw() &
-				rnd.getRaw() & rnd.getRaw() & rnd.getRaw() & IntMantMask );
+			const ptype v2 = rnd.getRaw() & rnd.getRaw() & rnd.getRaw() &
+				rnd.getRaw() & rnd.getRaw() & IntMantMask;
 
 			TmpParams[ k ] += v1 - v2; // Apply in TPDF manner.
 		}
@@ -247,17 +231,8 @@ public:
 			NewValues[ i ] = getRealValue( TmpParams, i );
 		}
 
-		const double NewCost = optcost( NewValues );
-
-		if( OutCost != NULL )
-		{
-			*OutCost = NewCost;
-		}
-
-		if( OutValues != NULL )
-		{
-			copyValues( OutValues, NewValues );
-		}
+		const double NewCost = fixCostNaN( optcost( NewValues ));
+		NewCosts[ 0 ] = NewCost;
 
 		const int p = updatePop( NewCost, TmpParams );
 
@@ -273,9 +248,6 @@ public:
 
 		return( StallCount );
 	}
-
-protected:
-	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
 };
 
 #endif // DEOPT_INCLUDED

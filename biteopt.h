@@ -35,7 +35,7 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2024.4"
+#define BITEOPT_VERSION "2024.5"
 
 #include "spheropt.h"
 #include "nmsopt.h"
@@ -72,6 +72,7 @@ public:
 		addSel( ParPopPSel[ 2 ], "ParPopPSel[ 2 ]" );
 		addSel( ParPopPSel[ 3 ], "ParPopPSel[ 3 ]" );
 		addSel( ParPopPSel[ 4 ], "ParPopPSel[ 4 ]" );
+		addSel( ParPopPSel[ 5 ], "ParPopPSel[ 5 ]" );
 		addSel( AltPopPSel, "AltPopPSel" );
 		addSel( AltPopSel[ 0 ], "AltPopSel[ 0 ]" );
 		addSel( AltPopSel[ 1 ], "AltPopSel[ 1 ]" );
@@ -208,9 +209,9 @@ public:
 
 			genInitParams( rnd, Params );
 
-			NewCost = optcost( NewValues );
-			updateBestCost( NewCost, NewValues,
-				updatePop( NewCost, Params, false ));
+			NewCosts[ 0 ] = fixCostNaN( optcost( NewValues ));
+			updateBestCost( NewCosts[ 0 ], NewValues,
+				updatePop( NewCosts[ 0 ], Params ));
 
 			if( CurPopPos == PopSize )
 			{
@@ -273,8 +274,13 @@ public:
 					generateSol5b( rnd );
 				}
 				else
+				if( SelM1B == 2 )
 				{
 					generateSol5c( rnd );
+				}
+				else
+				{
+					generateSol13( rnd );
 				}
 			}
 			else
@@ -354,10 +360,12 @@ public:
 				NewValues[ i ] = getRealValue( TmpParams, i );
 			}
 
-			NewCost = optcost( NewValues );
+			NewCosts[ 0 ] = fixCostNaN( optcost( NewValues ));
+			LastCosts = NewCosts;
+			LastValues = NewValues;
 		}
 
-		const int p = updatePop( NewCost, TmpParams, true, 3 );
+		const int p = updatePop( LastCosts[ 0 ], TmpParams, true, 3 );
 
 		if( p > CurPopSize1 )
 		{
@@ -379,7 +387,7 @@ public:
 		}
 		else
 		{
-			updateBestCost( NewCost, NewValues, p );
+			updateBestCost( LastCosts[ 0 ], LastValues, p );
 			applySelsIncr( rnd, 1.0 - p * CurPopSizeI );
 
 			StallCount = 0;
@@ -401,8 +409,8 @@ public:
 			if( PushOpt != NULL && PushOpt != this &&
 				!PushOpt -> DoInitEvals && p > 1 )
 			{
-				PushOpt -> updatePop( NewCost, TmpParams, true, 3 );
-				PushOpt -> updateParPop( NewCost, TmpParams );
+				PushOpt -> updatePop( LastCosts[ 0 ], TmpParams, true, 3 );
+				PushOpt -> updateParPop( LastCosts[ 0 ], TmpParams );
 			}
 
 			if( DoEval && CurPopSize > PopSize / 2 )
@@ -418,7 +426,7 @@ public:
 
 		// "Diverging populations" technique.
 
-		updateParPop( NewCost, TmpParams );
+		updateParPop( LastCosts[ 0 ], TmpParams );
 
 		return( StallCount );
 	}
@@ -427,7 +435,7 @@ protected:
 	CBiteSel< 4 > MethodSel; ///< Population generator 4-method selector.
 	CBiteSel< 4 > M1Sel; ///< Method 1's sub-method selector.
 	CBiteSel< 3 > M1ASel; ///< Method 1's sub-sub-method A selector.
-	CBiteSel< 3 > M1BSel; ///< Method 1's sub-sub-method B selector.
+	CBiteSel< 4 > M1BSel; ///< Method 1's sub-sub-method B selector.
 	CBiteSel< 3 > M1CSel; ///< Method 1's sub-sub-method C selector.
 	CBiteSel< 2 > M2Sel; ///< Method 2's sub-method selector.
 	CBiteSel< 5 > M2BSel; ///< Method 2's sub-sub-method B selector.
@@ -436,7 +444,7 @@ protected:
 	CBiteSel< 2 > PopChangeDecrSel; ///< Population size change decrease
 		///< selector.
 	CBiteSel< 2 > ParOpt2Sel; ///< Parallel optimizer 2 use selector.
-	CBiteSel< 2 > ParPopPSel[ 5 ]; ///< Parallel population use
+	CBiteSel< 2 > ParPopPSel[ 6 ]; ///< Parallel population use
 		///< probability selectors.
 	CBiteSel< 2 > AltPopPSel; ///< Alternative population use selector.
 	CBiteSel< 2 > AltPopSel[ 4 ]; ///< Alternative population type use
@@ -470,8 +478,6 @@ protected:
 	bool DoEval; ///< Temporary variable which equals to "true" if the
 		///< newly-generated solution should be evaluated via the optcost()
 		///< function.
-	double NewCost; ///< Temporary variable that receives objective function's
-		///< value (cost).
 
 	/**
 	 * Parallel optimizer class.
@@ -529,7 +535,7 @@ protected:
 	 * With certain probability, *this object's own population will be
 	 * returned instead of parallel population.
 	 *
-	 * @param gi Solution generator index (0-4).
+	 * @param gi Solution generator index (0-5).
 	 * @param rnd PRNG object.
 	 */
 
@@ -1524,6 +1530,49 @@ protected:
 	}
 
 	/**
+	 * Solution generator that applies Differential Evolution in real
+	 * parameter value space, in a randomized fashion: each parameter value
+	 * receives a DE operation value of a randomly-chosen parameter. This
+	 * solution generator is moderately effective even on its own.
+	 */
+
+	void generateSol13( CBiteRnd& rnd )
+	{
+		ptype* const Params = TmpParams;
+
+		const CBitePop& ParPop = selectParPop( 5, rnd );
+		const int ParPopSize = ParPop.getCurPopSize();
+
+		const ptype* const rp1 = getParamsOrdered(
+			rnd.getSqrInt( CurPopSize ));
+
+		const int kc = 4;
+		const ptype* rp2[ kc ];
+		const ptype* rp3[ kc ];
+		int i;
+
+		for( i = 0; i < kc; i++ )
+		{
+			rp2[ i ] = ParPop.getParamsOrdered(
+				rnd.getLogInt( ParPopSize ));
+
+			rp3[ i ] = ParPop.getParamsOrdered( ParPopSize - 1 -
+				rnd.getLogInt( ParPopSize ));
+		}
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			const int j = rnd.getInt( ParamCount );
+			const int k = rnd.getInt( kc );
+
+			Params[ i ] = (ptype) (( getRealValue( rp1, i ) +
+				( getRealValue( rp2[ k ], j ) -
+				getRealValue( rp3[ k ], j )) * 0.5 - MinValues[ i ]) *
+				DiffValuesI[ i ]);
+		}
+	}
+
+	/**
 	 * Solution generator that obtains solution from an independently-running
 	 * parallel optimizer.
 	 */
@@ -1543,34 +1592,40 @@ protected:
 
 		if( UseParOpt == 0 )
 		{
-			const int sc = ParOpt.optimize( rnd, &NewCost, NewValues );
+			const int sc = ParOpt.optimize( rnd );
 
-			if( sc > 0 )
+			LastCosts = ParOpt.getLastCosts();
+			LastValues = ParOpt.getLastValues();
+
+			if( sc != 0 )
 			{
 				UseParOpt = 1; // On stall, select optimizer 2.
-			}
 
-			if( sc > ParamCount * 64 )
-			{
-				ParOpt.init( rnd, getBestParams(), 0.5 );
-				ParOptPop.resetCurPopPos();
+				if( sc > ParamCount * 64 )
+				{
+					ParOpt.init( rnd, getBestParams(), 0.5 );
+					ParOptPop.resetCurPopPos();
+				}
 			}
 
 			UpdPop = &ParOptPop;
 		}
 		else
 		{
-			const int sc = ParOpt2.optimize( rnd, &NewCost, NewValues );
+			const int sc = ParOpt2.optimize( rnd );
 
-			if( sc > 0 )
+			LastCosts = ParOpt2.getLastCosts();
+			LastValues = ParOpt2.getLastValues();
+
+			if( sc != 0 )
 			{
 				UseParOpt = 0; // On stall, select optimizer 1.
-			}
 
-			if( sc > ParamCount * 16 )
-			{
-				ParOpt2.init( rnd, getBestParams(), 1.0 );
-				ParOpt2Pop.resetCurPopPos();
+				if( sc > ParamCount * 16 )
+				{
+					ParOpt2.init( rnd, getBestParams(), 1.0 );
+					ParOpt2Pop.resetCurPopPos();
+				}
 			}
 
 			UpdPop = &ParOpt2Pop;
@@ -1580,11 +1635,11 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			TmpParams[ i ] = (ptype) (( NewValues[ i ] - MinValues[ i ]) *
+			TmpParams[ i ] = (ptype) (( LastValues[ i ] - MinValues[ i ]) *
 				DiffValuesI[ i ]);
 		}
 
-		UpdPop -> updatePop( NewCost, TmpParams, false );
+		UpdPop -> updatePop( LastCosts[ 0 ], TmpParams, false );
 	}
 };
 
@@ -1619,6 +1674,16 @@ public:
 	virtual double getBestCost() const
 	{
 		return( BestOpt -> getBestCost() );
+	}
+
+	virtual const double* getLastCosts() const
+	{
+		return( LastOpt -> getLastCosts() );
+	}
+
+	virtual const double* getLastValues() const
+	{
+		return( LastOpt -> getLastValues() );
 	}
 
 	/**
@@ -1709,6 +1774,7 @@ public:
 
 		BestOpt = Opts[ 0 ];
 		CurOpt = Opts[ 0 ];
+		LastOpt = CurOpt;
 		StallCount = 0;
 
 		if( OptCount == 1 )
@@ -1761,6 +1827,7 @@ public:
 		else
 		{
 			StallCount++;
+			LastOpt = CurOpt;
 			CurOpt = PushOpt;
 
 			if( OptCount == 2 )
@@ -1821,6 +1888,7 @@ protected:
 	CBiteOptWrap* BestOpt; ///< Optimizer that contains the best solution.
 	CBiteOptWrap* CurOpt; ///< Current optimizer object.
 	CBiteOptWrap* PushOpt; ///< Optimizer where solution is pushed to.
+	CBiteOptWrap* LastOpt; ///< Latest optimizer object.
 	int StallCount; ///< The number of iterations without improvement.
 
 	/**

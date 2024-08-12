@@ -3,7 +3,7 @@
 /**
  * @file smaesopt.h
  *
- * @version 2024.2
+ * @version 2024.5
  *
  * @brief The inclusion file for the CSMAESOpt class.
  *
@@ -157,31 +157,18 @@ public:
 	 * objective function evaluation.
 	 *
 	 * @param rnd Random number generator.
-	 * @param[out] OutCost If not NULL, pointer to variable that receives cost
-	 * of the newly-evaluated solution.
-	 * @param[out] OutValues If not NULL, pointer to array that receives a
-	 * newly-evaluated parameter vector, in real scale, in real value bounds.
 	 * @return The number of non-improving iterations so far.
 	 */
 
-	int optimize( CBiteRnd& rnd, double* const OutCost = NULL,
-		double* const OutValues = NULL )
+	int optimize( CBiteRnd& rnd )
 	{
 		double* const Params = getCurParams();
 
 		sample( rnd, Params );
 
-		const double NewCost = optcost( Params );
-
-		if( OutCost != NULL )
-		{
-			*OutCost = NewCost;
-		}
-
-		if( OutValues != NULL )
-		{
-			copyValues( OutValues, Params );
-		}
+		const double NewCost = fixCostNaN( optcost( Params ));
+		NewCosts[ 0 ] = NewCost;
+		LastValues = Params;
 
 		updatePop( NewCost, Params );
 		updateBestCost( NewCost, Params );
