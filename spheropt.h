@@ -3,7 +3,7 @@
 /**
  * @file spheropt.h
  *
- * @version 2024.5
+ * @version 2024.6
  *
  * @brief The inclusion file for the CSpherOpt class.
  *
@@ -200,14 +200,11 @@ public:
 			if( AvgCost < HiBound )
 			{
 				HiBound = AvgCost;
-				StallCount = 0;
 
 				applySelsIncr( rnd );
 			}
 			else
 			{
-				StallCount += cure;
-
 				applySelsDecr( rnd );
 			}
 
@@ -219,6 +216,8 @@ public:
 
 			curem = (int) ceil( CurPopSize * EvalFac );
 		}
+
+		StallCount = ( NewCost < HiBound ? 0 : StallCount + 1 );
 
 		return( StallCount );
 	}

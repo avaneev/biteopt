@@ -18,7 +18,7 @@ optimization attempts to reach optimum.
 Instead of iterating through different "starting guesses" to find optimum
 like in deterministic methods, this method requires optimization attempts
 with different random seeds. The stochastic nature of the method allows it to
-automatically "fall" into different competing minima at each attempt. If there
+automatically "fall" into different competing minima on each attempt. If there
 are no competing minima in a function present (or the true/global minimum is
 rogue and cannot be detected), this method in absolute majority of attempts
 returns the same optimum.
@@ -34,7 +34,8 @@ Python binding is available as a part of [fcmaes library](https://github.com/die
 
 If you are regularly using BiteOpt in a commercial environment, you may
 consider donating/sponsoring the project. Please contact the author via
-aleksey.vaneev@gmail.com or info@voxengo.com.
+aleksey.vaneev@gmail.com or info@voxengo.com. A solver for AMPL NL models is
+available commercially.
 
 ## Comparison ##
 
@@ -275,7 +276,7 @@ suggested constraint tolerance is 10<sup>-4</sup>, but a more common
 10<sup>-6</sup> can be also used; lower values are not advised for use. Models
 with up to 200 constraints, both equalities and non-equalities, were tested
 with this method. In practice, on a large set of problems, this method finds a
-feasible solution in up to 96% of cases (with 20-30 attempts per problem).
+feasible solution in up to 97% of cases (with 20-30 attempts per problem).
 
 ```c
 real_value = cost;
@@ -314,15 +315,16 @@ BiteOpt is able to solve binary combinatorial problems, if the cost function
 is formulated as a sum of differences between bit values and continuous
 variables in the range [0; 1] - these differences can be used as usual
 constraints while binary value equality tolerance can be set to as low as
-10<sup>-12/sup>.
+10<sup>-12</sup>.
 
 ## Multi-Objective Optimization ##
 
 BiteOpt does not offer MOO "out of the box". However, BiteOpt can successfully
-solve MOO problems via direct hyper-volume optimization. This approach
-requires a hyper-volume tracker which keeps track of a certain number of
-improving solutions, and updates its state (and hyper-volume estimate) on each
-objective function evaluation (optcost). The approach is demonstrated in
+solve MOO problems via direct optimization of hypervolume of a set of points.
+This approach requires a hypervolume tracker which keeps track of a certain
+number of improving solutions, and updates its state (and hypervolume
+estimate) on each objective function evaluation (optcost). The approach is
+demonstrated in
 [fcmaes tutorial - quantumcomm.py](https://github.com/dietmarwo/fast-cma-es/blob/master/examples/esa2/quantumcomm.py).
 
 ## Convergence Proof ##
@@ -620,6 +622,7 @@ biological DNA crossing-over, but on a single-bit scale.
 6. The "short-cut" parameter vector generation.
 
 $$ z=x_\text{best}[\text{rand}(1\ldots N)] $$
+
 $$ x_\text{new}[i]=z, \quad i=1,\ldots,N $$
 
 7. A solution generator that randomly combines solutions from the main and
@@ -654,6 +657,36 @@ sampling around centroid.
 13. Solution generator that applies Differential Evolution in real parameter
 value space, in a randomized fashion: each parameter value receives a DE
 operation value of a randomly-chosen parameter.
+
+## SpherOpt ##
+
+This is a "converging hyper-spheroid" optimization method (or hyper-sphere,
+depending on optimization space's bounds). While it is not as effective as,
+for example, CMA-ES, it also stands parameter space scaling, offsetting, and
+rotation well. Since version 2021.1 it is used as a companion (parallel
+optimizer) to BiteOpt, with excellent results.
+
+This method is in parts similar to SMA-ES, but instead of keeping track of
+per-parameter sigmas, covariance matrix, and using Gaussian sampling, SpherOpt
+simply selects random points on a hyper-spheroid (with a bit of added jitter
+at lower dimensions), which eventually converges to a point. This makes the
+method very computationally-efficient, but at the same time provides immunity
+to coordinate axis rotations.
+
+This method uses the same self-optimization technique as BiteOpt which is,
+however, not a vital element of the method.
+
+## MiniBiteOpt ##
+
+This solver is a minimized version of BiteOpt. This version incorporates the
+most effective solution generators reminiscent of early BiteOpt versions. This
+solver is used as an additional parallel optimizer in BiteOpt.
+
+## NMSeqOpt ##
+
+The CNMSeqOpt class implements sequential Nelder-Mead simplex method with
+the "stall count" tracking. This optimizer is used as an additional parallel
+optimizer in BiteOpt.
 
 ## SMA-ES ##
 
@@ -697,30 +730,6 @@ distribution update (best fit solutions enter the population): this aspect is
 controlled via the `EvalFac` parameter, which adjusts method's overhead
 with only a minor effect on convergence property. Method's typical
 observed complexity is O(N<sup>1.6</sup>).
-
-## SpherOpt ##
-
-This is a "converging hyper-spheroid" optimization method (or hyper-sphere,
-depending on optimization space's bounds). While it is not as effective as,
-for example, CMA-ES, it also stands parameter space scaling, offsetting, and
-rotation well. Since version 2021.1 it is used as a companion (parallel
-optimizer) to BiteOpt, with excellent results.
-
-This method is in parts similar to SMA-ES, but instead of keeping track of
-per-parameter sigmas, covariance matrix, and using Gaussian sampling, SpherOpt
-simply selects random points on a hyper-spheroid (with a bit of added jitter
-at lower dimensions), which eventually converges to a point. This makes the
-method very computationally-efficient, but at the same time provides immunity
-to coordinate axis rotations.
-
-This method uses the same self-optimization technique as BiteOpt which is,
-however, not a vital element of the method.
-
-## NMSeqOpt ##
-
-The CNMSeqOpt class implements sequential Nelder-Mead simplex method with
-the "stall count" tracking. This optimizer is used as an additional parallel
-optimizer in BiteOpt.
 
 ## DEOpt ##
 

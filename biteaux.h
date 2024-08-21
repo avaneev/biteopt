@@ -3,10 +3,10 @@
 /**
  * @file biteaux.h
  *
- * @version 2024.5
+ * @version 2024.6
  *
  * @brief The inclusion file for the CBiteRnd, CBitePop, CBiteParPops,
- * CBiteOptInterface, and CBiteOptBase classes.
+ * CBiteOptInterface, CBiteOptBase, and CBiteOptOwned classes.
  *
  * @section license License
  * 
@@ -224,6 +224,18 @@ public:
 	int getSqrInt( const int N1 )
 	{
 		return( (int) ( getSqr() * N1 ));
+	}
+
+	/**
+	 * @param N1 Integer value range.
+	 * @return Random integer number in the reversed range (N1; 0]. Beta
+	 * distribution with Alpha=0.5, Beta=1 (squared). N1 denotes the number of
+	 * bins, not the maximal returned value.
+	 */
+
+	int getSqrIntInv( const int N1 )
+	{
+		return( N1 - (int) ( getSqr() * N1 ) - 1 );
 	}
 
 	/**
@@ -644,7 +656,7 @@ class CBitePop
 public:
 	CBitePop()
 		: MantMult( IntMantMult )
-		, MantMultInv( 1.0 / IntMantMult )
+		, MantMultI( 1.0 / IntMantMult )
 		, ParamCount( 0 )
 		, PopSize( 0 )
 		, CnsCount( 0 )
@@ -1183,7 +1195,7 @@ protected:
 	static const int64_t IntMantMask = IntMantMult - 1; ///< Mask that
 		///< corresponds to mantissa.
 	double MantMult; ///< = IntMantMult.
-	double MantMultInv; ///< = 1.0 / IntMantMult.
+	double MantMultI; ///< = 1.0 / IntMantMult.
 
 	int ParamCount; ///< The total number of internal parameter values in use.
 	double ParamCountI; ///< = 1.0 / ParamCount.
@@ -1340,7 +1352,7 @@ protected:
 					return( (ptype) ( rnd.get() * -v ));
 				}
 
-				return( rnd.getRaw() & IntMantMask );
+				return( (ptype) ( rnd.getRaw() & IntMantMask ));
 			}
 
 			if( v > IntMantMult )
@@ -1351,7 +1363,7 @@ protected:
 						rnd.get() * ( v - IntMantMult )));
 				}
 
-				return( rnd.getRaw() & IntMantMask );
+				return( (ptype) ( rnd.getRaw() & IntMantMask ));
 			}
 
 			return( v );
@@ -1433,7 +1445,9 @@ class CBiteParPops : virtual public CBitePop< ptype >
 {
 public:
 	CBiteParPops()
-		: ParPopCount( 0 )
+		: ParPops( NULL )
+		, ParPopCount( 0 )
+		, ParValues( NULL )
 	{
 	}
 
@@ -1445,18 +1459,20 @@ public:
 		{
 			delete ParPops[ i ];
 		}
+
+		delete[] ParPops;
+		delete[] ParValues;
 	}
 
 protected:
 	using CBitePop< ptype > :: ParamCount;
 	using CBitePop< ptype > :: PopSize;
 
-	static const int MaxParPopCount = 8; ///< The maximal number of parallel
-		///< population supported.
-	CBitePop< ptype >* ParPops[ MaxParPopCount ]; ///< Parallel population
-		///< orbiting *this population.
+	CBitePop< ptype >** ParPops; ///< Parallel population "orbiting" `this`
+		///< population.
 	int ParPopCount; ///< Parallel population count. This variable should only
 		///< be changed via the setParPopCount() function.
+	double* ParValues; ///< Temporary value buffer, length equals ParPopCount.
 
 	/**
 	 * Function changes the parallel population count, and reallocates
@@ -1473,10 +1489,145 @@ protected:
 			delete ParPops[ ParPopCount ];
 		}
 
-		while( ParPopCount < NewCount )
+		if( NewCount > ParPopCount )
 		{
-			ParPops[ ParPopCount ] = new CBitePop< ptype >();
-			ParPopCount++;
+			CBitePop< ptype >** NewParPops =
+				new CBitePop< ptype >*[ NewCount ];
+
+			if( ParPopCount != 0 )
+			{
+				memcpy( NewParPops, ParPops, sizeof( ParPops[ 0 ]) *
+					ParPopCount );
+			}
+
+			delete[] ParPops;
+			ParPops = NewParPops;
+
+			while( ParPopCount < NewCount )
+			{
+				ParPops[ ParPopCount ] = new CBitePop< ptype >();
+				ParPopCount++;
+			}
+
+			delete[] ParValues;
+			ParValues = new double[ ParPopCount ];
+		}
+	}
+
+	/**
+	 * Function calculates distances of the specified parameter vector to
+	 * parallel populations' centroids.
+	 *
+	 * @param Params Parameter vector.
+	 * @param[out] s Resulting squared distances vector.
+	 */
+
+	void calcCentroidDists( const ptype* const Params, double* s ) const
+	{
+		int k = 0;
+		int i;
+
+		while( k < ParPopCount )
+		{
+			int pc = ParPopCount - k;
+
+			if( pc > 4 )
+			{
+				pc = 4;
+			}
+
+			if( pc == 4 )
+			{
+				const ptype* const c0 = ParPops[ k ] -> getCentroid();
+				const ptype* const c1 = ParPops[ k + 1 ] -> getCentroid();
+				const ptype* const c2 = ParPops[ k + 2 ] -> getCentroid();
+				const ptype* const c3 = ParPops[ k + 3 ] -> getCentroid();
+				double s0 = 0.0;
+				double s1 = 0.0;
+				double s2 = 0.0;
+				double s3 = 0.0;
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					const ptype v = Params[ i ];
+					const double d0 = (double) ( c0[ i ] - v );
+					const double d1 = (double) ( c1[ i ] - v );
+					s0 += d0 * d0;
+					s1 += d1 * d1;
+
+					const double d2 = (double) ( c2[ i ] - v );
+					const double d3 = (double) ( c3[ i ] - v );
+					s2 += d2 * d2;
+					s3 += d3 * d3;
+				}
+
+				s[ 0 ] = s0;
+				s[ 1 ] = s1;
+				s[ 2 ] = s2;
+				s[ 3 ] = s3;
+			}
+			else
+			if( pc == 3 )
+			{
+				const ptype* const c0 = ParPops[ k ] -> getCentroid();
+				const ptype* const c1 = ParPops[ k + 1 ] -> getCentroid();
+				const ptype* const c2 = ParPops[ k + 2 ] -> getCentroid();
+				double s0 = 0.0;
+				double s1 = 0.0;
+				double s2 = 0.0;
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					const ptype v = Params[ i ];
+					const double d0 = (double) ( c0[ i ] - v );
+					const double d1 = (double) ( c1[ i ] - v );
+					s0 += d0 * d0;
+					s1 += d1 * d1;
+
+					const double d2 = (double) ( c2[ i ] - v );
+					s2 += d2 * d2;
+				}
+
+				s[ 0 ] = s0;
+				s[ 1 ] = s1;
+				s[ 2 ] = s2;
+			}
+			else
+			if( pc == 2 )
+			{
+				const ptype* const c0 = ParPops[ k ] -> getCentroid();
+				const ptype* const c1 = ParPops[ k + 1 ] -> getCentroid();
+				double s0 = 0.0;
+				double s1 = 0.0;
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					const ptype v = Params[ i ];
+					const double d0 = (double) ( c0[ i ] - v );
+					const double d1 = (double) ( c1[ i ] - v );
+					s0 += d0 * d0;
+					s1 += d1 * d1;
+				}
+
+				s[ 0 ] = s0;
+				s[ 1 ] = s1;
+			}
+			else
+			{
+				const ptype* const c0 = ParPops[ k ] -> getCentroid();
+				double s0 = 0.0;
+
+				for( i = 0; i < ParamCount; i++ )
+				{
+					const double d0 = (double) ( c0[ i ] - Params[ i ] );
+					s0 += d0 * d0;
+				}
+
+				s[ 0 ] = s0;
+			}
+
+			k += pc;
+			s += pc;
 		}
 	}
 
@@ -1492,88 +1643,12 @@ protected:
 
 	int getMinDistParPop( const double Cost, const ptype* const Params ) const
 	{
-		double s[ MaxParPopCount ];
-		int i;
-
-		if( ParPopCount == 4 )
-		{
-			const ptype* const c0 = ParPops[ 0 ] -> getCentroid();
-			const ptype* const c1 = ParPops[ 1 ] -> getCentroid();
-			const ptype* const c2 = ParPops[ 2 ] -> getCentroid();
-			const ptype* const c3 = ParPops[ 3 ] -> getCentroid();
-			double s0 = 0.0;
-			double s1 = 0.0;
-			double s2 = 0.0;
-			double s3 = 0.0;
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				const ptype v = Params[ i ];
-				const double d0 = (double) ( c0[ i ] - v );
-				const double d1 = (double) ( c1[ i ] - v );
-				s0 += d0 * d0;
-				s1 += d1 * d1;
-
-				const double d2 = (double) ( c2[ i ] - v );
-				const double d3 = (double) ( c3[ i ] - v );
-				s2 += d2 * d2;
-				s3 += d3 * d3;
-			}
-
-			s[ 0 ] = s0;
-			s[ 1 ] = s1;
-			s[ 2 ] = s2;
-			s[ 3 ] = s3;
-		}
-		else
-		if( ParPopCount == 3 )
-		{
-			const ptype* const c0 = ParPops[ 0 ] -> getCentroid();
-			const ptype* const c1 = ParPops[ 1 ] -> getCentroid();
-			const ptype* const c2 = ParPops[ 2 ] -> getCentroid();
-			double s0 = 0.0;
-			double s1 = 0.0;
-			double s2 = 0.0;
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				const ptype v = Params[ i ];
-				const double d0 = (double) ( c0[ i ] - v );
-				const double d1 = (double) ( c1[ i ] - v );
-				s0 += d0 * d0;
-				s1 += d1 * d1;
-
-				const double d2 = (double) ( c2[ i ] - v );
-				s2 += d2 * d2;
-			}
-
-			s[ 0 ] = s0;
-			s[ 1 ] = s1;
-			s[ 2 ] = s2;
-		}
-		else
-		if( ParPopCount == 2 )
-		{
-			const ptype* const c0 = ParPops[ 0 ] -> getCentroid();
-			const ptype* const c1 = ParPops[ 1 ] -> getCentroid();
-			double s0 = 0.0;
-			double s1 = 0.0;
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				const ptype v = Params[ i ];
-				const double d0 = (double) ( c0[ i ] - v );
-				const double d1 = (double) ( c1[ i ] - v );
-				s0 += d0 * d0;
-				s1 += d1 * d1;
-			}
-
-			s[ 0 ] = s0;
-			s[ 1 ] = s1;
-		}
+		double* const s = ParValues;
+		calcCentroidDists( Params, ParValues );
 
 		int pp = 0;
 		double d = s[ pp ];
+		int i;
 
 		for( i = 1; i < ParPopCount; i++ )
 		{
@@ -1767,7 +1842,7 @@ public:
 protected:
 	using CBiteParPops< ptype > :: IntMantMult;
 	using CBiteParPops< ptype > :: MantMult;
-	using CBiteParPops< ptype > :: MantMultInv;
+	using CBiteParPops< ptype > :: MantMultI;
 	using CBiteParPops< ptype > :: ParamCount;
 	using CBiteParPops< ptype > :: CurPopPos;
 	using CBiteParPops< ptype > :: resetCurPopPos;
@@ -1889,7 +1964,7 @@ protected:
 			{
 				const double d = MaxValues[ i ] - MinValues[ i ];
 
-				DiffValues[ i ] = d * MantMultInv;
+				DiffValues[ i ] = d * MantMultI;
 				DiffValuesI[ i ] = MantMult / d;
 			}
 		}
@@ -1943,6 +2018,22 @@ protected:
 	static double fixCostNaN( const double v )
 	{
 		return( v != v ? 1e300 : v );
+	}
+
+	/**
+	 * Function calculates population size based on the specified parameter
+	 * count, for use with BiteOpt optimizers.
+	 *
+	 * @param aParamCount The number of parameters in use.
+	 */
+
+	static int calcPopSizeBiteOpt( const int aParamCount )
+	{
+		const double cx = tanh( 0.008 * aParamCount );
+		const double psl = 10 + aParamCount * 3;
+		const double psh = 11.0 * sqrt( (double) aParamCount );
+
+		return( (int) ( psl * ( 1.0 - cx ) + psh * cx + 0.5 ));
 	}
 
 	/**
@@ -2004,10 +2095,35 @@ protected:
 	}
 
 	/**
+	 * Function sets up starting parameters for normalized space.
+	 *
+	 * @param InitParams Starting parameters in real space. If NULL, the
+	 * function does nothing.
+	 */
+
+	void setStartParams( const double* const InitParams )
+	{
+		if( InitParams == NULL )
+		{
+			return;
+		}
+
+		int i;
+
+		for( i = 0; i < ParamCount; i++ )
+		{
+			StartParams[ i ] = (ptype) (( InitParams[ i ] - MinValues[ i ]) /
+				DiffValues[ i ]);
+		}
+
+		UseStartParams = true;
+	}
+
+	/**
 	 * Function generates a random initial solution with Gaussian sampling
-	 * using `StartSD` variance. The solution will be centered around the
-	 * `StartParams` point if the `UseStartParams` is `true`. The function
-	 * also fills the `NewValues` array.
+	 * using `StartSD` variance, in normalized parameter space. The solution
+	 * will be centered around the `StartParams` point if the `UseStartParams`
+	 * is `true`. The function also fills the `NewValues` array.
 	 *
 	 * @param rnd PRNG object.
 	 * @param[out] Params Resulting parameter vector.
@@ -2072,6 +2188,49 @@ protected:
 
 					NewValues[ i ] = getRealValue( Params, i );
 				}
+			}
+		}
+	}
+
+	/**
+	 * Function generates a random initial solution with Gaussian sampling
+	 * using `StartSD` variance, in real parameter space. The solution will be
+	 * centered around the `StartParams` point if the `UseStartParams` is
+	 * `true`. The function does not fill the `NewValues` array.
+	 *
+	 * @param rnd PRNG object.
+	 * @param[out] Params Resulting parameter vector.
+	 */
+
+	void genInitParamsReal( CBiteRnd& rnd, double* const Params ) const
+	{
+		int i;
+
+		if( UseStartParams )
+		{
+			if( CurPopPos == 0 )
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = wrapParamReal( rnd, StartParams[ i ], i );
+				}
+			}
+			else
+			{
+				for( i = 0; i < ParamCount; i++ )
+				{
+					Params[ i ] = wrapParamReal( rnd, rnd.getGaussian() *
+						StartSD * DiffValues[ i ] + StartParams[ i ], i );
+				}
+			}
+		}
+		else
+		{
+			for( i = 0; i < ParamCount; i++ )
+			{
+				Params[ i ] = wrapParamReal( rnd, rnd.getGaussian() *
+					StartSD * DiffValues[ i ] +
+					MinValues[ i ] + DiffValues[ i ] * 0.5, i );
 			}
 		}
 	}
@@ -2145,6 +2304,40 @@ protected:
 			ApplySels[ i ] -> decr( rnd );
 		}
 	}
+};
+
+/**
+ * Wrapping class for parallel optimizers, calls owner's cost function.
+ *
+ * @tparam The actual optimizer class.
+ */
+
+template< class T >
+class CBiteOptOwned : public T
+{
+public:
+	CBiteOptOwned( CBiteOptInterface* const aOwner )
+		: Owner( aOwner )
+	{
+	}
+
+	virtual void getMinValues( double* const p ) const
+	{
+		Owner -> getMinValues( p );
+	}
+
+	virtual void getMaxValues( double* const p ) const
+	{
+		Owner -> getMaxValues( p );
+	}
+
+	virtual double optcost( const double* const p )
+	{
+		return( Owner -> optcost( p ));
+	}
+
+protected:
+	CBiteOptInterface* Owner; ///< Owner object.
 };
 
 #endif // BITEAUX_INCLUDED

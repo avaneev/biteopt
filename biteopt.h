@@ -35,10 +35,10 @@
 #ifndef BITEOPT_INCLUDED
 #define BITEOPT_INCLUDED
 
-#define BITEOPT_VERSION "2024.5"
+#define BITEOPT_VERSION "2024.6"
 
 #include "spheropt.h"
-#include "nmsopt.h"
+#include "mbopt.h"
 
 /**
  * BiteOpt optimization class. Implements a stochastic non-linear
@@ -54,9 +54,9 @@ public:
 		///< signed integer type, same as CBiteOptBase template parameter).
 
 	CBiteOpt()
+		: ParOpt( this )
+		, ParOpt2( this )
 	{
-		setParPopCount( 4 );
-
 		addSel( MethodSel, "MethodSel" );
 		addSel( M1Sel, "M1Sel" );
 		addSel( M1ASel, "M1ASel" );
@@ -73,6 +73,8 @@ public:
 		addSel( ParPopPSel[ 3 ], "ParPopPSel[ 3 ]" );
 		addSel( ParPopPSel[ 4 ], "ParPopPSel[ 4 ]" );
 		addSel( ParPopPSel[ 5 ], "ParPopPSel[ 5 ]" );
+		addSel( ParPopPSel[ 6 ], "ParPopPSel[ 6 ]" );
+		addSel( ParPopPSel[ 7 ], "ParPopPSel[ 7 ]" );
 		addSel( AltPopPSel, "AltPopPSel" );
 		addSel( AltPopSel[ 0 ], "AltPopSel[ 0 ]" );
 		addSel( AltPopSel[ 1 ], "AltPopSel[ 1 ]" );
@@ -117,7 +119,7 @@ public:
 	void updateDims( const int aParamCount, const int PopSize0 = 0 )
 	{
 		const int aPopSize = ( PopSize0 > 0 ? PopSize0 :
-			10 + aParamCount * 3 );
+			calcPopSizeBiteOpt( aParamCount ));
 
 		if( aParamCount == ParamCount && aPopSize == PopSize )
 		{
@@ -125,13 +127,12 @@ public:
 		}
 
 		initBuffers( aParamCount, aPopSize );
+		setParPopCount( 5 );
 
-		ParOpt.Owner = this;
 		ParOpt.updateDims( aParamCount, 11 + aPopSize / 3 );
 		ParOptPop.initBuffers( aParamCount, aPopSize );
 
-		ParOpt2.Owner = this;
-		ParOpt2.updateDims( aParamCount, aPopSize * 4 / 3 );
+		ParOpt2.updateDims( aParamCount, aPopSize );
 		ParOpt2Pop.initBuffers( aParamCount, aPopSize );
 
 		OldPops[ 0 ].initBuffers( aParamCount, aPopSize );
@@ -155,19 +156,7 @@ public:
 		initCommonVars( rnd );
 
 		StartSD = 0.25 * InitRadius;
-
-		if( InitParams != NULL )
-		{
-			int i;
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				StartParams[ i ] = (ptype) (( InitParams[ i ] -
-					MinValues[ i ]) / DiffValues[ i ]);
-			}
-
-			UseStartParams = true;
-		}
+		setStartParams( InitParams );
 
 		ParOpt.init( rnd, InitParams, InitRadius );
 		ParOpt2.init( rnd, InitParams, InitRadius );
@@ -177,8 +166,6 @@ public:
 		ParOpt2Pop.resetCurPopPos();
 		OldPops[ 0 ].resetCurPopPos();
 		OldPops[ 1 ].resetCurPopPos();
-
-		DoInitEvals = true;
 	}
 
 	/**
@@ -444,7 +431,7 @@ protected:
 	CBiteSel< 2 > PopChangeDecrSel; ///< Population size change decrease
 		///< selector.
 	CBiteSel< 2 > ParOpt2Sel; ///< Parallel optimizer 2 use selector.
-	CBiteSel< 2 > ParPopPSel[ 6 ]; ///< Parallel population use
+	CBiteSel< 2 > ParPopPSel[ 8 ]; ///< Parallel population use
 		///< probability selectors.
 	CBiteSel< 2 > AltPopPSel; ///< Alternative population use selector.
 	CBiteSel< 2 > AltPopSel[ 4 ]; ///< Alternative population type use
@@ -474,41 +461,13 @@ protected:
 		///< selectors.
 	CBitePop OldPops[ 2 ]; ///< Populations of older solutions, updated
 		///< probabilistically.
-	bool DoInitEvals; ///< "True" if initial evaluations should be performed.
 	bool DoEval; ///< Temporary variable which equals to "true" if the
 		///< newly-generated solution should be evaluated via the optcost()
 		///< function.
-
-	/**
-	 * Parallel optimizer class.
-	 */
-
-	template< class T >
-	class CParOpt : public T
-	{
-	public:
-		CBiteOpt* Owner; ///< Owner object.
-
-		virtual void getMinValues( double* const p ) const
-		{
-			Owner -> getMinValues( p );
-		}
-
-		virtual void getMaxValues( double* const p ) const
-		{
-			Owner -> getMaxValues( p );
-		}
-
-		virtual double optcost( const double* const p )
-		{
-			return( Owner -> optcost( p ));
-		}
-	};
-
-	CParOpt< CSpherOpt > ParOpt; ///< Parallel optimizer.
+	CBiteOptOwned< CSpherOpt > ParOpt; ///< Parallel optimizer.
 	CBitePop ParOptPop; ///< Population of parallel optimizer's solutions.
 		///< Includes only its solutions.
-	CParOpt< CNMSeqOpt > ParOpt2; ///< Parallel optimizer2.
+	CBiteOptOwned< CMiniBiteOpt > ParOpt2; ///< Parallel optimizer 2.
 	CBitePop ParOpt2Pop; ///< Population of parallel optimizer 2's solutions.
 		///< Includes only its solutions.
 	int UseParOpt; ///< Parallel optimizer currently being in use.
@@ -526,7 +485,7 @@ protected:
 
 		if( p >= 0 )
 		{
-			ParPops[ p ] -> updatePop( UpdCost, UpdParams, true );
+			ParPops[ p ] -> updatePop( UpdCost, UpdParams, true, 0 );
 		}
 	}
 
@@ -535,7 +494,7 @@ protected:
 	 * With certain probability, *this object's own population will be
 	 * returned instead of parallel population.
 	 *
-	 * @param gi Solution generator index (0-5).
+	 * @param gi Solution generator index (0-7).
 	 * @param rnd PRNG object.
 	 */
 
@@ -611,9 +570,10 @@ protected:
 		ptype* const Params = TmpParams;
 
 		const CBitePop& ParPop = selectParPop( 0, rnd );
+		const int ParPopSize = ParPop.getCurPopSize();
 
 		copyParams( Params, ParPop.getParamsOrdered(
-			getMinSolIndex( 0, rnd, ParPop.getCurPopSize() )));
+			getMinSolIndex( 0, rnd, ParPopSize )));
 
 		// Select a single random parameter or all parameters for further
 		// operations.
@@ -652,7 +612,7 @@ protected:
 		const int im2s = rnd.getSqrInt( 96 );
 		const ptype imask2 = ( im2s > IntMantBits ? 0 : IntMantMask >> im2s );
 
-		const int si1 = (int) ( r1 * r12 * ParPop.getCurPopSize() );
+		const int si1 = (int) ( r1 * r12 * ParPopSize );
 		const ptype* const rp1 = ParPop.getParamsOrdered( si1 );
 		int i;
 
@@ -664,8 +624,8 @@ protected:
 
 		if( rnd.get() < 1.0 - ParamCountI )
 		{
-			const ptype* const rp2 = getParamsOrdered(
-				rnd.getSqrInt( CurPopSize ));
+			const ptype* const rp2 = ParPop.getParamsOrdered(
+				rnd.getSqrInt( ParPopSize ));
 
 			if( rnd.get() < sqrt( ParamCountI ))
 			{
@@ -702,16 +662,20 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const int si1 = getMinSolIndex( 1, rnd, CurPopSize );
-		const ptype* const rp1 = getParamsOrdered( si1 );
-		const ptype* const rp3 = getParamsOrdered( CurPopSize1 - si1 );
+		const CBitePop& ParPop = *this;
+		const int ParPopSize = ParPop.getCurPopSize();
+		const int ParPopSize1 = ParPopSize - 1;
 
-		const int si2 = 1 + rnd.getInt( CurPopSize1 );
-		const ptype* const rp2 = getParamsOrdered( si2 );
+		const int si1 = getMinSolIndex( 1, rnd, ParPopSize );
+		const ptype* const rp1 = ParPop.getParamsOrdered( si1 );
+		const ptype* const rp3 = ParPop.getParamsOrdered( ParPopSize1 - si1 );
 
-		const int si4 = rnd.getSqrInt( CurPopSize );
-		const ptype* const rp4 = getParamsOrdered( si4 );
-		const ptype* const rp5 = getParamsOrdered( CurPopSize1 - si4 );
+		const int si2 = 1 + rnd.getInt( ParPopSize1 );
+		const ptype* const rp2 = ParPop.getParamsOrdered( si2 );
+
+		const int si4 = rnd.getSqrInt( ParPopSize );
+		const ptype* const rp4 = ParPop.getParamsOrdered( si4 );
+		const ptype* const rp5 = ParPop.getParamsOrdered( ParPopSize1 - si4 );
 
 		// The "step in the right direction" (Differential Evolution
 		// "mutation") operation towards the best (minimal) and away from
@@ -731,8 +695,8 @@ protected:
 		}
 		else
 		{
-			const ptype* const rp1b = getParamsOrdered(
-				rnd.getSqrInt( CurPopSize ));
+			const ptype* const rp1b = ParPop.getParamsOrdered(
+				rnd.getSqrInt( ParPopSize ));
 
 			for( i = 0; i < ParamCount; i++ )
 			{
@@ -948,18 +912,21 @@ protected:
 	/**
 	 * "Centroid mix with DE" solution generator, works well for convex
 	 * functions. For DE operation, uses a better solution and a random
-	 * previous solution.
+	 * worse solution.
 	 */
 
 	void generateSol3( CBiteRnd& rnd )
 	{
 		ptype* const Params = TmpParams;
 
-		const ptype* const rp1 = getParamsOrdered(
-			getMinSolIndex( 3, rnd, CurPopSize ));
+		const CBitePop& ParPop = selectParPop( 2, rnd );
+		const int ParPopSize = ParPop.getCurPopSize();
 
-		const ptype* const rp2 = getParamsOrdered( CurPopSize1 -
-			rnd.getSqrInt( CurPopSize ));
+		const ptype* const rp1 = ParPop.getParamsOrdered(
+			getMinSolIndex( 3, rnd, ParPopSize ));
+
+		const ptype* const rp2 = ParPop.getParamsOrdered(
+			rnd.getSqrIntInv( ParPopSize ));
 
 		const int Mode = select( Gen3ModeSel, rnd );
 		int i;
@@ -999,7 +966,7 @@ protected:
 
 		const CBitePop* UsePops[ 2 ];
 		UsePops[ 0 ] = &selectAltPop( 1, rnd );
-		UsePops[ 1 ] = &selectParPop( 1, rnd );
+		UsePops[ 1 ] = &selectParPop( 3, rnd );
 
 		int UseSize[ 2 ];
 		UseSize[ 0 ] = CurPopSize;
@@ -1051,7 +1018,7 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const CBitePop& ParPop = selectParPop( 2, rnd );
+		const CBitePop& ParPop = selectParPop( 4, rnd );
 
 		const ptype* const CrossParams1 = ParPop.getParamsOrdered(
 			rnd.getSqrInt( ParPop.getCurPopSize() ));
@@ -1091,17 +1058,18 @@ protected:
 		ptype* const Params = TmpParams;
 		const ptype* CrossParams[ 4 ];
 
-		const CBitePop& ParPop = selectParPop( 3, rnd );
+		const CBitePop& ParPop = selectParPop( 5, rnd );
+		const int ParPopSize = ParPop.getCurPopSize();
 
 		CrossParams[ 0 ] = ParPop.getParamsOrdered(
-			rnd.getSqrInt( ParPop.getCurPopSize() ));
+			rnd.getSqrInt( ParPopSize ));
 
 		const CBitePop& AltPop = selectAltPop( 3, rnd );
 
 		if( rnd.getBit() )
 		{
 			CrossParams[ 1 ] = AltPop.getParamsOrdered(
-				CurPopSize1 - rnd.getSqrInt( CurPopSize ));
+				rnd.getSqrIntInv( CurPopSize ));
 		}
 		else
 		{
@@ -1122,7 +1090,7 @@ protected:
 		else
 		{
 			CrossParams[ 2 ] = ParPop.getParamsOrdered(
-				rnd.getSqrInt( ParPop.getCurPopSize() ));
+				rnd.getSqrInt( ParPopSize ));
 
 			CrossParams[ 3 ] = AltPop.getParamsOrdered(
 				rnd.getSqrInt( CurPopSize ));
@@ -1154,17 +1122,17 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const CBitePop& ParPop = selectParPop( 4, rnd );
+		const CBitePop& ParPop = selectParPop( 6, rnd );
+		const int ParPopSize = ParPop.getCurPopSize();
 
 		const ptype* const rp1 = ParPop.getParamsOrdered(
-			rnd.getSqrInt( ParPop.getCurPopSize() ));
+			rnd.getSqrInt( ParPopSize ));
 
 		const ptype* const rp2 = ParPop.getParamsOrdered(
-			rnd.getSqrInt( ParPop.getCurPopSize() ));
+			rnd.getSqrInt( ParPopSize ));
 
 		const ptype* const rp3 = ParPop.getParamsOrdered(
-			ParPop.getCurPopSize() - 1 -
-			rnd.getSqrInt( ParPop.getCurPopSize() ));
+			rnd.getSqrIntInv( ParPopSize ));
 
 		int i;
 
@@ -1369,8 +1337,8 @@ protected:
 		const ptype* const rp1 = getParamsOrdered(
 			rnd.getInt( CurPopSize ));
 
-		const ptype* const rp2 = getParamsOrdered( CurPopSize1 -
-			rnd.getSqrInt( CurPopSize ));
+		const ptype* const rp2 = getParamsOrdered(
+			rnd.getSqrIntInv( CurPopSize ));
 
 		int i;
 
@@ -1406,8 +1374,8 @@ protected:
 		const ptype* const rp1 = getParamsOrdered(
 			rnd.getSqrInt( CurPopSize ));
 
-		const ptype* const rp2 = getParamsOrdered( CurPopSize1 -
-			rnd.getSqrInt( CurPopSize ));
+		const ptype* const rp2 = getParamsOrdered(
+			rnd.getSqrIntInv( CurPopSize ));
 
 		int i;
 
@@ -1467,8 +1435,8 @@ protected:
 		const ptype* const rp1 = getParamsOrdered(
 			rnd.getPowInt( 4.0, CurPopSize ));
 
-		const ptype* const rp2 = getParamsOrdered( CurPopSize1 -
-			rnd.getSqrInt( CurPopSize ));
+		const ptype* const rp2 = getParamsOrdered(
+			rnd.getSqrIntInv( CurPopSize ));
 
 		double s1 = 1e-300;
 		double s2 = 1e-300;
@@ -1477,7 +1445,7 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			d = rp1[ i ] - rp2[ i ];
+			d = (double) ( rp1[ i ] - rp2[ i ]);
 			s1 += d * d;
 
 			NewValues[ i ] = rnd.get() - 0.5;
@@ -1508,8 +1476,8 @@ protected:
 		const ptype* const rp1 = getParamsOrdered(
 			rnd.getSqrInt( CurPopSize ));
 
-		const ptype* const rp2 = getParamsOrdered( CurPopSize1 -
-			rnd.getSqrInt( CurPopSize ));
+		const ptype* const rp2 = getParamsOrdered(
+			rnd.getSqrIntInv( CurPopSize ));
 
 		const ptype* const rpc = getCentroid();
 		double r = 0.0;
@@ -1517,7 +1485,7 @@ protected:
 
 		for( i = 0; i < ParamCount; i++ )
 		{
-			const double d1 = rp2[ i ] - rp1[ i ];
+			const double d1 = (double) ( rp2[ i ] - rp1[ i ]);
 			r += d1 * d1;
 		}
 
@@ -1540,7 +1508,7 @@ protected:
 	{
 		ptype* const Params = TmpParams;
 
-		const CBitePop& ParPop = selectParPop( 5, rnd );
+		const CBitePop& ParPop = selectParPop( 7, rnd );
 		const int ParPopSize = ParPop.getCurPopSize();
 
 		const ptype* const rp1 = getParamsOrdered(
@@ -1603,7 +1571,7 @@ protected:
 
 				if( sc > ParamCount * 64 )
 				{
-					ParOpt.init( rnd, getBestParams(), 0.5 );
+					ParOpt.init( rnd, getBestParams(), StartSD * 2.0 );
 					ParOptPop.resetCurPopPos();
 				}
 			}
@@ -1621,9 +1589,9 @@ protected:
 			{
 				UseParOpt = 0; // On stall, select optimizer 1.
 
-				if( sc > ParamCount * 16 )
+				if( sc > ParamCount * 128 )
 				{
-					ParOpt2.init( rnd, getBestParams(), 1.0 );
+					ParOpt2.init( rnd, getBestParams(), StartSD * 4.0 );
 					ParOpt2Pop.resetCurPopPos();
 				}
 			}
@@ -1742,13 +1710,13 @@ public:
 
 		ParamCount = aParamCount;
 		OptCount = M;
-		Opts = new CBiteOptWrap*[ OptCount ];
+		Opts = new CBiteOptOwned< CBiteOpt >*[ OptCount ];
 
 		int i;
 
 		for( i = 0; i < OptCount; i++ )
 		{
-			Opts[ i ] = new CBiteOptWrap( this );
+			Opts[ i ] = new CBiteOptOwned< CBiteOpt >( this );
 			Opts[ i ] -> updateDims( aParamCount, PopSize0 );
 		}
 	}
@@ -1814,6 +1782,7 @@ public:
 		}
 
 		const int sc = CurOpt -> optimize( rnd, PushOpt );
+		LastOpt = CurOpt;
 
 		if( CurOpt -> getBestCost() <= BestOpt -> getBestCost() )
 		{
@@ -1827,7 +1796,6 @@ public:
 		else
 		{
 			StallCount++;
-			LastOpt = CurOpt;
 			CurOpt = PushOpt;
 
 			if( OptCount == 2 )
@@ -1852,43 +1820,15 @@ public:
 	}
 
 protected:
-	/**
-	 * Wrapper class for CBiteOpt class.
-	 */
-
-	class CBiteOptWrap : public CBiteOpt
-	{
-	public:
-		CBiteOptDeep* Owner; ///< Owner object.
-
-		CBiteOptWrap( CBiteOptDeep* const aOwner )
-			: Owner( aOwner )
-		{
-		}
-
-		virtual void getMinValues( double* const p ) const
-		{
-			Owner -> getMinValues( p );
-		}
-
-		virtual void getMaxValues( double* const p ) const
-		{
-			Owner -> getMaxValues( p );
-		}
-
-		virtual double optcost( const double* const p )
-		{
-			return( Owner -> optcost( p ));
-		}
-	};
-
 	int ParamCount; ///< The total number of internal parameter values in use.
 	int OptCount; ///< The total number of optimization objects in use.
-	CBiteOptWrap** Opts; ///< Optimization objects.
-	CBiteOptWrap* BestOpt; ///< Optimizer that contains the best solution.
-	CBiteOptWrap* CurOpt; ///< Current optimizer object.
-	CBiteOptWrap* PushOpt; ///< Optimizer where solution is pushed to.
-	CBiteOptWrap* LastOpt; ///< Latest optimizer object.
+	CBiteOptOwned< CBiteOpt >** Opts; ///< Optimization objects.
+	CBiteOptOwned< CBiteOpt >* BestOpt; ///< Optimizer that contains the best
+		///< solution.
+	CBiteOptOwned< CBiteOpt >* CurOpt; ///< Current optimizer object.
+	CBiteOptOwned< CBiteOpt >* PushOpt; ///< Optimizer where solution is
+		///< pushed to.
+	CBiteOptOwned< CBiteOpt >* LastOpt; ///< Latest optimizer object.
 	int StallCount; ///< The number of iterations without improvement.
 
 	/**

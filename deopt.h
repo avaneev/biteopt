@@ -3,7 +3,7 @@
 /**
  * @file deopt.h
  *
- * @version 2024.5
+ * @version 2024.6
  *
  * @brief The inclusion file for the CDEOpt class.
  *
@@ -83,19 +83,7 @@ public:
 		initCommonVars( rnd );
 
 		StartSD = 0x1p-4 * InitRadius;
-
-		if( InitParams != NULL )
-		{
-			int i;
-
-			for( i = 0; i < ParamCount; i++ )
-			{
-				StartParams[ i ] = (ptype) (( InitParams[ i ] -
-					MinValues[ i ]) / DiffValues[ i ]);
-			}
-
-			UseStartParams = true;
-		}
+		setStartParams( InitParams );
 	}
 
 	/**

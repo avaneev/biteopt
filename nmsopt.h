@@ -3,7 +3,7 @@
 /**
  * @file nmsopt.h
  *
- * @version 2024.5
+ * @version 2024.6
  *
  * @brief The inclusion file for the CNMSeqOpt class.
  *
@@ -91,16 +91,13 @@ public:
 	 * @param rnd Random number generator.
 	 * @param InitParams If not NULL, initial parameter vector, also used as
 	 * centroid.
-	 * @param InitRadius Initial radius, relative to the default value. Set
-	 * to negative to use uniformly-random sampling.
+	 * @param InitRadius Initial radius, relative to the default value.
 	 */
 
 	void init( CBiteRnd& rnd, const double* const InitParams = NULL,
 		const double InitRadius = 1.0 )
 	{
 		initCommonVars( rnd );
-
-		// Initialize parameter vectors, costs and centroid.
 
 		double* const xx = x[ 0 ];
 		int i;
@@ -120,31 +117,15 @@ public:
 
 		xlo = 0;
 
-		if( InitRadius <= 0.0 )
+		const double sd = 0.25 * InitRadius;
+
+		for( j = 1; j < M; j++ )
 		{
-			for( j = 1; j < M; j++ )
+			double* const xj = x[ j ];
+
+			for( i = 0; i < N; i++ )
 			{
-				double* const xj = x[ j ];
-
-				for( i = 0; i < N; i++ )
-				{
-					xj[ i ] = MinValues[ i ] + DiffValues[ i ] * rnd.get();
-				}
-			}
-		}
-		else
-		{
-			const double sd = 0.25 * InitRadius;
-
-			for( j = 1; j < M; j++ )
-			{
-				double* const xj = x[ j ];
-
-				for( i = 0; i < N; i++ )
-				{
-					xj[ i ] = xx[ i ] + DiffValues[ i ] *
-						rnd.getGaussian() * sd;
-				}
+				xj[ i ] = xx[ i ] + DiffValues[ i ] * rnd.getGaussian() * sd;
 			}
 		}
 

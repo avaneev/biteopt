@@ -3,7 +3,7 @@
 /**
  * @file smaesopt.h
  *
- * @version 2024.5
+ * @version 2024.6
  *
  * @brief The inclusion file for the CSMAESOpt class.
  *
@@ -183,11 +183,6 @@ public:
 			if( AvgCost < HiBound )
 			{
 				HiBound = AvgCost;
-				StallCount = 0;
-			}
-			else
-			{
-				StallCount += cure;
 			}
 
 			resetCurPopPos();
@@ -196,6 +191,8 @@ public:
 
 			Ort.update( *this );
 		}
+
+		StallCount = ( NewCost < HiBound ? 0 : StallCount + 1 );
 
 		return( StallCount );
 	}
