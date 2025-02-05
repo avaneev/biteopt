@@ -363,6 +363,7 @@ sample rate converter.
 [Discrete clustering](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/Clustering.adoc),
 [Cryptocurrency trading](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/CryptoTrading.adoc),
 [Employee scheduling](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/Employee.adoc).
+[Weighted spherical t-design](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/SphericalTDesign.adoc)
 
 BiteOpt is also referenced in these research papers:
 
