@@ -355,6 +355,8 @@ symmetric FIR filters. Namely, in
 [r8brain-free-src](https://github.com/avaneev/r8brain-free-src)
 sample rate converter.
 
+* [Dimensional analysis, Buckingham–Pi Theorem](https://github.com/dietmarwo/BuckinghamExamples)
+
 * BiteOpt is featured as an optimizer in
 [M-Star CFD physical modeling system](http://docs.mstarcfd.com/10_Running_the_Solver/m-star-optimizer.html)
 
@@ -362,8 +364,8 @@ sample rate converter.
 [5G network planning](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/5G.adoc),
 [Discrete clustering](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/Clustering.adoc),
 [Cryptocurrency trading](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/CryptoTrading.adoc),
-[Employee scheduling](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/Employee.adoc).
-[Weighted spherical t-design](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/SphericalTDesign.adoc)
+[Employee scheduling](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/Employee.adoc),
+[Weighted spherical t-design](https://github.com/dietmarwo/fast-cma-es/blob/master/tutorials/SphericalTDesign.adoc).
 
 BiteOpt is also referenced in these research papers:
 
@@ -753,3 +755,4 @@ initialized with Gaussian sampling.
     howpublished = {Available at \url{https://github.com/avaneev/biteopt}},
 }
 ```
+
