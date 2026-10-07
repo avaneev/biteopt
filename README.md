@@ -327,6 +327,20 @@ estimate) on each objective function evaluation (optcost). The approach is
 demonstrated in
 [fcmaes tutorial - quantumcomm.py](https://github.com/dietmarwo/fast-cma-es/blob/master/examples/esa2/quantumcomm.py).
 
+Alternatively, for 2-objective optimization problems you can use the heuristic
+discovered by the author, which is implemented in the `bitehv2.h` file as
+the `RankSumFrontHV` class (in `optcost`). It computes both the Pareto
+frontier points and hypervolume exactly and with minimal overhead, in the
+"online" setting.
+
+```c++
+RankSumFrontHV hvsolve( 100, 100 ); // Reference point.
+...
+hvsolve.addPoint( obj1, obj2, p, N );
+
+optcost = -hvsolve.hypervolume();
+```
+
 ## Convergence Proof ##
 
 Considering the structure of the method and the fact that on every iteration
