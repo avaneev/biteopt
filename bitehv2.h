@@ -1,7 +1,7 @@
 /**
  * @file bitehv2.h
  *
- * @brief Iterative 2-D Pareto front + exact hypervolume.
+ * @brief Online 2-D Pareto front + exact hypervolume.
  *
  * E-mail: aleksey.vaneev@gmail.com or info@voxengo.com
  *
@@ -31,148 +31,150 @@
 #ifndef BITEHV2_INCLUDED
 #define BITEHV2_INCLUDED
 
-// The front F1 is a std::vector<std::tuple<double,double,double>>, sorted
-// ascending by element 0 — the dominance-ranking statistic
+// The front F1 is a std::map keyed by the dominance-ranking statistic
 //
-//        S = s1 + s2,  s1 = a*(a+b),  s2 = b*(a+b)  ==>  S = a^2 + 2ab + b^2 .
+//        S = a
 //
-// WHY KEYING BY S IS LEGAL (Pareto compliance, for a,b >= 0):
-//   each s_i is non-decreasing in both objectives, so
-//       x dominates y  ==>  S(x) <= S(y)   (with equality POSSIBLE).
-//   Therefore, for a newcomer p with key S:
-//     - only entries with key <  S can dominate p        (rejection zone),
-//     - only entries with key >  S can be dominated by p (erasure zone),
-//   and a single ordered scan decides acceptance and performs all erasures.
+// (mapped value: (b, x[])), ascending in the key.
 //
-// THE TIE CAVEAT (the only place geometry is unavoidable):
-//   dominance at EQUAL sums exists — (1,4) dominates (2,4), both S = 25 —
-//   so inside the tie block (key == S) dominance may point either way and
-//   is checked geometrically: a reject pass over the WHOLE block first
-//   (a later tie may dominate p; no mutation before rejection is settled),
-//   then an erase pass over the ties p dominates.
+// WHY KEYING BY S IS LEGAL (minimization Pareto compliance):
+//   x dominates y ==> a(x) <= a(y), regardless of sign, so
+//       x dominates y  ==>  S(x) <= S(y)   (equality possible).
+//   Hence, for a newcomer p with key S, only keys <= S can dominate p and
+//   only keys > S can be dominated by p. The front is a strict antichain,
+//   so along ascending keys b is STRICTLY DECREASING and both sides
+//   collapse to boundary checks:
+//     - the smallest b among keys <= S sits at the largest such key, so
+//       rejection reduces to the ONE entry prev(upper_bound(S));
+//     - entries dominated by p (b >= b(p)) form a key-ordered PREFIX after
+//       that point, so the erasure sweep stops at the first b < b(p).
 //
-// HV: after each accepted insertion, HV is recomputed by one sweep of the
-// front in its required geometric order (ascending a). F1 is a strict
-// antichain by construction (accepted points were verified non-dominated;
-// everything they dominate was erased), so along ascending a the b values
-// are strictly decreasing and NO coverage test is needed: HV telescopes
-// into   sum_{i=1}^{m-1} (a_{i+1} - a_i)*(refY - b_i) + (refX - a_m)*(refY - b_m),
-// which the loop evaluates with preloaded (prevA, prevB) starting at i = 1.
+// WHY std::map (unique keys) SUFFICES - the equal-a consumption premise:
+//   among same-key entries only the one with the smallest b can survive,
+//   because it dominates every same-key entry with a larger b. addPoint
+//   enforces exactly this: the entry at key == S rejects p when its b <=
+//   b(p) and is erased when its b > b(p). All same-key cases are covered,
+//   so a committed insert never collides with an existing key: each key
+//   permanently holds its minimum-b survivor.
+//
+// THE TIE CAVEAT (the only place geometry is needed):
+//   the entry at key == S, if any, may dominate or be dominated by p, so it
+//   is checked geometrically BEFORE any mutation.
+//
+// HV INCREMENTAL MAINTENANCE: hv_ is kept exact with O(1) slab deltas; no
+// per-insertion sweep. The strict antichain makes b strictly decreasing
+// along ascending a, so HV telescopes into per-point slabs
+//     HV = sum over points q of  slab(q),
+//     slab(q) = (nextA(q) - a(q)) * (refY - b(q)),   nextA(last) = refX.
+//   Inserting p splits the predecessor's slab at a = a(p): p takes the tail
+//   (nextA - a) * (refY - b), the predecessor keeps its head. Erasing q
+//   removes slab(q) and donates its width to the predecessor's slab. Deltas
+//   are written cancellation-free, i.e. (refY - b) - (refY - b') appears as
+//   b' - b.
 
-#include <algorithm>
 #include <cassert>
-#include <tuple>
+#include <iterator>
+#include <map>
+#include <utility>
 #include <vector>
 
 class RankSumFrontHV {
 public:
-    // Front entry: (S, a, b). Sort order is by S; the tuple's own operator<
-    // (lexicographic) is used for insertion to get a deterministic slot inside
-    // a tie run.
-    typedef std::tuple<double, double, double, std::vector<double> > Entry; // (S, a, b, x[])
-    typedef std::vector<Entry> Front;                      // kept sorted by S
-
-    // Key-only ordering: std::lower_bound / std::upper_bound with this
-    // comparator behave exactly like their std::multimap counterparts
-    // (first key >= S / first key > S), since the vector is ascending in S.
-    struct ByS {
-        bool operator()(const Entry& x, const Entry& y) const {
-            return std::get<0>(x) < std::get<0>(y);
-        }
-    };
+    typedef std::pair<double, std::vector<double> > Mapped; // (b, x[])
+    typedef std::map<double, Mapped> Front;                 // key = S = a
 
     // (refX, refY): upper-right reference corner; all points must satisfy
-    // 0 <= a <= refX, 0 <= b <= refY.
+    // a <= refX, b <= refY.
     explicit RankSumFrontHV(double refX, double refY) : refX_(refX), refY_(refY), hv_(0.0) {}
 
     // Insert one point; returns true iff it entered the front.
     bool addPoint(double a, double b, const double *x = nullptr,
         const int xN = 0) {
 
-        assert(a >= 0.0 && b >= 0.0 && "objectives must be non-negative");
         assert(a <= refX_ && b <= refY_ && "point outside the reference box");
 
-        // ---- the statistic, expanded form to preserve precision ----
-        const double S = a * a + 2.0 * a * b + b * b;
+        const double S = a;
 
-        // ---- zone boundaries by binary search on the key ----
-        const Entry probe = std::make_tuple(S, 0.0, 0.0,
-            std::vector<double>() );   // key = S, coords irrelevant
-
-        // == Zone 1: keys < S — can ONLY dominate the newcomer ==
-        // (If the newcomer dominated one of them, S would be <= their key < S:
-        //  impossible.) Pure rejection checks; no erasure possible here.
-        Front::iterator zone2Begin = std::lower_bound(F1.begin(), F1.end(), probe, ByS());
-        for (Front::iterator it = F1.begin(); it != zone2Begin; ++it)
-            if (std::get<1>(*it) <= a && std::get<2>(*it) <= b)
-                return false;                           // dominated; F1 untouched
-
-        // == Zone 2: tie block [zone2Begin, zone2End) — both directions possible ==
-        Front::iterator zone2End = std::upper_bound(zone2Begin, F1.end(), probe, ByS());
-
-        // 2a) Rejection pass over the WHOLE block before any mutation.
-        for (Front::iterator t = zone2Begin; t != zone2End; ++t)
-            if (std::get<1>(*t) <= a && std::get<2>(*t) <= b)
-                return false;                           // a tie dominates p
-
-        // 2b) Erasure pass: compact the ties p dominates over the survivors,
-        //     then drop the tail in one erase. (We do not erase element by
-        //     element here because the erase pass runs inside [zone2Begin,
-        //     zone2End) where an iterator-invalidation footgun lives; a
-        //     single erase of the tail range keeps it obvious.)
-        Front::iterator newEnd = std::remove_if(zone2Begin, zone2End,
-            [&](const Entry& e) {
-                return std::get<1>(e) >= a && std::get<2>(e) >= b;   // p dominates e
-            });
-        F1.erase(newEnd, zone2End);
-
-        // == Zone 3: keys > S — can ONLY be dominated by the newcomer ==
-        // (If one dominated p, its key would be <= S.) Start recomputed:
-        // the erase above shifted the tail, so old iterators are stale.
-        for (Front::iterator it = std::upper_bound(F1.begin(), F1.end(), probe, ByS());
-             it != F1.end(); )
-            if (std::get<1>(*it) >= a && std::get<2>(*it) >= b)
-                it = F1.erase(it);          // vector::erase returns next (C++11)
-            else
-                ++it;
-
-        // == Commit the newcomer ==
-        // Full-tuple lower_bound: any slot inside the S-tie run is valid.
-        F1.insert(std::lower_bound(F1.begin(), F1.end(), probe),
-                  std::make_tuple(S, a, b, (x==nullptr||xN<=0 ?
-            std::vector<double>() : std::vector<double>(x, x + xN) )));
-
-        // == HV: one sweep in the required order (ascending a) ==
-        // F1 is an antichain, so no coverage test: preload point 0 and
-        // telescope slabs from i = 1.
-        std::vector<std::pair<double, double> > pts;
-        pts.reserve(F1.size());
-        for (Front::const_iterator e = F1.begin(); e != F1.end(); ++e)
-            pts.push_back(std::make_pair(std::get<1>(*e), std::get<2>(*e)));
-        std::sort(pts.begin(), pts.end());              // by a ascending
-
-        hv_ = 0.0;
-        if (!pts.empty()) {                             // degenerate guard
-            double prevA = pts[0].first;                // preloaded sweep state
-            double prevB = pts[0].second;
-            for (std::size_t i = 1; i < pts.size(); ++i) {
-                // slab between prevA and a_i, covered up to height prevB
-                hv_ += (pts[i].first - prevA) * (refY_ - prevB);
-                prevA = pts[i].first;
-                prevB = pts[i].second;
+        // Rejection and tie resolution in ONE candidate check: the entry
+        // with the largest key <= S carries the smallest b among those keys
+        // (b strictly decreases with the key), so it is the only possible
+        // dominator of p.
+        Front::iterator z3 = F1.upper_bound(S); // first key > S; also the
+                                                // erasure sweep start
+        Front::iterator w = F1.end();           // running predecessor for
+                                                // the slab bookkeeping
+        if (z3 != F1.begin()) {
+            Front::iterator t = std::prev(z3);
+            if (t->second.first <= b)
+                return false;                   // it dominates p; F1 untouched
+            if (t->first == S) {                // the tie: p dominates it
+                w = (t == F1.begin()) ? F1.end() : std::prev(t);
+                z3 = eraseOne_(t, w);           // w unchanged: t drops out
+            } else {
+                w = t;                          // boundary of keys < S
             }
-            hv_ += (refX_ - prevA) * (refY_ - prevB);   // trailing slab
         }
+
+        // Erasure: entries p dominates (b >= b(p)) form a key-ordered prefix
+        // (b strictly decreases with the key), so stop at the first b < b(p).
+        for (Front::iterator t = z3; t != F1.end(); ) {
+            if (t->second.first < b)
+                break;
+            t = eraseOne_(t, w);
+        }
+
+        // Commit. The candidate check above removed any same-key entry (or
+        // rejected p), so the insert cannot collide; see the file header.
+        const Front::iterator pos = F1.insert(std::make_pair(S,
+            Mapped(b, (x == nullptr || xN <= 0 ?
+                std::vector<double>() : std::vector<double>(x, x + xN))))).first;
+
+        // O(1) slab delta for the insertion; w is p's predecessor:
+        //   first point: (nextA - a) * (refY - b)   - freshly covered slab
+        //   last point:  (refX  - a) * (b(w) - b)   - predecessor donates its tail
+        //   interior:    (nextA - a) * (b(w) - b)   - slab tail changes owner
+        {
+            const Front::iterator s = std::next(pos);
+            const double nextA = (s == F1.end()) ? refX_ : s->first;
+            if (w == F1.end())
+                hv_ += (nextA - a) * (refY_ - b);
+            else if (s == F1.end())
+                hv_ += (refX_ - a) * (w->second.first - b);
+            else
+                hv_ += (nextA - a) * (w->second.first - b);
+        }
+
         return true;
     }
 
     double hypervolume() const { return hv_; }
 
-    // THE front: vector sorted by S. begin() -> end() is the ranking itself,
-    // ascending S = from best-balanced toward the extremes.
-    Front F1;
+    // THE front, read-only: begin() -> end() is the ranking itself, ascending
+    // S = from best-balanced toward the extremes.
+    const Front& getFront() const { return F1; }
 
 private:
+    // Erase q with the O(1) slab delta: -slab(q) plus the predecessor's
+    // slab widening, combined cancellation-free into
+    //     width * (b(q) - b(pred)),   width = nextA - a(q),
+    // zero width when pred is a tie (same key). w is the running predecessor
+    // kept by the caller's sweep: it advances only across survivors, since
+    // erased points drop out and leave their predecessor unchanged.
+    // Returns q's successor, saved before unlinking.
+    Front::iterator eraseOne_(Front::iterator q, Front::iterator w) {
+        const Front::iterator s = std::next(q);   // successor before unlinking
+        const double nextA = (s == F1.end()) ? refX_ : s->first;
+        const double width = nextA - q->first;
+
+        hv_ += width * (w == F1.end() ? -(refY_ - q->second.first)
+                                      : q->second.first - w->second.first);
+
+        F1.erase(q);  // invalidates only q; s stays valid
+        return s;
+    }
+
+    Front F1;
+
     double refX_, refY_;
     double hv_;
 };
