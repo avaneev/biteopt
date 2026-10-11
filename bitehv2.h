@@ -1,7 +1,7 @@
 /**
  * @file bitehv2.h
  *
- * @brief Online 2-D Pareto front + exact hypervolume.
+ * @brief Iterative 2-D Pareto front + exact hypervolume.
  *
  * E-mail: aleksey.vaneev@gmail.com or info@voxengo.com
  *
@@ -61,6 +61,13 @@
 //   the entry at key == S, if any, may dominate or be dominated by p, so it
 //   is checked geometrically BEFORE any mutation.
 //
+// CACHED REJECTION: after each acceptance a strong front point is cached
+// (before the first acceptance the cache holds the reference-corner
+// sentinel, which can only reject the zero-area point (refX, refY) itself);
+// a newcomer dominated by it is rejected in O(1), before any tree work -
+// the hot-path fast exit for dominated-heavy streams. The cache always
+// names a live front member once any point is accepted (see cacheUpdate_).
+//
 // HV INCREMENTAL MAINTENANCE: hv_ is kept exact with O(1) slab deltas; no
 // per-insertion sweep. The strict antichain makes b strictly decreasing
 // along ascending a, so HV telescopes into per-point slabs
@@ -85,13 +92,24 @@ public:
 
     // (refX, refY): upper-right reference corner; all points must satisfy
     // a <= refX, b <= refY.
-    explicit RankSumFrontHV(double refX, double refY) : refX_(refX), refY_(refY), hv_(0.0) {}
+    explicit RankSumFrontHV(double refX, double refY)
+        : cacheA_(refX), cacheB_(refY), cacheMean_(refX * 0.5 + refY * 0.5),
+          refX_(refX), refY_(refY), hv_(0.0) {}
 
     // Insert one point; returns true iff it entered the front.
     bool addPoint(double a, double b, const double *x = nullptr,
         const int xN = 0) {
 
         assert(a <= refX_ && b <= refY_ && "point outside the reference box");
+
+        // Cached rejection: the cache names a front point - or, before the
+        // first acceptance, the reference-corner sentinel, which can only
+        // "reject" a newcomer exactly at (refX, refY), a zero-area point
+        // that any front member would dominate anyway (see cacheUpdate_).
+        // If the cache dominates the newcomer, p is rejected without
+        // touching the map.
+        if (cacheA_ <= a && cacheB_ <= b)
+            return false;
 
         const double S = a;
 
@@ -144,6 +162,7 @@ public:
                 hv_ += (nextA - a) * (w->second.first - b);
         }
 
+        cacheUpdate_(a, b);
         return true;
     }
 
@@ -173,8 +192,26 @@ private:
         return s;
     }
 
+    // Cache maintenance, acceptance-only. The cache is initialized to the
+    // reference corner; the first accepted point always replaces it (it is
+    // elementwise <= the corner and has a smaller mean), so from then on the
+    // cache names a live front member. Soundness: a cached point can leave
+    // the front only by being dominated by a later accepted point, and that
+    // point passes the first replacement test below, so the rejection test
+    // in addPoint stays valid. Replacement policy: a point dominating the
+    // current cache covers its rejection region and more; otherwise keep
+    // the more central point (smaller a+b mean). The heuristic affects
+    // rejection speed only, never membership or HV.
+    void cacheUpdate_(double a, double b) {
+        const double mean = a * 0.5 + b * 0.5; // half-sum: finite even if a+b overflows
+        if ((a <= cacheA_ && b <= cacheB_) || mean < cacheMean_) {
+            cacheA_ = a; cacheB_ = b; cacheMean_ = mean;
+        }
+    }
+
     Front F1;
 
+    double cacheA_, cacheB_, cacheMean_;
     double refX_, refY_;
     double hv_;
 };
