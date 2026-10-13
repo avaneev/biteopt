@@ -338,7 +338,7 @@ RankSumFrontHV hvsolve( 100, 100 ); // Reference point.
 ...
 hvsolve.addPoint( obj1, obj2, p, N );
 
-optcost = hvsolve.hypervolume() * ( -1.0 + obj1 * obj2 ); // Speed-up trick.
+optcost = hvsolve.hypervolume() * ( -1.0 + obj1 + obj2 ); // Speed-up trick, `obj1 * obj2` also works.
 ```
 
 See `example3.cpp` for implementation.

@@ -58,7 +58,7 @@ public:
 			hv_solver.addPoint( f1, f2, p, D );
 		}
 
-		return( hv_solver.hypervolume() * ( -1.0 + f1 * f2 ));
+		return( hv_solver.hypervolume() * ( -1.0 + f1 + f2 ));
 	}
 };
 
