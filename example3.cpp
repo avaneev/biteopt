@@ -58,14 +58,14 @@ public:
 			hv_solver.addPoint( f1, f2, p, D );
 		}
 
-		return( -hv_solver.hypervolume() );
+		return( hv_solver.hypervolume() * ( -1.0 + f1 * f2 ));
 	}
 };
 
 int main()
 {
 	CBiteRnd rnd;
-	rnd.init( 5 ); // Needs to be seeded with different values on each run.
+	rnd.init( 1 ); // Needs to be seeded with different values on each run.
 
 	CTestOpt opt;
 	opt.init( rnd );
@@ -80,7 +80,7 @@ int main()
 
 		hvn = opt.hv_solver.hypervolume() / ohv;
 
-		if( hvn > 0.999 )
+		if( hvn > 0.99995 )
 		{
 			break;
 		}
