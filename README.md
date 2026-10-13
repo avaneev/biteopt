@@ -341,6 +341,8 @@ hvsolve.addPoint( obj1, obj2, p, N );
 optcost = -hvsolve.hypervolume();
 ```
 
+See `example3.cpp` for implementation.
+
 ## Convergence Proof ##
 
 Considering the structure of the method and the fact that on every iteration
